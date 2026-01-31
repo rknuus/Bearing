@@ -9,7 +9,7 @@ created: 2026-01-31T13:56:42Z
 
 ## Executive Summary
 
-Bearing is a personal planning system that supports interlinked long-, medium-, and short-term planning. The core value proposition is making it simple for users to understand how their daily tasks connect to weekly focus areas and long-term objectives. The system consists of three planning layers—OKRs (long-term), a yearly daily-focus calendar (mid-term), and EisenKan (short-term)—connected through a visual and structural linking mechanism.
+Bearing is a personal planning system that supports interlinked long-, medium-, and short-term planning. The core value proposition is making it simple for users to understand how their daily tasks connect to daily focus areas and long-term objectives. The system consists of three planning layers—OKRs (long-term), a yearly daily-focus calendar (mid-term), and a Kanban-like board dubbed EisenKan (short-term)—connected through a visual and structural linking mechanism.
 
 ### Inspiration Sources
 - **Long-term**: "The 7 Habits of Highly Effective People" by Stephen R. Covey, combined with OKR methodology
@@ -42,15 +42,15 @@ A professional or individual who:
 
 #### US-01: Define Long-Term Direction
 **As an** intentional planner,
-**I want to** create OKR groups and objectives with key results,
+**I want to** create life themes to group OKRs and objectives with key results,
 **So that** I have clear long-term direction organized by life themes.
 
 **Acceptance Criteria:**
-- Can create user-defined OKR groups (not predefined themes)
+- Can create user-defined life themes (not predefined themes)
 - Each group has a distinct background color
-- Can define objectives within groups
+- Can define objectives within life themes
 - Can define measurable key results within objectives
-- Groups, objectives, and key results have hierarchical IDs
+- Themes, objectives, and key results have hierarchical IDs
 
 #### US-02: Plan Daily Focus for the Year
 **As an** intentional planner,
@@ -60,7 +60,7 @@ A professional or individual who:
 **Acceptance Criteria:**
 - Display 12 columns (months) × 31 rows (days)
 - Weekends visually distinct from weekdays
-- Can assign any day to an OKR group (theme) via color
+- Can assign any day to a life theme via color
 - Can enter optional custom text per day
 - Can optionally reference specific OKRs in day text
 - Full year visible at once
@@ -71,10 +71,11 @@ A professional or individual who:
 **So that** I focus on what's truly important and urgent.
 
 **Acceptance Criteria:**
-- Kanban board with standard columns (Todo, In Progress, Done)
+- Kanban board with configurable columns (at least Todo and Done, typically also In Progress, and sometimes more WIP columns)
 - New tasks must be assigned an Eisenhower quadrant (excluding Q4: not important, not urgent)
 - Todo column auto-sorts by Eisenhower priority
-- Tasks inherit theme color from the day/OKR group
+- Tasks inherit theme color from the day/life theme
+- Do task management like in example of EisenKan (=Eisenhower-based Kanban board) available in `tmp/eisenkan/`
 
 #### US-04: Navigate Between Planning Layers
 **As an** intentional planner,
@@ -82,7 +83,7 @@ A professional or individual who:
 **So that** I maintain context while working at any level.
 
 **Acceptance Criteria:**
-- Background color consistently indicates OKR group across all layers
+- Background color consistently indicates life theme across all layers
 - Hierarchical IDs visible on items
 - Breadcrumb trail shows path (e.g., "Health Group > Q1 Fitness OKR > Week 5 > Task")
 - Clicking breadcrumb segments navigates to that layer/item
@@ -97,6 +98,7 @@ A professional or individual who:
 - Changes committed to git automatically
 - Can view history of changes
 - Data readable/editable outside the application if needed
+- Moving tasks corresponds to moving a file in the version controlled directory, but does not change any file content
 
 ## Requirements
 
@@ -104,27 +106,27 @@ A professional or individual who:
 
 #### FR-01: Three-Layer Planning Structure
 The system shall provide three distinct planning views:
-1. **Long-term view**: OKR management (groups, objectives, key results)
+1. **Long-term view**: OKR management (themes, objectives, key results)
 2. **Mid-term view**: Yearly daily-focus calendar grid
 3. **Short-term view**: EisenKan board for task execution
 
 #### FR-02: Linking Mechanism
 The system shall link items across layers using:
-1. **Background color**: Each OKR group has a unique color that propagates to linked days and tasks
-2. **Hierarchical ID convention**: Items have structured IDs reflecting their position (e.g., `GRP-01.OKR-02.KR-03`)
+1. **Background color**: Each life theme has a unique color that propagates to linked days and tasks
+2. **Hierarchical ID convention**: Items have structured IDs reflecting their position (e.g., `THEME-01.OKR-02.KR-03`)
 3. **Breadcrumb trail**: Clickable navigation path displayed on items showing full lineage
 
 #### FR-03: OKR Management
-- Users shall be able to create, edit, and delete OKR groups with user-defined names
-- Each OKR group shall have an assigned background color
-- Users shall be able to create objectives within groups
+- Users shall be able to create, edit, and delete life themes with user-defined names
+- Each life theme shall have an assigned background color
+- Users shall be able to create objectives within life themes
 - Users shall be able to create key results within objectives
-- The system shall enforce hierarchical tree structure (OKR group → Objective → Key Result)
+- The system shall enforce hierarchical tree structure (life theme → Objective → Key Result)
 
 #### FR-04: Daily Focus Calendar
 - The system shall display a yearly grid with 12 columns (months) and 31 rows (days)
 - Weekend days shall be visually distinguished from weekdays
-- Users shall be able to assign any day to an OKR group (theme)
+- Users shall be able to assign any day to a life theme
 - Users shall be able to enter optional custom text for any day
 - Day text may contain references to specific OKRs (detection mechanism TBD)
 
@@ -133,7 +135,8 @@ The system shall link items across layers using:
 - New tasks shall require Eisenhower quadrant assignment (Q1: urgent+important, Q2: important+not urgent, Q3: urgent+not important)
 - Q4 (not important, not urgent) shall not be available as a task priority
 - Todo column shall auto-sort tasks by Eisenhower priority (Q1 → Q2 → Q3)
-- Tasks shall inherit theme color from their associated day/OKR group
+- Tasks shall inherit theme color from their associated day/life theme
+- Detailed specifications for the EisenKan board except the linking aspect are available in `tmp/eisenkan/doc/`
 
 #### FR-06: Navigation
 - The system shall provide one dedicated view per planning layer
@@ -144,25 +147,26 @@ The system shall link items across layers using:
 - All planning data shall be stored as JSON files
 - The system shall use the versioning utility for git-based change tracking
 - File changes shall be committed atomically using transactions
+- Moving tasks corresponds to moving a file in the version controlled directory, but does not change any file content
 
-### Non-Functional Requirements
+### Quality Attribute Requirements
 
-#### NFR-01: Performance
+#### QAR-01: Performance
 - View transitions shall feel instantaneous (<100ms)
 - The yearly calendar grid shall render smoothly with all 365+ days visible
 - File operations shall not block the UI
 
-#### NFR-02: Usability
+#### QAR-02: Usability
 - The linking mechanism shall be immediately visible without user action (colors, IDs)
 - Navigation between layers shall require at most 2 clicks
 - The system shall work offline (local files, no network dependency)
 
-#### NFR-03: Data Portability
+#### QAR-03: Data Portability
 - JSON files shall be human-readable
 - Data shall be usable without the application (plain files + git)
 - No proprietary formats or encryption
 
-#### NFR-04: Platform Support
+#### QAR-04: Platform Support
 - Desktop application via Wails (macOS primary, Windows/Linux secondary)
 - Browser-based execution for testing purposes
 
@@ -183,8 +187,8 @@ The system shall link items across layers using:
 ## Success Criteria
 
 ### MVP Success Metrics
-1. **Linking visibility**: User can identify an item's OKR group within 1 second (via color)
-2. **Navigation**: User can traverse from task to OKR in ≤3 clicks
+1. **Linking visibility**: User can identify an item's life theme within 1 second (via color)
+2. **Navigation**: User can traverse from task to OKR in ≤2 clicks
 3. **Data integrity**: All changes persisted and version-controlled without data loss
 4. **Layer coverage**: All three views functional with core features
 
@@ -238,7 +242,7 @@ The following are explicitly NOT included in MVP:
 The following decisions are deferred to detailed design phase:
 
 1. **OKR reference detection in day text**: Auto-detect patterns vs. explicit markup
-2. **Hierarchical ID format**: Exact convention (e.g., `GRP-01.OKR-02` vs. `G01-O02`)
+2. **Hierarchical ID format**: Exact convention (e.g., `THEME-01.OKR-02` vs. `T01-O02`)
 3. **Color palette**: Fixed set vs. user-selectable colors
 4. **Ad-hoc items**: How to handle future support for orphan mid/short-term items
 5. **Breadcrumb interaction**: Hover preview vs. click-only navigation
@@ -247,9 +251,9 @@ The following decisions are deferred to detailed design phase:
 
 Post-MVP features to consider:
 
-1. **Sidebar tree navigation** - Collapsible hierarchy view (already in TODO)
-2. **Ad-hoc items** - Support short/mid-term items not linked to OKR groups
+1. **Sidebar tree navigation** - Collapsible hierarchy view
+2. **Ad-hoc items** - Support short/mid-term items not linked to life themes
 3. **Context-based views** - Show relevant layer based on current activity
 4. **Progress tracking** - Visual progress indicators on OKRs
-5. **Templates** - Predefined OKR group structures
+5. **Templates** - Predefined life theme structures
 6. **Search** - Cross-layer search functionality
