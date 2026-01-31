@@ -3,3 +3,23 @@
 
 # Local settings
 .claude/settings.local.json
+
+# Build outputs
+build/
+frontend/dist/
+
+# Dependencies
+frontend/node_modules/
+
+# Wails generated bindings (regenerated on build)
+frontend/src/lib/wails/
+frontend/package.json.md5
+
+# OS files
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

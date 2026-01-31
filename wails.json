@@ -1,0 +1,26 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "bearing",
+  "outputfilename": "bearing",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Developer",
+    "email": "developer@example.com"
+  },
+  "info": {
+    "companyName": "Personal",
+    "productName": "Bearing",
+    "productVersion": "0.1.0",
+    "copyright": "Copyright 2026",
+    "comments": "Personal planning system supporting interlinked long-, medium, and short-term planning"
+  },
+  "assetdir": "./frontend/dist",
+  "reloaddirs": "./frontend/src",
+  "build:dir": "build/bin",
+  "frontend:dir": "frontend",
+  "wailsjsdir": "./frontend/src/lib/wails",
+  "debounceMS": 100
+}
