@@ -4,12 +4,13 @@
 
 ## Project-Specific Instructions
 
+See [README](README.md) for background about the project.
+
 Add your project-specific instructions here.
 
 ## Testing
 
-Always run tests before committing:
-- `npm test` or equivalent for your stack
+Always run tests before committing.
 
 ## Code Style
 
