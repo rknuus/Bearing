@@ -1,6 +1,6 @@
 ---
-allowed-tools: Bash(bash ccpm/scripts/pm/next.sh)
+allowed-tools: Bash(bash .claude/ccpm/scripts/pm/next.sh)
 ---
 
 Output:
-!bash ccpm/scripts/pm/next.sh
+!bash .claude/ccpm/scripts/pm/next.sh
