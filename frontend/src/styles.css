@@ -10,3 +10,77 @@ body {
   background-color: #f5f5f5;
   color: #333;
 }
+
+/* ==========================================================================
+   Theme Color Propagation System
+   ==========================================================================
+
+   CSS custom properties for theme color propagation.
+   Components set --theme-color on containers, and children inherit it.
+
+   Usage:
+   1. Set on a container: style="--theme-color: #3b82f6;"
+   2. Use in children: border-color: var(--theme-color);
+   ========================================================================== */
+
+:root {
+  /* Default theme color when none is set */
+  --default-theme-color: #6b7280;
+}
+
+/* Example themed component styles that use --theme-color */
+
+/* Task card with theme-colored left border */
+.task-card {
+  border-left: 4px solid var(--theme-color, var(--default-theme-color));
+  background-color: white;
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Day cell with subtle theme-colored background */
+.day-cell {
+  background-color: color-mix(in srgb, var(--theme-color, var(--default-theme-color)) 10%, white);
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+/* Day cell hover state */
+.day-cell:hover {
+  background-color: color-mix(in srgb, var(--theme-color, var(--default-theme-color)) 20%, white);
+}
+
+/* Progress bar with theme color */
+.progress-bar {
+  height: 4px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--theme-color, var(--default-theme-color));
+  transition: width 0.3s ease;
+}
+
+/* Theme-colored text */
+.text-themed {
+  color: var(--theme-color, var(--default-theme-color));
+}
+
+/* Theme-colored border */
+.border-themed {
+  border-color: var(--theme-color, var(--default-theme-color));
+}
+
+/* Theme-colored background */
+.bg-themed {
+  background-color: var(--theme-color, var(--default-theme-color));
+}
+
+/* Subtle theme-colored background */
+.bg-themed-subtle {
+  background-color: color-mix(in srgb, var(--theme-color, var(--default-theme-color)) 10%, white);
+}
