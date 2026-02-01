@@ -7,7 +7,7 @@
    */
 
   import { onMount } from 'svelte';
-  import type { LifeTheme, DayFocus } from '../lib/wails-mock';
+  import { mockAppBindings, type LifeTheme, type DayFocus } from '../lib/wails-mock';
 
   // Props
   interface Props {
@@ -37,19 +37,23 @@
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
 
-  // Get the Wails bindings
+  // Get the Wails bindings (with mock fallback for browser testing)
   function getBindings() {
-    return window.go?.main?.App;
+    return window.go?.main?.App ?? mockAppBindings;
   }
+
+  // Track previous year to detect changes
+  let previousYear = $state(year);
 
   // Load data on mount
   onMount(async () => {
     await loadData();
   });
 
-  // Reload when year changes
+  // Reload when year changes (not on loading state changes)
   $effect(() => {
-    if (!loading) {
+    if (year !== previousYear) {
+      previousYear = year;
       loadData();
     }
   });
@@ -60,9 +64,6 @@
 
     try {
       const bindings = getBindings();
-      if (!bindings) {
-        throw new Error('Wails bindings not available');
-      }
 
       // Load themes, year focus, and tasks in parallel
       const [themesResult, focusResult, tasksResult] = await Promise.all([
@@ -186,9 +187,6 @@
 
     try {
       const bindings = getBindings();
-      if (!bindings) {
-        throw new Error('Wails bindings not available');
-      }
 
       if (!editThemeId && !editNotes) {
         // Clear the entry if both are empty
@@ -518,9 +516,9 @@
 
   /* Day cells */
   .day-cell {
-    aspect-ratio: 1;
     min-width: 24px;
     min-height: 24px;
+    aspect-ratio: 1;
     background: white;
     border: 1px solid transparent;
     padding: 2px;
@@ -651,7 +649,10 @@
   /* Dialog Overlay */
   .dialog-overlay {
     position: fixed;
-    inset: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
     background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
