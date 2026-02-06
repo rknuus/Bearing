@@ -1,8 +1,9 @@
 ---
 name: themes-and-hierarchical-okrs
 description: Make OKRs nestable to arbitrary depth so users can model 10-year to quarterly goal hierarchies
-status: backlog
+status: complete
 created: 2026-02-06T10:01:27Z
+updated: 2026-02-06T11:49:42Z
 ---
 
 # PRD: Hierarchical OKRs
