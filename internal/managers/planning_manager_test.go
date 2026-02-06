@@ -1,12 +1,14 @@
 package managers
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/rkn/bearing/internal/access"
 )
 
-// mockPlanAccess implements access.IPlanAccess for testing
+// mockPlanAccess implements access.IPlanAccess for testing.
+// SaveTheme assigns IDs to objectives and key results to simulate ensureThemeIDs.
 type mockPlanAccess struct {
 	themes []access.LifeTheme
 	tasks  map[string]map[string][]access.Task // themeID -> status -> tasks
@@ -25,12 +27,52 @@ func (m *mockPlanAccess) GetThemes() ([]access.LifeTheme, error) {
 	return m.themes, nil
 }
 
+// ensureMockIDs recursively assigns IDs to objectives and key results, simulating the real ensureThemeIDs.
+func ensureMockObjectiveIDs(parentID string, objectives []access.Objective) []access.Objective {
+	nextOKR := 1
+	// Find max existing OKR number
+	for _, obj := range objectives {
+		if obj.ID != "" {
+			var n int
+			// Simple parse: extract the last number after "OKR-"
+			fmt.Sscanf(obj.ID[len(obj.ID)-2:], "%d", &n)
+			if n >= nextOKR {
+				nextOKR = n + 1
+			}
+		}
+	}
+	for i := range objectives {
+		if objectives[i].ID == "" {
+			objectives[i].ID = fmt.Sprintf("%s.OKR-%02d", parentID, nextOKR)
+			nextOKR++
+		}
+		// Assign KR IDs
+		nextKR := 1
+		for j := range objectives[i].KeyResults {
+			if objectives[i].KeyResults[j].ID == "" {
+				objectives[i].KeyResults[j].ID = fmt.Sprintf("%s.KR-%02d", objectives[i].ID, nextKR)
+				nextKR++
+			}
+		}
+		// Recurse into child objectives
+		objectives[i].Objectives = ensureMockObjectiveIDs(objectives[i].ID, objectives[i].Objectives)
+	}
+	return objectives
+}
+
 func (m *mockPlanAccess) SaveTheme(theme access.LifeTheme) error {
+	// Simulate ID generation like ensureThemeIDs
+	theme.Objectives = ensureMockObjectiveIDs(theme.ID, theme.Objectives)
+
 	for i, t := range m.themes {
 		if t.ID == theme.ID {
 			m.themes[i] = theme
 			return nil
 		}
+	}
+	if theme.ID == "" {
+		theme.ID = fmt.Sprintf("THEME-%02d", len(m.themes)+1)
+		theme.Objectives = ensureMockObjectiveIDs(theme.ID, theme.Objectives)
 	}
 	m.themes = append(m.themes, theme)
 	return nil
@@ -166,6 +208,427 @@ func TestNewPlanningManager(t *testing.T) {
 		}
 	})
 }
+
+// =============================================================================
+// Objective CRUD Tests
+// =============================================================================
+
+func TestCreateObjective(t *testing.T) {
+	t.Run("creates objective under theme", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, err := manager.CreateObjective("THEME-01", "My Objective")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if obj == nil {
+			t.Fatal("expected objective, got nil")
+		}
+		if obj.Title != "My Objective" {
+			t.Errorf("expected title 'My Objective', got '%s'", obj.Title)
+		}
+		if obj.ID != "THEME-01.OKR-01" {
+			t.Errorf("expected ID 'THEME-01.OKR-01', got '%s'", obj.ID)
+		}
+	})
+
+	t.Run("creates nested objective under objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, err := manager.CreateObjective("THEME-01", "Parent Objective")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		child, err := manager.CreateObjective(parent.ID, "Child Objective")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if child.Title != "Child Objective" {
+			t.Errorf("expected title 'Child Objective', got '%s'", child.Title)
+		}
+		if child.ID != "THEME-01.OKR-01.OKR-01" {
+			t.Errorf("expected ID 'THEME-01.OKR-01.OKR-01', got '%s'", child.ID)
+		}
+	})
+
+	t.Run("creates deeply nested objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		l1, _ := manager.CreateObjective("THEME-01", "Level 1")
+		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
+		l3, err := manager.CreateObjective(l2.ID, "Level 3")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if l3.ID != "THEME-01.OKR-01.OKR-01.OKR-01" {
+			t.Errorf("expected deeply nested ID, got '%s'", l3.ID)
+		}
+	})
+
+	t.Run("returns error for empty parentId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.CreateObjective("", "Title")
+		if err == nil {
+			t.Fatal("expected error for empty parentId")
+		}
+	})
+
+	t.Run("returns error for empty title", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.CreateObjective("THEME-01", "")
+		if err == nil {
+			t.Fatal("expected error for empty title")
+		}
+	})
+
+	t.Run("returns error for non-existent parent", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.CreateObjective("NONEXISTENT", "Title")
+		if err == nil {
+			t.Fatal("expected error for non-existent parent")
+		}
+	})
+}
+
+func TestUpdateObjective(t *testing.T) {
+	t.Run("updates objective title", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("THEME-01", "Original")
+		err := manager.UpdateObjective(obj.ID, "Updated")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Verify the update
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found after update")
+		}
+		if found.Title != "Updated" {
+			t.Errorf("expected title 'Updated', got '%s'", found.Title)
+		}
+	})
+
+	t.Run("updates nested objective title", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+
+		err := manager.UpdateObjective(child.ID, "Updated Child")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, child.ID)
+		if found == nil {
+			t.Fatal("nested objective not found after update")
+		}
+		if found.Title != "Updated Child" {
+			t.Errorf("expected title 'Updated Child', got '%s'", found.Title)
+		}
+	})
+
+	t.Run("returns error for empty objectiveId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateObjective("", "Title")
+		if err == nil {
+			t.Fatal("expected error for empty objectiveId")
+		}
+	})
+
+	t.Run("returns error for non-existent objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateObjective("NONEXISTENT", "Title")
+		if err == nil {
+			t.Fatal("expected error for non-existent objective")
+		}
+	})
+}
+
+func TestDeleteObjective(t *testing.T) {
+	t.Run("deletes objective from theme", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("THEME-01", "To Delete")
+		err := manager.DeleteObjective(obj.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		if len(themes[0].Objectives) != 0 {
+			t.Errorf("expected 0 objectives after delete, got %d", len(themes[0].Objectives))
+		}
+	})
+
+	t.Run("deletes nested objective and its children", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		manager.CreateObjective(parent.ID, "Child")
+
+		// Delete the parent -- child should be gone too
+		err := manager.DeleteObjective(parent.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		if len(themes[0].Objectives) != 0 {
+			t.Errorf("expected 0 objectives after deleting parent, got %d", len(themes[0].Objectives))
+		}
+	})
+
+	t.Run("deletes child without affecting parent", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+
+		err := manager.DeleteObjective(child.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		if len(themes[0].Objectives) != 1 {
+			t.Fatalf("expected 1 objective (parent), got %d", len(themes[0].Objectives))
+		}
+		if themes[0].Objectives[0].Title != "Parent" {
+			t.Errorf("expected parent to remain, got '%s'", themes[0].Objectives[0].Title)
+		}
+		if len(themes[0].Objectives[0].Objectives) != 0 {
+			t.Errorf("expected 0 children after delete, got %d", len(themes[0].Objectives[0].Objectives))
+		}
+	})
+
+	t.Run("returns error for empty objectiveId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.DeleteObjective("")
+		if err == nil {
+			t.Fatal("expected error for empty objectiveId")
+		}
+	})
+
+	t.Run("returns error for non-existent objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.DeleteObjective("NONEXISTENT")
+		if err == nil {
+			t.Fatal("expected error for non-existent objective")
+		}
+	})
+}
+
+// =============================================================================
+// Key Result CRUD Tests
+// =============================================================================
+
+func TestCreateKeyResult(t *testing.T) {
+	t.Run("creates key result under objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("THEME-01", "Objective")
+		kr, err := manager.CreateKeyResult(obj.ID, "My KR")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.Description != "My KR" {
+			t.Errorf("expected description 'My KR', got '%s'", kr.Description)
+		}
+		if kr.ID != "THEME-01.OKR-01.KR-01" {
+			t.Errorf("expected ID 'THEME-01.OKR-01.KR-01', got '%s'", kr.ID)
+		}
+	})
+
+	t.Run("creates key result under nested objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+		kr, err := manager.CreateKeyResult(child.ID, "Nested KR")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.ID != "THEME-01.OKR-01.OKR-01.KR-01" {
+			t.Errorf("expected nested KR ID, got '%s'", kr.ID)
+		}
+	})
+
+	t.Run("returns error for empty parentObjectiveId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.CreateKeyResult("", "Description")
+		if err == nil {
+			t.Fatal("expected error for empty parentObjectiveId")
+		}
+	})
+
+	t.Run("returns error for non-existent objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.CreateKeyResult("NONEXISTENT", "Description")
+		if err == nil {
+			t.Fatal("expected error for non-existent objective")
+		}
+	})
+}
+
+func TestUpdateKeyResult(t *testing.T) {
+	t.Run("updates key result description", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("THEME-01", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Original")
+
+		err := manager.UpdateKeyResult(kr.ID, "Updated")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].Description != "Updated" {
+			t.Errorf("expected description 'Updated', got '%s'", found.KeyResults[0].Description)
+		}
+	})
+
+	t.Run("updates key result under nested objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+		kr, _ := manager.CreateKeyResult(child.ID, "Original")
+
+		err := manager.UpdateKeyResult(kr.ID, "Updated Nested")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		childObj := findObjectiveByID(themes[0].Objectives, child.ID)
+		if childObj.KeyResults[0].Description != "Updated Nested" {
+			t.Errorf("expected 'Updated Nested', got '%s'", childObj.KeyResults[0].Description)
+		}
+	})
+
+	t.Run("returns error for empty keyResultId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateKeyResult("", "Description")
+		if err == nil {
+			t.Fatal("expected error for empty keyResultId")
+		}
+	})
+
+	t.Run("returns error for non-existent key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateKeyResult("NONEXISTENT", "Description")
+		if err == nil {
+			t.Fatal("expected error for non-existent key result")
+		}
+	})
+}
+
+func TestDeleteKeyResult(t *testing.T) {
+	t.Run("deletes key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("THEME-01", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete")
+
+		err := manager.DeleteKeyResult(kr.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if len(found.KeyResults) != 0 {
+			t.Errorf("expected 0 key results after delete, got %d", len(found.KeyResults))
+		}
+	})
+
+	t.Run("deletes key result under nested objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR")
+
+		err := manager.DeleteKeyResult(kr.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		childObj := findObjectiveByID(themes[0].Objectives, child.ID)
+		if len(childObj.KeyResults) != 0 {
+			t.Errorf("expected 0 key results after delete, got %d", len(childObj.KeyResults))
+		}
+	})
+
+	t.Run("returns error for empty keyResultId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.DeleteKeyResult("")
+		if err == nil {
+			t.Fatal("expected error for empty keyResultId")
+		}
+	})
+
+	t.Run("returns error for non-existent key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.DeleteKeyResult("NONEXISTENT")
+		if err == nil {
+			t.Fatal("expected error for non-existent key result")
+		}
+	})
+}
+
+// =============================================================================
+// Task Tests (unchanged signatures)
+// =============================================================================
 
 func TestCreateTask(t *testing.T) {
 	t.Run("creates task with valid priority Q1", func(t *testing.T) {
