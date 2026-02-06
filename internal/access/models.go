@@ -14,10 +14,12 @@ type LifeTheme struct {
 
 // Objective represents a medium-term goal under a life theme.
 // Objectives contain key results that measure progress toward the goal.
+// Objectives can be nested to arbitrary depth, producing hierarchical IDs like THEME-01.OKR-01.OKR-01.
 type Objective struct {
-	ID         string      `json:"id"`         // Hierarchical ID: THEME-01.OKR-01
-	Title      string      `json:"title"`      // Objective title/description
-	KeyResults []KeyResult `json:"keyResults"` // Measurable key results
+	ID         string      `json:"id"`                    // Hierarchical ID: THEME-01.OKR-01
+	Title      string      `json:"title"`                 // Objective title/description
+	KeyResults []KeyResult `json:"keyResults"`            // Measurable key results
+	Objectives []Objective `json:"objectives,omitempty"`  // Nested child objectives
 }
 
 // KeyResult represents a measurable outcome for an objective.

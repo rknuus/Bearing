@@ -1005,3 +1005,191 @@ func TestGitVersioning_MoveTaskUsesGitMv(t *testing.T) {
 		t.Error("Expected commit message for move operation")
 	}
 }
+
+// Recursive Hierarchical ID Generation Tests
+
+func TestRecursiveObjectiveIDGeneration(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{
+		Name:  "Health",
+		Color: "#00FF00",
+		Objectives: []Objective{
+			{
+				Title: "Fitness",
+				KeyResults: []KeyResult{
+					{Description: "Run 5k"},
+				},
+				Objectives: []Objective{
+					{
+						Title: "Cardio",
+						KeyResults: []KeyResult{
+							{Description: "Run daily"},
+							{Description: "Cycle weekly"},
+						},
+						Objectives: []Objective{
+							{
+								Title: "Marathon prep",
+								KeyResults: []KeyResult{
+									{Description: "Run 10k"},
+								},
+							},
+						},
+					},
+					{
+						Title: "Strength",
+						KeyResults: []KeyResult{
+							{Description: "Bench press"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err := pa.SaveTheme(theme)
+	if err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	themes, _ := pa.GetThemes()
+	saved := themes[0]
+
+	// Top-level objective
+	obj1 := saved.Objectives[0]
+	if obj1.ID != "THEME-01.OKR-01" {
+		t.Errorf("Expected THEME-01.OKR-01, got %s", obj1.ID)
+	}
+	if obj1.KeyResults[0].ID != "THEME-01.OKR-01.KR-01" {
+		t.Errorf("Expected THEME-01.OKR-01.KR-01, got %s", obj1.KeyResults[0].ID)
+	}
+
+	// Second-level objectives
+	child1 := obj1.Objectives[0]
+	if child1.ID != "THEME-01.OKR-01.OKR-01" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-01, got %s", child1.ID)
+	}
+	if child1.KeyResults[0].ID != "THEME-01.OKR-01.OKR-01.KR-01" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-01.KR-01, got %s", child1.KeyResults[0].ID)
+	}
+	if child1.KeyResults[1].ID != "THEME-01.OKR-01.OKR-01.KR-02" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-01.KR-02, got %s", child1.KeyResults[1].ID)
+	}
+
+	child2 := obj1.Objectives[1]
+	if child2.ID != "THEME-01.OKR-01.OKR-02" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-02, got %s", child2.ID)
+	}
+	if child2.KeyResults[0].ID != "THEME-01.OKR-01.OKR-02.KR-01" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-02.KR-01, got %s", child2.KeyResults[0].ID)
+	}
+
+	// Third-level objective
+	grandchild := child1.Objectives[0]
+	if grandchild.ID != "THEME-01.OKR-01.OKR-01.OKR-01" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-01.OKR-01, got %s", grandchild.ID)
+	}
+	if grandchild.KeyResults[0].ID != "THEME-01.OKR-01.OKR-01.OKR-01.KR-01" {
+		t.Errorf("Expected THEME-01.OKR-01.OKR-01.OKR-01.KR-01, got %s", grandchild.KeyResults[0].ID)
+	}
+}
+
+func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{
+		Name:  "Career",
+		Color: "#0000FF",
+		Objectives: []Objective{
+			{
+				ID:    "THEME-01.OKR-01",
+				Title: "Existing objective",
+				KeyResults: []KeyResult{
+					{ID: "THEME-01.OKR-01.KR-01", Description: "Existing KR"},
+					{Description: "New KR"},
+				},
+				Objectives: []Objective{
+					{
+						ID:    "THEME-01.OKR-01.OKR-01",
+						Title: "Existing child",
+					},
+					{
+						Title: "New child",
+					},
+				},
+			},
+			{
+				Title: "New objective",
+			},
+		},
+	}
+
+	err := pa.SaveTheme(theme)
+	if err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	themes, _ := pa.GetThemes()
+	saved := themes[0]
+
+	// Existing IDs preserved
+	if saved.Objectives[0].ID != "THEME-01.OKR-01" {
+		t.Errorf("Expected preserved ID THEME-01.OKR-01, got %s", saved.Objectives[0].ID)
+	}
+	if saved.Objectives[0].KeyResults[0].ID != "THEME-01.OKR-01.KR-01" {
+		t.Errorf("Expected preserved KR ID THEME-01.OKR-01.KR-01, got %s", saved.Objectives[0].KeyResults[0].ID)
+	}
+	if saved.Objectives[0].Objectives[0].ID != "THEME-01.OKR-01.OKR-01" {
+		t.Errorf("Expected preserved child ID THEME-01.OKR-01.OKR-01, got %s", saved.Objectives[0].Objectives[0].ID)
+	}
+
+	// New IDs generated based on max existing number
+	if saved.Objectives[0].KeyResults[1].ID != "THEME-01.OKR-01.KR-02" {
+		t.Errorf("Expected new KR ID THEME-01.OKR-01.KR-02, got %s", saved.Objectives[0].KeyResults[1].ID)
+	}
+	if saved.Objectives[0].Objectives[1].ID != "THEME-01.OKR-01.OKR-02" {
+		t.Errorf("Expected new child ID THEME-01.OKR-01.OKR-02, got %s", saved.Objectives[0].Objectives[1].ID)
+	}
+	if saved.Objectives[1].ID != "THEME-01.OKR-02" {
+		t.Errorf("Expected new objective ID THEME-01.OKR-02, got %s", saved.Objectives[1].ID)
+	}
+}
+
+func TestBackwardCompatibility_NoObjectivesField(t *testing.T) {
+	// Test that JSON without the "objectives" field on Objective deserializes cleanly
+	jsonData := `{
+		"themes": [
+			{
+				"id": "THEME-01",
+				"name": "Health",
+				"color": "#00FF00",
+				"objectives": [
+					{
+						"id": "THEME-01.OKR-01",
+						"title": "Fitness",
+						"keyResults": [
+							{"id": "THEME-01.OKR-01.KR-01", "description": "Run 5k"}
+						]
+					}
+				]
+			}
+		]
+	}`
+
+	var themesFile ThemesFile
+	err := json.Unmarshal([]byte(jsonData), &themesFile)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal backward-compatible JSON: %v", err)
+	}
+
+	if len(themesFile.Themes) != 1 {
+		t.Fatalf("Expected 1 theme, got %d", len(themesFile.Themes))
+	}
+
+	obj := themesFile.Themes[0].Objectives[0]
+	if len(obj.Objectives) != 0 {
+		t.Errorf("Expected 0 child objectives for backward-compat JSON, got %d", len(obj.Objectives))
+	}
+}
