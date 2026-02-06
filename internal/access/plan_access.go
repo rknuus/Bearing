@@ -707,21 +707,63 @@ func (pa *PlanAccess) generateThemeID(existingThemes []LifeTheme) string {
 
 // ensureThemeIDs ensures all objectives and key results have proper hierarchical IDs.
 func (pa *PlanAccess) ensureThemeIDs(theme LifeTheme) LifeTheme {
-	for i := range theme.Objectives {
-		obj := &theme.Objectives[i]
-		if obj.ID == "" {
-			obj.ID = fmt.Sprintf("%s.OKR-%02d", theme.ID, i+1)
-		}
+	theme.Objectives = pa.ensureObjectiveIDs(theme.ID, theme.Objectives)
+	return theme
+}
 
-		for j := range obj.KeyResults {
-			kr := &obj.KeyResults[j]
-			if kr.ID == "" {
-				kr.ID = fmt.Sprintf("%s.KR-%02d", obj.ID, j+1)
+// ensureObjectiveIDs recursively assigns hierarchical IDs to objectives and their key results.
+// parentID is the ID prefix for generating child IDs (e.g., "THEME-01" or "THEME-01.OKR-01").
+func (pa *PlanAccess) ensureObjectiveIDs(parentID string, objectives []Objective) []Objective {
+	re := regexp.MustCompile(`\.OKR-(\d+)$`)
+
+	// Find the max existing OKR number among siblings
+	maxOKR := 0
+	for _, obj := range objectives {
+		if obj.ID != "" {
+			matches := re.FindStringSubmatch(obj.ID)
+			if len(matches) == 2 {
+				num, err := strconv.Atoi(matches[1])
+				if err == nil && num > maxOKR {
+					maxOKR = num
+				}
 			}
 		}
 	}
 
-	return theme
+	for i := range objectives {
+		obj := &objectives[i]
+		if obj.ID == "" {
+			maxOKR++
+			obj.ID = fmt.Sprintf("%s.OKR-%02d", parentID, maxOKR)
+		}
+
+		// Assign key result IDs
+		krRe := regexp.MustCompile(`\.KR-(\d+)$`)
+		maxKR := 0
+		for _, kr := range obj.KeyResults {
+			if kr.ID != "" {
+				matches := krRe.FindStringSubmatch(kr.ID)
+				if len(matches) == 2 {
+					num, err := strconv.Atoi(matches[1])
+					if err == nil && num > maxKR {
+						maxKR = num
+					}
+				}
+			}
+		}
+		for j := range obj.KeyResults {
+			kr := &obj.KeyResults[j]
+			if kr.ID == "" {
+				maxKR++
+				kr.ID = fmt.Sprintf("%s.KR-%02d", obj.ID, maxKR)
+			}
+		}
+
+		// Recurse into child objectives
+		obj.Objectives = pa.ensureObjectiveIDs(obj.ID, obj.Objectives)
+	}
+
+	return objectives
 }
 
 // generateTaskID generates a new task ID based on existing tasks.

@@ -95,6 +95,7 @@ type Objective struct {
 	ID         string      `json:"id"`
 	Title      string      `json:"title"`
 	KeyResults []KeyResult `json:"keyResults"`
+	Objectives []Objective `json:"objectives,omitempty"`
 }
 
 // LifeTheme represents a long-term life focus area (for Wails binding)
@@ -121,6 +122,54 @@ type NavigationContext struct {
 	LastAccessed  string `json:"lastAccessed"`
 }
 
+// convertObjective recursively converts an access.Objective to a Wails Objective
+func convertObjective(o access.Objective) Objective {
+	keyResults := make([]KeyResult, len(o.KeyResults))
+	for i, kr := range o.KeyResults {
+		keyResults[i] = KeyResult{
+			ID:          kr.ID,
+			Description: kr.Description,
+		}
+	}
+	objectives := make([]Objective, len(o.Objectives))
+	for i, child := range o.Objectives {
+		objectives[i] = convertObjective(child)
+	}
+	result := Objective{
+		ID:         o.ID,
+		Title:      o.Title,
+		KeyResults: keyResults,
+	}
+	if len(objectives) > 0 {
+		result.Objectives = objectives
+	}
+	return result
+}
+
+// convertObjectiveToAccess recursively converts a Wails Objective to an access.Objective
+func convertObjectiveToAccess(o Objective) access.Objective {
+	keyResults := make([]access.KeyResult, len(o.KeyResults))
+	for i, kr := range o.KeyResults {
+		keyResults[i] = access.KeyResult{
+			ID:          kr.ID,
+			Description: kr.Description,
+		}
+	}
+	objectives := make([]access.Objective, len(o.Objectives))
+	for i, child := range o.Objectives {
+		objectives[i] = convertObjectiveToAccess(child)
+	}
+	result := access.Objective{
+		ID:         o.ID,
+		Title:      o.Title,
+		KeyResults: keyResults,
+	}
+	if len(objectives) > 0 {
+		result.Objectives = objectives
+	}
+	return result
+}
+
 // GetThemes returns all life themes with objectives and key results
 func (a *App) GetThemes() ([]LifeTheme, error) {
 	if a.planningManager == nil {
@@ -137,18 +186,7 @@ func (a *App) GetThemes() ([]LifeTheme, error) {
 	for i, t := range themes {
 		objectives := make([]Objective, len(t.Objectives))
 		for j, o := range t.Objectives {
-			keyResults := make([]KeyResult, len(o.KeyResults))
-			for k, kr := range o.KeyResults {
-				keyResults[k] = KeyResult{
-					ID:          kr.ID,
-					Description: kr.Description,
-				}
-			}
-			objectives[j] = Objective{
-				ID:         o.ID,
-				Title:      o.Title,
-				KeyResults: keyResults,
-			}
+			objectives[j] = convertObjective(o)
 		}
 		result[i] = LifeTheme{
 			ID:         t.ID,
@@ -185,21 +223,10 @@ func (a *App) UpdateTheme(theme LifeTheme) error {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	// Convert objectives and key results
+	// Convert objectives and key results recursively
 	objectives := make([]access.Objective, len(theme.Objectives))
 	for i, o := range theme.Objectives {
-		keyResults := make([]access.KeyResult, len(o.KeyResults))
-		for j, kr := range o.KeyResults {
-			keyResults[j] = access.KeyResult{
-				ID:          kr.ID,
-				Description: kr.Description,
-			}
-		}
-		objectives[i] = access.Objective{
-			ID:         o.ID,
-			Title:      o.Title,
-			KeyResults: keyResults,
-		}
+		objectives[i] = convertObjectiveToAccess(o)
 	}
 
 	return a.planningManager.UpdateTheme(access.LifeTheme{
@@ -232,13 +259,13 @@ func (a *App) DeleteTheme(id string) error {
 	return a.planningManager.DeleteTheme(id)
 }
 
-// CreateObjective creates a new objective within a theme
-func (a *App) CreateObjective(themeId, title string) (*Objective, error) {
+// CreateObjective creates a new objective under a parent (theme or objective)
+func (a *App) CreateObjective(parentId, title string) (*Objective, error) {
 	if a.planningManager == nil {
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	obj, err := a.planningManager.CreateObjective(themeId, title)
+	obj, err := a.planningManager.CreateObjective(parentId, title)
 	if err != nil {
 		return nil, err
 	}
@@ -250,43 +277,31 @@ func (a *App) CreateObjective(themeId, title string) (*Objective, error) {
 	}, nil
 }
 
-// UpdateObjective updates an existing objective
-func (a *App) UpdateObjective(themeId string, objective Objective) error {
+// UpdateObjective updates an existing objective's title
+func (a *App) UpdateObjective(objectiveId, title string) error {
 	if a.planningManager == nil {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	keyResults := make([]access.KeyResult, len(objective.KeyResults))
-	for i, kr := range objective.KeyResults {
-		keyResults[i] = access.KeyResult{
-			ID:          kr.ID,
-			Description: kr.Description,
-		}
-	}
-
-	return a.planningManager.UpdateObjective(themeId, access.Objective{
-		ID:         objective.ID,
-		Title:      objective.Title,
-		KeyResults: keyResults,
-	})
+	return a.planningManager.UpdateObjective(objectiveId, title)
 }
 
-// DeleteObjective deletes an objective from a theme
-func (a *App) DeleteObjective(themeId, objectiveId string) error {
+// DeleteObjective deletes an objective by ID (tree-walked)
+func (a *App) DeleteObjective(objectiveId string) error {
 	if a.planningManager == nil {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	return a.planningManager.DeleteObjective(themeId, objectiveId)
+	return a.planningManager.DeleteObjective(objectiveId)
 }
 
-// CreateKeyResult creates a new key result within an objective
-func (a *App) CreateKeyResult(okrId, description string) (*KeyResult, error) {
+// CreateKeyResult creates a new key result under an objective at any depth
+func (a *App) CreateKeyResult(parentObjectiveId, description string) (*KeyResult, error) {
 	if a.planningManager == nil {
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	kr, err := a.planningManager.CreateKeyResult(okrId, description)
+	kr, err := a.planningManager.CreateKeyResult(parentObjectiveId, description)
 	if err != nil {
 		return nil, err
 	}
@@ -297,25 +312,22 @@ func (a *App) CreateKeyResult(okrId, description string) (*KeyResult, error) {
 	}, nil
 }
 
-// UpdateKeyResult updates an existing key result
-func (a *App) UpdateKeyResult(themeId, objectiveId string, keyResult KeyResult) error {
+// UpdateKeyResult updates an existing key result's description
+func (a *App) UpdateKeyResult(keyResultId, description string) error {
 	if a.planningManager == nil {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	return a.planningManager.UpdateKeyResult(themeId, objectiveId, access.KeyResult{
-		ID:          keyResult.ID,
-		Description: keyResult.Description,
-	})
+	return a.planningManager.UpdateKeyResult(keyResultId, description)
 }
 
-// DeleteKeyResult deletes a key result from an objective
-func (a *App) DeleteKeyResult(themeId, objectiveId, keyResultId string) error {
+// DeleteKeyResult deletes a key result by ID (tree-walked)
+func (a *App) DeleteKeyResult(keyResultId string) error {
 	if a.planningManager == nil {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	return a.planningManager.DeleteKeyResult(themeId, objectiveId, keyResultId)
+	return a.planningManager.DeleteKeyResult(keyResultId)
 }
 
 // GetYearFocus returns all day focus entries for a specific year

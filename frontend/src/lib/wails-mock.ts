@@ -18,6 +18,7 @@ export interface Objective {
   id: string;
   title: string;
   keyResults: KeyResult[];
+  objectives?: Objective[];
 }
 
 export interface LifeTheme {
@@ -72,6 +73,60 @@ declare global {
   }
 }
 
+// Recursive tree-walk helpers for nested objectives
+
+/** Search all themes for an objective by ID, returning it (or undefined). */
+function findObjectiveById(themes: LifeTheme[], id: string): Objective | undefined {
+  function searchObjectives(objectives: Objective[]): Objective | undefined {
+    for (const obj of objectives) {
+      if (obj.id === id) return obj;
+      const found = searchObjectives(obj.objectives || []);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  for (const theme of themes) {
+    const found = searchObjectives(theme.objectives);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/** Find the parent objectives array and index for a given objective ID. */
+function findObjectiveParent(themes: LifeTheme[], id: string): { list: Objective[]; index: number } | undefined {
+  function searchObjectives(objectives: Objective[]): { list: Objective[]; index: number } | undefined {
+    for (let i = 0; i < objectives.length; i++) {
+      if (objectives[i].id === id) return { list: objectives, index: i };
+      const found = searchObjectives(objectives[i].objectives || []);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  for (const theme of themes) {
+    const found = searchObjectives(theme.objectives);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/** Find the parent objective that owns a given key result ID, plus the KR index. */
+function findKeyResultParent(themes: LifeTheme[], krId: string): { objective: Objective; index: number } | undefined {
+  function searchObjectives(objectives: Objective[]): { objective: Objective; index: number } | undefined {
+    for (const obj of objectives) {
+      const idx = obj.keyResults.findIndex(kr => kr.id === krId);
+      if (idx >= 0) return { objective: obj, index: idx };
+      const found = searchObjectives(obj.objectives || []);
+      if (found) return found;
+    }
+    return undefined;
+  }
+  for (const theme of themes) {
+    const found = searchObjectives(theme.objectives);
+    if (found) return found;
+  }
+  return undefined;
+}
+
 // Mock data storage for browser testing
 let mockThemes: LifeTheme[] = [
   {
@@ -86,6 +141,16 @@ let mockThemes: LifeTheme[] = [
           { id: 'THEME-01.OKR-01.KR-01', description: 'Run 5K in under 25 minutes' },
           { id: 'THEME-01.OKR-01.KR-02', description: 'Exercise 4 times per week' },
         ],
+        objectives: [
+          {
+            id: 'THEME-01.OKR-01.OKR-01',
+            title: 'Build running endurance',
+            keyResults: [
+              { id: 'THEME-01.OKR-01.OKR-01.KR-01', description: 'Run 3 times per week for 8 weeks' },
+            ],
+            objectives: [],
+          },
+        ],
       },
       {
         id: 'THEME-01.OKR-02',
@@ -93,6 +158,7 @@ let mockThemes: LifeTheme[] = [
         keyResults: [
           { id: 'THEME-01.OKR-02.KR-01', description: 'Complete 50 push-ups in one set' },
         ],
+        objectives: [],
       },
     ],
   },
@@ -108,6 +174,7 @@ let mockThemes: LifeTheme[] = [
           { id: 'THEME-02.OKR-01.KR-01', description: 'Lead 2 major projects' },
           { id: 'THEME-02.OKR-01.KR-02', description: 'Mentor 1 junior developer' },
         ],
+        objectives: [],
       },
     ],
   },
@@ -202,59 +269,58 @@ export const mockAppBindings = {
   },
 
   // Objective operations
-  CreateObjective: async (themeId: string, title: string): Promise<Objective> => {
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) {
-      throw new Error(`Theme ${themeId} not found`);
+  CreateObjective: async (parentId: string, title: string): Promise<Objective> => {
+    // parentId can be a theme ID or an objective ID
+    let parentObjectives: Objective[];
+
+    const theme = mockThemes.find(t => t.id === parentId);
+    if (theme) {
+      parentObjectives = theme.objectives;
+    } else {
+      const parentObj = findObjectiveById(mockThemes, parentId);
+      if (!parentObj) {
+        throw new Error(`Parent ${parentId} not found`);
+      }
+      if (!parentObj.objectives) parentObj.objectives = [];
+      parentObjectives = parentObj.objectives;
     }
 
-    const maxNum = theme.objectives.reduce((max, o) => {
+    const maxNum = parentObjectives.reduce((max, o) => {
       const match = o.id.match(/\.OKR-(\d+)$/);
       return match ? Math.max(max, parseInt(match[1])) : max;
     }, 0);
 
     const newObjective: Objective = {
-      id: `${themeId}.OKR-${String(maxNum + 1).padStart(2, '0')}`,
+      id: `${parentId}.OKR-${String(maxNum + 1).padStart(2, '0')}`,
       title,
       keyResults: [],
+      objectives: [],
     };
-    theme.objectives.push(newObjective);
+    parentObjectives.push(newObjective);
     return newObjective;
   },
 
-  UpdateObjective: async (themeId: string, objective: Objective): Promise<void> => {
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) {
-      throw new Error(`Theme ${themeId} not found`);
+  UpdateObjective: async (objectiveId: string, title: string): Promise<void> => {
+    const obj = findObjectiveById(mockThemes, objectiveId);
+    if (!obj) {
+      throw new Error(`Objective ${objectiveId} not found`);
     }
-
-    const index = theme.objectives.findIndex(o => o.id === objective.id);
-    if (index >= 0) {
-      theme.objectives[index] = objective;
-    }
+    obj.title = title;
   },
 
-  DeleteObjective: async (themeId: string, objectiveId: string): Promise<void> => {
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) {
-      throw new Error(`Theme ${themeId} not found`);
+  DeleteObjective: async (objectiveId: string): Promise<void> => {
+    const result = findObjectiveParent(mockThemes, objectiveId);
+    if (!result) {
+      throw new Error(`Objective ${objectiveId} not found`);
     }
-
-    theme.objectives = theme.objectives.filter(o => o.id !== objectiveId);
+    result.list.splice(result.index, 1);
   },
 
   // Key Result operations
-  CreateKeyResult: async (okrId: string, description: string): Promise<KeyResult> => {
-    // Parse okrId to find theme and objective
-    const themeId = okrId.split('.')[0];
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) {
-      throw new Error(`Theme ${themeId} not found`);
-    }
-
-    const objective = theme.objectives.find(o => o.id === okrId);
+  CreateKeyResult: async (parentObjectiveId: string, description: string): Promise<KeyResult> => {
+    const objective = findObjectiveById(mockThemes, parentObjectiveId);
     if (!objective) {
-      throw new Error(`Objective ${okrId} not found`);
+      throw new Error(`Objective ${parentObjectiveId} not found`);
     }
 
     const maxNum = objective.keyResults.reduce((max, kr) => {
@@ -263,42 +329,27 @@ export const mockAppBindings = {
     }, 0);
 
     const newKR: KeyResult = {
-      id: `${okrId}.KR-${String(maxNum + 1).padStart(2, '0')}`,
+      id: `${parentObjectiveId}.KR-${String(maxNum + 1).padStart(2, '0')}`,
       description,
     };
     objective.keyResults.push(newKR);
     return newKR;
   },
 
-  UpdateKeyResult: async (themeId: string, objectiveId: string, keyResult: KeyResult): Promise<void> => {
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) {
-      throw new Error(`Theme ${themeId} not found`);
+  UpdateKeyResult: async (keyResultId: string, description: string): Promise<void> => {
+    const result = findKeyResultParent(mockThemes, keyResultId);
+    if (!result) {
+      throw new Error(`KeyResult ${keyResultId} not found`);
     }
-
-    const objective = theme.objectives.find(o => o.id === objectiveId);
-    if (!objective) {
-      throw new Error(`Objective ${objectiveId} not found`);
-    }
-
-    const index = objective.keyResults.findIndex(kr => kr.id === keyResult.id);
-    if (index >= 0) {
-      objective.keyResults[index] = keyResult;
-    }
+    result.objective.keyResults[result.index].description = description;
   },
 
-  DeleteKeyResult: async (themeId: string, objectiveId: string, keyResultId: string): Promise<void> => {
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) {
-      throw new Error(`Theme ${themeId} not found`);
+  DeleteKeyResult: async (keyResultId: string): Promise<void> => {
+    const result = findKeyResultParent(mockThemes, keyResultId);
+    if (!result) {
+      throw new Error(`KeyResult ${keyResultId} not found`);
     }
-
-    const objective = theme.objectives.find(o => o.id === objectiveId);
-    if (!objective) {
-      throw new Error(`Objective ${objectiveId} not found`);
-    }
-
-    objective.keyResults = objective.keyResults.filter(kr => kr.id !== keyResultId);
+    result.objective.keyResults.splice(result.index, 1);
   },
 
   // Calendar operations
