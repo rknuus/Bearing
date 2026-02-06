@@ -34,8 +34,20 @@ setup: frontend-install ## Setup project (install all dependencies)
 	@echo "  make frontend-dev     - Run frontend only (browser testing)"
 	@echo "  make build            - Build production binary"
 
+.PHONY: generate
+generate: frontend-install ## Generate Wails bindings (required after cloning or in new worktrees)
+	@if [ ! -d "frontend/src/lib/wails/wailsjs" ]; then \
+		echo "Building frontend first..."; \
+		cd frontend && npm run build; \
+		echo "Generating Wails bindings..."; \
+		cd .. && ~/go/bin/wails generate module; \
+		echo "Bindings generated at frontend/src/lib/wails/"; \
+	else \
+		echo "Wails bindings already exist, skipping generation."; \
+	fi
+
 .PHONY: dev
-dev: ## Run Wails app in development mode with hot reload
+dev: generate ## Run Wails app in development mode with hot reload
 	@echo "Starting Wails development mode..."
 	@echo "Vite dev server with HMR enabled"
 	@echo "Native app window will open"
@@ -56,7 +68,7 @@ stop-dev: ## Stop any running dev servers
 ##@ Build
 
 .PHONY: build
-build: ## Build Wails desktop application
+build: generate ## Build Wails desktop application
 	@echo "Building $(APP_NAME)..."
 	@echo "Running TypeScript type checking..."
 	@cd frontend && npm run check
