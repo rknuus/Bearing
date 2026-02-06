@@ -401,6 +401,37 @@ func TestDeleteObjective(t *testing.T) {
 		}
 	})
 
+	t.Run("deletes middle objective in 3-level hierarchy and cascades grandchildren", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		l1, _ := manager.CreateObjective("THEME-01", "Level 1")
+		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
+		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
+		manager.CreateKeyResult(l3.ID, "Deep KR")
+
+		// Delete the middle objective (Level 2) -- Level 3 and its KR should be gone too
+		err := manager.DeleteObjective(l2.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		l1After := findObjectiveByID(themes[0].Objectives, l1.ID)
+		if l1After == nil {
+			t.Fatal("expected Level 1 to still exist")
+		}
+		if len(l1After.Objectives) != 0 {
+			t.Errorf("expected 0 children after deleting middle, got %d", len(l1After.Objectives))
+		}
+
+		// Verify the grandchild is truly gone
+		l3After := findObjectiveByID(themes[0].Objectives, l3.ID)
+		if l3After != nil {
+			t.Error("expected Level 3 to be gone after deleting Level 2")
+		}
+	})
+
 	t.Run("deletes child without affecting parent", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
@@ -480,6 +511,36 @@ func TestCreateKeyResult(t *testing.T) {
 		}
 		if kr.ID != "THEME-01.OKR-01.OKR-01.KR-01" {
 			t.Errorf("expected nested KR ID, got '%s'", kr.ID)
+		}
+	})
+
+	t.Run("creates key result on intermediate objective that has children", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		manager.CreateObjective(parent.ID, "Child")
+
+		// Add KR to the parent (intermediate node with children)
+		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.ID != "THEME-01.OKR-01.KR-01" {
+			t.Errorf("expected ID 'THEME-01.OKR-01.KR-01', got '%s'", kr.ID)
+		}
+
+		// Verify the parent still has both children and the key result
+		themes, _ := manager.GetThemes()
+		parentObj := findObjectiveByID(themes[0].Objectives, parent.ID)
+		if len(parentObj.Objectives) != 1 {
+			t.Errorf("expected 1 child objective, got %d", len(parentObj.Objectives))
+		}
+		if len(parentObj.KeyResults) != 1 {
+			t.Errorf("expected 1 key result, got %d", len(parentObj.KeyResults))
+		}
+		if parentObj.KeyResults[0].Description != "Intermediate KR" {
+			t.Errorf("expected description 'Intermediate KR', got '%s'", parentObj.KeyResults[0].Description)
 		}
 	})
 
