@@ -4,6 +4,7 @@
    *
    * Displays the hierarchical OKR structure with Life Themes, Objectives, and Key Results.
    * Supports CRUD operations with accordion-style expansion and inline editing.
+   * Objectives are rendered recursively to support arbitrary nesting depth.
    */
 
   import { onMount } from 'svelte';
@@ -28,6 +29,7 @@
     id: string;
     title: string;
     keyResults: KeyResult[];
+    objectives?: Objective[];
   }
 
   interface LifeTheme {
@@ -56,9 +58,8 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
 
-  // Expansion state
-  let expandedThemes = $state<Set<string>>(new Set());
-  let expandedObjectives = $state<Set<string>>(new Set());
+  // Unified expansion state for themes and objectives at any depth
+  let expandedIds = $state<Set<string>>(new Set());
 
   // Editing state
   let editingThemeId = $state<string | null>(null);
@@ -70,7 +71,8 @@
   let newThemeName = $state('');
   let newThemeColor = $state(COLOR_PALETTE[0]);
 
-  let addingObjectiveToTheme = $state<string | null>(null);
+  // addingObjectiveTo can be a theme ID or an objective ID
+  let addingObjectiveTo = $state<string | null>(null);
   let newObjectiveTitle = $state('');
 
   let addingKeyResultToObjective = $state<string | null>(null);
@@ -86,6 +88,28 @@
   function isWailsRuntime(): boolean {
     return typeof window !== 'undefined' &&
            !!(window as any).go?.main?.App;
+  }
+
+  // Toggle expansion for any ID (theme or objective)
+  function toggleExpanded(id: string) {
+    if (expandedIds.has(id)) {
+      expandedIds.delete(id);
+    } else {
+      expandedIds.add(id);
+    }
+    expandedIds = new Set(expandedIds);
+  }
+
+  // Helper to expand an ID (without toggling)
+  function expandId(id: string) {
+    expandedIds.add(id);
+    expandedIds = new Set(expandedIds);
+  }
+
+  // Check if an objective has expandable children
+  function hasChildren(objective: Objective): boolean {
+    return (objective.objectives && objective.objectives.length > 0) ||
+           objective.keyResults.length > 0;
   }
 
   // API calls
@@ -151,29 +175,30 @@
     }
   }
 
-  async function createObjective(themeId: string) {
+  // CreateObjective — parentId can be a theme ID or an objective ID
+  async function createObjective(parentId: string) {
     if (!newObjectiveTitle.trim()) return;
 
     try {
       if (isWailsRuntime()) {
-        await (window as any).go.main.App.CreateObjective(themeId, newObjectiveTitle.trim());
+        await (window as any).go.main.App.CreateObjective(parentId, newObjectiveTitle.trim());
       }
       await loadThemes();
       newObjectiveTitle = '';
-      addingObjectiveToTheme = null;
-      // Expand the theme to show the new objective
-      expandedThemes.add(themeId);
-      expandedThemes = new Set(expandedThemes);
+      addingObjectiveTo = null;
+      // Expand the parent to show the new objective
+      expandId(parentId);
     } catch (e) {
       console.error('Failed to create objective:', e);
       error = e instanceof Error ? e.message : 'Failed to create objective';
     }
   }
 
-  async function updateObjective(themeId: string, objective: Objective) {
+  // UpdateObjective — new API: (objectiveId, title)
+  async function updateObjective(objectiveId: string, newTitle: string) {
     try {
       if (isWailsRuntime()) {
-        await (window as any).go.main.App.UpdateObjective(themeId, objective);
+        await (window as any).go.main.App.UpdateObjective(objectiveId, newTitle);
       }
       await loadThemes();
       editingObjectiveId = null;
@@ -183,12 +208,13 @@
     }
   }
 
-  async function deleteObjective(themeId: string, objectiveId: string) {
-    if (!confirm('Are you sure you want to delete this objective and all its key results?')) return;
+  // DeleteObjective — new API: (objectiveId)
+  async function deleteObjective(objectiveId: string) {
+    if (!confirm('Are you sure you want to delete this objective and all its children?')) return;
 
     try {
       if (isWailsRuntime()) {
-        await (window as any).go.main.App.DeleteObjective(themeId, objectiveId);
+        await (window as any).go.main.App.DeleteObjective(objectiveId);
       }
       await loadThemes();
     } catch (e) {
@@ -197,29 +223,30 @@
     }
   }
 
-  async function createKeyResult(okrId: string) {
+  // CreateKeyResult — (parentObjectiveId, description)
+  async function createKeyResult(objectiveId: string) {
     if (!newKeyResultDescription.trim()) return;
 
     try {
       if (isWailsRuntime()) {
-        await (window as any).go.main.App.CreateKeyResult(okrId, newKeyResultDescription.trim());
+        await (window as any).go.main.App.CreateKeyResult(objectiveId, newKeyResultDescription.trim());
       }
       await loadThemes();
       newKeyResultDescription = '';
       addingKeyResultToObjective = null;
       // Expand the objective to show the new key result
-      expandedObjectives.add(okrId);
-      expandedObjectives = new Set(expandedObjectives);
+      expandId(objectiveId);
     } catch (e) {
       console.error('Failed to create key result:', e);
       error = e instanceof Error ? e.message : 'Failed to create key result';
     }
   }
 
-  async function updateKeyResult(themeId: string, objectiveId: string, keyResult: KeyResult) {
+  // UpdateKeyResult — new API: (keyResultId, description)
+  async function updateKeyResult(keyResultId: string, newDescription: string) {
     try {
       if (isWailsRuntime()) {
-        await (window as any).go.main.App.UpdateKeyResult(themeId, objectiveId, keyResult);
+        await (window as any).go.main.App.UpdateKeyResult(keyResultId, newDescription);
       }
       await loadThemes();
       editingKeyResultId = null;
@@ -229,37 +256,19 @@
     }
   }
 
-  async function deleteKeyResult(themeId: string, objectiveId: string, keyResultId: string) {
+  // DeleteKeyResult — new API: (keyResultId)
+  async function deleteKeyResult(keyResultId: string) {
     if (!confirm('Are you sure you want to delete this key result?')) return;
 
     try {
       if (isWailsRuntime()) {
-        await (window as any).go.main.App.DeleteKeyResult(themeId, objectiveId, keyResultId);
+        await (window as any).go.main.App.DeleteKeyResult(keyResultId);
       }
       await loadThemes();
     } catch (e) {
       console.error('Failed to delete key result:', e);
       error = e instanceof Error ? e.message : 'Failed to delete key result';
     }
-  }
-
-  // Toggle expansion
-  function toggleTheme(themeId: string) {
-    if (expandedThemes.has(themeId)) {
-      expandedThemes.delete(themeId);
-    } else {
-      expandedThemes.add(themeId);
-    }
-    expandedThemes = new Set(expandedThemes);
-  }
-
-  function toggleObjective(objectiveId: string) {
-    if (expandedObjectives.has(objectiveId)) {
-      expandedObjectives.delete(objectiveId);
-    } else {
-      expandedObjectives.add(objectiveId);
-    }
-    expandedObjectives = new Set(expandedObjectives);
   }
 
   // Start editing
@@ -288,18 +297,12 @@
     });
   }
 
-  function submitEditObjective(themeId: string, objective: Objective) {
-    updateObjective(themeId, {
-      ...objective,
-      title: editObjectiveTitle,
-    });
+  function submitEditObjective(objective: Objective) {
+    updateObjective(objective.id, editObjectiveTitle);
   }
 
-  function submitEditKeyResult(themeId: string, objectiveId: string, kr: KeyResult) {
-    updateKeyResult(themeId, objectiveId, {
-      ...kr,
-      description: editKeyResultDescription,
-    });
+  function submitEditKeyResult(kr: KeyResult) {
+    updateKeyResult(kr.id, editKeyResultDescription);
   }
 
   // Cancel editing
@@ -309,13 +312,13 @@
     editingKeyResultId = null;
   }
 
-  // Extract theme ID from objective ID (e.g., "THEME-01.OKR-01" -> "THEME-01")
+  // Extract theme ID from an objective ID (e.g., "THEME-01.OKR-01.OKR-02" -> "THEME-01")
   function getThemeIdFromObjectiveId(objectiveId: string): string {
     const dotIndex = objectiveId.indexOf('.');
     return dotIndex > 0 ? objectiveId.substring(0, dotIndex) : '';
   }
 
-  // Mock data for browser testing
+  // Mock data for browser testing (includes nested objectives to demonstrate recursion)
   function getMockThemes(): LifeTheme[] {
     return [
       {
@@ -329,6 +332,15 @@
             keyResults: [
               { id: 'THEME-01.OKR-01.KR-01', description: 'Run 5K in under 25 minutes' },
               { id: 'THEME-01.OKR-01.KR-02', description: 'Exercise 4 times per week' },
+            ],
+            objectives: [
+              {
+                id: 'THEME-01.OKR-01.OKR-01',
+                title: 'Build running endurance',
+                keyResults: [
+                  { id: 'THEME-01.OKR-01.OKR-01.KR-01', description: 'Run 3 times per week for 8 weeks' },
+                ],
+              },
             ],
           },
           {
@@ -365,22 +377,136 @@
   // Auto-expand to show highlighted item
   $effect(() => {
     if (highlightItemId && themes.length > 0) {
-      // Parse the hierarchical ID to expand parents
+      // Parse the hierarchical ID to expand all ancestor nodes
       const parts = highlightItemId.split('.');
-      if (parts.length >= 1) {
-        // Expand theme
-        expandedThemes.add(parts[0]);
-        expandedThemes = new Set(expandedThemes);
+      for (let i = 1; i <= parts.length; i++) {
+        const ancestorId = parts.slice(0, i).join('.');
+        expandedIds.add(ancestorId);
       }
-      if (parts.length >= 2) {
-        // Expand objective
-        const objId = parts.slice(0, 2).join('.');
-        expandedObjectives.add(objId);
-        expandedObjectives = new Set(expandedObjectives);
-      }
+      expandedIds = new Set(expandedIds);
     }
   });
 </script>
+
+{#snippet objectiveNode(objective: Objective, themeColor: string, depth: number)}
+  <div class="objective-item" class:highlighted={highlightItemId === objective.id} style="margin-left: {depth > 0 ? 0.5 : 0}rem;">
+    <!-- Objective Header -->
+    <div class="item-header objective-header">
+      <button
+        class="expand-button"
+        onclick={() => toggleExpanded(objective.id)}
+        aria-expanded={expandedIds.has(objective.id)}
+      >
+        <span class="expand-icon">{expandedIds.has(objective.id) ? '\u25BC' : '\u25B6'}</span>
+      </button>
+      <span class="objective-marker" style="background-color: {themeColor};"></span>
+
+      {#if editingObjectiveId === objective.id}
+        <input
+          type="text"
+          class="inline-edit"
+          bind:value={editObjectiveTitle}
+          onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(objective); if (e.key === 'Escape') cancelEdit(); }}
+        />
+        <button class="icon-button save" onclick={() => submitEditObjective(objective)} title="Save">&#10003;</button>
+        <button class="icon-button cancel" onclick={cancelEdit} title="Cancel">&#10005;</button>
+      {:else}
+        <span class="item-name">{objective.title}</span>
+        <span class="item-id">{objective.id}</span>
+        <div class="item-actions">
+          <button class="icon-button edit" onclick={() => startEditObjective(objective)} title="Edit">&#9998;</button>
+          <button class="icon-button delete" onclick={() => deleteObjective(objective.id)} title="Delete">&#128465;</button>
+          <button
+            class="icon-button add"
+            onclick={() => { addingObjectiveTo = objective.id; expandId(objective.id); }}
+            title="Add Child Objective"
+          >+O</button>
+          <button
+            class="icon-button add"
+            onclick={() => { addingKeyResultToObjective = objective.id; expandId(objective.id); }}
+            title="Add Key Result"
+          >+KR</button>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Children (expanded) -->
+    {#if expandedIds.has(objective.id)}
+      <div class="children-list" style="padding-left: 1.5rem;">
+        <!-- Add Child Objective Form -->
+        {#if addingObjectiveTo === objective.id}
+          <div class="new-item-form objective-form">
+            <input
+              type="text"
+              placeholder="Child objective title"
+              bind:value={newObjectiveTitle}
+              onkeydown={(e) => { if (e.key === 'Enter') createObjective(objective.id); if (e.key === 'Escape') { addingObjectiveTo = null; newObjectiveTitle = ''; } }}
+            />
+            <button class="save-button" onclick={() => createObjective(objective.id)}>Create</button>
+            <button class="cancel-button" onclick={() => { addingObjectiveTo = null; newObjectiveTitle = ''; }}>Cancel</button>
+          </div>
+        {/if}
+
+        <!-- Child Objectives (recursive) -->
+        {#if objective.objectives && objective.objectives.length > 0}
+          {#each objective.objectives as childObjective (childObjective.id)}
+            {@render objectiveNode(childObjective, themeColor, depth + 1)}
+          {/each}
+        {/if}
+
+        <!-- Add Key Result Form -->
+        {#if addingKeyResultToObjective === objective.id}
+          <div class="new-item-form kr-form">
+            <input
+              type="text"
+              placeholder="Key result description"
+              bind:value={newKeyResultDescription}
+              onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
+            />
+            <button class="save-button" onclick={() => createKeyResult(objective.id)}>Create</button>
+            <button class="cancel-button" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; }}>Cancel</button>
+          </div>
+        {/if}
+
+        <!-- Key Results -->
+        {#each objective.keyResults as kr (kr.id)}
+          <div class="kr-item" class:highlighted={highlightItemId === kr.id}>
+            <div class="item-header kr-header">
+              <span class="kr-marker" style="background-color: {themeColor};"></span>
+
+              {#if editingKeyResultId === kr.id}
+                <input
+                  type="text"
+                  class="inline-edit"
+                  bind:value={editKeyResultDescription}
+                  onkeydown={(e) => { if (e.key === 'Enter') submitEditKeyResult(kr); if (e.key === 'Escape') cancelEdit(); }}
+                />
+                <button class="icon-button save" onclick={() => submitEditKeyResult(kr)} title="Save">&#10003;</button>
+                <button class="icon-button cancel" onclick={cancelEdit} title="Cancel">&#10005;</button>
+              {:else}
+                <span class="item-name">{kr.description}</span>
+                <span class="item-id">{kr.id}</span>
+                <div class="item-actions">
+                  <button class="icon-button edit" onclick={() => startEditKeyResult(kr)} title="Edit">&#9998;</button>
+                  <button class="icon-button delete" onclick={() => deleteKeyResult(kr.id)} title="Delete">&#128465;</button>
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/each}
+
+        {#if (!objective.objectives || objective.objectives.length === 0) && objective.keyResults.length === 0 && addingKeyResultToObjective !== objective.id && addingObjectiveTo !== objective.id}
+          <div class="empty-state">
+            No children yet.
+            <button class="link-button" onclick={() => { addingObjectiveTo = objective.id; }}>Add objective</button>
+            or
+            <button class="link-button" onclick={() => { addingKeyResultToObjective = objective.id; }}>Add key result</button>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </div>
+{/snippet}
 
 <div class="okr-view">
   <header class="okr-header">
@@ -438,10 +564,10 @@
           <div class="item-header theme-header">
             <button
               class="expand-button"
-              onclick={() => toggleTheme(theme.id)}
-              aria-expanded={expandedThemes.has(theme.id)}
+              onclick={() => toggleExpanded(theme.id)}
+              aria-expanded={expandedIds.has(theme.id)}
             >
-              <span class="expand-icon">{expandedThemes.has(theme.id) ? '▼' : '▶'}</span>
+              <span class="expand-icon">{expandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
             </button>
             <ThemeBadge color={theme.color} size="md" />
 
@@ -487,7 +613,7 @@
                 <button class="icon-button delete" onclick={() => deleteTheme(theme.id)} title="Delete">&#128465;</button>
                 <button
                   class="icon-button add"
-                  onclick={() => { addingObjectiveToTheme = theme.id; expandedThemes.add(theme.id); expandedThemes = new Set(expandedThemes); }}
+                  onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
                   title="Add Objective"
                 >+</button>
               </div>
@@ -495,117 +621,30 @@
           </div>
 
           <!-- Objectives (expanded) -->
-          {#if expandedThemes.has(theme.id)}
+          {#if expandedIds.has(theme.id)}
             <div class="objectives-list">
               <!-- Add Objective Form -->
-              {#if addingObjectiveToTheme === theme.id}
+              {#if addingObjectiveTo === theme.id}
                 <div class="new-item-form objective-form">
                   <input
                     type="text"
                     placeholder="Objective title"
                     bind:value={newObjectiveTitle}
-                    onkeydown={(e) => { if (e.key === 'Enter') createObjective(theme.id); if (e.key === 'Escape') { addingObjectiveToTheme = null; newObjectiveTitle = ''; } }}
+                    onkeydown={(e) => { if (e.key === 'Enter') createObjective(theme.id); if (e.key === 'Escape') { addingObjectiveTo = null; newObjectiveTitle = ''; } }}
                   />
                   <button class="save-button" onclick={() => createObjective(theme.id)}>Create</button>
-                  <button class="cancel-button" onclick={() => { addingObjectiveToTheme = null; newObjectiveTitle = ''; }}>Cancel</button>
+                  <button class="cancel-button" onclick={() => { addingObjectiveTo = null; newObjectiveTitle = ''; }}>Cancel</button>
                 </div>
               {/if}
 
               {#each theme.objectives as objective (objective.id)}
-                <div class="objective-item" class:highlighted={highlightItemId === objective.id}>
-                  <!-- Objective Header -->
-                  <div class="item-header objective-header">
-                    <button
-                      class="expand-button"
-                      onclick={() => toggleObjective(objective.id)}
-                      aria-expanded={expandedObjectives.has(objective.id)}
-                    >
-                      <span class="expand-icon">{expandedObjectives.has(objective.id) ? '▼' : '▶'}</span>
-                    </button>
-                    <span class="objective-marker" style="background-color: {theme.color};"></span>
-
-                    {#if editingObjectiveId === objective.id}
-                      <input
-                        type="text"
-                        class="inline-edit"
-                        bind:value={editObjectiveTitle}
-                        onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(theme.id, objective); if (e.key === 'Escape') cancelEdit(); }}
-                      />
-                      <button class="icon-button save" onclick={() => submitEditObjective(theme.id, objective)} title="Save">&#10003;</button>
-                      <button class="icon-button cancel" onclick={cancelEdit} title="Cancel">&#10005;</button>
-                    {:else}
-                      <span class="item-name">{objective.title}</span>
-                      <span class="item-id">{objective.id}</span>
-                      <div class="item-actions">
-                        <button class="icon-button edit" onclick={() => startEditObjective(objective)} title="Edit">&#9998;</button>
-                        <button class="icon-button delete" onclick={() => deleteObjective(theme.id, objective.id)} title="Delete">&#128465;</button>
-                        <button
-                          class="icon-button add"
-                          onclick={() => { addingKeyResultToObjective = objective.id; expandedObjectives.add(objective.id); expandedObjectives = new Set(expandedObjectives); }}
-                          title="Add Key Result"
-                        >+</button>
-                      </div>
-                    {/if}
-                  </div>
-
-                  <!-- Key Results (expanded) -->
-                  {#if expandedObjectives.has(objective.id)}
-                    <div class="key-results-list">
-                      <!-- Add Key Result Form -->
-                      {#if addingKeyResultToObjective === objective.id}
-                        <div class="new-item-form kr-form">
-                          <input
-                            type="text"
-                            placeholder="Key result description"
-                            bind:value={newKeyResultDescription}
-                            onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
-                          />
-                          <button class="save-button" onclick={() => createKeyResult(objective.id)}>Create</button>
-                          <button class="cancel-button" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; }}>Cancel</button>
-                        </div>
-                      {/if}
-
-                      {#each objective.keyResults as kr (kr.id)}
-                        <div class="kr-item" class:highlighted={highlightItemId === kr.id}>
-                          <div class="item-header kr-header">
-                            <span class="kr-marker" style="background-color: {theme.color};"></span>
-
-                            {#if editingKeyResultId === kr.id}
-                              <input
-                                type="text"
-                                class="inline-edit"
-                                bind:value={editKeyResultDescription}
-                                onkeydown={(e) => { if (e.key === 'Enter') submitEditKeyResult(theme.id, objective.id, kr); if (e.key === 'Escape') cancelEdit(); }}
-                              />
-                              <button class="icon-button save" onclick={() => submitEditKeyResult(theme.id, objective.id, kr)} title="Save">&#10003;</button>
-                              <button class="icon-button cancel" onclick={cancelEdit} title="Cancel">&#10005;</button>
-                            {:else}
-                              <span class="item-name">{kr.description}</span>
-                              <span class="item-id">{kr.id}</span>
-                              <div class="item-actions">
-                                <button class="icon-button edit" onclick={() => startEditKeyResult(kr)} title="Edit">&#9998;</button>
-                                <button class="icon-button delete" onclick={() => deleteKeyResult(theme.id, objective.id, kr.id)} title="Delete">&#128465;</button>
-                              </div>
-                            {/if}
-                          </div>
-                        </div>
-                      {/each}
-
-                      {#if objective.keyResults.length === 0 && addingKeyResultToObjective !== objective.id}
-                        <div class="empty-state">
-                          No key results yet.
-                          <button class="link-button" onclick={() => { addingKeyResultToObjective = objective.id; }}>Add one</button>
-                        </div>
-                      {/if}
-                    </div>
-                  {/if}
-                </div>
+                {@render objectiveNode(objective, theme.color, 0)}
               {/each}
 
-              {#if theme.objectives.length === 0 && addingObjectiveToTheme !== theme.id}
+              {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
                 <div class="empty-state">
                   No objectives yet.
-                  <button class="link-button" onclick={() => { addingObjectiveToTheme = theme.id; }}>Add one</button>
+                  <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add one</button>
                 </div>
               {/if}
             </div>
@@ -839,8 +878,7 @@
     flex-shrink: 0;
   }
 
-  .key-results-list {
-    padding-left: 2rem;
+  .children-list {
     padding-bottom: 0.5rem;
   }
 
