@@ -32,6 +32,7 @@ export interface DayFocus {
   date: string;
   themeId: string;
   notes: string;
+  text: string;
 }
 
 export interface Task {
@@ -379,7 +380,7 @@ export const mockAppBindings = {
 
     const index = entries.findIndex(e => e.date === date);
     if (index >= 0) {
-      // Clear the theme but preserve notes
+      // Clear the theme but preserve notes and text
       entries[index] = { ...entries[index], themeId: '' };
     }
 

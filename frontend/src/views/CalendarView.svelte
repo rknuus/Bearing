@@ -196,7 +196,8 @@
         const dayFocus: DayFocus = {
           date: editingDay.date,
           themeId: editThemeId,
-          notes: editNotes
+          notes: editNotes,
+          text: yearFocus.get(editingDay.date)?.text ?? ''
         };
         await bindings.SaveDayFocus(dayFocus);
         yearFocus.set(editingDay.date, dayFocus);

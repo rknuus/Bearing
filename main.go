@@ -111,6 +111,7 @@ type DayFocus struct {
 	Date    string `json:"date"`
 	ThemeID string `json:"themeId"`
 	Notes   string `json:"notes"`
+	Text    string `json:"text"`
 }
 
 // NavigationContext represents the user's navigation state (for Wails binding)
@@ -348,6 +349,7 @@ func (a *App) GetYearFocus(year int) ([]DayFocus, error) {
 			Date:    e.Date,
 			ThemeID: e.ThemeID,
 			Notes:   e.Notes,
+			Text:    e.Text,
 		}
 	}
 	return result, nil
@@ -363,6 +365,7 @@ func (a *App) SaveDayFocus(day DayFocus) error {
 		Date:    day.Date,
 		ThemeID: day.ThemeID,
 		Notes:   day.Notes,
+		Text:    day.Text,
 	})
 }
 

@@ -478,6 +478,7 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 		Date:    date,
 		ThemeID: "",
 		Notes:   existing.Notes, // Preserve notes
+		Text:    existing.Text,  // Preserve text
 	}
 
 	if err := m.planAccess.SaveDayFocus(cleared); err != nil {
