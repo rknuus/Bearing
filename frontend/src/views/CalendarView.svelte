@@ -3,7 +3,7 @@
    * CalendarView Component
    *
    * Displays a weekday-aligned yearly calendar for mid-term planning.
-   * Rows are weekdays (Mon–Sun), columns are 12 months × 2 (day number + text).
+   * Rows are weekdays (Mon–Sun), columns are 12 months × 3 (day number + text + week number).
    * Users can assign each day to a Life Theme and enter free text.
    */
 
@@ -125,10 +125,29 @@
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 
+  const shortMonthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
   function formatDate(month: number, day: number): string {
     const m = String(month + 1).padStart(2, '0');
     const d = String(day).padStart(2, '0');
     return `${year}-${m}-${d}`;
+  }
+
+  function displayDate(month: number, day: number): string {
+    const d = String(day).padStart(2, '0');
+    return `${d}-${shortMonthNames[month]}-${year}`;
+  }
+
+  // ISO week number (ISO 8601)
+  function getISOWeekNumber(y: number, month: number, day: number): number {
+    const date = new Date(y, month, day);
+    const dayOfWeek = date.getDay() || 7; // Mon=1 ... Sun=7
+    date.setDate(date.getDate() + 4 - dayOfWeek); // nearest Thursday
+    const yearStart = new Date(date.getFullYear(), 0, 1);
+    return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
 
   function getThemeColor(month: number, day: number): string | null {
@@ -157,6 +176,8 @@
     text: string;
     today: boolean;
     sunday: boolean;
+    monday: boolean;
+    weekNumber: number;
   }
 
   let gridCells = $derived.by(() => {
@@ -173,6 +194,8 @@
           text: getDayText(m, d),
           today: isToday(m, d),
           sunday: isSunday(row),
+          monday: row % 7 === 0,
+          weekNumber: getISOWeekNumber(year, m, d),
         });
       }
     }
@@ -280,7 +303,7 @@
         class="calendar-grid"
         style="grid-template-rows: auto repeat({totalRows}, 1.5rem);"
       >
-        <!-- Header row: weekday label corner + month names spanning 2 cols each -->
+        <!-- Header row: weekday label corner + month names spanning 3 cols each -->
         <div class="header-cell weekday-header"></div>
         {#each monthNames as name}
           <div class="header-cell month-header">{name}</div>
@@ -300,20 +323,19 @@
         <!-- Day cells for each month -->
         {#each cellsByMonth as monthCells, monthIdx}
           {#each monthCells as cell}
-            {@const numCol = 2 + monthIdx * 2}
-            {@const textCol = 3 + monthIdx * 2}
+            {@const numCol = 2 + monthIdx * 3}
+            {@const textCol = 3 + monthIdx * 3}
+            {@const weekCol = 4 + monthIdx * 3}
             {@const gridRow = cell.row + 2}
-            {@const themeBg = cell.color ? `background-color: ${cell.color}20;` : ''}
-            {@const sundayBg = cell.sunday ? 'background-color: #eef2ff;' : ''}
+            {@const cellBg = cell.color ? `background-color: ${cell.color}20;` : (cell.sunday ? 'background-color: #eef2ff;' : '')}
 
             <!-- Day number cell -->
             <button
               class="day-num"
               class:today={cell.today}
-              class:sunday-bg={cell.sunday && !cell.color}
-              style="grid-row: {gridRow}; grid-column: {numCol}; {cell.sunday && !cell.color ? '' : themeBg}"
+              style="grid-row: {gridRow}; grid-column: {numCol}; {cellBg}"
               onclick={() => handleDayClick(cell.month, cell.day)}
-              title={formatDate(cell.month, cell.day)}
+              title={displayDate(cell.month, cell.day)}
             >
               {cell.day}
             </button>
@@ -322,13 +344,22 @@
             <button
               class="day-text"
               class:today={cell.today}
-              class:sunday-bg={cell.sunday && !cell.color}
-              style="grid-row: {gridRow}; grid-column: {textCol}; {cell.color ? themeBg : (cell.sunday ? sundayBg : '')}"
+              style="grid-row: {gridRow}; grid-column: {textCol}; {cellBg}"
               onclick={() => handleDayClick(cell.month, cell.day)}
-              title={cell.text || formatDate(cell.month, cell.day)}
+              title={cell.text || displayDate(cell.month, cell.day)}
             >
               {cell.text}
             </button>
+
+            <!-- Week number cell (Monday rows only) -->
+            {#if cell.monday}
+              <div
+                class="week-num"
+                style="grid-row: {gridRow}; grid-column: {weekCol};"
+              >
+                {cell.weekNumber}
+              </div>
+            {/if}
           {/each}
         {/each}
       </div>
@@ -369,7 +400,7 @@
         onkeydown={(e) => e.stopPropagation()}
       >
         <h2 id="dialog-title" class="dialog-title">
-          {monthNames[editingDay.month]} {editingDay.day}, {year}
+          {displayDate(editingDay.month, editingDay.day)}
         </h2>
 
         <div class="form-group">
@@ -494,7 +525,7 @@
   /* Calendar Grid */
   .calendar-grid {
     display: grid;
-    grid-template-columns: 50px repeat(12, 24px 1fr);
+    grid-template-columns: 50px repeat(12, 24px 1fr 24px);
     gap: 1px;
     background: #e5e7eb;
     font-size: 0.7rem;
@@ -520,7 +551,7 @@
   }
 
   .month-header {
-    grid-column: span 2;
+    grid-column: span 3;
   }
 
   /* Weekday label column */
@@ -554,6 +585,17 @@
     align-items: center;
     justify-content: flex-end;
     transition: background-color 0.1s;
+  }
+
+  /* Week number cells */
+  .week-num {
+    padding: 0 4px;
+    font-size: 0.65rem;
+    color: #9ca3af;
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .day-num:hover {
