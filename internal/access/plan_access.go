@@ -149,7 +149,7 @@ func (pa *PlanAccess) SaveTheme(theme LifeTheme) error {
 	}
 
 	// Ensure objective and key result IDs are generated
-	theme = pa.ensureThemeIDs(theme)
+	theme = pa.ensureThemeIDs(theme, themes)
 
 	// Find and update existing theme, or add new one
 	found := false
@@ -702,74 +702,114 @@ func (pa *PlanAccess) generateThemeID(existingThemes []LifeTheme) string {
 		}
 	}
 
-	return fmt.Sprintf("THEME-%02d", maxNum+1)
+	return fmt.Sprintf("THEME-%d", maxNum+1)
 }
 
-// ensureThemeIDs ensures all objectives and key results have proper hierarchical IDs.
-func (pa *PlanAccess) ensureThemeIDs(theme LifeTheme) LifeTheme {
-	theme.Objectives = pa.ensureObjectiveIDs(theme.ID, theme.Objectives)
+// ensureThemeIDs ensures all objectives and key results within a theme have proper IDs.
+// allThemes is used to compute global counters across all themes.
+func (pa *PlanAccess) ensureThemeIDs(theme LifeTheme, allThemes []LifeTheme) LifeTheme {
+	// Collect global max counters from all themes
+	maxOBJ := collectMaxObjNum(allThemes)
+	maxKR := collectMaxKRNum(allThemes)
+
+	theme.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(theme.ID, theme.Objectives, maxOBJ, maxKR)
 	return theme
 }
 
-// ensureObjectiveIDs recursively assigns hierarchical IDs to objectives and their key results.
-// parentID is the ID prefix for generating child IDs (e.g., "THEME-01" or "THEME-01.OKR-01").
-func (pa *PlanAccess) ensureObjectiveIDs(parentID string, objectives []Objective) []Objective {
-	re := regexp.MustCompile(`\.OKR-(\d+)$`)
+// collectMaxObjNum scans all objectives across all themes to find the highest OBJ number.
+func collectMaxObjNum(themes []LifeTheme) int {
+	re := regexp.MustCompile(`^OBJ-(\d+)$`)
+	maxNum := 0
+	for _, theme := range themes {
+		maxNum = collectMaxObjNumFromObjectives(theme.Objectives, re, maxNum)
+	}
+	return maxNum
+}
 
-	// Find the max existing OKR number among siblings
-	maxOKR := 0
+// collectMaxObjNumFromObjectives recursively scans objectives to find the highest OBJ number.
+func collectMaxObjNumFromObjectives(objectives []Objective, re *regexp.Regexp, maxNum int) int {
 	for _, obj := range objectives {
 		if obj.ID != "" {
 			matches := re.FindStringSubmatch(obj.ID)
 			if len(matches) == 2 {
 				num, err := strconv.Atoi(matches[1])
-				if err == nil && num > maxOKR {
-					maxOKR = num
+				if err == nil && num > maxNum {
+					maxNum = num
 				}
 			}
 		}
+		maxNum = collectMaxObjNumFromObjectives(obj.Objectives, re, maxNum)
 	}
+	return maxNum
+}
 
-	for i := range objectives {
-		obj := &objectives[i]
-		if obj.ID == "" {
-			maxOKR++
-			obj.ID = fmt.Sprintf("%s.OKR-%02d", parentID, maxOKR)
-		}
+// collectMaxKRNum scans all key results across all themes to find the highest KR number.
+func collectMaxKRNum(themes []LifeTheme) int {
+	re := regexp.MustCompile(`^KR-(\d+)$`)
+	maxNum := 0
+	for _, theme := range themes {
+		maxNum = collectMaxKRNumFromObjectives(theme.Objectives, re, maxNum)
+	}
+	return maxNum
+}
 
-		// Assign key result IDs
-		krRe := regexp.MustCompile(`\.KR-(\d+)$`)
-		maxKR := 0
+// collectMaxKRNumFromObjectives recursively scans objectives and their key results
+// to find the highest KR number.
+func collectMaxKRNumFromObjectives(objectives []Objective, re *regexp.Regexp, maxNum int) int {
+	for _, obj := range objectives {
 		for _, kr := range obj.KeyResults {
 			if kr.ID != "" {
-				matches := krRe.FindStringSubmatch(kr.ID)
+				matches := re.FindStringSubmatch(kr.ID)
 				if len(matches) == 2 {
 					num, err := strconv.Atoi(matches[1])
-					if err == nil && num > maxKR {
-						maxKR = num
+					if err == nil && num > maxNum {
+						maxNum = num
 					}
 				}
 			}
 		}
+		maxNum = collectMaxKRNumFromObjectives(obj.Objectives, re, maxNum)
+	}
+	return maxNum
+}
+
+// ensureObjectiveIDs recursively assigns flat globally unique IDs to objectives and their key results.
+// parentID is the ID of the parent entity (theme or parent objective) for setting ParentID.
+// maxOBJ and maxKR are the current global counters, returned updated after assignment.
+func (pa *PlanAccess) ensureObjectiveIDs(parentID string, objectives []Objective, maxOBJ, maxKR int) ([]Objective, int, int) {
+	for i := range objectives {
+		obj := &objectives[i]
+
+		// Set ParentID to the parent's ID
+		obj.ParentID = parentID
+
+		// Assign a new flat ID if missing
+		if obj.ID == "" {
+			maxOBJ++
+			obj.ID = fmt.Sprintf("OBJ-%d", maxOBJ)
+		}
+
+		// Assign key result IDs
 		for j := range obj.KeyResults {
 			kr := &obj.KeyResults[j]
+			kr.ParentID = obj.ID
 			if kr.ID == "" {
 				maxKR++
-				kr.ID = fmt.Sprintf("%s.KR-%02d", obj.ID, maxKR)
+				kr.ID = fmt.Sprintf("KR-%d", maxKR)
 			}
 		}
 
 		// Recurse into child objectives
-		obj.Objectives = pa.ensureObjectiveIDs(obj.ID, obj.Objectives)
+		obj.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(obj.ID, obj.Objectives, maxOBJ, maxKR)
 	}
 
-	return objectives
+	return objectives, maxOBJ, maxKR
 }
 
 // generateTaskID generates a new task ID based on existing tasks.
 func (pa *PlanAccess) generateTaskID(existingTasks []Task) string {
 	maxNum := 0
-	re := regexp.MustCompile(`^task-(\d+)$`)
+	re := regexp.MustCompile(`^TASK-(\d+)$`)
 
 	for _, task := range existingTasks {
 		matches := re.FindStringSubmatch(task.ID)
@@ -781,7 +821,7 @@ func (pa *PlanAccess) generateTaskID(existingTasks []Task) string {
 		}
 	}
 
-	return fmt.Sprintf("task-%03d", maxNum+1)
+	return fmt.Sprintf("TASK-%d", maxNum+1)
 }
 
 // findTaskStatus finds the current status of a task by searching through all status directories.
