@@ -35,6 +35,7 @@ type DayFocus struct {
 	Date    string `json:"date"`    // Date in YYYY-MM-DD format
 	ThemeID string `json:"themeId"` // Links to a LifeTheme.ID
 	Notes   string `json:"notes"`   // Optional daily notes
+	Text    string `json:"text"`    // Free-text content for the day
 }
 
 // Task represents a single actionable item linked to a life theme.

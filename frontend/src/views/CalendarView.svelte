@@ -2,8 +2,9 @@
   /**
    * CalendarView Component
    *
-   * Displays a yearly calendar grid (12 months x 31 days) for mid-term planning.
-   * Users can assign each day to a Life Theme (showing the theme's color) and add notes.
+   * Displays a weekday-aligned yearly calendar for mid-term planning.
+   * Rows are weekdays (Mon–Sun), columns are 12 months × 3 (day number + text + week number).
+   * Users can assign each day to a Life Theme and enter free text.
    */
 
   import { mockAppBindings, type LifeTheme, type DayFocus } from '../lib/wails-mock';
@@ -21,26 +22,36 @@
   // State
   let themes = $state<LifeTheme[]>([]);
   let yearFocus = $state<Map<string, DayFocus>>(new Map());
-  let taskCounts = $state<Map<string, number>>(new Map());
   let loading = $state(true);
   let error = $state<string | null>(null);
 
   // Day editor dialog state
   let editingDay = $state<{ date: string; month: number; day: number } | null>(null);
   let editThemeId = $state('');
-  let editNotes = $state('');
+  let editText = $state('');
 
-  // Month names
+  // Full month names for headers and dialog
   const monthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   // Get the Wails bindings (with mock fallback for browser testing)
   function getBindings() {
     return window.go?.main?.App ?? mockAppBindings;
   }
 
+  // Track previous year to detect changes
+  let previousYear = $state(year);
+
+  // Load data on mount
+  onMount(async () => {
+    await loadData();
+  });
+
+  // Reload when year changes
   $effect(() => {
     loadData();
   });
@@ -52,30 +63,18 @@
     try {
       const bindings = getBindings();
 
-      // Load themes, year focus, and tasks in parallel
-      const [themesResult, focusResult, tasksResult] = await Promise.all([
+      const [themesResult, focusResult] = await Promise.all([
         bindings.GetThemes(),
         bindings.GetYearFocus(year),
-        bindings.GetTasks ? bindings.GetTasks() : Promise.resolve([])
       ]);
 
       themes = themesResult;
 
-      // Convert array to map for easy lookup
       const focusMap = new Map<string, DayFocus>();
       for (const entry of focusResult) {
         focusMap.set(entry.date, entry);
       }
       yearFocus = focusMap;
-
-      // Count tasks per day
-      const counts = new Map<string, number>();
-      for (const task of tasksResult) {
-        if (task.dayDate) {
-          counts.set(task.dayDate, (counts.get(task.dayDate) || 0) + 1);
-        }
-      }
-      taskCounts = counts;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load data';
       console.error('CalendarView: Failed to load data', e);
@@ -84,40 +83,70 @@
     }
   }
 
-  // Check if a date is valid (e.g., Feb 30 is invalid)
-  function isValidDate(month: number, day: number): boolean {
-    const date = new Date(year, month, day);
-    return date.getMonth() === month && date.getDate() === day;
+  // --- Date computation helpers ---
+
+  // Returns 0-6 (Mon=0, Tue=1, ..., Sun=6) for the 1st of the given month
+  function getMonthStartWeekday(y: number, month: number): number {
+    const jsDay = new Date(y, month, 1).getDay(); // 0=Sun, 1=Mon, ...
+    return jsDay === 0 ? 6 : jsDay - 1;
   }
 
-  // Check if a date is a weekend
-  function isWeekend(month: number, day: number): boolean {
-    if (!isValidDate(month, day)) return false;
-    const date = new Date(year, month, day);
-    const dayOfWeek = date.getDay();
-    return dayOfWeek === 0 || dayOfWeek === 6;
+  function getDaysInMonth(y: number, month: number): number {
+    return new Date(y, month + 1, 0).getDate();
   }
 
-  // Check if a date is today
+  // Max calendar weeks any month spans in the given year
+  function getMaxWeeks(y: number): number {
+    let max = 0;
+    for (let m = 0; m < 12; m++) {
+      const start = getMonthStartWeekday(y, m);
+      const days = getDaysInMonth(y, m);
+      const weeks = Math.ceil((start + days) / 7);
+      if (weeks > max) max = weeks;
+    }
+    return max;
+  }
+
+  // Grid row for a given day (0-indexed)
+  function getDayRow(y: number, month: number, day: number): number {
+    return getMonthStartWeekday(y, month) + day - 1;
+  }
+
+  function isSunday(row: number): boolean {
+    return row % 7 === 6;
+  }
+
   function isToday(month: number, day: number): boolean {
     const today = new Date();
-    return (
-      today.getFullYear() === year &&
-      today.getMonth() === month &&
-      today.getDate() === day
-    );
+    return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 
-  // Format date as YYYY-MM-DD
+  const shortMonthNames = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+
   function formatDate(month: number, day: number): string {
     const m = String(month + 1).padStart(2, '0');
     const d = String(day).padStart(2, '0');
     return `${year}-${m}-${d}`;
   }
 
-  // Get theme color for a date
+  function displayDate(month: number, day: number): string {
+    const d = String(day).padStart(2, '0');
+    return `${d}-${shortMonthNames[month]}-${year}`;
+  }
+
+  // ISO week number (ISO 8601)
+  function getISOWeekNumber(y: number, month: number, day: number): number {
+    const date = new Date(y, month, day);
+    const dayOfWeek = date.getDay() || 7; // Mon=1 ... Sun=7
+    date.setDate(date.getDate() + 4 - dayOfWeek); // nearest Thursday
+    const yearStart = new Date(date.getFullYear(), 0, 1);
+    return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+
   function getThemeColor(month: number, day: number): string | null {
-    if (!isValidDate(month, day)) return null;
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
     if (!focus?.themeId) return null;
@@ -125,71 +154,97 @@
     return theme?.color ?? null;
   }
 
-  // Get day focus for a date
-  function getDayFocus(month: number, day: number): DayFocus | null {
-    if (!isValidDate(month, day)) return null;
+  function getDayText(month: number, day: number): string {
     const dateStr = formatDate(month, day);
-    return yearFocus.get(dateStr) ?? null;
+    return yearFocus.get(dateStr)?.text ?? '';
   }
 
-  // Get task count for a date
-  function getTaskCount(month: number, day: number): number {
-    if (!isValidDate(month, day)) return 0;
-    const dateStr = formatDate(month, day);
-    return taskCounts.get(dateStr) ?? 0;
+  // Derived: total rows and grid data
+  let maxWeeks = $derived(getMaxWeeks(year));
+  let totalRows = $derived(maxWeeks * 7);
+
+  // Build grid cells for each month
+  interface CellData {
+    month: number;
+    day: number;
+    row: number; // 0-indexed grid row (excluding header)
+    color: string | null;
+    text: string;
+    today: boolean;
+    sunday: boolean;
+    monday: boolean;
+    weekNumber: number;
   }
 
-  // Handle clicking on task count
-  function handleTaskCountClick(event: MouseEvent, month: number, day: number) {
-    event.stopPropagation();
-    if (onNavigateToTasks) {
-      const dateStr = formatDate(month, day);
-      const focus = getDayFocus(month, day);
-      onNavigateToTasks({ date: dateStr, themeId: focus?.themeId });
+  let gridCells = $derived.by(() => {
+    const cells: CellData[] = [];
+    for (let m = 0; m < 12; m++) {
+      const days = getDaysInMonth(year, m);
+      for (let d = 1; d <= days; d++) {
+        const row = getDayRow(year, m, d);
+        cells.push({
+          month: m,
+          day: d,
+          row,
+          color: getThemeColor(m, d),
+          text: getDayText(m, d),
+          today: isToday(m, d),
+          sunday: isSunday(row),
+          monday: row % 7 === 0,
+          weekNumber: getISOWeekNumber(year, m, d),
+        });
+      }
     }
-  }
+    return cells;
+  });
 
-  // Handle clicking on theme badge in legend
+  // Group cells by month for rendering
+  let cellsByMonth = $derived.by(() => {
+    const byMonth: CellData[][] = Array.from({ length: 12 }, () => []);
+    for (const cell of gridCells) {
+      byMonth[cell.month].push(cell);
+    }
+    return byMonth;
+  });
+
+  // --- Interaction handlers ---
+
   function handleThemeLegendClick(themeId: string) {
     if (onNavigateToTheme) {
       onNavigateToTheme(themeId);
     }
   }
 
-  // Handle day click
   function handleDayClick(month: number, day: number) {
-    if (!isValidDate(month, day)) return;
-
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
 
     editingDay = { date: dateStr, month, day };
     editThemeId = focus?.themeId ?? '';
-    editNotes = focus?.notes ?? '';
+    editText = focus?.text ?? '';
   }
 
-  // Save day focus
   async function saveDayFocus() {
     if (!editingDay) return;
 
     try {
       const bindings = getBindings();
 
-      if (!editThemeId && !editNotes) {
-        // Clear the entry if both are empty
+      if (!editThemeId && !editText) {
         await bindings.ClearDayFocus(editingDay.date);
         yearFocus.delete(editingDay.date);
       } else {
+        const existing = yearFocus.get(editingDay.date);
         const dayFocus: DayFocus = {
           date: editingDay.date,
           themeId: editThemeId,
-          notes: editNotes
+          notes: existing?.notes ?? '',
+          text: editText
         };
         await bindings.SaveDayFocus(dayFocus);
         yearFocus.set(editingDay.date, dayFocus);
       }
 
-      // Force reactivity update
       yearFocus = new Map(yearFocus);
       editingDay = null;
     } catch (e) {
@@ -198,12 +253,10 @@
     }
   }
 
-  // Cancel editing
   function cancelEdit() {
     editingDay = null;
   }
 
-  // Navigate to previous/next year
   function prevYear() {
     year = year - 1;
   }
@@ -242,60 +295,67 @@
   {:else}
     <!-- Calendar Grid -->
     <div class="calendar-container">
-      <div class="calendar-grid">
-        <!-- Header row (month names) -->
-        <div class="header-cell day-header">Day</div>
-        {#each monthNames as monthName}
-          <div class="header-cell month-header">{monthName}</div>
+      <div
+        class="calendar-grid"
+        style="grid-template-rows: auto repeat({totalRows}, 1.5rem);"
+      >
+        <!-- Header row: weekday label corner + month names spanning 3 cols each -->
+        <div class="header-cell weekday-header"></div>
+        {#each monthNames as name}
+          <div class="header-cell month-header">{name}</div>
         {/each}
 
-        <!-- Day rows -->
-        {#each Array(31) as _, dayIndex}
-          {@const day = dayIndex + 1}
-          <!-- Day number column -->
-          <div class="day-number-cell">{day}</div>
+        <!-- Weekday labels (left column) -->
+        {#each Array(totalRows) as _, rowIdx}
+          <div
+            class="weekday-label"
+            class:sunday-bg={rowIdx % 7 === 6}
+            style="grid-row: {rowIdx + 2}; grid-column: 1;"
+          >
+            {weekdayNames[rowIdx % 7]}
+          </div>
+        {/each}
 
-          <!-- Month cells -->
-          {#each Array(12) as _, monthIndex}
-            {@const valid = isValidDate(monthIndex, day)}
-            {@const weekend = isWeekend(monthIndex, day)}
-            {@const today = isToday(monthIndex, day)}
-            {@const color = getThemeColor(monthIndex, day)}
-            {@const focus = getDayFocus(monthIndex, day)}
-            {@const taskCount = getTaskCount(monthIndex, day)}
-            {@const isFiltered = filterThemeId && focus?.themeId !== filterThemeId}
+        <!-- Day cells for each month -->
+        {#each cellsByMonth as monthCells, monthIdx}
+          {#each monthCells as cell}
+            {@const numCol = 2 + monthIdx * 3}
+            {@const textCol = 3 + monthIdx * 3}
+            {@const weekCol = 4 + monthIdx * 3}
+            {@const gridRow = cell.row + 2}
+            {@const cellBg = cell.color ? `background-color: ${cell.color}20;` : (cell.sunday ? 'background-color: #eef2ff;' : '')}
 
+            <!-- Day number cell -->
             <button
-              class="day-cell"
-              class:invalid={!valid}
-              class:weekend={weekend}
-              class:today={today}
-              class:has-notes={focus?.notes}
-              class:filtered={isFiltered}
-              disabled={!valid}
-              style={color ? `background-color: ${color}20; border-color: ${color};` : ''}
-              onclick={() => handleDayClick(monthIndex, day)}
-              title={focus?.notes ? `Notes: ${focus.notes}` : formatDate(monthIndex, day)}
+              class="day-num"
+              class:today={cell.today}
+              style="grid-row: {gridRow}; grid-column: {numCol}; {cellBg}"
+              onclick={() => handleDayClick(cell.month, cell.day)}
+              title={displayDate(cell.month, cell.day)}
             >
-              {#if color}
-                <span class="theme-dot" style="background-color: {color};"></span>
-              {/if}
-              {#if focus?.notes}
-                <span class="note-indicator">*</span>
-              {/if}
-              {#if taskCount > 0}
-                <span
-                  class="task-count-badge"
-                  role="button"
-                  tabindex="0"
-                  onclick={(e) => handleTaskCountClick(e, monthIndex, day)}
-                  onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleTaskCountClick(e as unknown as MouseEvent, monthIndex, day); } }}
-                  title="{taskCount} task{taskCount !== 1 ? 's' : ''} - click to view"
-                >
-                  {taskCount}
-                </span>
-              {/if}
+              {cell.day}
             </button>
+
+            <!-- Text cell -->
+            <button
+              class="day-text"
+              class:today={cell.today}
+              style="grid-row: {gridRow}; grid-column: {textCol}; {cellBg}"
+              onclick={() => handleDayClick(cell.month, cell.day)}
+              title={cell.text || displayDate(cell.month, cell.day)}
+            >
+              {cell.text}
+            </button>
+
+            <!-- Week number cell (Monday rows only) -->
+            {#if cell.monday}
+              <div
+                class="week-num"
+                style="grid-row: {gridRow}; grid-column: {weekCol};"
+              >
+                {cell.weekNumber}
+              </div>
+            {/if}
           {/each}
         {/each}
       </div>
@@ -336,7 +396,7 @@
         onkeydown={(e) => e.stopPropagation()}
       >
         <h2 id="dialog-title" class="dialog-title">
-          {monthNames[editingDay.month]} {editingDay.day}, {year}
+          {displayDate(editingDay.month, editingDay.day)}
         </h2>
 
         <div class="form-group">
@@ -350,13 +410,13 @@
         </div>
 
         <div class="form-group">
-          <label for="notes-input">Notes</label>
-          <textarea
-            id="notes-input"
-            bind:value={editNotes}
-            rows="3"
-            placeholder="Add notes for this day..."
-          ></textarea>
+          <label for="text-input">Text</label>
+          <input
+            id="text-input"
+            type="text"
+            bind:value={editText}
+            placeholder="Add text for this day..."
+          />
         </div>
 
         <div class="dialog-actions">
@@ -461,17 +521,17 @@
   /* Calendar Grid */
   .calendar-grid {
     display: grid;
-    grid-template-columns: 40px repeat(12, 1fr);
+    grid-template-columns: 50px repeat(12, 24px 1fr 24px);
     gap: 1px;
     background: #e5e7eb;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     min-width: fit-content;
   }
 
   /* Header cells */
   .header-cell {
     background: #f3f4f6;
-    padding: 0.5rem 0.25rem;
+    padding: 0.375rem 0.25rem;
     text-align: center;
     font-weight: 600;
     color: #374151;
@@ -480,17 +540,20 @@
     z-index: 10;
   }
 
-  .day-header {
+  .weekday-header {
     position: sticky;
     left: 0;
     z-index: 20;
   }
 
-  /* Day number column */
-  .day-number-cell {
+  .month-header {
+    grid-column: span 3;
+  }
+
+  /* Weekday label column */
+  .weekday-label {
     background: #f9fafb;
-    padding: 0.25rem;
-    text-align: center;
+    padding: 0 4px;
     font-weight: 500;
     color: #6b7280;
     position: sticky;
@@ -498,88 +561,74 @@
     z-index: 5;
     display: flex;
     align-items: center;
-    justify-content: center;
   }
 
-  /* Day cells */
-  .day-cell {
-    min-width: 24px;
-    min-height: 24px;
-    aspect-ratio: 1;
+  /* Sunday background */
+  .sunday-bg {
+    background-color: #eef2ff;
+  }
+
+  /* Day number cells */
+  .day-num {
+    padding: 0 4px;
+    text-align: right;
+    font-size: 0.7rem;
+    color: #6b7280;
     background: white;
-    border: 1px solid transparent;
-    padding: 2px;
+    border: none;
     cursor: pointer;
-    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    transition: background-color 0.1s;
+  }
+
+  /* Week number cells */
+  .week-num {
+    padding: 0 4px;
+    font-size: 0.65rem;
+    color: #9ca3af;
+    background: #f9fafb;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
   }
 
-  .day-cell:hover:not(.invalid) {
-    background: #f3f4f6;
-    border-color: #2563eb;
+  .day-num:hover {
+    background-color: #f3f4f6;
   }
 
-  .day-cell:focus:not(.invalid) {
-    outline: 2px solid #2563eb;
-    outline-offset: -2px;
-  }
-
-  .day-cell.invalid {
-    background: #f9fafb;
-    cursor: default;
-  }
-
-  .day-cell.weekend:not(.invalid) {
-    background: #f3f4f6;
-  }
-
-  .day-cell.today {
+  .day-num.today {
     outline: 2px solid #2563eb;
     outline-offset: -2px;
     font-weight: bold;
+    color: #1f2937;
   }
 
-  .theme-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .note-indicator {
-    position: absolute;
-    top: 1px;
-    right: 2px;
-    font-size: 0.625rem;
-    color: #6b7280;
-    font-weight: bold;
-  }
-
-  .task-count-badge {
-    position: absolute;
-    bottom: 1px;
-    right: 1px;
-    font-size: 0.5rem;
-    background-color: #2563eb;
-    color: white;
-    padding: 0 3px;
-    border-radius: 3px;
-    min-width: 12px;
-    text-align: center;
-    line-height: 1.2;
+  /* Text cells */
+  .day-text {
+    padding: 0 4px;
+    font-size: 0.7rem;
+    color: #374151;
+    background: white;
     border: none;
     cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.1s;
   }
 
-  .task-count-badge:hover {
-    background-color: #1d4ed8;
+  .day-text:hover {
+    background-color: #f3f4f6;
   }
 
-  .day-cell.filtered {
-    opacity: 0.3;
+  .day-text.today {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
   }
 
   /* Theme Legend */
@@ -676,7 +725,7 @@
   }
 
   .form-group select,
-  .form-group textarea {
+  .form-group input[type="text"] {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid #d1d5db;
@@ -686,15 +735,10 @@
   }
 
   .form-group select:focus,
-  .form-group textarea:focus {
+  .form-group input[type="text"]:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-  }
-
-  .form-group textarea {
-    resize: vertical;
-    min-height: 60px;
   }
 
   .dialog-actions {
