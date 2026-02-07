@@ -13,6 +13,7 @@ export interface KeyResult {
   id: string;
   parentId?: string;
   description: string;
+  status?: string;
   startValue?: number;
   currentValue?: number;
   targetValue?: number;
@@ -22,6 +23,7 @@ export interface Objective {
   id: string;
   parentId?: string;
   title: string;
+  status?: string;
   keyResults: KeyResult[];
   objectives?: Objective[];
 }
@@ -58,6 +60,8 @@ export interface NavigationContext {
   filterThemeId: string;
   filterDate: string;
   lastAccessed: string;
+  showCompleted?: boolean;
+  showArchived?: boolean;
 }
 
 // Type declarations for extended Window properties
@@ -236,7 +240,7 @@ let mockThemes: LifeTheme[] = [
         parentId: 'HF',
         title: 'Improve cardiovascular health',
         keyResults: [
-          { id: 'HF-KR1', parentId: 'HF-O1', description: 'Run 5K in under 25 minutes', startValue: 0, currentValue: 0, targetValue: 1 },
+          { id: 'HF-KR1', parentId: 'HF-O1', description: 'Run 5K in under 25 minutes', status: 'completed', startValue: 0, currentValue: 1, targetValue: 1 },
           { id: 'HF-KR2', parentId: 'HF-O1', description: 'Exercise 4 times per week', startValue: 0, currentValue: 3, targetValue: 4 },
         ],
         objectives: [
@@ -256,7 +260,7 @@ let mockThemes: LifeTheme[] = [
         parentId: 'HF',
         title: 'Build strength',
         keyResults: [
-          { id: 'HF-KR4', parentId: 'HF-O3', description: 'Complete 50 push-ups in one set', startValue: 0, currentValue: 1, targetValue: 1 },
+          { id: 'HF-KR4', parentId: 'HF-O3', description: 'Complete 50 push-ups in one set', status: 'archived', startValue: 0, currentValue: 1, targetValue: 1 },
         ],
         objectives: [],
       },
@@ -460,6 +464,49 @@ export const mockAppBindings = {
       throw new Error(`KeyResult ${keyResultId} not found`);
     }
     result.objective.keyResults.splice(result.index, 1);
+  },
+
+  SetObjectiveStatus: async (objectiveId: string, status: string): Promise<void> => {
+    const obj = findObjectiveById(mockThemes, objectiveId);
+    if (!obj) {
+      throw new Error(`Objective ${objectiveId} not found`);
+    }
+    const current = obj.status || 'active';
+    const target = status || 'active';
+    if (current === 'active' && target === 'archived') {
+      throw new Error('cannot archive an active item; complete it first');
+    }
+    if (target === 'completed') {
+      const incompleteItems: string[] = [];
+      for (const child of (obj.objectives || [])) {
+        if ((child.status || 'active') === 'active') {
+          incompleteItems.push(`${child.id} (${child.title})`);
+        }
+      }
+      for (const kr of obj.keyResults) {
+        if ((kr.status || 'active') === 'active') {
+          incompleteItems.push(`${kr.id} (${kr.description})`);
+        }
+      }
+      if (incompleteItems.length > 0) {
+        throw new Error(`cannot complete objective ${objectiveId}; active children: ${incompleteItems.join(', ')}`);
+      }
+    }
+    obj.status = status;
+  },
+
+  SetKeyResultStatus: async (keyResultId: string, status: string): Promise<void> => {
+    const result = findKeyResultParent(mockThemes, keyResultId);
+    if (!result) {
+      throw new Error(`KeyResult ${keyResultId} not found`);
+    }
+    const kr = result.objective.keyResults[result.index];
+    const current = kr.status || 'active';
+    const target = status || 'active';
+    if (current === 'active' && target === 'archived') {
+      throw new Error('cannot archive an active item; complete it first');
+    }
+    kr.status = status;
   },
 
   // Calendar operations
