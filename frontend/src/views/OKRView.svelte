@@ -26,6 +26,9 @@
     id: string;
     parentId?: string;
     description: string;
+    startValue?: number;
+    currentValue?: number;
+    targetValue?: number;
   }
 
   interface Objective {
@@ -87,6 +90,8 @@
   let editThemeColor = $state('');
   let editObjectiveTitle = $state('');
   let editKeyResultDescription = $state('');
+  let editKeyResultStartValue = $state(0);
+  let editKeyResultTargetValue = $state(0);
 
   // Get Wails bindings (with mock fallback for browser testing)
   function getBindings() {
@@ -262,6 +267,17 @@
     }
   }
 
+  // UpdateKeyResultProgress — quick update of currentValue only
+  async function updateKeyResultProgress(keyResultId: string, currentValue: number) {
+    try {
+      await getBindings().UpdateKeyResultProgress(keyResultId, currentValue);
+      await loadThemes();
+    } catch (e) {
+      console.error('Failed to update key result progress:', e);
+      error = e instanceof Error ? e.message : 'Failed to update progress';
+    }
+  }
+
   // DeleteKeyResult — new API: (keyResultId)
   async function deleteKeyResult(keyResultId: string) {
     if (!confirm('Are you sure you want to delete this key result?')) return;
@@ -290,6 +306,8 @@
   function startEditKeyResult(kr: KeyResult) {
     editingKeyResultId = kr.id;
     editKeyResultDescription = kr.description;
+    editKeyResultStartValue = kr.startValue ?? 0;
+    editKeyResultTargetValue = kr.targetValue ?? 0;
   }
 
   // Submit edits
@@ -306,6 +324,43 @@
   }
 
   function submitEditKeyResult(kr: KeyResult) {
+    // If start/target values changed, update through full theme save
+    const startChanged = editKeyResultStartValue !== (kr.startValue ?? 0);
+    const targetChanged = editKeyResultTargetValue !== (kr.targetValue ?? 0);
+    if (startChanged || targetChanged) {
+      // Find the theme containing this KR and update it
+      const theme = themes.find(t => {
+        function searchKR(objectives: Objective[]): boolean {
+          for (const obj of objectives) {
+            if (obj.keyResults.some(k => k.id === kr.id)) return true;
+            if (searchKR(obj.objectives ?? [])) return true;
+          }
+          return false;
+        }
+        return searchKR(t.objectives);
+      });
+      if (theme) {
+        // Deep copy and update the KR fields
+        const updatedTheme = JSON.parse(JSON.stringify(theme)) as LifeTheme;
+        function updateKR(objectives: Objective[]): boolean {
+          for (const obj of objectives) {
+            const idx = obj.keyResults.findIndex(k => k.id === kr.id);
+            if (idx >= 0) {
+              obj.keyResults[idx].description = editKeyResultDescription;
+              obj.keyResults[idx].startValue = editKeyResultStartValue;
+              obj.keyResults[idx].targetValue = editKeyResultTargetValue;
+              return true;
+            }
+            if (updateKR(obj.objectives ?? [])) return true;
+          }
+          return false;
+        }
+        updateKR(updatedTheme.objectives);
+        editingKeyResultId = null;
+        updateTheme(updatedTheme);
+        return;
+      }
+    }
     updateKeyResult(kr.id, editKeyResultDescription);
   }
 
@@ -428,11 +483,42 @@
                   bind:value={editKeyResultDescription}
                   onkeydown={(e) => { if (e.key === 'Enter') submitEditKeyResult(kr); if (e.key === 'Escape') cancelEdit(); }}
                 />
+                <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={editKeyResultStartValue} min="0" /></label>
+                <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={editKeyResultTargetValue} min="0" /></label>
                 <button class="icon-button save" onclick={() => submitEditKeyResult(kr)} title="Save">&#10003;</button>
                 <button class="icon-button cancel" onclick={cancelEdit} title="Cancel">&#10005;</button>
               {:else}
                 <span class="item-name">{kr.description}</span>
                 <span class="item-id">{kr.id}</span>
+                {#if (kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0}
+                  <input
+                    type="checkbox"
+                    class="kr-checkbox"
+                    checked={(kr.currentValue ?? 0) >= 1}
+                    onchange={() => updateKeyResultProgress(kr.id, (kr.currentValue ?? 0) >= 1 ? 0 : 1)}
+                    title="Toggle completion"
+                  />
+                {:else if (kr.targetValue ?? 0) > 1}
+                  {@const start = kr.startValue ?? 0}
+                  {@const current = kr.currentValue ?? 0}
+                  {@const target = kr.targetValue ?? 1}
+                  {@const pct = Math.max(0, Math.round(((current - start) / (target - start)) * 100))}
+                  <div class="kr-progress" title="{current} / {target} ({pct}%)">
+                    <div class="kr-progress-bar" class:over-achieved={current > target} style="width: {Math.min(pct, 100)}%"></div>
+                    {#if current > target}
+                      <div class="kr-progress-bar kr-progress-over" style="width: {Math.min(pct - 100, 100)}%"></div>
+                    {/if}
+                  </div>
+                  <input
+                    type="number"
+                    class="kr-current-input"
+                    value={current}
+                    min="0"
+                    onchange={(e) => updateKeyResultProgress(kr.id, parseInt((e.target as HTMLInputElement).value) || 0)}
+                    title="Current progress"
+                  />
+                  <span class="kr-target-label">/ {target}</span>
+                {/if}
                 <div class="item-actions">
                   <button class="icon-button edit" onclick={() => startEditKeyResult(kr)} title="Edit">&#9998;</button>
                   <button class="icon-button delete" onclick={() => deleteKeyResult(kr.id)} title="Delete">&#128465;</button>
@@ -984,5 +1070,84 @@
   .objective-form,
   .kr-form {
     margin: 0.5rem 0;
+  }
+
+  /* KR Progress Styles */
+  .kr-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #10b981;
+    flex-shrink: 0;
+  }
+
+  .kr-progress {
+    width: 80px;
+    height: 6px;
+    background-color: #e5e7eb;
+    border-radius: 3px;
+    overflow: visible;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+  }
+
+  .kr-progress-bar {
+    height: 100%;
+    background-color: #10b981;
+    border-radius: 3px 0 0 3px;
+    transition: width 0.3s;
+  }
+
+  .kr-progress-bar.over-achieved {
+    border-radius: 3px 0 0 3px;
+  }
+
+  .kr-progress-over {
+    background-color: #f59e0b;
+    border-radius: 0 3px 3px 0;
+  }
+
+  .kr-current-input {
+    width: 40px;
+    padding: 0 0.25rem;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .kr-current-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+
+  .kr-target-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+
+  .kr-progress-label {
+    font-size: 0.75rem;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .kr-progress-input {
+    width: 50px;
+    padding: 0.25rem;
+    border: 1px solid #d1d5db;
+    border-radius: 3px;
+    font-size: 0.75rem;
+  }
+
+  .kr-progress-input:focus {
+    outline: none;
+    border-color: #3b82f6;
   }
 </style>

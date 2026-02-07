@@ -86,9 +86,12 @@ func (a *App) Greet(name string) string {
 
 // KeyResult represents a measurable outcome (for Wails binding)
 type KeyResult struct {
-	ID          string `json:"id"`
-	ParentID    string `json:"parentId"`
-	Description string `json:"description"`
+	ID           string `json:"id"`
+	ParentID     string `json:"parentId"`
+	Description  string `json:"description"`
+	StartValue   int    `json:"startValue,omitempty"`
+	CurrentValue int    `json:"currentValue,omitempty"`
+	TargetValue  int    `json:"targetValue,omitempty"`
 }
 
 // Objective represents a medium-term goal (for Wails binding)
@@ -130,9 +133,12 @@ func convertObjective(o access.Objective) Objective {
 	keyResults := make([]KeyResult, len(o.KeyResults))
 	for i, kr := range o.KeyResults {
 		keyResults[i] = KeyResult{
-			ID:          kr.ID,
-			ParentID:    kr.ParentID,
-			Description: kr.Description,
+			ID:           kr.ID,
+			ParentID:     kr.ParentID,
+			Description:  kr.Description,
+			StartValue:   kr.StartValue,
+			CurrentValue: kr.CurrentValue,
+			TargetValue:  kr.TargetValue,
 		}
 	}
 	objectives := make([]Objective, len(o.Objectives))
@@ -156,9 +162,12 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 	keyResults := make([]access.KeyResult, len(o.KeyResults))
 	for i, kr := range o.KeyResults {
 		keyResults[i] = access.KeyResult{
-			ID:          kr.ID,
-			ParentID:    kr.ParentID,
-			Description: kr.Description,
+			ID:           kr.ID,
+			ParentID:     kr.ParentID,
+			Description:  kr.Description,
+			StartValue:   kr.StartValue,
+			CurrentValue: kr.CurrentValue,
+			TargetValue:  kr.TargetValue,
 		}
 	}
 	objectives := make([]access.Objective, len(o.Objectives))
@@ -326,6 +335,15 @@ func (a *App) UpdateKeyResult(keyResultId, description string) error {
 	}
 
 	return a.planningManager.UpdateKeyResult(keyResultId, description)
+}
+
+// UpdateKeyResultProgress updates only the currentValue of a key result
+func (a *App) UpdateKeyResultProgress(keyResultId string, currentValue int) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.UpdateKeyResultProgress(keyResultId, currentValue)
 }
 
 // DeleteKeyResult deletes a key result by ID (tree-walked)

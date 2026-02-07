@@ -26,9 +26,12 @@ type Objective struct {
 // KeyResult represents a measurable outcome for an objective.
 // Key results define how progress toward an objective is measured.
 type KeyResult struct {
-	ID          string `json:"id"`          // Theme-scoped ID: H-KR1, CF-KR2
-	ParentID    string `json:"parentId"`    // ID of owning objective
-	Description string `json:"description"` // Description of the measurable result
+	ID           string `json:"id"`                    // Theme-scoped ID: H-KR1, CF-KR2
+	ParentID     string `json:"parentId"`              // ID of owning objective
+	Description  string `json:"description"`           // Description of the measurable result
+	StartValue   int    `json:"startValue,omitempty"`   // Starting value (default 0)
+	CurrentValue int    `json:"currentValue,omitempty"` // Current progress value
+	TargetValue  int    `json:"targetValue,omitempty"`  // Target value (0 = untracked, 1 = binary)
 }
 
 // DayFocus represents the daily focus on a specific life theme.
