@@ -13,6 +13,9 @@ export interface KeyResult {
   id: string;
   parentId?: string;
   description: string;
+  startValue?: number;
+  currentValue?: number;
+  targetValue?: number;
 }
 
 export interface Objective {
@@ -233,8 +236,8 @@ let mockThemes: LifeTheme[] = [
         parentId: 'HF',
         title: 'Improve cardiovascular health',
         keyResults: [
-          { id: 'HF-KR1', parentId: 'HF-O1', description: 'Run 5K in under 25 minutes' },
-          { id: 'HF-KR2', parentId: 'HF-O1', description: 'Exercise 4 times per week' },
+          { id: 'HF-KR1', parentId: 'HF-O1', description: 'Run 5K in under 25 minutes', startValue: 0, currentValue: 0, targetValue: 1 },
+          { id: 'HF-KR2', parentId: 'HF-O1', description: 'Exercise 4 times per week', startValue: 0, currentValue: 3, targetValue: 4 },
         ],
         objectives: [
           {
@@ -242,7 +245,7 @@ let mockThemes: LifeTheme[] = [
             parentId: 'HF-O1',
             title: 'Build running endurance',
             keyResults: [
-              { id: 'HF-KR3', parentId: 'HF-O2', description: 'Run 3 times per week for 8 weeks' },
+              { id: 'HF-KR3', parentId: 'HF-O2', description: 'Run 3 times per week for 8 weeks', startValue: 0, currentValue: 10, targetValue: 8 },
             ],
             objectives: [],
           },
@@ -253,7 +256,7 @@ let mockThemes: LifeTheme[] = [
         parentId: 'HF',
         title: 'Build strength',
         keyResults: [
-          { id: 'HF-KR4', parentId: 'HF-O3', description: 'Complete 50 push-ups in one set' },
+          { id: 'HF-KR4', parentId: 'HF-O3', description: 'Complete 50 push-ups in one set', startValue: 0, currentValue: 1, targetValue: 1 },
         ],
         objectives: [],
       },
@@ -269,8 +272,8 @@ let mockThemes: LifeTheme[] = [
         parentId: 'CG',
         title: 'Develop leadership skills',
         keyResults: [
-          { id: 'CG-KR1', parentId: 'CG-O1', description: 'Lead 2 major projects' },
-          { id: 'CG-KR2', parentId: 'CG-O1', description: 'Mentor 1 junior developer' },
+          { id: 'CG-KR1', parentId: 'CG-O1', description: 'Lead 2 major projects', startValue: 0, currentValue: 1, targetValue: 2 },
+          { id: 'CG-KR2', parentId: 'CG-O1', description: 'Mentor 1 junior developer' },  // untracked KR (no target)
         ],
         objectives: [],
       },
@@ -438,6 +441,14 @@ export const mockAppBindings = {
       throw new Error(`KeyResult ${keyResultId} not found`);
     }
     result.objective.keyResults[result.index].description = description;
+  },
+
+  UpdateKeyResultProgress: async (keyResultId: string, currentValue: number): Promise<void> => {
+    const result = findKeyResultParent(mockThemes, keyResultId);
+    if (!result) {
+      throw new Error(`KeyResult ${keyResultId} not found`);
+    }
+    result.objective.keyResults[result.index].currentValue = currentValue;
   },
 
   DeleteKeyResult: async (keyResultId: string): Promise<void> => {
