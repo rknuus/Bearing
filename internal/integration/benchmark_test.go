@@ -415,7 +415,7 @@ func TestPerformance_LargeDataset(t *testing.T) {
 			obj, _ := manager.CreateObjective(theme.ID, "Objective")
 			// Add 3 key results per objective
 			for k := 0; k < 3; k++ {
-				manager.CreateKeyResult(obj.ID, "Key Result")
+				manager.CreateKeyResult(obj.ID, "Key Result", 0, 0)
 			}
 		}
 	}

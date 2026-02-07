@@ -416,7 +416,7 @@ export const mockAppBindings = {
   },
 
   // Key Result operations
-  CreateKeyResult: async (parentObjectiveId: string, description: string): Promise<KeyResult> => {
+  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 0): Promise<KeyResult> => {
     const objective = findObjectiveById(mockThemes, parentObjectiveId);
     if (!objective) {
       throw new Error(`Objective ${parentObjectiveId} not found`);
@@ -430,6 +430,9 @@ export const mockAppBindings = {
       id: `${theme.id}-KR${maxNum + 1}`,
       parentId: parentObjectiveId,
       description,
+      startValue,
+      currentValue: 0,
+      targetValue,
     };
     objective.keyResults.push(newKR);
     return newKR;

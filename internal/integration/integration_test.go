@@ -222,11 +222,11 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 	verifyParentID(t, "Objective", obj2.ID, obj2.ParentID, theme.ID)
 
 	// Create key results
-	kr1, err := manager.CreateKeyResult(obj1.ID, "Complete 3 major projects")
+	kr1, err := manager.CreateKeyResult(obj1.ID, "Complete 3 major projects", 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create key result 1: %v", err)
 	}
-	kr2, err := manager.CreateKeyResult(obj1.ID, "Get positive performance review")
+	kr2, err := manager.CreateKeyResult(obj1.ID, "Get positive performance review", 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create key result 2: %v", err)
 	}

@@ -1,8 +1,8 @@
 ---
 name: set-start-and-target-of-kr-at-creation
-status: backlog
+status: completed
 created: 2026-02-07T19:44:16Z
-progress: 0%
+progress: 100%
 prd: .claude/prds/set-start-and-target-of-kr-at-creation.md
 github: https://github.com/rknuus/Bearing/issues/55
 ---

@@ -39,7 +39,7 @@ type IPlanningManager interface {
 	DeleteObjective(objectiveId string) error
 
 	// Key Results — parentObjectiveId / keyResultId found by tree-walking
-	CreateKeyResult(parentObjectiveId, description string) (*access.KeyResult, error)
+	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error)
 	UpdateKeyResult(keyResultId, description string) error
 	UpdateKeyResultProgress(keyResultId string, currentValue int) error
 	DeleteKeyResult(keyResultId string) error
@@ -337,7 +337,7 @@ func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 
 // CreateKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
-func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string) (*access.KeyResult, error) {
+func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error) {
 	if parentObjectiveId == "" {
 		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: parentObjectiveId cannot be empty")
 	}
@@ -354,7 +354,7 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string)
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, parentObjectiveId); obj != nil {
 			targetTheme = &themes[i]
-			obj.KeyResults = append(obj.KeyResults, access.KeyResult{Description: description})
+			obj.KeyResults = append(obj.KeyResults, access.KeyResult{Description: description, StartValue: startValue, TargetValue: targetValue})
 			break
 		}
 	}

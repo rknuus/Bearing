@@ -312,19 +312,22 @@ func (a *App) DeleteObjective(objectiveId string) error {
 }
 
 // CreateKeyResult creates a new key result under an objective at any depth
-func (a *App) CreateKeyResult(parentObjectiveId, description string) (*KeyResult, error) {
+func (a *App) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
 	if a.planningManager == nil {
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	kr, err := a.planningManager.CreateKeyResult(parentObjectiveId, description)
+	kr, err := a.planningManager.CreateKeyResult(parentObjectiveId, description, startValue, targetValue)
 	if err != nil {
 		return nil, err
 	}
 
 	return &KeyResult{
-		ID:          kr.ID,
-		Description: kr.Description,
+		ID:           kr.ID,
+		Description:  kr.Description,
+		StartValue:   kr.StartValue,
+		CurrentValue: kr.CurrentValue,
+		TargetValue:  kr.TargetValue,
 	}, nil
 }
 
