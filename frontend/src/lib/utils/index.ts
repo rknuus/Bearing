@@ -2,8 +2,7 @@
  * Utility exports
  */
 export {
-  parseHierarchicalId,
-  getParentId,
+  buildBreadcrumbs,
   getIdType,
   type BreadcrumbSegment,
   type SegmentType,

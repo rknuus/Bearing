@@ -6,18 +6,12 @@
  */
 
 import {
-  parseHierarchicalId,
-  getParentId,
   getIdType,
+  buildBreadcrumbs,
 } from './id-parser';
+import { main } from '../wails/wailsjs/go/models';
 
 // Simple test runner for browser console
-function _assert(condition: boolean, message: string): void {
-  if (!condition) {
-    throw new Error(`Assertion failed: ${message}`);
-  }
-}
-
 function assertEqual<T>(actual: T, expected: T, message: string): void {
   const actualStr = JSON.stringify(actual);
   const expectedStr = JSON.stringify(expected);
@@ -26,72 +20,165 @@ function assertEqual<T>(actual: T, expected: T, message: string): void {
   }
 }
 
-// Test parseHierarchicalId
-export function testParseHierarchicalId(): void {
-  // Test single segment
-  const single = parseHierarchicalId('THEME-01');
-  assertEqual(single.length, 1, 'Single segment should return array of length 1');
-  assertEqual(single[0].id, 'THEME-01', 'Single segment ID should match');
-  assertEqual(single[0].type, 'theme', 'Single segment type should be theme');
-  assertEqual(single[0].label, 'Theme 01', 'Single segment label should be formatted');
-
-  // Test two segments
-  const two = parseHierarchicalId('THEME-01.OKR-02');
-  assertEqual(two.length, 2, 'Two segments should return array of length 2');
-  assertEqual(two[0].id, 'THEME-01', 'First segment ID');
-  assertEqual(two[1].id, 'THEME-01.OKR-02', 'Second segment ID should include full path');
-  assertEqual(two[1].type, 'okr', 'Second segment type should be okr');
-  assertEqual(two[1].label, 'OKR 02', 'Second segment label');
-
-  // Test full hierarchy
-  const full = parseHierarchicalId('THEME-01.OKR-02.KR-03.TASK-04');
-  assertEqual(full.length, 4, 'Full hierarchy should have 4 segments');
-  assertEqual(full[0].type, 'theme', 'First type is theme');
-  assertEqual(full[1].type, 'okr', 'Second type is okr');
-  assertEqual(full[2].type, 'kr', 'Third type is kr');
-  assertEqual(full[3].type, 'task', 'Fourth type is task');
-  assertEqual(full[3].id, 'THEME-01.OKR-02.KR-03.TASK-04', 'Last segment has full ID');
-
-  // Test empty/invalid input
-  assertEqual(parseHierarchicalId(''), [], 'Empty string returns empty array');
-  assertEqual(parseHierarchicalId('INVALID'), [], 'Invalid format returns empty array');
-  assertEqual(parseHierarchicalId('THEME'), [], 'Missing number returns empty array');
-
-  console.log('parseHierarchicalId tests passed');
-}
-
-// Test getParentId
-export function testGetParentId(): void {
-  assertEqual(getParentId('THEME-01'), null, 'Single segment has no parent');
-  assertEqual(getParentId('THEME-01.OKR-02'), 'THEME-01', 'Parent of OKR is THEME');
-  assertEqual(
-    getParentId('THEME-01.OKR-02.KR-03'),
-    'THEME-01.OKR-02',
-    'Parent of KR is THEME.OKR'
-  );
-  assertEqual(getParentId(''), null, 'Empty string returns null');
-
-  console.log('getParentId tests passed');
-}
-
 // Test getIdType
 export function testGetIdType(): void {
-  assertEqual(getIdType('THEME-01'), 'theme', 'Type of THEME-01 is theme');
-  assertEqual(getIdType('THEME-01.OKR-02'), 'okr', 'Type of OKR is okr');
-  assertEqual(getIdType('THEME-01.OKR-02.KR-03'), 'kr', 'Type of KR is kr');
-  assertEqual(getIdType('THEME-01.OKR-02.KR-03.TASK-04'), 'task', 'Type of TASK is task');
+  assertEqual(getIdType('THEME-01'), 'theme', 'THEME- prefix returns theme');
+  assertEqual(getIdType('THEME-99'), 'theme', 'THEME- prefix with any number returns theme');
+  assertEqual(getIdType('OBJ-01'), 'okr', 'OBJ- prefix returns okr');
+  assertEqual(getIdType('OBJ-42'), 'okr', 'OBJ- prefix with any number returns okr');
+  assertEqual(getIdType('KR-01'), 'kr', 'KR- prefix returns kr');
+  assertEqual(getIdType('KR-123'), 'kr', 'KR- prefix with any number returns kr');
+  assertEqual(getIdType('TASK-01'), 'task', 'TASK- prefix returns task');
+  assertEqual(getIdType('TASK-007'), 'task', 'TASK- prefix with any number returns task');
   assertEqual(getIdType(''), null, 'Empty string returns null');
-  assertEqual(getIdType('INVALID'), null, 'Invalid format returns null');
+  assertEqual(getIdType('INVALID'), null, 'Unknown prefix returns null');
+  assertEqual(getIdType('FOO-01'), null, 'Unrecognized prefix returns null');
 
   console.log('getIdType tests passed');
+}
+
+// Helper to create test theme data
+function makeThemes(): main.LifeTheme[] {
+  return [
+    new main.LifeTheme({
+      id: 'THEME-01',
+      name: 'Health',
+      color: '#ff0000',
+      objectives: [
+        new main.Objective({
+          id: 'OBJ-01',
+          title: 'Get fit',
+          keyResults: [
+            new main.KeyResult({ id: 'KR-01', description: 'Run 5k' }),
+            new main.KeyResult({ id: 'KR-02', description: 'Lose weight' }),
+          ],
+          objectives: [
+            new main.Objective({
+              id: 'OBJ-03',
+              title: 'Nested objective',
+              keyResults: [
+                new main.KeyResult({ id: 'KR-04', description: 'Nested KR' }),
+              ],
+              objectives: [],
+            }),
+          ],
+        }),
+      ],
+    }),
+    new main.LifeTheme({
+      id: 'THEME-02',
+      name: 'Career',
+      color: '#00ff00',
+      objectives: [
+        new main.Objective({
+          id: 'OBJ-02',
+          title: 'Get promoted',
+          keyResults: [
+            new main.KeyResult({ id: 'KR-03', description: 'Ship project' }),
+          ],
+          objectives: [],
+        }),
+      ],
+    }),
+  ];
+}
+
+// Test buildBreadcrumbs
+export function testBuildBreadcrumbs(): void {
+  const themes = makeThemes();
+
+  // Theme itself
+  assertEqual(
+    buildBreadcrumbs('THEME-01', themes),
+    [{ id: 'THEME-01', type: 'theme', label: 'Theme 01' }],
+    'Theme returns single breadcrumb'
+  );
+
+  // Objective under a theme
+  assertEqual(
+    buildBreadcrumbs('OBJ-01', themes),
+    [
+      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
+      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
+    ],
+    'Objective returns theme + objective breadcrumbs'
+  );
+
+  // Key result under an objective
+  assertEqual(
+    buildBreadcrumbs('KR-01', themes),
+    [
+      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
+      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
+      { id: 'KR-01', type: 'kr', label: 'KR 01' },
+    ],
+    'Key result returns full breadcrumb path'
+  );
+
+  // Key result in second theme
+  assertEqual(
+    buildBreadcrumbs('KR-03', themes),
+    [
+      { id: 'THEME-02', type: 'theme', label: 'Theme 02' },
+      { id: 'OBJ-02', type: 'okr', label: 'OBJ 02' },
+      { id: 'KR-03', type: 'kr', label: 'KR 03' },
+    ],
+    'Key result in second theme returns correct path'
+  );
+
+  // Nested objective
+  assertEqual(
+    buildBreadcrumbs('OBJ-03', themes),
+    [
+      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
+      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
+      { id: 'OBJ-03', type: 'okr', label: 'OBJ 03' },
+    ],
+    'Nested objective returns full path through parent objective'
+  );
+
+  // Key result under nested objective
+  assertEqual(
+    buildBreadcrumbs('KR-04', themes),
+    [
+      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
+      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
+      { id: 'OBJ-03', type: 'okr', label: 'OBJ 03' },
+      { id: 'KR-04', type: 'kr', label: 'KR 04' },
+    ],
+    'KR under nested objective returns full path'
+  );
+
+  // ID not in any theme but has recognizable type
+  assertEqual(
+    buildBreadcrumbs('OBJ-99', themes),
+    [{ id: 'OBJ-99', type: 'okr', label: 'OBJ 99' }],
+    'Unknown ID with valid prefix returns single segment'
+  );
+
+  // Completely unknown ID
+  assertEqual(
+    buildBreadcrumbs('INVALID', themes),
+    [],
+    'Unknown ID with no valid prefix returns empty array'
+  );
+
+  // Empty inputs
+  assertEqual(buildBreadcrumbs('', themes), [], 'Empty ID returns empty array');
+  assertEqual(
+    buildBreadcrumbs('THEME-01', []),
+    [{ id: 'THEME-01', type: 'theme', label: 'Theme 01' }],
+    'Empty themes with valid prefix returns single fallback segment'
+  );
+
+  console.log('buildBreadcrumbs tests passed');
 }
 
 // Run all tests
 export function runAllTests(): void {
   console.log('Running id-parser tests...');
-  testParseHierarchicalId();
-  testGetParentId();
   testGetIdType();
+  testBuildBreadcrumbs();
   console.log('All id-parser tests passed!');
 }
 
