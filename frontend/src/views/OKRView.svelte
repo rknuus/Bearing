@@ -7,7 +7,7 @@
    * Objectives are rendered recursively to support arbitrary nesting depth.
    */
 
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
 
   // Props for cross-view navigation
@@ -379,11 +379,13 @@
     if (highlightItemId && themes.length > 0) {
       // Parse the hierarchical ID to expand all ancestor nodes
       const parts = highlightItemId.split('.');
-      for (let i = 1; i <= parts.length; i++) {
-        const ancestorId = parts.slice(0, i).join('.');
-        expandedIds.add(ancestorId);
-      }
-      expandedIds = new Set(expandedIds);
+      untrack(() => {
+        for (let i = 1; i <= parts.length; i++) {
+          const ancestorId = parts.slice(0, i).join('.');
+          expandedIds.add(ancestorId);
+        }
+        expandedIds = new Set(expandedIds);
+      });
     }
   });
 </script>
