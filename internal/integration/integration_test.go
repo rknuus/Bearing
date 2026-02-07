@@ -16,6 +16,14 @@ import (
 	"github.com/rkn/bearing/internal/utilities"
 )
 
+// verifyParentID is a helper that checks the ParentID of an objective or key result.
+func verifyParentID(t *testing.T, entityType, entityID, gotParentID, expectedParentID string) {
+	t.Helper()
+	if gotParentID != expectedParentID {
+		t.Errorf("%s %s: expected ParentID %s, got %s", entityType, entityID, expectedParentID, gotParentID)
+	}
+}
+
 // Test helper to set up the complete system (PlanAccess + PlanningManager)
 func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.PlanAccess, utilities.IRepository, string, func()) {
 	t.Helper()
@@ -88,8 +96,8 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	if theme.ID == "" {
 		t.Error("Theme should have a generated ID")
 	}
-	if theme.ID != "THEME-01" {
-		t.Errorf("Expected theme ID THEME-01, got %s", theme.ID)
+	if theme.ID != "THEME-1" {
+		t.Errorf("Expected theme ID THEME-1, got %s", theme.ID)
 	}
 	if theme.Color != "#22c55e" {
 		t.Errorf("Expected color #22c55e, got %s", theme.Color)
@@ -176,8 +184,8 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 }
 
-// TestIntegration_HierarchicalIDConsistency verifies hierarchical IDs are generated correctly
-func TestIntegration_HierarchicalIDConsistency(t *testing.T) {
+// TestIntegration_FlatIDConsistency verifies flat IDs and parentId relationships
+func TestIntegration_FlatIDConsistency(t *testing.T) {
 	manager, _, _, _, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
@@ -185,6 +193,10 @@ func TestIntegration_HierarchicalIDConsistency(t *testing.T) {
 	theme, err := manager.CreateTheme("Career", "#3b82f6")
 	if err != nil {
 		t.Fatalf("Failed to create theme: %v", err)
+	}
+
+	if theme.ID != "THEME-1" {
+		t.Errorf("Expected theme ID THEME-1, got %s", theme.ID)
 	}
 
 	// Create objectives
@@ -197,13 +209,17 @@ func TestIntegration_HierarchicalIDConsistency(t *testing.T) {
 		t.Fatalf("Failed to create objective 2: %v", err)
 	}
 
-	// Verify objective IDs follow hierarchical pattern
-	if obj1.ID != "THEME-01.OKR-01" {
-		t.Errorf("Expected objective 1 ID THEME-01.OKR-01, got %s", obj1.ID)
+	// Verify objective IDs are flat and globally unique
+	if obj1.ID != "OBJ-1" {
+		t.Errorf("Expected objective 1 ID OBJ-1, got %s", obj1.ID)
 	}
-	if obj2.ID != "THEME-01.OKR-02" {
-		t.Errorf("Expected objective 2 ID THEME-01.OKR-02, got %s", obj2.ID)
+	if obj2.ID != "OBJ-2" {
+		t.Errorf("Expected objective 2 ID OBJ-2, got %s", obj2.ID)
 	}
+
+	// Verify objective ParentIDs point to the theme
+	verifyParentID(t, "Objective", obj1.ID, obj1.ParentID, theme.ID)
+	verifyParentID(t, "Objective", obj2.ID, obj2.ParentID, theme.ID)
 
 	// Create key results
 	kr1, err := manager.CreateKeyResult(obj1.ID, "Complete 3 major projects")
@@ -215,25 +231,29 @@ func TestIntegration_HierarchicalIDConsistency(t *testing.T) {
 		t.Fatalf("Failed to create key result 2: %v", err)
 	}
 
-	// Verify key result IDs follow hierarchical pattern
-	if kr1.ID != "THEME-01.OKR-01.KR-01" {
-		t.Errorf("Expected key result 1 ID THEME-01.OKR-01.KR-01, got %s", kr1.ID)
+	// Verify key result IDs are flat and globally unique
+	if kr1.ID != "KR-1" {
+		t.Errorf("Expected key result 1 ID KR-1, got %s", kr1.ID)
 	}
-	if kr2.ID != "THEME-01.OKR-01.KR-02" {
-		t.Errorf("Expected key result 2 ID THEME-01.OKR-01.KR-02, got %s", kr2.ID)
+	if kr2.ID != "KR-2" {
+		t.Errorf("Expected key result 2 ID KR-2, got %s", kr2.ID)
 	}
 
-	// Verify all IDs start with the theme prefix
+	// Verify key result ParentIDs point to the objective
+	verifyParentID(t, "KeyResult", kr1.ID, kr1.ParentID, obj1.ID)
+	verifyParentID(t, "KeyResult", kr2.ID, kr2.ParentID, obj1.ID)
+
+	// Verify parentId relationships through the full hierarchy via GetThemes
 	themes, _ := manager.GetThemes()
 	for _, th := range themes {
 		if th.ID == theme.ID {
 			for _, obj := range th.Objectives {
-				if !strings.HasPrefix(obj.ID, theme.ID+".") {
-					t.Errorf("Objective ID %s does not start with theme prefix %s", obj.ID, theme.ID)
+				if obj.ParentID != theme.ID {
+					t.Errorf("Objective %s: expected ParentID %s, got %s", obj.ID, theme.ID, obj.ParentID)
 				}
 				for _, kr := range obj.KeyResults {
-					if !strings.HasPrefix(kr.ID, obj.ID+".") {
-						t.Errorf("Key result ID %s does not start with objective prefix %s", kr.ID, obj.ID)
+					if kr.ParentID != obj.ID {
+						t.Errorf("KeyResult %s: expected ParentID %s, got %s", kr.ID, obj.ID, kr.ParentID)
 					}
 				}
 			}
