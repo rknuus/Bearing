@@ -87,12 +87,14 @@ func (a *App) Greet(name string) string {
 // KeyResult represents a measurable outcome (for Wails binding)
 type KeyResult struct {
 	ID          string `json:"id"`
+	ParentID    string `json:"parentId"`
 	Description string `json:"description"`
 }
 
 // Objective represents a medium-term goal (for Wails binding)
 type Objective struct {
 	ID         string      `json:"id"`
+	ParentID   string      `json:"parentId"`
 	Title      string      `json:"title"`
 	KeyResults []KeyResult `json:"keyResults"`
 	Objectives []Objective `json:"objectives,omitempty"`
@@ -129,6 +131,7 @@ func convertObjective(o access.Objective) Objective {
 	for i, kr := range o.KeyResults {
 		keyResults[i] = KeyResult{
 			ID:          kr.ID,
+			ParentID:    kr.ParentID,
 			Description: kr.Description,
 		}
 	}
@@ -138,6 +141,7 @@ func convertObjective(o access.Objective) Objective {
 	}
 	result := Objective{
 		ID:         o.ID,
+		ParentID:   o.ParentID,
 		Title:      o.Title,
 		KeyResults: keyResults,
 	}
@@ -153,6 +157,7 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 	for i, kr := range o.KeyResults {
 		keyResults[i] = access.KeyResult{
 			ID:          kr.ID,
+			ParentID:    kr.ParentID,
 			Description: kr.Description,
 		}
 	}
@@ -162,6 +167,7 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 	}
 	result := access.Objective{
 		ID:         o.ID,
+		ParentID:   o.ParentID,
 		Title:      o.Title,
 		KeyResults: keyResults,
 	}
