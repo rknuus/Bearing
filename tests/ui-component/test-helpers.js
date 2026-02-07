@@ -18,6 +18,9 @@ export const TEST_CONFIG = {
   TIMEOUT: 30000,
   HEADLESS: process.env.HEADLESS === 'true',
   SLOW_MO: 50,
+  // Use system Chrome ('chrome') instead of Playwright's bundled Chromium.
+  // Override with PLAYWRIGHT_CHROME_CHANNEL='' to use bundled Chromium.
+  CHROME_CHANNEL: process.env.PLAYWRIGHT_CHROME_CHANNEL ?? 'chrome',
 }
 
 /**

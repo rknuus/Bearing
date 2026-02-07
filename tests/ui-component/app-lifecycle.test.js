@@ -27,12 +27,17 @@ export async function runTests() {
     await waitForServers()
     console.log('  Servers are ready\n')
 
-    // Launch browser
+    // Launch browser — use system Chrome via channel to avoid needing
+    // Playwright's bundled Chromium download
     console.log('Launching browser...')
-    browser = await chromium.launch({
+    const launchOptions = {
       headless: TEST_CONFIG.HEADLESS,
       slowMo: TEST_CONFIG.SLOW_MO,
-    })
+    }
+    if (TEST_CONFIG.CHROME_CHANNEL) {
+      launchOptions.channel = TEST_CONFIG.CHROME_CHANNEL
+    }
+    browser = await chromium.launch(launchOptions)
     console.log('  Browser launched\n')
 
     const page = await browser.newPage()
@@ -46,10 +51,11 @@ export async function runTests() {
     page.on('console', (msg) => {
       if (msg.type() === 'error') {
         const text = msg.text()
-        // Ignore known non-error console messages from mock bindings
-        if (!text.includes('[Wails Mock]')) {
-          consoleErrors.push(text)
-        }
+        // Ignore known non-error console messages
+        if (text.includes('[Wails Mock]')) return
+        // Ignore resource load failures (favicon, etc.) — not app errors
+        if (text.includes('Failed to load resource')) return
+        consoleErrors.push(text)
       }
     })
 
