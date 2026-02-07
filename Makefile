@@ -26,7 +26,7 @@ help: ## Show this help message
 ##@ Development
 
 .PHONY: setup
-setup: frontend-install ## Setup project (install all dependencies)
+setup: frontend-install test-ui-component-install ## Setup project (install all dependencies)
 	@echo "Project setup complete!"
 	@echo ""
 	@echo "To run the application:"
@@ -138,9 +138,37 @@ else
 endif
 
 .PHONY: test-frontend
-test-frontend: ## Run frontend TypeScript checks
+test-frontend: ## Run frontend TypeScript checks and Vitest unit tests
 	@echo "Running TypeScript type checking..."
 	@cd frontend && npm run check
+	@echo "Running Vitest unit tests for UI components..."
+	@cd frontend && npm test -- --run
+
+.PHONY: test-ui-unit
+test-ui-unit: ## Run Vitest unit tests for UI components
+	@echo "Running TypeScript type checking..."
+	@cd frontend && npm run check
+	@echo "Running Vitest unit tests for UI components..."
+	@cd frontend && npm test -- --run
+
+.PHONY: test-ui-component-install
+test-ui-component-install: ## Install Playwright test dependencies
+	@echo "Installing Playwright test dependencies..."
+	@cd tests/ui-component && npm install
+	@echo "Installing Playwright browsers..."
+	@cd tests/ui-component && npx playwright install chromium
+
+.PHONY: test-ui-component
+test-ui-component: ## Run Playwright UI component tests (requires frontend-dev running)
+	@echo "Running Playwright UI component tests against Vite dev server..."
+	@echo "Note: Ensure 'make frontend-dev' is running in another terminal first"
+	@echo "      Vite server: http://localhost:5173 (with mock Wails bindings)"
+	@cd tests/ui-component && npm test
+
+.PHONY: test-ui-component-headless
+test-ui-component-headless: ## Run UI component tests in headless mode
+	@echo "Running Playwright UI component tests in headless mode..."
+	@cd tests/ui-component && HEADLESS=true npm test
 
 ##@ Frontend
 

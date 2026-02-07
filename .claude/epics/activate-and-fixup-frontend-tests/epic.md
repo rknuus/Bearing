@@ -1,8 +1,9 @@
 ---
 name: activate-and-fixup-frontend-tests
-status: backlog
+status: completed
 created: 2026-02-07T16:29:52Z
-progress: 0%
+completed: 2026-02-07T17:01:43Z
+progress: 100%
 prd: .claude/prds/activate-and-fixup-frontend-tests.md
 github: https://github.com/rknuus/Bearing/issues/42
 ---
