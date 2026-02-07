@@ -434,7 +434,10 @@ func main() {
 			Assets: assetsFS,
 		},
 		BackgroundColour: &options.RGBA{R: 255, G: 255, B: 255, A: 255},
-		OnStartup:        app.startup,
+		Debug: options.Debug{
+			OpenInspectorOnStartup: true,
+		},
+		OnStartup: app.startup,
 		Bind: []interface{}{
 			app,
 		},
