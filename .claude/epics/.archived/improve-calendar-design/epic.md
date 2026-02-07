@@ -1,8 +1,8 @@
 ---
 name: improve-calendar-design
-status: backlog
+status: completed
 created: 2026-02-06T14:54:18Z
-progress: 0%
+progress: 100%
 prd: .claude/prds/improve-calendar-design.md
 github: https://github.com/rknuus/Bearing/issues/28
 ---
