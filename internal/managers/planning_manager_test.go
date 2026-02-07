@@ -916,6 +916,306 @@ func TestDeleteKeyResult(t *testing.T) {
 }
 
 // =============================================================================
+// OKR Status Tests
+// =============================================================================
+
+func TestSetKeyResultStatus(t *testing.T) {
+	t.Run("completes a key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+
+		err := manager.SetKeyResultStatus(kr.ID, "completed")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].Status != "completed" {
+			t.Errorf("expected status 'completed', got '%s'", found.KeyResults[0].Status)
+		}
+	})
+
+	t.Run("archives a completed key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		manager.SetKeyResultStatus(kr.ID, "completed")
+
+		err := manager.SetKeyResultStatus(kr.ID, "archived")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].Status != "archived" {
+			t.Errorf("expected status 'archived', got '%s'", found.KeyResults[0].Status)
+		}
+	})
+
+	t.Run("reopens a completed key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		manager.SetKeyResultStatus(kr.ID, "completed")
+
+		err := manager.SetKeyResultStatus(kr.ID, "active")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].Status != "active" {
+			t.Errorf("expected status 'active', got '%s'", found.KeyResults[0].Status)
+		}
+	})
+
+	t.Run("reopens an archived key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		manager.SetKeyResultStatus(kr.ID, "completed")
+		manager.SetKeyResultStatus(kr.ID, "archived")
+
+		err := manager.SetKeyResultStatus(kr.ID, "active")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].Status != "active" {
+			t.Errorf("expected status 'active', got '%s'", found.KeyResults[0].Status)
+		}
+	})
+
+	t.Run("blocks active to archived", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+
+		err := manager.SetKeyResultStatus(kr.ID, "archived")
+		if err == nil {
+			t.Fatal("expected error for active→archived transition")
+		}
+	})
+
+	t.Run("returns error for invalid status", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+
+		err := manager.SetKeyResultStatus(kr.ID, "invalid")
+		if err == nil {
+			t.Fatal("expected error for invalid status")
+		}
+	})
+
+	t.Run("returns error for empty keyResultId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.SetKeyResultStatus("", "completed")
+		if err == nil {
+			t.Fatal("expected error for empty keyResultId")
+		}
+	})
+
+	t.Run("returns error for non-existent key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.SetKeyResultStatus("NONEXISTENT", "completed")
+		if err == nil {
+			t.Fatal("expected error for non-existent key result")
+		}
+	})
+}
+
+func TestSetObjectiveStatus(t *testing.T) {
+	t.Run("completes objective when all children are completed", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
+
+		// Complete both KRs
+		manager.SetKeyResultStatus(kr1.ID, "completed")
+		manager.SetKeyResultStatus(kr2.ID, "completed")
+
+		// Now complete the objective
+		err := manager.SetObjectiveStatus(obj.ID, "completed")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.Status != "completed" {
+			t.Errorf("expected status 'completed', got '%s'", found.Status)
+		}
+	})
+
+	t.Run("completes objective when children are mix of completed and archived", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
+
+		manager.SetKeyResultStatus(kr1.ID, "completed")
+		manager.SetKeyResultStatus(kr2.ID, "completed")
+		manager.SetKeyResultStatus(kr2.ID, "archived")
+
+		err := manager.SetObjectiveStatus(obj.ID, "completed")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("blocks completing objective with active KRs", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
+
+		err := manager.SetObjectiveStatus(obj.ID, "completed")
+		if err == nil {
+			t.Fatal("expected error for completing objective with active children")
+		}
+	})
+
+	t.Run("blocks completing objective with active child objectives", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("T", "Parent")
+		manager.CreateObjective(parent.ID, "Active Child")
+
+		err := manager.SetObjectiveStatus(parent.ID, "completed")
+		if err == nil {
+			t.Fatal("expected error for completing objective with active child objectives")
+		}
+	})
+
+	t.Run("completes objective with completed child objectives", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("T", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+
+		manager.SetObjectiveStatus(child.ID, "completed")
+
+		err := manager.SetObjectiveStatus(parent.ID, "completed")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("archives a completed objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		manager.SetObjectiveStatus(obj.ID, "completed")
+
+		err := manager.SetObjectiveStatus(obj.ID, "archived")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.Status != "archived" {
+			t.Errorf("expected status 'archived', got '%s'", found.Status)
+		}
+	})
+
+	t.Run("reopens a completed objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		manager.SetObjectiveStatus(obj.ID, "completed")
+
+		err := manager.SetObjectiveStatus(obj.ID, "active")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.Status != "active" {
+			t.Errorf("expected status 'active', got '%s'", found.Status)
+		}
+	})
+
+	t.Run("blocks active to archived", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+
+		err := manager.SetObjectiveStatus(obj.ID, "archived")
+		if err == nil {
+			t.Fatal("expected error for active→archived transition")
+		}
+	})
+
+	t.Run("returns error for empty objectiveId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.SetObjectiveStatus("", "completed")
+		if err == nil {
+			t.Fatal("expected error for empty objectiveId")
+		}
+	})
+
+	t.Run("returns error for non-existent objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.SetObjectiveStatus("NONEXISTENT", "completed")
+		if err == nil {
+			t.Fatal("expected error for non-existent objective")
+		}
+	})
+
+	t.Run("completes objective with no children", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Empty Objective")
+
+		err := manager.SetObjectiveStatus(obj.ID, "completed")
+		if err != nil {
+			t.Fatalf("expected no error for empty objective, got %v", err)
+		}
+	})
+}
+
+// =============================================================================
 // Task Tests (unchanged signatures)
 // =============================================================================
 

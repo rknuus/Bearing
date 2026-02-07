@@ -366,6 +366,24 @@ func (a *App) DeleteKeyResult(keyResultId string) error {
 	return a.planningManager.DeleteKeyResult(keyResultId)
 }
 
+// SetObjectiveStatus sets the lifecycle status of an objective
+func (a *App) SetObjectiveStatus(objectiveId, status string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.SetObjectiveStatus(objectiveId, status)
+}
+
+// SetKeyResultStatus sets the lifecycle status of a key result
+func (a *App) SetKeyResultStatus(keyResultId, status string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.SetKeyResultStatus(keyResultId, status)
+}
+
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name
 func (a *App) SuggestThemeAbbreviation(name string) (string, error) {
 	if a.planningManager == nil {
