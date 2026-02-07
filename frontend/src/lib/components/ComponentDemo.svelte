@@ -17,15 +17,15 @@
     { id: 'THEME-04', name: 'Learning', color: '#8b5cf6' },
   ];
 
-  // Demo hierarchical items
+  // Demo flat items
   const demoItems = [
-    { id: 'THEME-01', label: 'Theme only' },
-    { id: 'THEME-02.OKR-01', label: 'Theme + OKR' },
-    { id: 'THEME-03.OKR-02.KR-01', label: 'Theme + OKR + KR' },
-    { id: 'THEME-04.OKR-01.KR-02.TASK-01', label: 'Full hierarchy' },
+    { id: 'THEME-1', label: 'Theme only' },
+    { id: 'OBJ-1', label: 'Objective' },
+    { id: 'KR-1', label: 'Key Result' },
+    { id: 'TASK-1', label: 'Task' },
   ];
 
-  let selectedItem = $state('THEME-02.OKR-01.KR-03');
+  let selectedItem = $state('KR-1');
   let navigationLog = $state<string[]>([]);
 
   function handleNavigate(segmentId: string) {
@@ -108,7 +108,7 @@
           id="item-id"
           type="text"
           bind:value={selectedItem}
-          placeholder="e.g., THEME-01.OKR-02.KR-03"
+          placeholder="e.g., KR-3"
         />
       </div>
 

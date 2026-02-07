@@ -11,13 +11,13 @@
 // Types matching Go structs
 export interface KeyResult {
   id: string;
-  parentId: string;
+  parentId?: string;
   description: string;
 }
 
 export interface Objective {
   id: string;
-  parentId: string;
+  parentId?: string;
   title: string;
   keyResults: KeyResult[];
   objectives?: Objective[];

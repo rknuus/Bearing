@@ -6,18 +6,21 @@
    * Supports keyboard navigation and accessibility.
    */
 
-  import { parseHierarchicalId, type BreadcrumbSegment } from '../utils/id-parser';
+  import { buildBreadcrumbs, type BreadcrumbSegment } from '../utils/id-parser';
+  import type { main } from '../wails/wailsjs/go/models';
 
   interface Props {
-    /** Hierarchical ID (e.g., "THEME-01.OKR-02.KR-03") */
+    /** Flat entity ID (e.g., "OBJ-2", "KR-3") */
     itemId: string;
+    /** Theme data for building breadcrumb path */
+    themes?: main.LifeTheme[];
     /** Callback when a segment is clicked */
     onNavigate: (segmentId: string) => void;
   }
 
-  let { itemId, onNavigate }: Props = $props();
+  let { itemId, themes = [], onNavigate }: Props = $props();
 
-  const segments: BreadcrumbSegment[] = $derived(parseHierarchicalId(itemId));
+  const segments: BreadcrumbSegment[] = $derived(buildBreadcrumbs(itemId, themes));
 
   function handleKeyDown(event: KeyboardEvent, segmentId: string) {
     if (event.key === 'Enter' || event.key === ' ') {
