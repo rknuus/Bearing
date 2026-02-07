@@ -24,11 +24,13 @@
   // Types matching the Go structs
   interface KeyResult {
     id: string;
+    parentId?: string;
     description: string;
   }
 
   interface Objective {
     id: string;
+    parentId?: string;
     title: string;
     keyResults: KeyResult[];
     objectives?: Objective[];
@@ -105,6 +107,37 @@
     expandedIds.add(id);
   }
 
+  /**
+   * Collect ancestor IDs for a given entity by walking the parentId chain.
+   * Searches themes, objectives, and key results. Returns ancestor IDs
+   * from the entity itself up to (and including) the root theme.
+   */
+  function collectAncestorIds(entityId: string, themesList: LifeTheme[]): string[] {
+    // Build a parentId lookup map from the theme tree
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- local temporary map, not reactive state
+    const parentMap = new Map<string, string>();
+    function walkObjectives(objectives: Objective[], fallbackParentId: string) {
+      for (const obj of objectives) {
+        parentMap.set(obj.id, obj.parentId ?? fallbackParentId);
+        for (const kr of obj.keyResults) {
+          parentMap.set(kr.id, kr.parentId ?? obj.id);
+        }
+        walkObjectives(obj.objectives ?? [], obj.id);
+      }
+    }
+    for (const theme of themesList) {
+      walkObjectives(theme.objectives, theme.id);
+    }
+
+    // Walk up the parentId chain collecting ancestor IDs
+    const ancestors: string[] = [];
+    let currentId: string | undefined = entityId;
+    while (currentId) {
+      ancestors.push(currentId);
+      currentId = parentMap.get(currentId);
+    }
+    return ancestors;
+  }
 
   // API calls
   async function loadThemes() {
@@ -291,12 +324,11 @@
   // Auto-expand to show highlighted item
   $effect(() => {
     if (highlightItemId && themes.length > 0) {
-      // Parse the hierarchical ID to expand all ancestor nodes
-      const parts = highlightItemId.split('.');
+      // Walk the parentId chain to expand all ancestor nodes
+      const ancestors = collectAncestorIds(highlightItemId, themes);
       untrack(() => {
-        for (let i = 1; i <= parts.length; i++) {
-          const ancestorId = parts.slice(0, i).join('.');
-          expandedIds.add(ancestorId);
+        for (const id of ancestors) {
+          expandedIds.add(id);
         }
       });
     }
