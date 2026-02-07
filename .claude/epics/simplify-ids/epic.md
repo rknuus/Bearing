@@ -1,8 +1,9 @@
 ---
 name: simplify-ids
-status: backlog
+status: completed
 created: 2026-02-07T14:29:32Z
-progress: 0%
+completed: 2026-02-07T16:10:36Z
+progress: 100%
 prd: .claude/prds/simplify-ids.md
 github: https://github.com/rknuus/Bearing/issues/34
 ---
