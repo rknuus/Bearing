@@ -9,9 +9,8 @@
 import { isServerReady, TEST_CONFIG } from './test-helpers.js'
 
 // Test suites are registered here as they are created
-// See Task #48 for the first test file
 const TEST_SUITES = [
-  // { name: 'App Lifecycle', file: 'app-lifecycle.test.js', enabled: true },
+  { name: 'App Lifecycle', file: 'app-lifecycle.test.js', enabled: true },
 ]
 
 const enabledSuites = TEST_SUITES.filter(suite => suite.enabled)
