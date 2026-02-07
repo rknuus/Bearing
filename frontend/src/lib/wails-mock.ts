@@ -11,11 +11,13 @@
 // Types matching Go structs
 export interface KeyResult {
   id: string;
+  parentId: string;
   description: string;
 }
 
 export interface Objective {
   id: string;
+  parentId: string;
   title: string;
   keyResults: KeyResult[];
   objectives?: Objective[];
@@ -126,72 +128,105 @@ function findKeyResultParent(themes: LifeTheme[], krId: string): { objective: Ob
   return undefined;
 }
 
+/** Scan all objectives globally and return the max N from OBJ-N IDs. */
+function getMaxObjectiveNum(themes: LifeTheme[]): number {
+  let max = 0;
+  function scan(objectives: Objective[]) {
+    for (const obj of objectives) {
+      const match = obj.id.match(/^OBJ-(\d+)$/);
+      if (match) max = Math.max(max, parseInt(match[1]));
+      scan(obj.objectives || []);
+    }
+  }
+  for (const theme of themes) scan(theme.objectives);
+  return max;
+}
+
+/** Scan all key results globally and return the max N from KR-N IDs. */
+function getMaxKeyResultNum(themes: LifeTheme[]): number {
+  let max = 0;
+  function scan(objectives: Objective[]) {
+    for (const obj of objectives) {
+      for (const kr of obj.keyResults) {
+        const match = kr.id.match(/^KR-(\d+)$/);
+        if (match) max = Math.max(max, parseInt(match[1]));
+      }
+      scan(obj.objectives || []);
+    }
+  }
+  for (const theme of themes) scan(theme.objectives);
+  return max;
+}
+
 // Mock data storage for browser testing
 let mockThemes: LifeTheme[] = [
   {
-    id: 'THEME-01',
+    id: 'THEME-1',
     name: 'Health & Fitness',
     color: '#10b981',
     objectives: [
       {
-        id: 'THEME-01.OKR-01',
+        id: 'OBJ-1',
+        parentId: 'THEME-1',
         title: 'Improve cardiovascular health',
         keyResults: [
-          { id: 'THEME-01.OKR-01.KR-01', description: 'Run 5K in under 25 minutes' },
-          { id: 'THEME-01.OKR-01.KR-02', description: 'Exercise 4 times per week' },
+          { id: 'KR-1', parentId: 'OBJ-1', description: 'Run 5K in under 25 minutes' },
+          { id: 'KR-2', parentId: 'OBJ-1', description: 'Exercise 4 times per week' },
         ],
         objectives: [
           {
-            id: 'THEME-01.OKR-01.OKR-01',
+            id: 'OBJ-3',
+            parentId: 'OBJ-1',
             title: 'Build running endurance',
             keyResults: [
-              { id: 'THEME-01.OKR-01.OKR-01.KR-01', description: 'Run 3 times per week for 8 weeks' },
+              { id: 'KR-3', parentId: 'OBJ-3', description: 'Run 3 times per week for 8 weeks' },
             ],
             objectives: [],
           },
         ],
       },
       {
-        id: 'THEME-01.OKR-02',
+        id: 'OBJ-2',
+        parentId: 'THEME-1',
         title: 'Build strength',
         keyResults: [
-          { id: 'THEME-01.OKR-02.KR-01', description: 'Complete 50 push-ups in one set' },
+          { id: 'KR-4', parentId: 'OBJ-2', description: 'Complete 50 push-ups in one set' },
         ],
         objectives: [],
       },
     ],
   },
   {
-    id: 'THEME-02',
+    id: 'THEME-2',
     name: 'Career Growth',
     color: '#3b82f6',
     objectives: [
       {
-        id: 'THEME-02.OKR-01',
+        id: 'OBJ-4',
+        parentId: 'THEME-2',
         title: 'Develop leadership skills',
         keyResults: [
-          { id: 'THEME-02.OKR-01.KR-01', description: 'Lead 2 major projects' },
-          { id: 'THEME-02.OKR-01.KR-02', description: 'Mentor 1 junior developer' },
+          { id: 'KR-5', parentId: 'OBJ-4', description: 'Lead 2 major projects' },
+          { id: 'KR-6', parentId: 'OBJ-4', description: 'Mentor 1 junior developer' },
         ],
         objectives: [],
       },
     ],
   },
-  { id: 'THEME-03', name: 'Personal Finance', color: '#f59e0b', objectives: [] },
-  { id: 'THEME-04', name: 'Learning', color: '#8b5cf6', objectives: [] },
-  { id: 'THEME-05', name: 'Relationships', color: '#ec4899', objectives: [] },
+  { id: 'THEME-3', name: 'Personal Finance', color: '#f59e0b', objectives: [] },
+  { id: 'THEME-4', name: 'Learning', color: '#8b5cf6', objectives: [] },
+  { id: 'THEME-5', name: 'Relationships', color: '#ec4899', objectives: [] },
 ];
 
 const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
-  { id: 'task-001', title: 'Complete project proposal', themeId: 'THEME-02', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo' },
-  { id: 'task-002', title: 'Review quarterly goals', themeId: 'THEME-01', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo' },
-  { id: 'task-003', title: 'Respond to emails', themeId: 'THEME-02', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing' },
-  { id: 'task-004', title: 'Update documentation', themeId: 'THEME-04', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done' },
+  { id: 'TASK-1', title: 'Complete project proposal', themeId: 'THEME-2', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo' },
+  { id: 'TASK-2', title: 'Review quarterly goals', themeId: 'THEME-1', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo' },
+  { id: 'TASK-3', title: 'Respond to emails', themeId: 'THEME-2', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing' },
+  { id: 'TASK-4', title: 'Update documentation', themeId: 'THEME-4', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done' },
 ];
-let mockTaskIdCounter = 5;
 
 // Mock navigation context storage
 let mockNavigationContext: NavigationContext = {
@@ -227,7 +262,7 @@ export const mockAppBindings = {
       return match ? Math.max(max, parseInt(match[1])) : max;
     }, 0);
     const newTheme: LifeTheme = {
-      id: `THEME-${String(maxNum + 1).padStart(2, '0')}`,
+      id: `THEME-${maxNum + 1}`,
       name,
       color,
       objectives: [],
@@ -254,7 +289,7 @@ export const mockAppBindings = {
           const match = t.id.match(/^THEME-(\d+)$/);
           return match ? Math.max(max, parseInt(match[1])) : max;
         }, 0);
-        theme.id = `THEME-${String(maxNum + 1).padStart(2, '0')}`;
+        theme.id = `THEME-${maxNum + 1}`;
       }
       if (!theme.objectives) {
         theme.objectives = [];
@@ -284,13 +319,12 @@ export const mockAppBindings = {
       parentObjectives = parentObj.objectives;
     }
 
-    const maxNum = parentObjectives.reduce((max, o) => {
-      const match = o.id.match(/\.OKR-(\d+)$/);
-      return match ? Math.max(max, parseInt(match[1])) : max;
-    }, 0);
+    // Scan all objectives globally for max N
+    const maxNum = getMaxObjectiveNum(mockThemes);
 
     const newObjective: Objective = {
-      id: `${parentId}.OKR-${String(maxNum + 1).padStart(2, '0')}`,
+      id: `OBJ-${maxNum + 1}`,
+      parentId,
       title,
       keyResults: [],
       objectives: [],
@@ -322,13 +356,12 @@ export const mockAppBindings = {
       throw new Error(`Objective ${parentObjectiveId} not found`);
     }
 
-    const maxNum = objective.keyResults.reduce((max, kr) => {
-      const match = kr.id.match(/\.KR-(\d+)$/);
-      return match ? Math.max(max, parseInt(match[1])) : max;
-    }, 0);
+    // Scan all key results globally for max N
+    const maxNum = getMaxKeyResultNum(mockThemes);
 
     const newKR: KeyResult = {
-      id: `${parentObjectiveId}.KR-${String(maxNum + 1).padStart(2, '0')}`,
+      id: `KR-${maxNum + 1}`,
+      parentId: parentObjectiveId,
       description,
     };
     objective.keyResults.push(newKR);
@@ -391,8 +424,12 @@ export const mockAppBindings = {
   },
 
   CreateTask: async (title: string, themeId: string, dayDate: string, priority: string): Promise<Task> => {
+    const maxNum = mockTasks.reduce((max, t) => {
+      const match = t.id.match(/^TASK-(\d+)$/);
+      return match ? Math.max(max, parseInt(match[1])) : max;
+    }, 0);
     const newTask: TaskWithStatus = {
-      id: `task-${String(mockTaskIdCounter++).padStart(3, '0')}`,
+      id: `TASK-${maxNum + 1}`,
       title,
       themeId,
       dayDate,
