@@ -238,6 +238,128 @@ func TestNewPlanningManager(t *testing.T) {
 }
 
 // =============================================================================
+// Theme Update Tests
+// =============================================================================
+
+func TestUpdateTheme(t *testing.T) {
+	t.Run("updates theme name and color", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		themes, _ := manager.GetThemes()
+		theme := themes[0]
+		theme.Name = "Updated Name"
+		theme.Color = "#ef4444"
+
+		err := manager.UpdateTheme(theme)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ = manager.GetThemes()
+		if themes[0].Name != "Updated Name" {
+			t.Errorf("expected name 'Updated Name', got '%s'", themes[0].Name)
+		}
+		if themes[0].Color != "#ef4444" {
+			t.Errorf("expected color '#ef4444', got '%s'", themes[0].Color)
+		}
+	})
+
+	t.Run("preserves KR progress fields through theme update", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		// Create objective with KR (start=0, target=12)
+		obj, _ := manager.CreateObjective("T", "Read More")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+
+		// Set progress to 5
+		err := manager.UpdateKeyResultProgress(kr.ID, 5)
+		if err != nil {
+			t.Fatalf("expected no error setting progress, got %v", err)
+		}
+
+		// Now do a theme-level update (modify start=2, target=20 on the KR)
+		themes, _ := manager.GetThemes()
+		theme := themes[0]
+		krObj := findObjectiveByID(theme.Objectives, obj.ID)
+		krObj.KeyResults[0].StartValue = 2
+		krObj.KeyResults[0].TargetValue = 20
+
+		err = manager.UpdateTheme(theme)
+		if err != nil {
+			t.Fatalf("expected no error updating theme, got %v", err)
+		}
+
+		// Verify all three fields survive
+		themes, _ = manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].StartValue != 2 {
+			t.Errorf("expected startValue 2, got %d", found.KeyResults[0].StartValue)
+		}
+		if found.KeyResults[0].CurrentValue != 5 {
+			t.Errorf("expected currentValue 5, got %d", found.KeyResults[0].CurrentValue)
+		}
+		if found.KeyResults[0].TargetValue != 20 {
+			t.Errorf("expected targetValue 20, got %d", found.KeyResults[0].TargetValue)
+		}
+	})
+
+	t.Run("returns error for empty theme ID", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateTheme(access.LifeTheme{ID: "", Name: "Test"})
+		if err == nil {
+			t.Fatal("expected error for empty theme ID")
+		}
+	})
+
+	t.Run("preserves objective hierarchy through update", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		// Build nested structure: theme -> obj1 -> obj2 -> kr
+		obj1, _ := manager.CreateObjective("T", "Level 1")
+		obj2, _ := manager.CreateObjective(obj1.ID, "Level 2")
+		kr, _ := manager.CreateKeyResult(obj2.ID, "Deep KR", 1, 10)
+
+		// Update theme name only
+		themes, _ := manager.GetThemes()
+		theme := themes[0]
+		theme.Name = "Renamed Theme"
+
+		err := manager.UpdateTheme(theme)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Verify entire hierarchy survived
+		themes, _ = manager.GetThemes()
+		if themes[0].Name != "Renamed Theme" {
+			t.Errorf("expected 'Renamed Theme', got '%s'", themes[0].Name)
+		}
+		l1 := findObjectiveByID(themes[0].Objectives, obj1.ID)
+		if l1 == nil {
+			t.Fatal("expected Level 1 objective to survive")
+		}
+		l2 := findObjectiveByID(themes[0].Objectives, obj2.ID)
+		if l2 == nil {
+			t.Fatal("expected Level 2 objective to survive")
+		}
+		if len(l2.KeyResults) != 1 || l2.KeyResults[0].ID != kr.ID {
+			t.Errorf("expected KR %s to survive under Level 2", kr.ID)
+		}
+		if l2.KeyResults[0].StartValue != 1 {
+			t.Errorf("expected startValue 1, got %d", l2.KeyResults[0].StartValue)
+		}
+		if l2.KeyResults[0].TargetValue != 10 {
+			t.Errorf("expected targetValue 10, got %d", l2.KeyResults[0].TargetValue)
+		}
+	})
+}
+
+// =============================================================================
 // Objective CRUD Tests
 // =============================================================================
 
