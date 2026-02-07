@@ -356,6 +356,7 @@
           return false;
         }
         updateKR(updatedTheme.objectives);
+        editingKeyResultId = null;
         updateTheme(updatedTheme);
         return;
       }
