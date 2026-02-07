@@ -43,15 +43,7 @@
     return window.go?.main?.App ?? mockAppBindings;
   }
 
-  // Track previous year to detect changes
-  let previousYear = $state(year);
-
-  // Load data on mount
-  onMount(async () => {
-    await loadData();
-  });
-
-  // Reload when year changes
+  // Load data on mount and reload when year changes
   $effect(() => {
     loadData();
   });
