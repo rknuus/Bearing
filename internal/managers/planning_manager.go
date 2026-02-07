@@ -22,6 +22,8 @@ type NavigationContext struct {
 	FilterThemeID string `json:"filterThemeId"`
 	FilterDate    string `json:"filterDate"`
 	LastAccessed  string `json:"lastAccessed"`
+	ShowCompleted bool   `json:"showCompleted,omitempty"`
+	ShowArchived  bool   `json:"showArchived,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -43,6 +45,10 @@ type IPlanningManager interface {
 	UpdateKeyResult(keyResultId, description string) error
 	UpdateKeyResultProgress(keyResultId string, currentValue int) error
 	DeleteKeyResult(keyResultId string) error
+
+	// OKR Status — set lifecycle status (active/completed/archived)
+	SetObjectiveStatus(objectiveId, status string) error
+	SetKeyResultStatus(keyResultId, status string) error
 
 	// Calendar
 	GetYearFocus(year int) ([]access.DayFocus, error)
@@ -461,6 +467,115 @@ func (m *PlanningManager) DeleteKeyResult(keyResultId string) error {
 	return fmt.Errorf("PlanningManager.DeleteKeyResult: key result with ID %s not found", keyResultId)
 }
 
+// validateOKRStatusTransition checks whether a status transition is allowed.
+// Returns an error if the transition is invalid.
+func validateOKRStatusTransition(currentStatus, newStatus string) error {
+	current := access.EffectiveOKRStatus(currentStatus)
+	if !access.IsValidOKRStatus(newStatus) {
+		return fmt.Errorf("invalid status %q", newStatus)
+	}
+	target := access.EffectiveOKRStatus(newStatus)
+
+	if current == target {
+		return nil // No-op
+	}
+
+	switch {
+	case current == string(access.OKRStatusActive) && target == string(access.OKRStatusCompleted):
+		return nil
+	case current == string(access.OKRStatusCompleted) && target == string(access.OKRStatusArchived):
+		return nil
+	case target == string(access.OKRStatusActive): // Reopen from any non-active state
+		return nil
+	case current == string(access.OKRStatusActive) && target == string(access.OKRStatusArchived):
+		return fmt.Errorf("cannot archive an active item; complete it first")
+	default:
+		return fmt.Errorf("invalid transition from %q to %q", current, target)
+	}
+}
+
+// SetObjectiveStatus sets the lifecycle status of an objective.
+// Completing an objective requires all direct children to be completed or archived.
+func (m *PlanningManager) SetObjectiveStatus(objectiveId, status string) error {
+	if objectiveId == "" {
+		return fmt.Errorf("PlanningManager.SetObjectiveStatus: objectiveId cannot be empty")
+	}
+	if status == "" {
+		return fmt.Errorf("PlanningManager.SetObjectiveStatus: status cannot be empty")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.SetObjectiveStatus: %w", err)
+	}
+
+	for i := range themes {
+		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
+			if err := validateOKRStatusTransition(obj.Status, status); err != nil {
+				return fmt.Errorf("PlanningManager.SetObjectiveStatus: %w", err)
+			}
+
+			// If completing, verify all direct children are completed or archived
+			if access.EffectiveOKRStatus(status) == string(access.OKRStatusCompleted) {
+				var incompleteItems []string
+				for _, child := range obj.Objectives {
+					if access.EffectiveOKRStatus(child.Status) == string(access.OKRStatusActive) {
+						incompleteItems = append(incompleteItems, child.ID+" ("+child.Title+")")
+					}
+				}
+				for _, kr := range obj.KeyResults {
+					if access.EffectiveOKRStatus(kr.Status) == string(access.OKRStatusActive) {
+						incompleteItems = append(incompleteItems, kr.ID+" ("+kr.Description+")")
+					}
+				}
+				if len(incompleteItems) > 0 {
+					return fmt.Errorf("PlanningManager.SetObjectiveStatus: cannot complete objective %s; active children: %v", objectiveId, incompleteItems)
+				}
+			}
+
+			obj.Status = status
+			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
+				return fmt.Errorf("PlanningManager.SetObjectiveStatus: %w", err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("PlanningManager.SetObjectiveStatus: objective with ID %s not found", objectiveId)
+}
+
+// SetKeyResultStatus sets the lifecycle status of a key result.
+func (m *PlanningManager) SetKeyResultStatus(keyResultId, status string) error {
+	if keyResultId == "" {
+		return fmt.Errorf("PlanningManager.SetKeyResultStatus: keyResultId cannot be empty")
+	}
+	if status == "" {
+		return fmt.Errorf("PlanningManager.SetKeyResultStatus: status cannot be empty")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.SetKeyResultStatus: %w", err)
+	}
+
+	for i := range themes {
+		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
+			kr := &obj.KeyResults[krIdx]
+			if err := validateOKRStatusTransition(kr.Status, status); err != nil {
+				return fmt.Errorf("PlanningManager.SetKeyResultStatus: %w", err)
+			}
+
+			kr.Status = status
+			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
+				return fmt.Errorf("PlanningManager.SetKeyResultStatus: %w", err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("PlanningManager.SetKeyResultStatus: key result with ID %s not found", keyResultId)
+}
+
 // GetYearFocus returns all day focus entries for a specific year.
 func (m *PlanningManager) GetYearFocus(year int) ([]access.DayFocus, error) {
 	if year < 1900 || year > 9999 {
@@ -664,6 +779,8 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		FilterThemeID: ctx.FilterThemeID,
 		FilterDate:    ctx.FilterDate,
 		LastAccessed:  ctx.LastAccessed,
+		ShowCompleted: ctx.ShowCompleted,
+		ShowArchived:  ctx.ShowArchived,
 	}, nil
 }
 
@@ -675,6 +792,8 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		FilterThemeID: ctx.FilterThemeID,
 		FilterDate:    ctx.FilterDate,
 		LastAccessed:  ctx.LastAccessed,
+		ShowCompleted: ctx.ShowCompleted,
+		ShowArchived:  ctx.ShowArchived,
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {

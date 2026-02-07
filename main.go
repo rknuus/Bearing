@@ -89,6 +89,7 @@ type KeyResult struct {
 	ID           string `json:"id"`
 	ParentID     string `json:"parentId"`
 	Description  string `json:"description"`
+	Status       string `json:"status,omitempty"`
 	StartValue   int    `json:"startValue,omitempty"`
 	CurrentValue int    `json:"currentValue,omitempty"`
 	TargetValue  int    `json:"targetValue,omitempty"`
@@ -99,6 +100,7 @@ type Objective struct {
 	ID         string      `json:"id"`
 	ParentID   string      `json:"parentId"`
 	Title      string      `json:"title"`
+	Status     string      `json:"status,omitempty"`
 	KeyResults []KeyResult `json:"keyResults"`
 	Objectives []Objective `json:"objectives,omitempty"`
 }
@@ -126,6 +128,8 @@ type NavigationContext struct {
 	FilterThemeID string `json:"filterThemeId"`
 	FilterDate    string `json:"filterDate"`
 	LastAccessed  string `json:"lastAccessed"`
+	ShowCompleted bool   `json:"showCompleted,omitempty"`
+	ShowArchived  bool   `json:"showArchived,omitempty"`
 }
 
 // convertObjective recursively converts an access.Objective to a Wails Objective
@@ -136,6 +140,7 @@ func convertObjective(o access.Objective) Objective {
 			ID:           kr.ID,
 			ParentID:     kr.ParentID,
 			Description:  kr.Description,
+			Status:       kr.Status,
 			StartValue:   kr.StartValue,
 			CurrentValue: kr.CurrentValue,
 			TargetValue:  kr.TargetValue,
@@ -149,6 +154,7 @@ func convertObjective(o access.Objective) Objective {
 		ID:         o.ID,
 		ParentID:   o.ParentID,
 		Title:      o.Title,
+		Status:     o.Status,
 		KeyResults: keyResults,
 	}
 	if len(objectives) > 0 {
@@ -165,6 +171,7 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 			ID:           kr.ID,
 			ParentID:     kr.ParentID,
 			Description:  kr.Description,
+			Status:       kr.Status,
 			StartValue:   kr.StartValue,
 			CurrentValue: kr.CurrentValue,
 			TargetValue:  kr.TargetValue,
@@ -178,6 +185,7 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 		ID:         o.ID,
 		ParentID:   o.ParentID,
 		Title:      o.Title,
+		Status:     o.Status,
 		KeyResults: keyResults,
 	}
 	if len(objectives) > 0 {
@@ -358,6 +366,24 @@ func (a *App) DeleteKeyResult(keyResultId string) error {
 	return a.planningManager.DeleteKeyResult(keyResultId)
 }
 
+// SetObjectiveStatus sets the lifecycle status of an objective
+func (a *App) SetObjectiveStatus(objectiveId, status string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.SetObjectiveStatus(objectiveId, status)
+}
+
+// SetKeyResultStatus sets the lifecycle status of a key result
+func (a *App) SetKeyResultStatus(keyResultId, status string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.SetKeyResultStatus(keyResultId, status)
+}
+
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name
 func (a *App) SuggestThemeAbbreviation(name string) (string, error) {
 	if a.planningManager == nil {
@@ -431,6 +457,8 @@ func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 		FilterThemeID: ctx.FilterThemeID,
 		FilterDate:    ctx.FilterDate,
 		LastAccessed:  ctx.LastAccessed,
+		ShowCompleted: ctx.ShowCompleted,
+		ShowArchived:  ctx.ShowArchived,
 	}, nil
 }
 
@@ -446,6 +474,8 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 		FilterThemeID: ctx.FilterThemeID,
 		FilterDate:    ctx.FilterDate,
 		LastAccessed:  ctx.LastAccessed,
+		ShowCompleted: ctx.ShowCompleted,
+		ShowArchived:  ctx.ShowArchived,
 	})
 }
 

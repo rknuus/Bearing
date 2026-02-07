@@ -26,6 +26,7 @@
     id: string;
     parentId?: string;
     description: string;
+    status?: string;
     startValue?: number;
     currentValue?: number;
     targetValue?: number;
@@ -35,6 +36,7 @@
     id: string;
     parentId?: string;
     title: string;
+    status?: string;
     keyResults: KeyResult[];
     objectives?: Objective[];
   }
@@ -86,6 +88,10 @@
   let newKeyResultDescription = $state('');
   let newKeyResultStartValue = $state(0);
   let newKeyResultTargetValue = $state(0);
+
+  // View toggle state
+  let showCompleted = $state(false);
+  let showArchived = $state(false);
 
   // Inline edit values
   let editThemeName = $state('');
@@ -295,6 +301,39 @@
     }
   }
 
+  // Status helpers
+  function isActive(status: string | undefined): boolean {
+    return !status || status === 'active';
+  }
+
+  function shouldShow(status: string | undefined): boolean {
+    if (isActive(status)) return true;
+    if (status === 'completed') return showCompleted;
+    if (status === 'archived') return showArchived;
+    return true;
+  }
+
+  // OKR Status changes
+  async function setObjectiveStatus(objectiveId: string, status: string) {
+    try {
+      await getBindings().SetObjectiveStatus(objectiveId, status);
+      await loadThemes();
+    } catch (e) {
+      console.error('Failed to set objective status:', e);
+      error = e instanceof Error ? e.message : 'Failed to update status';
+    }
+  }
+
+  async function setKeyResultStatus(keyResultId: string, status: string) {
+    try {
+      await getBindings().SetKeyResultStatus(keyResultId, status);
+      await loadThemes();
+    } catch (e) {
+      console.error('Failed to set key result status:', e);
+      error = e instanceof Error ? e.message : 'Failed to update status';
+    }
+  }
+
   // Start editing
   function startEditTheme(theme: LifeTheme) {
     editingThemeId = theme.id;
@@ -376,8 +415,30 @@
   }
 
 
-  onMount(() => {
+  onMount(async () => {
+    try {
+      const navCtx = await getBindings().LoadNavigationContext();
+      if (navCtx) {
+        showCompleted = navCtx.showCompleted ?? false;
+        showArchived = navCtx.showArchived ?? false;
+      }
+    } catch {
+      // Ignore errors loading nav context
+    }
     loadThemes();
+  });
+
+  // Persist toggle states to NavigationContext
+  $effect(() => {
+    const sc = showCompleted;
+    const sa = showArchived;
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, showCompleted: sc, showArchived: sa });
+        }
+      }).catch(() => { /* ignore */ });
+    });
   });
 
   // Auto-expand to show highlighted item
@@ -395,7 +456,8 @@
 </script>
 
 {#snippet objectiveNode(objective: Objective, themeColor: string, depth: number)}
-  <div class="objective-item" class:highlighted={highlightItemId === objective.id} style="margin-left: {depth > 0 ? 0.5 : 0}rem;">
+  {#if shouldShow(objective.status)}
+  <div class="objective-item" class:highlighted={highlightItemId === objective.id} class:okr-completed={!isActive(objective.status)} style="margin-left: {depth > 0 ? 0.5 : 0}rem;">
     <!-- Objective Header -->
     <div class="item-header objective-header">
       <button
@@ -420,6 +482,14 @@
         <span class="item-name">{objective.title}</span>
         <span class="item-id">{objective.id}</span>
         <div class="item-actions">
+          {#if isActive(objective.status)}
+            <button class="icon-button complete" onclick={() => setObjectiveStatus(objective.id, 'completed')} title="Complete">&#10003;</button>
+          {:else if objective.status === 'completed'}
+            <button class="icon-button reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">&#8634;</button>
+            <button class="icon-button archive" onclick={() => setObjectiveStatus(objective.id, 'archived')} title="Archive">&#128451;</button>
+          {:else}
+            <button class="icon-button reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">&#8634;</button>
+          {/if}
           <button class="icon-button edit" onclick={() => startEditObjective(objective)} title="Edit">&#9998;</button>
           <button class="icon-button delete" onclick={() => deleteObjective(objective.id)} title="Delete">&#128465;</button>
           <button
@@ -480,7 +550,8 @@
 
         <!-- Key Results -->
         {#each objective.keyResults as kr (kr.id)}
-          <div class="kr-item" class:highlighted={highlightItemId === kr.id}>
+          {#if shouldShow(kr.status)}
+          <div class="kr-item" class:highlighted={highlightItemId === kr.id} class:okr-completed={!isActive(kr.status)}>
             <div class="item-header kr-header">
               <span class="kr-marker" style="background-color: {themeColor};"></span>
 
@@ -528,12 +599,21 @@
                   <span class="kr-target-label">/ {target}</span>
                 {/if}
                 <div class="item-actions">
+                  {#if isActive(kr.status)}
+                    <button class="icon-button complete" onclick={() => setKeyResultStatus(kr.id, 'completed')} title="Complete">&#10003;</button>
+                  {:else if kr.status === 'completed'}
+                    <button class="icon-button reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">&#8634;</button>
+                    <button class="icon-button archive" onclick={() => setKeyResultStatus(kr.id, 'archived')} title="Archive">&#128451;</button>
+                  {:else}
+                    <button class="icon-button reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">&#8634;</button>
+                  {/if}
                   <button class="icon-button edit" onclick={() => startEditKeyResult(kr)} title="Edit">&#9998;</button>
                   <button class="icon-button delete" onclick={() => deleteKeyResult(kr.id)} title="Delete">&#128465;</button>
                 </div>
               {/if}
             </div>
           </div>
+          {/if}
         {/each}
 
         {#if (!objective.objectives || objective.objectives.length === 0) && objective.keyResults.length === 0 && addingKeyResultToObjective !== objective.id && addingObjectiveTo !== objective.id}
@@ -547,17 +627,26 @@
       </div>
     {/if}
   </div>
+  {/if}
 {/snippet}
 
 <div class="okr-view">
   <header class="okr-header">
     <h1>Life Themes & OKRs</h1>
-    <button
-      class="add-button primary"
-      onclick={() => { showNewThemeForm = true; }}
-    >
-      + Add Theme
-    </button>
+    <div class="header-controls">
+      <label class="toggle-label">
+        <input type="checkbox" bind:checked={showCompleted} /> Show completed
+      </label>
+      <label class="toggle-label">
+        <input type="checkbox" bind:checked={showArchived} /> Show archived
+      </label>
+      <button
+        class="add-button primary"
+        onclick={() => { showNewThemeForm = true; }}
+      >
+        + Add Theme
+      </button>
+    </div>
   </header>
 
   {#if error}
@@ -718,6 +807,29 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .header-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: #6b7280;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-label input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: #6b7280;
   }
 
   .okr-header h1 {
@@ -884,6 +996,27 @@
 
   .icon-button.cancel {
     color: #6b7280;
+  }
+
+  .icon-button.complete {
+    color: #10b981;
+  }
+
+  .icon-button.reopen {
+    color: #f59e0b;
+  }
+
+  .icon-button.archive {
+    color: #6b7280;
+  }
+
+  .okr-completed .item-name {
+    opacity: 0.5;
+    text-decoration: line-through;
+  }
+
+  .okr-completed .item-id {
+    opacity: 0.5;
   }
 
   .icon-button.nav {

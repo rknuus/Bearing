@@ -1,8 +1,9 @@
 ---
 name: support-completing-okrs
-status: backlog
+status: completed
 created: 2026-02-07T19:59:11Z
-progress: 0%
+completed: 2026-02-07
+progress: 100%
 prd: .claude/prds/support-completing-okrs.md
 github: https://github.com/rknuus/Bearing/issues/57
 ---
@@ -92,13 +93,13 @@ Add a `Status` field to Objective and KeyResult models enabling a completion lif
 - Critical path: Task 1 → Task 2 → Task 3 → Tasks 5-7 (Task 4 can parallel Task 2)
 
 ## Tasks Created
-- [ ] #58 - Add Status field to data models and OKR status constants (parallel: false)
-- [ ] #60 - Implement SetObjectiveStatus and SetKeyResultStatus in PlanningManager (parallel: false, depends: #58)
-- [ ] #62 - Add Wails binding methods and update type converters (parallel: false, depends: #60)
-- [ ] #64 - Extend NavigationContext with ShowCompleted/ShowArchived fields (parallel: true)
-- [ ] #59 - Update frontend TypeScript interfaces and mock bindings (parallel: false, depends: #62)
-- [ ] #61 - Add complete/reopen/archive action buttons and visual styling (parallel: false, depends: #59)
-- [ ] #63 - Add view-level show/hide toggles with NavigationContext persistence (parallel: false, depends: #64, #61)
+- [x] #58 - Add Status field to data models and OKR status constants (parallel: false)
+- [x] #60 - Implement SetObjectiveStatus and SetKeyResultStatus in PlanningManager (parallel: false, depends: #58)
+- [x] #62 - Add Wails binding methods and update type converters (parallel: false, depends: #60)
+- [x] #64 - Extend NavigationContext with ShowCompleted/ShowArchived fields (parallel: true)
+- [x] #59 - Update frontend TypeScript interfaces and mock bindings (parallel: false, depends: #62)
+- [x] #61 - Add complete/reopen/archive action buttons and visual styling (parallel: false, depends: #59)
+- [x] #63 - Add view-level show/hide toggles with NavigationContext persistence (parallel: false, depends: #64, #61)
 
 Total tasks: 7
 Parallel tasks: 1 (#64)
