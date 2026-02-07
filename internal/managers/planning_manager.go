@@ -41,6 +41,7 @@ type IPlanningManager interface {
 	// Key Results — parentObjectiveId / keyResultId found by tree-walking
 	CreateKeyResult(parentObjectiveId, description string) (*access.KeyResult, error)
 	UpdateKeyResult(keyResultId, description string) error
+	UpdateKeyResultProgress(keyResultId string, currentValue int) error
 	DeleteKeyResult(keyResultId string) error
 
 	// Calendar
@@ -410,6 +411,30 @@ func (m *PlanningManager) UpdateKeyResult(keyResultId, description string) error
 	}
 
 	return fmt.Errorf("PlanningManager.UpdateKeyResult: key result with ID %s not found", keyResultId)
+}
+
+// UpdateKeyResultProgress finds a key result by ID anywhere in the tree and updates its currentValue.
+func (m *PlanningManager) UpdateKeyResultProgress(keyResultId string, currentValue int) error {
+	if keyResultId == "" {
+		return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: keyResultId cannot be empty")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: %w", err)
+	}
+
+	for i := range themes {
+		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
+			obj.KeyResults[krIdx].CurrentValue = currentValue
+			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
+				return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: %w", err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: key result with ID %s not found", keyResultId)
 }
 
 // DeleteKeyResult finds a key result by ID anywhere in the tree and removes it.

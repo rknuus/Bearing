@@ -654,6 +654,67 @@ func TestUpdateKeyResult(t *testing.T) {
 	})
 }
 
+func TestUpdateKeyResultProgress(t *testing.T) {
+	t.Run("updates key result currentValue", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books")
+
+		err := manager.UpdateKeyResultProgress(kr.ID, 5)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.KeyResults[0].CurrentValue != 5 {
+			t.Errorf("expected currentValue 5, got %d", found.KeyResults[0].CurrentValue)
+		}
+	})
+
+	t.Run("updates key result under nested objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("T", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR")
+
+		err := manager.UpdateKeyResultProgress(kr.ID, 10)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		childObj := findObjectiveByID(themes[0].Objectives, child.ID)
+		if childObj.KeyResults[0].CurrentValue != 10 {
+			t.Errorf("expected currentValue 10, got %d", childObj.KeyResults[0].CurrentValue)
+		}
+	})
+
+	t.Run("returns error for empty keyResultId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateKeyResultProgress("", 5)
+		if err == nil {
+			t.Fatal("expected error for empty keyResultId")
+		}
+	})
+
+	t.Run("returns error for non-existent key result", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateKeyResultProgress("NONEXISTENT", 5)
+		if err == nil {
+			t.Fatal("expected error for non-existent key result")
+		}
+	})
+}
+
 func TestDeleteKeyResult(t *testing.T) {
 	t.Run("deletes key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
