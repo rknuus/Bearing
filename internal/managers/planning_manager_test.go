@@ -436,7 +436,7 @@ func TestDeleteObjective(t *testing.T) {
 		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
 		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
-		manager.CreateKeyResult(l3.ID, "Deep KR")
+		manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0)
 
 		// Delete the middle objective (Level 2) -- Level 3 and its KR should be gone too
 		err := manager.DeleteObjective(l2.ID)
@@ -515,7 +515,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "My KR")
+		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -527,13 +527,30 @@ func TestCreateKeyResult(t *testing.T) {
 		}
 	})
 
+	t.Run("creates key result with start and target values", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.StartValue != 0 {
+			t.Errorf("expected startValue 0, got %d", kr.StartValue)
+		}
+		if kr.TargetValue != 12 {
+			t.Errorf("expected targetValue 12, got %d", kr.TargetValue)
+		}
+	})
+
 	t.Run("creates key result under nested objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, err := manager.CreateKeyResult(child.ID, "Nested KR")
+		kr, err := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -550,7 +567,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager.CreateObjective(parent.ID, "Child")
 
 		// Add KR to the parent (intermediate node with children)
-		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR")
+		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -576,7 +593,7 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateKeyResult("", "Description")
+		_, err := manager.CreateKeyResult("", "Description", 0, 0)
 		if err == nil {
 			t.Fatal("expected error for empty parentObjectiveId")
 		}
@@ -586,7 +603,7 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateKeyResult("NONEXISTENT", "Description")
+		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0)
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
 		}
@@ -599,7 +616,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Original")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0)
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated")
 		if err != nil {
@@ -619,7 +636,7 @@ func TestUpdateKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Original")
+		kr, _ := manager.CreateKeyResult(child.ID, "Original", 0, 0)
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated Nested")
 		if err != nil {
@@ -660,7 +677,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0)
 
 		err := manager.UpdateKeyResultProgress(kr.ID, 5)
 		if err != nil {
@@ -680,7 +697,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR")
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
 
 		err := manager.UpdateKeyResultProgress(kr.ID, 10)
 		if err != nil {
@@ -721,7 +738,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete")
+		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0)
 
 		err := manager.DeleteKeyResult(kr.ID)
 		if err != nil {
@@ -741,7 +758,7 @@ func TestDeleteKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR")
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
 
 		err := manager.DeleteKeyResult(kr.ID)
 		if err != nil {

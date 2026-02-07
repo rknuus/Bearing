@@ -84,6 +84,8 @@
 
   let addingKeyResultToObjective = $state<string | null>(null);
   let newKeyResultDescription = $state('');
+  let newKeyResultStartValue = $state(0);
+  let newKeyResultTargetValue = $state(0);
 
   // Inline edit values
   let editThemeName = $state('');
@@ -243,9 +245,11 @@
     if (!newKeyResultDescription.trim()) return;
 
     try {
-      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim());
+      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue);
       await loadThemes();
       newKeyResultDescription = '';
+      newKeyResultStartValue = 0;
+      newKeyResultTargetValue = 0;
       addingKeyResultToObjective = null;
       // Expand the objective to show the new key result
       expandId(objectiveId);
@@ -465,8 +469,12 @@
               bind:value={newKeyResultDescription}
               onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
             />
-            <button class="save-button" onclick={() => createKeyResult(objective.id)}>Create</button>
-            <button class="cancel-button" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; }}>Cancel</button>
+            <div class="kr-form-row">
+              <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
+              <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
+              <button class="save-button" onclick={() => createKeyResult(objective.id)}>Create</button>
+              <button class="cancel-button" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultStartValue = 0; newKeyResultTargetValue = 0; }}>Cancel</button>
+            </div>
           </div>
         {/if}
 
@@ -1070,6 +1078,13 @@
   .objective-form,
   .kr-form {
     margin: 0.5rem 0;
+  }
+
+  .kr-form-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
   }
 
   /* KR Progress Styles */
