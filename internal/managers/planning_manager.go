@@ -22,6 +22,8 @@ type NavigationContext struct {
 	FilterThemeID string `json:"filterThemeId"`
 	FilterDate    string `json:"filterDate"`
 	LastAccessed  string `json:"lastAccessed"`
+	ShowCompleted bool   `json:"showCompleted,omitempty"`
+	ShowArchived  bool   `json:"showArchived,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -664,6 +666,8 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		FilterThemeID: ctx.FilterThemeID,
 		FilterDate:    ctx.FilterDate,
 		LastAccessed:  ctx.LastAccessed,
+		ShowCompleted: ctx.ShowCompleted,
+		ShowArchived:  ctx.ShowArchived,
 	}, nil
 }
 
@@ -675,6 +679,8 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		FilterThemeID: ctx.FilterThemeID,
 		FilterDate:    ctx.FilterDate,
 		LastAccessed:  ctx.LastAccessed,
+		ShowCompleted: ctx.ShowCompleted,
+		ShowArchived:  ctx.ShowArchived,
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {

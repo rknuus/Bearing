@@ -19,6 +19,7 @@ type Objective struct {
 	ID         string      `json:"id"`                   // Theme-scoped ID: H-O1, CF-O3
 	ParentID   string      `json:"parentId"`             // ID of parent theme or objective
 	Title      string      `json:"title"`                // Objective title/description
+	Status     string      `json:"status,omitempty"`     // Lifecycle status: active, completed, archived (empty = active)
 	KeyResults []KeyResult `json:"keyResults"`           // Measurable key results
 	Objectives []Objective `json:"objectives,omitempty"` // Nested child objectives
 }
@@ -26,9 +27,10 @@ type Objective struct {
 // KeyResult represents a measurable outcome for an objective.
 // Key results define how progress toward an objective is measured.
 type KeyResult struct {
-	ID           string `json:"id"`                    // Theme-scoped ID: H-KR1, CF-KR2
-	ParentID     string `json:"parentId"`              // ID of owning objective
-	Description  string `json:"description"`           // Description of the measurable result
+	ID           string `json:"id"`                     // Theme-scoped ID: H-KR1, CF-KR2
+	ParentID     string `json:"parentId"`               // ID of owning objective
+	Description  string `json:"description"`            // Description of the measurable result
+	Status       string `json:"status,omitempty"`       // Lifecycle status: active, completed, archived (empty = active)
 	StartValue   int    `json:"startValue,omitempty"`   // Starting value (default 0)
 	CurrentValue int    `json:"currentValue,omitempty"` // Current progress value
 	TargetValue  int    `json:"targetValue,omitempty"`  // Target value (0 = untracked, 1 = binary)
@@ -78,6 +80,39 @@ func IsValidTaskStatus(status string) bool {
 		}
 	}
 	return false
+}
+
+// OKRStatus represents the lifecycle status for objectives and key results
+type OKRStatus string
+
+const (
+	// OKRStatusActive represents active (in-progress) OKRs
+	OKRStatusActive OKRStatus = "active"
+	// OKRStatusCompleted represents completed OKRs
+	OKRStatusCompleted OKRStatus = "completed"
+	// OKRStatusArchived represents archived OKRs (hidden by default)
+	OKRStatusArchived OKRStatus = "archived"
+)
+
+// IsValidOKRStatus checks if a status string is valid.
+// Empty string is treated as valid (equivalent to "active").
+func IsValidOKRStatus(status string) bool {
+	if status == "" {
+		return true
+	}
+	switch OKRStatus(status) {
+	case OKRStatusActive, OKRStatusCompleted, OKRStatusArchived:
+		return true
+	}
+	return false
+}
+
+// EffectiveOKRStatus returns "active" if status is empty, otherwise the status as-is.
+func EffectiveOKRStatus(status string) string {
+	if status == "" {
+		return string(OKRStatusActive)
+	}
+	return status
 }
 
 // Priority represents the Eisenhower matrix priority levels
@@ -132,4 +167,6 @@ type NavigationContext struct {
 	FilterThemeID string `json:"filterThemeId"`
 	FilterDate    string `json:"filterDate"`
 	LastAccessed  string `json:"lastAccessed"`
+	ShowCompleted bool   `json:"showCompleted,omitempty"`
+	ShowArchived  bool   `json:"showArchived,omitempty"`
 }
