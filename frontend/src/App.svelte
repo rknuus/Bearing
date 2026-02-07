@@ -11,31 +11,11 @@
   // View types
   type ViewType = 'home' | 'calendar' | 'eisenkan' | 'okr' | 'components';
 
-  // Navigation context for cross-view linking
-  interface NavigationContext {
-    currentView: ViewType;
-    currentItemId: string;
-    filterThemeId?: string;
-    filterDate?: string;
-  }
-
   // Current view state using Svelte 5 runes
   let currentView = $state<ViewType>('home');
   let currentItemId = $state<string>('');
   let filterThemeId = $state<string | undefined>(undefined);
   let filterDate = $state<string | undefined>(undefined);
-
-  // For breadcrumb display
-  let breadcrumbId = $derived.by(() => {
-    if (currentItemId) return currentItemId;
-    // Generate a synthetic breadcrumb based on current view
-    switch (currentView) {
-      case 'okr': return 'OKRs';
-      case 'calendar': return 'Calendar';
-      case 'eisenkan': return 'Tasks';
-      default: return '';
-    }
-  });
 
   // Build breadcrumb path including view context
   let breadcrumbPath = $derived.by(() => {
@@ -227,7 +207,7 @@
 
   // Get Wails bindings
   function getBindings() {
-    return (window as any).go?.main?.App ?? mockAppBindings;
+    return window.go?.main?.App ?? mockAppBindings;
   }
 
   // Initialize mock bindings for browser-based testing

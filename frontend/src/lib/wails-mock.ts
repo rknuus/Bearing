@@ -56,9 +56,7 @@ export interface NavigationContext {
 }
 
 // Type declarations for extended Window properties
-interface MockConfig {
-  // Add mock configuration options as needed
-}
+type MockConfig = Record<string, never>;
 
 interface WailsGoBindings {
   main?: {
@@ -184,7 +182,7 @@ let mockThemes: LifeTheme[] = [
   { id: 'THEME-05', name: 'Relationships', color: '#ec4899', objectives: [] },
 ];
 
-let mockYearFocus: Map<number, DayFocus[]> = new Map();
+const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
@@ -360,7 +358,7 @@ export const mockAppBindings = {
 
   SaveDayFocus: async (day: DayFocus): Promise<void> => {
     const year = parseInt(day.date.substring(0, 4));
-    let entries = mockYearFocus.get(year) || [];
+    const entries = mockYearFocus.get(year) || [];
 
     const index = entries.findIndex(e => e.date === day.date);
     if (index >= 0) {
@@ -376,7 +374,7 @@ export const mockAppBindings = {
 
   ClearDayFocus: async (date: string): Promise<void> => {
     const year = parseInt(date.substring(0, 4));
-    let entries = mockYearFocus.get(year) || [];
+    const entries = mockYearFocus.get(year) || [];
 
     const index = entries.findIndex(e => e.date === date);
     if (index >= 0) {

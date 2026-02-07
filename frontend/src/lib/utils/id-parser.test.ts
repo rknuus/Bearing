@@ -9,11 +9,10 @@ import {
   parseHierarchicalId,
   getParentId,
   getIdType,
-  type BreadcrumbSegment,
 } from './id-parser';
 
 // Simple test runner for browser console
-function assert(condition: boolean, message: string): void {
+function _assert(condition: boolean, message: string): void {
   if (!condition) {
     throw new Error(`Assertion failed: ${message}`);
   }

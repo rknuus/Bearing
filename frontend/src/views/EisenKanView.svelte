@@ -395,7 +395,6 @@
 
   <!-- Context Menu for Cross-View Navigation -->
   {#if contextMenuTask && contextMenuPosition}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div class="context-menu-overlay" onclick={closeContextMenu} role="presentation">
       <div
         class="context-menu"

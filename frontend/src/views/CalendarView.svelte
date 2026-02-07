@@ -7,6 +7,7 @@
    * Users can assign each day to a Life Theme and enter free text.
    */
 
+  import { SvelteMap } from 'svelte/reactivity';
   import { mockAppBindings, type LifeTheme, type DayFocus } from '../lib/wails-mock';
 
   // Props
@@ -17,11 +18,11 @@
     filterThemeId?: string;
   }
 
-  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks, filterThemeId }: Props = $props();
+  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeId }: Props = $props();
 
   // State
   let themes = $state<LifeTheme[]>([]);
-  let yearFocus = $state<Map<string, DayFocus>>(new Map());
+  let yearFocus = new SvelteMap<string, DayFocus>();
   let loading = $state(true);
   let error = $state<string | null>(null);
 
@@ -62,11 +63,10 @@
 
       themes = themesResult;
 
-      const focusMap = new Map<string, DayFocus>();
+      yearFocus.clear();
       for (const entry of focusResult) {
-        focusMap.set(entry.date, entry);
+        yearFocus.set(entry.date, entry);
       }
-      yearFocus = focusMap;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load data';
       console.error('CalendarView: Failed to load data', e);
@@ -130,6 +130,7 @@
   }
 
   // ISO week number (ISO 8601)
+  /* eslint-disable svelte/prefer-svelte-reactivity -- pure computation, not reactive state */
   function getISOWeekNumber(y: number, month: number, day: number): number {
     const date = new Date(y, month, day);
     const dayOfWeek = date.getDay() || 7; // Mon=1 ... Sun=7
@@ -137,6 +138,7 @@
     const yearStart = new Date(date.getFullYear(), 0, 1);
     return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
   }
+  /* eslint-enable svelte/prefer-svelte-reactivity */
 
   function getThemeColor(month: number, day: number): string | null {
     const dateStr = formatDate(month, day);
@@ -237,7 +239,6 @@
         yearFocus.set(editingDay.date, dayFocus);
       }
 
-      yearFocus = new Map(yearFocus);
       editingDay = null;
     } catch (e) {
       console.error('CalendarView: Failed to save day focus', e);
@@ -293,12 +294,12 @@
       >
         <!-- Header row: weekday label corner + month names spanning 3 cols each -->
         <div class="header-cell weekday-header"></div>
-        {#each monthNames as name}
+        {#each monthNames as name (name)}
           <div class="header-cell month-header">{name}</div>
         {/each}
 
         <!-- Weekday labels (left column) -->
-        {#each Array(totalRows) as _, rowIdx}
+        {#each Array(totalRows) as _, rowIdx (rowIdx)}
           <div
             class="weekday-label"
             class:sunday-bg={rowIdx % 7 === 6}
@@ -309,8 +310,8 @@
         {/each}
 
         <!-- Day cells for each month -->
-        {#each cellsByMonth as monthCells, monthIdx}
-          {#each monthCells as cell}
+        {#each cellsByMonth as monthCells, monthIdx (monthIdx)}
+          {#each monthCells as cell (cell.row + '-' + monthIdx)}
             {@const numCol = 2 + monthIdx * 3}
             {@const textCol = 3 + monthIdx * 3}
             {@const weekCol = 4 + monthIdx * 3}
@@ -356,7 +357,7 @@
     <!-- Theme Legend -->
     <div class="theme-legend">
       <span class="legend-label">Themes:</span>
-      {#each themes as theme}
+      {#each themes as theme (theme.id)}
         <button
           class="legend-item"
           class:active={filterThemeId === theme.id}
@@ -395,7 +396,7 @@
           <label for="theme-select">Theme</label>
           <select id="theme-select" bind:value={editThemeId}>
             <option value="">No theme</option>
-            {#each themes as theme}
+            {#each themes as theme (theme.id)}
               <option value={theme.id}>{theme.name}</option>
             {/each}
           </select>

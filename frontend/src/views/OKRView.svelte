@@ -8,6 +8,8 @@
    */
 
   import { onMount, untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
+  import { mockAppBindings } from '../lib/wails-mock';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
 
   // Props for cross-view navigation
@@ -59,7 +61,7 @@
   let error = $state<string | null>(null);
 
   // Unified expansion state for themes and objectives at any depth
-  let expandedIds = $state<Set<string>>(new Set());
+  let expandedIds = new SvelteSet<string>();
 
   // Editing state
   let editingThemeId = $state<string | null>(null);
@@ -84,10 +86,9 @@
   let editObjectiveTitle = $state('');
   let editKeyResultDescription = $state('');
 
-  // Check if running in Wails
-  function isWailsRuntime(): boolean {
-    return typeof window !== 'undefined' &&
-           !!(window as any).go?.main?.App;
+  // Get Wails bindings (with mock fallback for browser testing)
+  function getBindings() {
+    return window.go?.main?.App ?? mockAppBindings;
   }
 
   // Toggle expansion for any ID (theme or objective)
@@ -97,32 +98,20 @@
     } else {
       expandedIds.add(id);
     }
-    expandedIds = new Set(expandedIds);
   }
 
   // Helper to expand an ID (without toggling)
   function expandId(id: string) {
     expandedIds.add(id);
-    expandedIds = new Set(expandedIds);
   }
 
-  // Check if an objective has expandable children
-  function hasChildren(objective: Objective): boolean {
-    return (objective.objectives && objective.objectives.length > 0) ||
-           objective.keyResults.length > 0;
-  }
 
   // API calls
   async function loadThemes() {
     loading = true;
     error = null;
     try {
-      if (isWailsRuntime()) {
-        themes = await (window as any).go.main.App.GetThemes();
-      } else {
-        // Mock data for browser testing
-        themes = getMockThemes();
-      }
+      themes = await getBindings().GetThemes();
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load themes';
       console.error('Failed to load themes:', e);
@@ -135,9 +124,7 @@
     if (!newThemeName.trim()) return;
 
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.CreateTheme(newThemeName.trim(), newThemeColor);
-      }
+      await getBindings().CreateTheme(newThemeName.trim(), newThemeColor);
       await loadThemes();
       newThemeName = '';
       newThemeColor = COLOR_PALETTE[0];
@@ -150,9 +137,7 @@
 
   async function updateTheme(theme: LifeTheme) {
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.UpdateTheme(theme);
-      }
+      await getBindings().UpdateTheme(theme);
       await loadThemes();
       editingThemeId = null;
     } catch (e) {
@@ -165,9 +150,7 @@
     if (!confirm('Are you sure you want to delete this theme and all its objectives?')) return;
 
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.DeleteTheme(id);
-      }
+      await getBindings().DeleteTheme(id);
       await loadThemes();
     } catch (e) {
       console.error('Failed to delete theme:', e);
@@ -180,9 +163,7 @@
     if (!newObjectiveTitle.trim()) return;
 
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.CreateObjective(parentId, newObjectiveTitle.trim());
-      }
+      await getBindings().CreateObjective(parentId, newObjectiveTitle.trim());
       await loadThemes();
       newObjectiveTitle = '';
       addingObjectiveTo = null;
@@ -197,9 +178,7 @@
   // UpdateObjective — new API: (objectiveId, title)
   async function updateObjective(objectiveId: string, newTitle: string) {
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.UpdateObjective(objectiveId, newTitle);
-      }
+      await getBindings().UpdateObjective(objectiveId, newTitle);
       await loadThemes();
       editingObjectiveId = null;
     } catch (e) {
@@ -213,9 +192,7 @@
     if (!confirm('Are you sure you want to delete this objective and all its children?')) return;
 
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.DeleteObjective(objectiveId);
-      }
+      await getBindings().DeleteObjective(objectiveId);
       await loadThemes();
     } catch (e) {
       console.error('Failed to delete objective:', e);
@@ -228,9 +205,7 @@
     if (!newKeyResultDescription.trim()) return;
 
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.CreateKeyResult(objectiveId, newKeyResultDescription.trim());
-      }
+      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim());
       await loadThemes();
       newKeyResultDescription = '';
       addingKeyResultToObjective = null;
@@ -245,9 +220,7 @@
   // UpdateKeyResult — new API: (keyResultId, description)
   async function updateKeyResult(keyResultId: string, newDescription: string) {
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.UpdateKeyResult(keyResultId, newDescription);
-      }
+      await getBindings().UpdateKeyResult(keyResultId, newDescription);
       await loadThemes();
       editingKeyResultId = null;
     } catch (e) {
@@ -261,9 +234,7 @@
     if (!confirm('Are you sure you want to delete this key result?')) return;
 
     try {
-      if (isWailsRuntime()) {
-        await (window as any).go.main.App.DeleteKeyResult(keyResultId);
-      }
+      await getBindings().DeleteKeyResult(keyResultId);
       await loadThemes();
     } catch (e) {
       console.error('Failed to delete key result:', e);
@@ -312,63 +283,6 @@
     editingKeyResultId = null;
   }
 
-  // Extract theme ID from an objective ID (e.g., "THEME-01.OKR-01.OKR-02" -> "THEME-01")
-  function getThemeIdFromObjectiveId(objectiveId: string): string {
-    const dotIndex = objectiveId.indexOf('.');
-    return dotIndex > 0 ? objectiveId.substring(0, dotIndex) : '';
-  }
-
-  // Mock data for browser testing (includes nested objectives to demonstrate recursion)
-  function getMockThemes(): LifeTheme[] {
-    return [
-      {
-        id: 'THEME-01',
-        name: 'Health & Fitness',
-        color: '#10b981',
-        objectives: [
-          {
-            id: 'THEME-01.OKR-01',
-            title: 'Improve cardiovascular health',
-            keyResults: [
-              { id: 'THEME-01.OKR-01.KR-01', description: 'Run 5K in under 25 minutes' },
-              { id: 'THEME-01.OKR-01.KR-02', description: 'Exercise 4 times per week' },
-            ],
-            objectives: [
-              {
-                id: 'THEME-01.OKR-01.OKR-01',
-                title: 'Build running endurance',
-                keyResults: [
-                  { id: 'THEME-01.OKR-01.OKR-01.KR-01', description: 'Run 3 times per week for 8 weeks' },
-                ],
-              },
-            ],
-          },
-          {
-            id: 'THEME-01.OKR-02',
-            title: 'Build strength',
-            keyResults: [
-              { id: 'THEME-01.OKR-02.KR-01', description: 'Complete 50 push-ups in one set' },
-            ],
-          },
-        ],
-      },
-      {
-        id: 'THEME-02',
-        name: 'Career Growth',
-        color: '#3b82f6',
-        objectives: [
-          {
-            id: 'THEME-02.OKR-01',
-            title: 'Develop leadership skills',
-            keyResults: [
-              { id: 'THEME-02.OKR-01.KR-01', description: 'Lead 2 major projects' },
-              { id: 'THEME-02.OKR-01.KR-02', description: 'Mentor 1 junior developer' },
-            ],
-          },
-        ],
-      },
-    ];
-  }
 
   onMount(() => {
     loadThemes();
@@ -384,7 +298,6 @@
           const ancestorId = parts.slice(0, i).join('.');
           expandedIds.add(ancestorId);
         }
-        expandedIds = new Set(expandedIds);
       });
     }
   });
@@ -541,7 +454,7 @@
           onkeydown={(e) => { if (e.key === 'Enter') createTheme(); if (e.key === 'Escape') { showNewThemeForm = false; newThemeName = ''; } }}
         />
         <div class="color-picker">
-          {#each COLOR_PALETTE as color}
+          {#each COLOR_PALETTE as color (color)}
             <button
               class="color-option"
               class:selected={newThemeColor === color}
@@ -581,7 +494,7 @@
                 onkeydown={(e) => { if (e.key === 'Enter') submitEditTheme(theme); if (e.key === 'Escape') cancelEdit(); }}
               />
               <div class="color-picker inline">
-                {#each COLOR_PALETTE as color}
+                {#each COLOR_PALETTE as color (color)}
                   <button
                     class="color-option small"
                     class:selected={editThemeColor === color}

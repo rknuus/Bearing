@@ -47,7 +47,7 @@ generate: frontend-install ## Generate Wails bindings (required after cloning or
 	fi
 
 .PHONY: dev
-dev: generate ## Run Wails app in development mode with hot reload
+dev: generate frontend-lint ## Run Wails app in development mode with hot reload
 	@echo "Starting Wails development mode..."
 	@echo "Vite dev server with HMR enabled"
 	@echo "Native app window will open"
@@ -68,7 +68,7 @@ stop-dev: ## Stop any running dev servers
 ##@ Build
 
 .PHONY: build
-build: generate ## Build Wails desktop application
+build: generate frontend-lint ## Build Wails desktop application
 	@echo "Building $(APP_NAME)..."
 	@echo "Running TypeScript type checking..."
 	@cd frontend && npm run check
@@ -150,7 +150,7 @@ frontend-install: ## Install frontend dependencies
 	@cd frontend && npm install
 
 .PHONY: frontend-build
-frontend-build: ## Build frontend for production
+frontend-build: frontend-lint ## Build frontend for production
 	@echo "Running TypeScript type checking..."
 	@cd frontend && npm run check
 	@echo "Building frontend..."
@@ -161,10 +161,15 @@ frontend-check: ## Run TypeScript type checking
 	@echo "Running TypeScript type checking..."
 	@cd frontend && npm run check
 
+.PHONY: frontend-lint
+frontend-lint: ## Run frontend linter (ESLint + Svelte)
+	@echo "Running frontend linter..."
+	@cd frontend && npm run lint
+
 ##@ Utilities
 
 .PHONY: lint
-lint: ## Run Go linter
+lint: frontend-lint ## Run all linters (Go + frontend)
 	@echo "Running Go linter..."
 	golangci-lint run ./...
 
