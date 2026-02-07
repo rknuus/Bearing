@@ -6,7 +6,6 @@
    * Users can assign each day to a Life Theme (showing the theme's color) and add notes.
    */
 
-  import { onMount } from 'svelte';
   import { mockAppBindings, type LifeTheme, type DayFocus } from '../lib/wails-mock';
 
   // Props
@@ -42,20 +41,8 @@
     return window.go?.main?.App ?? mockAppBindings;
   }
 
-  // Track previous year to detect changes
-  let previousYear = $state(year);
-
-  // Load data on mount
-  onMount(async () => {
-    await loadData();
-  });
-
-  // Reload when year changes (not on loading state changes)
   $effect(() => {
-    if (year !== previousYear) {
-      previousYear = year;
-      loadData();
-    }
+    loadData();
   });
 
   async function loadData() {
