@@ -128,104 +128,167 @@ function findKeyResultParent(themes: LifeTheme[], krId: string): { objective: Ob
   return undefined;
 }
 
-/** Scan all objectives globally and return the max N from OBJ-N IDs. */
-function getMaxObjectiveNum(themes: LifeTheme[]): number {
+/** Find the theme that contains a given entity (objective, KR, or task by themeId). */
+function findThemeForObjective(themes: LifeTheme[], objectiveId: string): LifeTheme | undefined {
+  for (const theme of themes) {
+    if (findObjectiveInList(theme.objectives, objectiveId)) return theme;
+  }
+  return undefined;
+}
+
+function findObjectiveInList(objectives: Objective[], id: string): boolean {
+  for (const obj of objectives) {
+    if (obj.id === id) return true;
+    if (findObjectiveInList(obj.objectives || [], id)) return true;
+  }
+  return false;
+}
+
+/** Get max N from <abbr>-O<N> IDs within a single theme. */
+function getMaxObjNumInTheme(theme: LifeTheme): number {
+  const abbr = theme.id;
   let max = 0;
+  const re = new RegExp(`^${abbr}-O(\\d+)$`);
   function scan(objectives: Objective[]) {
     for (const obj of objectives) {
-      const match = obj.id.match(/^OBJ-(\d+)$/);
+      const match = obj.id.match(re);
       if (match) max = Math.max(max, parseInt(match[1]));
       scan(obj.objectives || []);
     }
   }
-  for (const theme of themes) scan(theme.objectives);
+  scan(theme.objectives);
   return max;
 }
 
-/** Scan all key results globally and return the max N from KR-N IDs. */
-function getMaxKeyResultNum(themes: LifeTheme[]): number {
+/** Get max N from <abbr>-KR<N> IDs within a single theme. */
+function getMaxKRNumInTheme(theme: LifeTheme): number {
+  const abbr = theme.id;
   let max = 0;
+  const re = new RegExp(`^${abbr}-KR(\\d+)$`);
   function scan(objectives: Objective[]) {
     for (const obj of objectives) {
       for (const kr of obj.keyResults) {
-        const match = kr.id.match(/^KR-(\d+)$/);
+        const match = kr.id.match(re);
         if (match) max = Math.max(max, parseInt(match[1]));
       }
       scan(obj.objectives || []);
     }
   }
-  for (const theme of themes) scan(theme.objectives);
+  scan(theme.objectives);
   return max;
+}
+
+/** Get max N from <abbr>-T<N> IDs for a given theme abbreviation. */
+function getMaxTaskNumForTheme(tasks: TaskWithStatus[], themeAbbr: string): number {
+  let max = 0;
+  const re = new RegExp(`^${themeAbbr}-T(\\d+)$`);
+  for (const t of tasks) {
+    const match = t.id.match(re);
+    if (match) max = Math.max(max, parseInt(match[1]));
+  }
+  return max;
+}
+
+/**
+ * Suggest a theme abbreviation from a name, avoiding collisions with existing themes.
+ */
+function suggestAbbreviation(name: string, existingThemes: LifeTheme[]): string {
+  const existingIds = new Set(existingThemes.map(t => t.id));
+  const words = name.trim().split(/\s+/).filter(w => w.length > 0);
+
+  if (words.length === 0) return 'A';
+
+  // Multi-word: first letter of each word (up to 3)
+  if (words.length >= 2) {
+    const abbr = words.slice(0, 3).map(w => w[0].toUpperCase()).join('');
+    if (!existingIds.has(abbr)) return abbr;
+  }
+
+  // Single word or multi-word collision: try progressive lengths
+  const word = words[0].toUpperCase();
+  for (let len = 1; len <= 3 && len <= word.length; len++) {
+    const abbr = word.substring(0, len);
+    if (!existingIds.has(abbr)) return abbr;
+  }
+
+  // Fallback: try A-Z suffixes
+  const base = word.substring(0, 2);
+  for (let c = 65; c <= 90; c++) {
+    const abbr = base + String.fromCharCode(c);
+    if (!existingIds.has(abbr)) return abbr;
+  }
+
+  return word.substring(0, 3);
 }
 
 // Mock data storage for browser testing
 let mockThemes: LifeTheme[] = [
   {
-    id: 'THEME-1',
+    id: 'HF',
     name: 'Health & Fitness',
     color: '#10b981',
     objectives: [
       {
-        id: 'OBJ-1',
-        parentId: 'THEME-1',
+        id: 'HF-O1',
+        parentId: 'HF',
         title: 'Improve cardiovascular health',
         keyResults: [
-          { id: 'KR-1', parentId: 'OBJ-1', description: 'Run 5K in under 25 minutes' },
-          { id: 'KR-2', parentId: 'OBJ-1', description: 'Exercise 4 times per week' },
+          { id: 'HF-KR1', parentId: 'HF-O1', description: 'Run 5K in under 25 minutes' },
+          { id: 'HF-KR2', parentId: 'HF-O1', description: 'Exercise 4 times per week' },
         ],
         objectives: [
           {
-            id: 'OBJ-3',
-            parentId: 'OBJ-1',
+            id: 'HF-O2',
+            parentId: 'HF-O1',
             title: 'Build running endurance',
             keyResults: [
-              { id: 'KR-3', parentId: 'OBJ-3', description: 'Run 3 times per week for 8 weeks' },
+              { id: 'HF-KR3', parentId: 'HF-O2', description: 'Run 3 times per week for 8 weeks' },
             ],
             objectives: [],
           },
         ],
       },
       {
-        id: 'OBJ-2',
-        parentId: 'THEME-1',
+        id: 'HF-O3',
+        parentId: 'HF',
         title: 'Build strength',
         keyResults: [
-          { id: 'KR-4', parentId: 'OBJ-2', description: 'Complete 50 push-ups in one set' },
+          { id: 'HF-KR4', parentId: 'HF-O3', description: 'Complete 50 push-ups in one set' },
         ],
         objectives: [],
       },
     ],
   },
   {
-    id: 'THEME-2',
+    id: 'CG',
     name: 'Career Growth',
     color: '#3b82f6',
     objectives: [
       {
-        id: 'OBJ-4',
-        parentId: 'THEME-2',
+        id: 'CG-O1',
+        parentId: 'CG',
         title: 'Develop leadership skills',
         keyResults: [
-          { id: 'KR-5', parentId: 'OBJ-4', description: 'Lead 2 major projects' },
-          { id: 'KR-6', parentId: 'OBJ-4', description: 'Mentor 1 junior developer' },
+          { id: 'CG-KR1', parentId: 'CG-O1', description: 'Lead 2 major projects' },
+          { id: 'CG-KR2', parentId: 'CG-O1', description: 'Mentor 1 junior developer' },
         ],
         objectives: [],
       },
     ],
   },
-  { id: 'THEME-3', name: 'Personal Finance', color: '#f59e0b', objectives: [] },
-  { id: 'THEME-4', name: 'Learning', color: '#8b5cf6', objectives: [] },
-  { id: 'THEME-5', name: 'Relationships', color: '#ec4899', objectives: [] },
+  { id: 'PF', name: 'Personal Finance', color: '#f59e0b', objectives: [] },
+  { id: 'L', name: 'Learning', color: '#8b5cf6', objectives: [] },
+  { id: 'R', name: 'Relationships', color: '#ec4899', objectives: [] },
 ];
 
 const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
-  { id: 'TASK-1', title: 'Complete project proposal', themeId: 'THEME-2', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo' },
-  { id: 'TASK-2', title: 'Review quarterly goals', themeId: 'THEME-1', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo' },
-  { id: 'TASK-3', title: 'Respond to emails', themeId: 'THEME-2', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing' },
-  { id: 'TASK-4', title: 'Update documentation', themeId: 'THEME-4', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done' },
+  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo' },
+  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo' },
+  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing' },
+  { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done' },
 ];
 
 // Mock navigation context storage
@@ -257,12 +320,9 @@ export const mockAppBindings = {
   },
 
   CreateTheme: async (name: string, color: string): Promise<LifeTheme> => {
-    const maxNum = mockThemes.reduce((max, t) => {
-      const match = t.id.match(/^THEME-(\d+)$/);
-      return match ? Math.max(max, parseInt(match[1])) : max;
-    }, 0);
+    const abbr = suggestAbbreviation(name, mockThemes);
     const newTheme: LifeTheme = {
-      id: `THEME-${maxNum + 1}`,
+      id: abbr,
       name,
       color,
       objectives: [],
@@ -285,11 +345,7 @@ export const mockAppBindings = {
     } else {
       // Generate ID if not provided
       if (!theme.id) {
-        const maxNum = mockThemes.reduce((max, t) => {
-          const match = t.id.match(/^THEME-(\d+)$/);
-          return match ? Math.max(max, parseInt(match[1])) : max;
-        }, 0);
-        theme.id = `THEME-${maxNum + 1}`;
+        theme.id = suggestAbbreviation(theme.name, mockThemes);
       }
       if (!theme.objectives) {
         theme.objectives = [];
@@ -302,12 +358,18 @@ export const mockAppBindings = {
     mockThemes = mockThemes.filter(t => t.id !== id);
   },
 
+  // Abbreviation suggestion
+  SuggestThemeAbbreviation: async (name: string): Promise<string> => {
+    return suggestAbbreviation(name, mockThemes);
+  },
+
   // Objective operations
   CreateObjective: async (parentId: string, title: string): Promise<Objective> => {
     // parentId can be a theme ID or an objective ID
     let parentObjectives: Objective[];
+    let theme: LifeTheme | undefined;
 
-    const theme = mockThemes.find(t => t.id === parentId);
+    theme = mockThemes.find(t => t.id === parentId);
     if (theme) {
       parentObjectives = theme.objectives;
     } else {
@@ -317,13 +379,14 @@ export const mockAppBindings = {
       }
       if (!parentObj.objectives) parentObj.objectives = [];
       parentObjectives = parentObj.objectives;
+      theme = findThemeForObjective(mockThemes, parentId);
     }
 
-    // Scan all objectives globally for max N
-    const maxNum = getMaxObjectiveNum(mockThemes);
+    if (!theme) throw new Error(`Theme not found for parent ${parentId}`);
 
+    const maxNum = getMaxObjNumInTheme(theme);
     const newObjective: Objective = {
-      id: `OBJ-${maxNum + 1}`,
+      id: `${theme.id}-O${maxNum + 1}`,
       parentId,
       title,
       keyResults: [],
@@ -356,11 +419,12 @@ export const mockAppBindings = {
       throw new Error(`Objective ${parentObjectiveId} not found`);
     }
 
-    // Scan all key results globally for max N
-    const maxNum = getMaxKeyResultNum(mockThemes);
+    const theme = findThemeForObjective(mockThemes, parentObjectiveId);
+    if (!theme) throw new Error(`Theme not found for objective ${parentObjectiveId}`);
 
+    const maxNum = getMaxKRNumInTheme(theme);
     const newKR: KeyResult = {
-      id: `KR-${maxNum + 1}`,
+      id: `${theme.id}-KR${maxNum + 1}`,
       parentId: parentObjectiveId,
       description,
     };
@@ -424,12 +488,9 @@ export const mockAppBindings = {
   },
 
   CreateTask: async (title: string, themeId: string, dayDate: string, priority: string): Promise<Task> => {
-    const maxNum = mockTasks.reduce((max, t) => {
-      const match = t.id.match(/^TASK-(\d+)$/);
-      return match ? Math.max(max, parseInt(match[1])) : max;
-    }, 0);
+    const maxNum = getMaxTaskNumForTheme(mockTasks, themeId);
     const newTask: TaskWithStatus = {
-      id: `TASK-${maxNum + 1}`,
+      id: `${themeId}-T${maxNum + 1}`,
       title,
       themeId,
       dayDate,

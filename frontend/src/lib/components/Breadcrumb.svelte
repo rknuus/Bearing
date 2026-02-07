@@ -10,7 +10,7 @@
   import type { main } from '../wails/wailsjs/go/models';
 
   interface Props {
-    /** Flat entity ID (e.g., "OBJ-2", "KR-3") */
+    /** Theme-scoped entity ID (e.g., "H-O2", "CF-KR3") */
     itemId: string;
     /** Theme data for building breadcrumb path */
     themes?: main.LifeTheme[];

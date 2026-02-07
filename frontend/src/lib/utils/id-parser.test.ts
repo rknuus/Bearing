@@ -7,6 +7,7 @@
 
 import {
   getIdType,
+  getThemeAbbr,
   buildBreadcrumbs,
 } from './id-parser';
 import { main } from '../wails/wailsjs/go/models';
@@ -22,42 +23,72 @@ function assertEqual<T>(actual: T, expected: T, message: string): void {
 
 // Test getIdType
 export function testGetIdType(): void {
-  assertEqual(getIdType('THEME-01'), 'theme', 'THEME- prefix returns theme');
-  assertEqual(getIdType('THEME-99'), 'theme', 'THEME- prefix with any number returns theme');
-  assertEqual(getIdType('OBJ-01'), 'okr', 'OBJ- prefix returns okr');
-  assertEqual(getIdType('OBJ-42'), 'okr', 'OBJ- prefix with any number returns okr');
-  assertEqual(getIdType('KR-01'), 'kr', 'KR- prefix returns kr');
-  assertEqual(getIdType('KR-123'), 'kr', 'KR- prefix with any number returns kr');
-  assertEqual(getIdType('TASK-01'), 'task', 'TASK- prefix returns task');
-  assertEqual(getIdType('TASK-007'), 'task', 'TASK- prefix with any number returns task');
+  // Theme IDs: 1-3 uppercase letters
+  assertEqual(getIdType('H'), 'theme', 'Single letter theme');
+  assertEqual(getIdType('CF'), 'theme', 'Two letter theme');
+  assertEqual(getIdType('LRN'), 'theme', 'Three letter theme');
+
+  // Objective IDs: <abbr>-O<n>
+  assertEqual(getIdType('H-O1'), 'okr', 'Single letter objective');
+  assertEqual(getIdType('CF-O42'), 'okr', 'Two letter objective');
+  assertEqual(getIdType('LRN-O3'), 'okr', 'Three letter objective');
+
+  // Key Result IDs: <abbr>-KR<n>
+  assertEqual(getIdType('H-KR1'), 'kr', 'Single letter KR');
+  assertEqual(getIdType('CF-KR12'), 'kr', 'Two letter KR');
+  assertEqual(getIdType('LRN-KR3'), 'kr', 'Three letter KR');
+
+  // Task IDs: <abbr>-T<n>
+  assertEqual(getIdType('H-T1'), 'task', 'Single letter task');
+  assertEqual(getIdType('CF-T7'), 'task', 'Two letter task');
+  assertEqual(getIdType('LRN-T99'), 'task', 'Three letter task');
+
+  // Invalid IDs
   assertEqual(getIdType(''), null, 'Empty string returns null');
-  assertEqual(getIdType('INVALID'), null, 'Unknown prefix returns null');
-  assertEqual(getIdType('FOO-01'), null, 'Unrecognized prefix returns null');
+  assertEqual(getIdType('INVALID'), null, 'Four+ letter string returns null');
+  assertEqual(getIdType('h-O1'), null, 'Lowercase abbreviation returns null');
+  assertEqual(getIdType('H-X1'), null, 'Unknown type prefix returns null');
+  assertEqual(getIdType('THEME-1'), null, 'Old format returns null');
 
   console.log('getIdType tests passed');
+}
+
+// Test getThemeAbbr
+export function testGetThemeAbbr(): void {
+  assertEqual(getThemeAbbr('H'), 'H', 'Theme ID returns itself');
+  assertEqual(getThemeAbbr('CF'), 'CF', 'Two-letter theme returns itself');
+  assertEqual(getThemeAbbr('H-O1'), 'H', 'Objective returns theme abbr');
+  assertEqual(getThemeAbbr('CF-KR2'), 'CF', 'KR returns theme abbr');
+  assertEqual(getThemeAbbr('LRN-T5'), 'LRN', 'Task returns theme abbr');
+  assertEqual(getThemeAbbr(''), null, 'Empty string returns null');
+  assertEqual(getThemeAbbr('INVALID'), null, 'Invalid ID returns null');
+
+  console.log('getThemeAbbr tests passed');
 }
 
 // Helper to create test theme data
 function makeThemes(): main.LifeTheme[] {
   return [
     new main.LifeTheme({
-      id: 'THEME-01',
+      id: 'H',
       name: 'Health',
       color: '#ff0000',
       objectives: [
         new main.Objective({
-          id: 'OBJ-01',
+          id: 'H-O1',
+          parentId: 'H',
           title: 'Get fit',
           keyResults: [
-            new main.KeyResult({ id: 'KR-01', description: 'Run 5k' }),
-            new main.KeyResult({ id: 'KR-02', description: 'Lose weight' }),
+            new main.KeyResult({ id: 'H-KR1', parentId: 'H-O1', description: 'Run 5k' }),
+            new main.KeyResult({ id: 'H-KR2', parentId: 'H-O1', description: 'Lose weight' }),
           ],
           objectives: [
             new main.Objective({
-              id: 'OBJ-03',
+              id: 'H-O2',
+              parentId: 'H-O1',
               title: 'Nested objective',
               keyResults: [
-                new main.KeyResult({ id: 'KR-04', description: 'Nested KR' }),
+                new main.KeyResult({ id: 'H-KR3', parentId: 'H-O2', description: 'Nested KR' }),
               ],
               objectives: [],
             }),
@@ -66,15 +97,16 @@ function makeThemes(): main.LifeTheme[] {
       ],
     }),
     new main.LifeTheme({
-      id: 'THEME-02',
+      id: 'C',
       name: 'Career',
       color: '#00ff00',
       objectives: [
         new main.Objective({
-          id: 'OBJ-02',
+          id: 'C-O1',
+          parentId: 'C',
           title: 'Get promoted',
           keyResults: [
-            new main.KeyResult({ id: 'KR-03', description: 'Ship project' }),
+            new main.KeyResult({ id: 'C-KR1', parentId: 'C-O1', description: 'Ship project' }),
           ],
           objectives: [],
         }),
@@ -89,86 +121,86 @@ export function testBuildBreadcrumbs(): void {
 
   // Theme itself
   assertEqual(
-    buildBreadcrumbs('THEME-01', themes),
-    [{ id: 'THEME-01', type: 'theme', label: 'Theme 01' }],
+    buildBreadcrumbs('H', themes),
+    [{ id: 'H', type: 'theme', label: 'H' }],
     'Theme returns single breadcrumb'
   );
 
   // Objective under a theme
   assertEqual(
-    buildBreadcrumbs('OBJ-01', themes),
+    buildBreadcrumbs('H-O1', themes),
     [
-      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
-      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
+      { id: 'H', type: 'theme', label: 'H' },
+      { id: 'H-O1', type: 'okr', label: 'OKR 1' },
     ],
     'Objective returns theme + objective breadcrumbs'
   );
 
   // Key result under an objective
   assertEqual(
-    buildBreadcrumbs('KR-01', themes),
+    buildBreadcrumbs('H-KR1', themes),
     [
-      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
-      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
-      { id: 'KR-01', type: 'kr', label: 'KR 01' },
+      { id: 'H', type: 'theme', label: 'H' },
+      { id: 'H-O1', type: 'okr', label: 'OKR 1' },
+      { id: 'H-KR1', type: 'kr', label: 'KR 1' },
     ],
     'Key result returns full breadcrumb path'
   );
 
   // Key result in second theme
   assertEqual(
-    buildBreadcrumbs('KR-03', themes),
+    buildBreadcrumbs('C-KR1', themes),
     [
-      { id: 'THEME-02', type: 'theme', label: 'Theme 02' },
-      { id: 'OBJ-02', type: 'okr', label: 'OBJ 02' },
-      { id: 'KR-03', type: 'kr', label: 'KR 03' },
+      { id: 'C', type: 'theme', label: 'C' },
+      { id: 'C-O1', type: 'okr', label: 'OKR 1' },
+      { id: 'C-KR1', type: 'kr', label: 'KR 1' },
     ],
     'Key result in second theme returns correct path'
   );
 
   // Nested objective
   assertEqual(
-    buildBreadcrumbs('OBJ-03', themes),
+    buildBreadcrumbs('H-O2', themes),
     [
-      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
-      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
-      { id: 'OBJ-03', type: 'okr', label: 'OBJ 03' },
+      { id: 'H', type: 'theme', label: 'H' },
+      { id: 'H-O1', type: 'okr', label: 'OKR 1' },
+      { id: 'H-O2', type: 'okr', label: 'OKR 2' },
     ],
     'Nested objective returns full path through parent objective'
   );
 
   // Key result under nested objective
   assertEqual(
-    buildBreadcrumbs('KR-04', themes),
+    buildBreadcrumbs('H-KR3', themes),
     [
-      { id: 'THEME-01', type: 'theme', label: 'Theme 01' },
-      { id: 'OBJ-01', type: 'okr', label: 'OBJ 01' },
-      { id: 'OBJ-03', type: 'okr', label: 'OBJ 03' },
-      { id: 'KR-04', type: 'kr', label: 'KR 04' },
+      { id: 'H', type: 'theme', label: 'H' },
+      { id: 'H-O1', type: 'okr', label: 'OKR 1' },
+      { id: 'H-O2', type: 'okr', label: 'OKR 2' },
+      { id: 'H-KR3', type: 'kr', label: 'KR 3' },
     ],
     'KR under nested objective returns full path'
   );
 
   // ID not in any theme but has recognizable type
   assertEqual(
-    buildBreadcrumbs('OBJ-99', themes),
-    [{ id: 'OBJ-99', type: 'okr', label: 'OBJ 99' }],
-    'Unknown ID with valid prefix returns single segment'
+    buildBreadcrumbs('X-O99', themes),
+    [{ id: 'X-O99', type: 'okr', label: 'OKR 99' }],
+    'Unknown ID with valid pattern returns single segment'
   );
 
   // Completely unknown ID
   assertEqual(
     buildBreadcrumbs('INVALID', themes),
     [],
-    'Unknown ID with no valid prefix returns empty array'
+    'Unknown ID with no valid pattern returns empty array'
   );
 
   // Empty inputs
   assertEqual(buildBreadcrumbs('', themes), [], 'Empty ID returns empty array');
   assertEqual(
-    buildBreadcrumbs('THEME-01', []),
-    [{ id: 'THEME-01', type: 'theme', label: 'Theme 01' }],
-    'Empty themes with valid prefix returns single fallback segment'
+    buildBreadcrumbs('H', []),
+    [{ id: 'H', type: 'theme', label: 'H' }],
+    'Empty themes with valid pattern returns single fallback segment'
   );
 
   console.log('buildBreadcrumbs tests passed');
@@ -178,6 +210,7 @@ export function testBuildBreadcrumbs(): void {
 export function runAllTests(): void {
   console.log('Running id-parser tests...');
   testGetIdType();
+  testGetThemeAbbr();
   testBuildBreadcrumbs();
   console.log('All id-parser tests passed!');
 }

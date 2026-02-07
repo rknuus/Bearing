@@ -211,8 +211,8 @@ func TestSaveTheme_NewTheme(t *testing.T) {
 	}
 
 	saved := themes[0]
-	if saved.ID != "THEME-1" {
-		t.Errorf("Expected ID THEME-1, got %s", saved.ID)
+	if saved.ID != "H" {
+		t.Errorf("Expected ID H, got %s", saved.ID)
 	}
 	if saved.Name != "Health" {
 		t.Errorf("Expected name Health, got %s", saved.Name)
@@ -221,32 +221,32 @@ func TestSaveTheme_NewTheme(t *testing.T) {
 		t.Errorf("Expected color #00FF00, got %s", saved.Color)
 	}
 
-	// Check flat IDs and parentId
+	// Check theme-scoped IDs and parentId
 	if len(saved.Objectives) != 1 {
 		t.Fatalf("Expected 1 objective, got %d", len(saved.Objectives))
 	}
 	obj := saved.Objectives[0]
-	if obj.ID != "OBJ-1" {
-		t.Errorf("Expected objective ID OBJ-1, got %s", obj.ID)
+	if obj.ID != "H-O1" {
+		t.Errorf("Expected objective ID H-O1, got %s", obj.ID)
 	}
-	if obj.ParentID != "THEME-1" {
-		t.Errorf("Expected objective ParentID THEME-1, got %s", obj.ParentID)
+	if obj.ParentID != "H" {
+		t.Errorf("Expected objective ParentID H, got %s", obj.ParentID)
 	}
 
 	if len(obj.KeyResults) != 2 {
 		t.Fatalf("Expected 2 key results, got %d", len(obj.KeyResults))
 	}
-	if obj.KeyResults[0].ID != "KR-1" {
-		t.Errorf("Expected KR ID KR-1, got %s", obj.KeyResults[0].ID)
+	if obj.KeyResults[0].ID != "H-KR1" {
+		t.Errorf("Expected KR ID H-KR1, got %s", obj.KeyResults[0].ID)
 	}
-	if obj.KeyResults[0].ParentID != "OBJ-1" {
-		t.Errorf("Expected KR ParentID OBJ-1, got %s", obj.KeyResults[0].ParentID)
+	if obj.KeyResults[0].ParentID != "H-O1" {
+		t.Errorf("Expected KR ParentID H-O1, got %s", obj.KeyResults[0].ParentID)
 	}
-	if obj.KeyResults[1].ID != "KR-2" {
-		t.Errorf("Expected KR ID KR-2, got %s", obj.KeyResults[1].ID)
+	if obj.KeyResults[1].ID != "H-KR2" {
+		t.Errorf("Expected KR ID H-KR2, got %s", obj.KeyResults[1].ID)
 	}
-	if obj.KeyResults[1].ParentID != "OBJ-1" {
-		t.Errorf("Expected KR ParentID OBJ-1, got %s", obj.KeyResults[1].ParentID)
+	if obj.KeyResults[1].ParentID != "H-O1" {
+		t.Errorf("Expected KR ParentID H-O1, got %s", obj.KeyResults[1].ParentID)
 	}
 }
 
@@ -264,9 +264,9 @@ func TestSaveTheme_UpdateExisting(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	// Update the theme
+	// Update the theme (keep same ID)
 	updatedTheme := LifeTheme{
-		ID:    "THEME-1",
+		ID:    "H",
 		Name:  "Health & Wellness",
 		Color: "#00FF99",
 	}
@@ -315,8 +315,8 @@ func TestSaveTheme_MultipleThemes(t *testing.T) {
 		t.Fatalf("Expected 3 themes, got %d", len(saved))
 	}
 
-	// Verify IDs are sequential
-	expectedIDs := []string{"THEME-1", "THEME-2", "THEME-3"}
+	// Verify IDs are abbreviations derived from names
+	expectedIDs := []string{"H", "C", "F"}
 	for i, theme := range saved {
 		if theme.ID != expectedIDs[i] {
 			t.Errorf("Expected ID %s, got %s", expectedIDs[i], theme.ID)
@@ -340,7 +340,7 @@ func TestDeleteTheme(t *testing.T) {
 	}
 
 	// Delete first theme
-	err := pa.DeleteTheme("THEME-1")
+	err := pa.DeleteTheme("H")
 	if err != nil {
 		t.Fatalf("DeleteTheme failed: %v", err)
 	}
@@ -355,8 +355,8 @@ func TestDeleteTheme(t *testing.T) {
 		t.Fatalf("Expected 1 theme, got %d", len(themes))
 	}
 
-	if themes[0].ID != "THEME-2" {
-		t.Errorf("Expected remaining theme to be THEME-2, got %s", themes[0].ID)
+	if themes[0].ID != "C" {
+		t.Errorf("Expected remaining theme to be C, got %s", themes[0].ID)
 	}
 }
 
@@ -364,7 +364,7 @@ func TestDeleteTheme_NotFound(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	err := pa.DeleteTheme("THEME-99")
+	err := pa.DeleteTheme("ZZZ")
 	if err == nil {
 		t.Error("Expected error when deleting non-existent theme")
 	}
@@ -399,7 +399,7 @@ func TestSaveDayFocus(t *testing.T) {
 	// Save day focus
 	dayFocus := DayFocus{
 		Date:    "2026-01-15",
-		ThemeID: "THEME-1",
+		ThemeID: "H",
 		Notes:   "Focus on morning exercise",
 	}
 
@@ -421,8 +421,8 @@ func TestSaveDayFocus(t *testing.T) {
 	if retrieved.Date != "2026-01-15" {
 		t.Errorf("Expected date 2026-01-15, got %s", retrieved.Date)
 	}
-	if retrieved.ThemeID != "THEME-1" {
-		t.Errorf("Expected themeID THEME-1, got %s", retrieved.ThemeID)
+	if retrieved.ThemeID != "H" {
+		t.Errorf("Expected themeID H, got %s", retrieved.ThemeID)
 	}
 	if retrieved.Notes != "Focus on morning exercise" {
 		t.Errorf("Expected notes, got %s", retrieved.Notes)
@@ -436,7 +436,7 @@ func TestSaveDayFocus_Update(t *testing.T) {
 	// Save initial day focus
 	dayFocus := DayFocus{
 		Date:    "2026-01-15",
-		ThemeID: "THEME-1",
+		ThemeID: "H",
 		Notes:   "Initial notes",
 	}
 
@@ -467,9 +467,9 @@ func TestGetYearFocus(t *testing.T) {
 
 	// Save multiple day focuses
 	days := []DayFocus{
-		{Date: "2026-01-15", ThemeID: "THEME-1", Notes: "Day 1"},
-		{Date: "2026-01-16", ThemeID: "THEME-1", Notes: "Day 2"},
-		{Date: "2026-02-01", ThemeID: "THEME-2", Notes: "Day 3"},
+		{Date: "2026-01-15", ThemeID: "H", Notes: "Day 1"},
+		{Date: "2026-01-16", ThemeID: "H", Notes: "Day 2"},
+		{Date: "2026-02-01", ThemeID: "C", Notes: "Day 3"},
 	}
 
 	for _, day := range days {
@@ -526,7 +526,7 @@ func TestSaveTask_NewTask(t *testing.T) {
 	// Save task
 	task := Task{
 		Title:    "Morning run",
-		ThemeID:  "THEME-1",
+		ThemeID:  "H",
 		DayDate:  "2026-01-15",
 		Priority: string(PriorityImportantUrgent),
 	}
@@ -537,7 +537,7 @@ func TestSaveTask_NewTask(t *testing.T) {
 	}
 
 	// Retrieve and verify
-	tasks, err := pa.GetTasksByTheme("THEME-1")
+	tasks, err := pa.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -547,8 +547,8 @@ func TestSaveTask_NewTask(t *testing.T) {
 	}
 
 	saved := tasks[0]
-	if saved.ID != "TASK-1" {
-		t.Errorf("Expected ID TASK-1, got %s", saved.ID)
+	if saved.ID != "H-T1" {
+		t.Errorf("Expected ID H-T1, got %s", saved.ID)
 	}
 	if saved.Title != "Morning run" {
 		t.Errorf("Expected title 'Morning run', got %s", saved.Title)
@@ -582,7 +582,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	// Save task (defaults to todo)
 	task := Task{
 		Title:   "Morning run",
-		ThemeID: "THEME-1",
+		ThemeID: "H",
 	}
 
 	if err := pa.SaveTask(task); err != nil {
@@ -590,7 +590,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	}
 
 	// Get tasks by status
-	todoTasks, err := pa.GetTasksByStatus("THEME-1", "todo")
+	todoTasks, err := pa.GetTasksByStatus("H", "todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -600,7 +600,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	}
 
 	// No doing tasks
-	doingTasks, err := pa.GetTasksByStatus("THEME-1", "doing")
+	doingTasks, err := pa.GetTasksByStatus("H", "doing")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -614,7 +614,7 @@ func TestGetTasksByStatus_InvalidStatus(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	_, err := pa.GetTasksByStatus("THEME-1", "invalid")
+	_, err := pa.GetTasksByStatus("H", "invalid")
 	if err == nil {
 		t.Error("Expected error for invalid status")
 	}
@@ -633,7 +633,7 @@ func TestMoveTask(t *testing.T) {
 	// Save task
 	task := Task{
 		Title:   "Morning run",
-		ThemeID: "THEME-1",
+		ThemeID: "H",
 	}
 
 	if err := pa.SaveTask(task); err != nil {
@@ -641,14 +641,14 @@ func TestMoveTask(t *testing.T) {
 	}
 
 	// Move to doing
-	err := pa.MoveTask("TASK-1", "doing")
+	err := pa.MoveTask("H-T1", "doing")
 	if err != nil {
 		t.Fatalf("MoveTask failed: %v", err)
 	}
 
 	// Verify task moved
-	todoTasks, _ := pa.GetTasksByStatus("THEME-1", "todo")
-	doingTasks, _ := pa.GetTasksByStatus("THEME-1", "doing")
+	todoTasks, _ := pa.GetTasksByStatus("H", "todo")
+	doingTasks, _ := pa.GetTasksByStatus("H", "doing")
 
 	if len(todoTasks) != 0 {
 		t.Errorf("Expected 0 todo tasks, got %d", len(todoTasks))
@@ -658,13 +658,13 @@ func TestMoveTask(t *testing.T) {
 	}
 
 	// Verify file exists in new location
-	newPath := filepath.Join(tmpDir, "data", "tasks", "THEME-1", "doing", "TASK-1.json")
+	newPath := filepath.Join(tmpDir, "data", "tasks", "H", "doing", "H-T1.json")
 	if _, err := os.Stat(newPath); os.IsNotExist(err) {
 		t.Error("Task file not found in new location")
 	}
 
 	// Verify file removed from old location
-	oldPath := filepath.Join(tmpDir, "data", "tasks", "THEME-1", "todo", "TASK-1.json")
+	oldPath := filepath.Join(tmpDir, "data", "tasks", "H", "todo", "H-T1.json")
 	if _, err := os.Stat(oldPath); !os.IsNotExist(err) {
 		t.Error("Task file should not exist in old location")
 	}
@@ -674,7 +674,7 @@ func TestMoveTask_InvalidStatus(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	err := pa.MoveTask("TASK-1", "invalid")
+	err := pa.MoveTask("H-T1", "invalid")
 	if err == nil {
 		t.Error("Expected error for invalid status")
 	}
@@ -690,7 +690,7 @@ func TestMoveTask_NotFound(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	err := pa.MoveTask("TASK-999", "doing")
+	err := pa.MoveTask("H-T999", "doing")
 	if err == nil {
 		t.Error("Expected error for non-existent task")
 	}
@@ -709,7 +709,7 @@ func TestDeleteTask(t *testing.T) {
 	// Save task
 	task := Task{
 		Title:   "Morning run",
-		ThemeID: "THEME-1",
+		ThemeID: "H",
 	}
 
 	if err := pa.SaveTask(task); err != nil {
@@ -717,13 +717,13 @@ func TestDeleteTask(t *testing.T) {
 	}
 
 	// Delete task
-	err := pa.DeleteTask("TASK-1")
+	err := pa.DeleteTask("H-T1")
 	if err != nil {
 		t.Fatalf("DeleteTask failed: %v", err)
 	}
 
 	// Verify deletion
-	tasks, err := pa.GetTasksByTheme("THEME-1")
+	tasks, err := pa.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -733,7 +733,7 @@ func TestDeleteTask(t *testing.T) {
 	}
 
 	// Verify file removed
-	taskPath := filepath.Join(tmpDir, "data", "tasks", "THEME-1", "todo", "TASK-1.json")
+	taskPath := filepath.Join(tmpDir, "data", "tasks", "H", "todo", "H-T1.json")
 	if _, err := os.Stat(taskPath); !os.IsNotExist(err) {
 		t.Error("Task file should not exist after deletion")
 	}
@@ -749,7 +749,7 @@ func TestDeleteTask_NotFound(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	err := pa.DeleteTask("TASK-999")
+	err := pa.DeleteTask("H-T999")
 	if err == nil {
 		t.Error("Expected error for non-existent task")
 	}
@@ -790,46 +790,46 @@ func TestFlatIDGeneration(t *testing.T) {
 	saved := themes[0]
 
 	// Theme ID
-	if saved.ID != "THEME-1" {
-		t.Errorf("Expected theme ID THEME-1, got %s", saved.ID)
+	if saved.ID != "H" {
+		t.Errorf("Expected theme ID H, got %s", saved.ID)
 	}
 
 	// First objective
-	if saved.Objectives[0].ID != "OBJ-1" {
-		t.Errorf("Expected objective ID OBJ-1, got %s", saved.Objectives[0].ID)
+	if saved.Objectives[0].ID != "H-O1" {
+		t.Errorf("Expected objective ID H-O1, got %s", saved.Objectives[0].ID)
 	}
-	if saved.Objectives[0].ParentID != "THEME-1" {
-		t.Errorf("Expected objective ParentID THEME-1, got %s", saved.Objectives[0].ParentID)
+	if saved.Objectives[0].ParentID != "H" {
+		t.Errorf("Expected objective ParentID H, got %s", saved.Objectives[0].ParentID)
 	}
 
 	// First objective's key results
-	if saved.Objectives[0].KeyResults[0].ID != "KR-1" {
-		t.Errorf("Expected KR ID KR-1, got %s", saved.Objectives[0].KeyResults[0].ID)
+	if saved.Objectives[0].KeyResults[0].ID != "H-KR1" {
+		t.Errorf("Expected KR ID H-KR1, got %s", saved.Objectives[0].KeyResults[0].ID)
 	}
-	if saved.Objectives[0].KeyResults[0].ParentID != "OBJ-1" {
-		t.Errorf("Expected KR ParentID OBJ-1, got %s", saved.Objectives[0].KeyResults[0].ParentID)
+	if saved.Objectives[0].KeyResults[0].ParentID != "H-O1" {
+		t.Errorf("Expected KR ParentID H-O1, got %s", saved.Objectives[0].KeyResults[0].ParentID)
 	}
-	if saved.Objectives[0].KeyResults[1].ID != "KR-2" {
-		t.Errorf("Expected KR ID KR-2, got %s", saved.Objectives[0].KeyResults[1].ID)
+	if saved.Objectives[0].KeyResults[1].ID != "H-KR2" {
+		t.Errorf("Expected KR ID H-KR2, got %s", saved.Objectives[0].KeyResults[1].ID)
 	}
-	if saved.Objectives[0].KeyResults[1].ParentID != "OBJ-1" {
-		t.Errorf("Expected KR ParentID OBJ-1, got %s", saved.Objectives[0].KeyResults[1].ParentID)
+	if saved.Objectives[0].KeyResults[1].ParentID != "H-O1" {
+		t.Errorf("Expected KR ParentID H-O1, got %s", saved.Objectives[0].KeyResults[1].ParentID)
 	}
 
 	// Second objective
-	if saved.Objectives[1].ID != "OBJ-2" {
-		t.Errorf("Expected objective ID OBJ-2, got %s", saved.Objectives[1].ID)
+	if saved.Objectives[1].ID != "H-O2" {
+		t.Errorf("Expected objective ID H-O2, got %s", saved.Objectives[1].ID)
 	}
-	if saved.Objectives[1].ParentID != "THEME-1" {
-		t.Errorf("Expected objective ParentID THEME-1, got %s", saved.Objectives[1].ParentID)
+	if saved.Objectives[1].ParentID != "H" {
+		t.Errorf("Expected objective ParentID H, got %s", saved.Objectives[1].ParentID)
 	}
 
 	// Second objective's key result
-	if saved.Objectives[1].KeyResults[0].ID != "KR-3" {
-		t.Errorf("Expected KR ID KR-3, got %s", saved.Objectives[1].KeyResults[0].ID)
+	if saved.Objectives[1].KeyResults[0].ID != "H-KR3" {
+		t.Errorf("Expected KR ID H-KR3, got %s", saved.Objectives[1].KeyResults[0].ID)
 	}
-	if saved.Objectives[1].KeyResults[0].ParentID != "OBJ-2" {
-		t.Errorf("Expected KR ParentID OBJ-2, got %s", saved.Objectives[1].KeyResults[0].ParentID)
+	if saved.Objectives[1].KeyResults[0].ParentID != "H-O2" {
+		t.Errorf("Expected KR ParentID H-O2, got %s", saved.Objectives[1].KeyResults[0].ParentID)
 	}
 }
 
@@ -849,14 +849,14 @@ func TestTaskIDGeneration(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		task := Task{
 			Title:   "Task",
-			ThemeID: "THEME-1",
+			ThemeID: "H",
 		}
 		if err := pa.SaveTask(task); err != nil {
 			t.Fatalf("SaveTask failed: %v", err)
 		}
 	}
 
-	tasks, err := pa.GetTasksByTheme("THEME-1")
+	tasks, err := pa.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -866,7 +866,7 @@ func TestTaskIDGeneration(t *testing.T) {
 	}
 
 	// Verify sequential IDs
-	expectedIDs := []string{"TASK-1", "TASK-2", "TASK-3", "TASK-4", "TASK-5"}
+	expectedIDs := []string{"H-T1", "H-T2", "H-T3", "H-T4", "H-T5"}
 	idMap := make(map[string]bool)
 	for _, task := range tasks {
 		idMap[task.ID] = true
@@ -926,7 +926,7 @@ func TestFileStructure(t *testing.T) {
 	}
 
 	// Save day focus and verify calendar structure
-	dayFocus := DayFocus{Date: "2026-01-15", ThemeID: "THEME-1", Notes: "Test"}
+	dayFocus := DayFocus{Date: "2026-01-15", ThemeID: "H", Notes: "Test"}
 	if err := pa.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("SaveDayFocus failed: %v", err)
 	}
@@ -937,14 +937,14 @@ func TestFileStructure(t *testing.T) {
 	}
 
 	// Save task and verify task structure
-	task := Task{Title: "Test task", ThemeID: "THEME-1"}
+	task := Task{Title: "Test task", ThemeID: "H"}
 	if err := pa.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
-	taskPath := filepath.Join(dataDir, "tasks", "THEME-1", "todo", "TASK-1.json")
+	taskPath := filepath.Join(dataDir, "tasks", "H", "todo", "H-T1.json")
 	if _, err := os.Stat(taskPath); os.IsNotExist(err) {
-		t.Error("TASK-1.json should exist in todo directory")
+		t.Error("H-T1.json should exist in todo directory")
 	}
 }
 
@@ -997,13 +997,13 @@ func TestGitVersioning_MoveTaskUsesGitMv(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	task := Task{Title: "Test task", ThemeID: "THEME-1"}
+	task := Task{Title: "Test task", ThemeID: "H"}
 	if err := pa.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Move task
-	if err := pa.MoveTask("TASK-1", "doing"); err != nil {
+	if err := pa.MoveTask("H-T1", "doing"); err != nil {
 		t.Fatalf("MoveTask failed: %v", err)
 	}
 
@@ -1080,70 +1080,70 @@ func TestRecursiveObjectiveIDGeneration(t *testing.T) {
 	themes, _ := pa.GetThemes()
 	saved := themes[0]
 
-	// Top-level objective: OBJ-1 (Fitness), parentId = THEME-1
+	// Top-level objective: H-O1 (Fitness), parentId = H
 	obj1 := saved.Objectives[0]
-	if obj1.ID != "OBJ-1" {
-		t.Errorf("Expected OBJ-1, got %s", obj1.ID)
+	if obj1.ID != "H-O1" {
+		t.Errorf("Expected H-O1, got %s", obj1.ID)
 	}
-	if obj1.ParentID != "THEME-1" {
-		t.Errorf("Expected ParentID THEME-1, got %s", obj1.ParentID)
+	if obj1.ParentID != "H" {
+		t.Errorf("Expected ParentID H, got %s", obj1.ParentID)
 	}
-	if obj1.KeyResults[0].ID != "KR-1" {
-		t.Errorf("Expected KR-1, got %s", obj1.KeyResults[0].ID)
+	if obj1.KeyResults[0].ID != "H-KR1" {
+		t.Errorf("Expected H-KR1, got %s", obj1.KeyResults[0].ID)
 	}
-	if obj1.KeyResults[0].ParentID != "OBJ-1" {
-		t.Errorf("Expected KR ParentID OBJ-1, got %s", obj1.KeyResults[0].ParentID)
+	if obj1.KeyResults[0].ParentID != "H-O1" {
+		t.Errorf("Expected KR ParentID H-O1, got %s", obj1.KeyResults[0].ParentID)
 	}
 
-	// Second-level objective: OBJ-2 (Cardio), parentId = OBJ-1
+	// Second-level objective: H-O2 (Cardio), parentId = H-O1
 	child1 := obj1.Objectives[0]
-	if child1.ID != "OBJ-2" {
-		t.Errorf("Expected OBJ-2, got %s", child1.ID)
+	if child1.ID != "H-O2" {
+		t.Errorf("Expected H-O2, got %s", child1.ID)
 	}
-	if child1.ParentID != "OBJ-1" {
-		t.Errorf("Expected ParentID OBJ-1, got %s", child1.ParentID)
+	if child1.ParentID != "H-O1" {
+		t.Errorf("Expected ParentID H-O1, got %s", child1.ParentID)
 	}
-	if child1.KeyResults[0].ID != "KR-2" {
-		t.Errorf("Expected KR-2, got %s", child1.KeyResults[0].ID)
+	if child1.KeyResults[0].ID != "H-KR2" {
+		t.Errorf("Expected H-KR2, got %s", child1.KeyResults[0].ID)
 	}
-	if child1.KeyResults[0].ParentID != "OBJ-2" {
-		t.Errorf("Expected KR ParentID OBJ-2, got %s", child1.KeyResults[0].ParentID)
+	if child1.KeyResults[0].ParentID != "H-O2" {
+		t.Errorf("Expected KR ParentID H-O2, got %s", child1.KeyResults[0].ParentID)
 	}
-	if child1.KeyResults[1].ID != "KR-3" {
-		t.Errorf("Expected KR-3, got %s", child1.KeyResults[1].ID)
+	if child1.KeyResults[1].ID != "H-KR3" {
+		t.Errorf("Expected H-KR3, got %s", child1.KeyResults[1].ID)
 	}
-	if child1.KeyResults[1].ParentID != "OBJ-2" {
-		t.Errorf("Expected KR ParentID OBJ-2, got %s", child1.KeyResults[1].ParentID)
+	if child1.KeyResults[1].ParentID != "H-O2" {
+		t.Errorf("Expected KR ParentID H-O2, got %s", child1.KeyResults[1].ParentID)
 	}
 
-	// Third-level objective: OBJ-3 (Marathon prep), parentId = OBJ-2
+	// Third-level objective: H-O3 (Marathon prep), parentId = H-O2
 	grandchild := child1.Objectives[0]
-	if grandchild.ID != "OBJ-3" {
-		t.Errorf("Expected OBJ-3, got %s", grandchild.ID)
+	if grandchild.ID != "H-O3" {
+		t.Errorf("Expected H-O3, got %s", grandchild.ID)
 	}
-	if grandchild.ParentID != "OBJ-2" {
-		t.Errorf("Expected ParentID OBJ-2, got %s", grandchild.ParentID)
+	if grandchild.ParentID != "H-O2" {
+		t.Errorf("Expected ParentID H-O2, got %s", grandchild.ParentID)
 	}
-	if grandchild.KeyResults[0].ID != "KR-4" {
-		t.Errorf("Expected KR-4, got %s", grandchild.KeyResults[0].ID)
+	if grandchild.KeyResults[0].ID != "H-KR4" {
+		t.Errorf("Expected H-KR4, got %s", grandchild.KeyResults[0].ID)
 	}
-	if grandchild.KeyResults[0].ParentID != "OBJ-3" {
-		t.Errorf("Expected KR ParentID OBJ-3, got %s", grandchild.KeyResults[0].ParentID)
+	if grandchild.KeyResults[0].ParentID != "H-O3" {
+		t.Errorf("Expected KR ParentID H-O3, got %s", grandchild.KeyResults[0].ParentID)
 	}
 
-	// Second-level objective: OBJ-4 (Strength), parentId = OBJ-1
+	// Second-level objective: H-O4 (Strength), parentId = H-O1
 	child2 := obj1.Objectives[1]
-	if child2.ID != "OBJ-4" {
-		t.Errorf("Expected OBJ-4, got %s", child2.ID)
+	if child2.ID != "H-O4" {
+		t.Errorf("Expected H-O4, got %s", child2.ID)
 	}
-	if child2.ParentID != "OBJ-1" {
-		t.Errorf("Expected ParentID OBJ-1, got %s", child2.ParentID)
+	if child2.ParentID != "H-O1" {
+		t.Errorf("Expected ParentID H-O1, got %s", child2.ParentID)
 	}
-	if child2.KeyResults[0].ID != "KR-5" {
-		t.Errorf("Expected KR-5, got %s", child2.KeyResults[0].ID)
+	if child2.KeyResults[0].ID != "H-KR5" {
+		t.Errorf("Expected H-KR5, got %s", child2.KeyResults[0].ID)
 	}
-	if child2.KeyResults[0].ParentID != "OBJ-4" {
-		t.Errorf("Expected KR ParentID OBJ-4, got %s", child2.KeyResults[0].ParentID)
+	if child2.KeyResults[0].ParentID != "H-O4" {
+		t.Errorf("Expected KR ParentID H-O4, got %s", child2.KeyResults[0].ParentID)
 	}
 }
 
@@ -1179,33 +1179,33 @@ func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
 	themes, _ := pa.GetThemes()
 	initial := themes[0]
 
-	// Verify initial IDs: OBJ-1, OBJ-2, KR-1
-	if initial.Objectives[0].ID != "OBJ-1" {
-		t.Fatalf("Expected initial objective ID OBJ-1, got %s", initial.Objectives[0].ID)
+	// Verify initial IDs: C-O1, C-O2, C-KR1
+	if initial.Objectives[0].ID != "C-O1" {
+		t.Fatalf("Expected initial objective ID C-O1, got %s", initial.Objectives[0].ID)
 	}
-	if initial.Objectives[0].Objectives[0].ID != "OBJ-2" {
-		t.Fatalf("Expected initial child ID OBJ-2, got %s", initial.Objectives[0].Objectives[0].ID)
+	if initial.Objectives[0].Objectives[0].ID != "C-O2" {
+		t.Fatalf("Expected initial child ID C-O2, got %s", initial.Objectives[0].Objectives[0].ID)
 	}
-	if initial.Objectives[0].KeyResults[0].ID != "KR-1" {
-		t.Fatalf("Expected initial KR ID KR-1, got %s", initial.Objectives[0].KeyResults[0].ID)
+	if initial.Objectives[0].KeyResults[0].ID != "C-KR1" {
+		t.Fatalf("Expected initial KR ID C-KR1, got %s", initial.Objectives[0].KeyResults[0].ID)
 	}
 
 	// Second save: update theme, adding new items while preserving existing IDs
 	updated := LifeTheme{
-		ID:    "THEME-1",
+		ID:    "C",
 		Name:  "Career",
 		Color: "#0000FF",
 		Objectives: []Objective{
 			{
-				ID:    "OBJ-1",
+				ID:    "C-O1",
 				Title: "Existing objective",
 				KeyResults: []KeyResult{
-					{ID: "KR-1", Description: "Existing KR"},
+					{ID: "C-KR1", Description: "Existing KR"},
 					{Description: "New KR"},
 				},
 				Objectives: []Objective{
 					{
-						ID:    "OBJ-2",
+						ID:    "C-O2",
 						Title: "Existing child",
 					},
 					{
@@ -1228,43 +1228,43 @@ func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
 	saved := themes[0]
 
 	// Existing IDs preserved
-	if saved.Objectives[0].ID != "OBJ-1" {
-		t.Errorf("Expected preserved ID OBJ-1, got %s", saved.Objectives[0].ID)
+	if saved.Objectives[0].ID != "C-O1" {
+		t.Errorf("Expected preserved ID C-O1, got %s", saved.Objectives[0].ID)
 	}
-	if saved.Objectives[0].ParentID != "THEME-1" {
-		t.Errorf("Expected ParentID THEME-1, got %s", saved.Objectives[0].ParentID)
+	if saved.Objectives[0].ParentID != "C" {
+		t.Errorf("Expected ParentID C, got %s", saved.Objectives[0].ParentID)
 	}
-	if saved.Objectives[0].KeyResults[0].ID != "KR-1" {
-		t.Errorf("Expected preserved KR ID KR-1, got %s", saved.Objectives[0].KeyResults[0].ID)
+	if saved.Objectives[0].KeyResults[0].ID != "C-KR1" {
+		t.Errorf("Expected preserved KR ID C-KR1, got %s", saved.Objectives[0].KeyResults[0].ID)
 	}
-	if saved.Objectives[0].KeyResults[0].ParentID != "OBJ-1" {
-		t.Errorf("Expected KR ParentID OBJ-1, got %s", saved.Objectives[0].KeyResults[0].ParentID)
+	if saved.Objectives[0].KeyResults[0].ParentID != "C-O1" {
+		t.Errorf("Expected KR ParentID C-O1, got %s", saved.Objectives[0].KeyResults[0].ParentID)
 	}
-	if saved.Objectives[0].Objectives[0].ID != "OBJ-2" {
-		t.Errorf("Expected preserved child ID OBJ-2, got %s", saved.Objectives[0].Objectives[0].ID)
+	if saved.Objectives[0].Objectives[0].ID != "C-O2" {
+		t.Errorf("Expected preserved child ID C-O2, got %s", saved.Objectives[0].Objectives[0].ID)
 	}
-	if saved.Objectives[0].Objectives[0].ParentID != "OBJ-1" {
-		t.Errorf("Expected child ParentID OBJ-1, got %s", saved.Objectives[0].Objectives[0].ParentID)
+	if saved.Objectives[0].Objectives[0].ParentID != "C-O1" {
+		t.Errorf("Expected child ParentID C-O1, got %s", saved.Objectives[0].Objectives[0].ParentID)
 	}
 
 	// New IDs generated based on max existing number
-	if saved.Objectives[0].KeyResults[1].ID != "KR-2" {
-		t.Errorf("Expected new KR ID KR-2, got %s", saved.Objectives[0].KeyResults[1].ID)
+	if saved.Objectives[0].KeyResults[1].ID != "C-KR2" {
+		t.Errorf("Expected new KR ID C-KR2, got %s", saved.Objectives[0].KeyResults[1].ID)
 	}
-	if saved.Objectives[0].KeyResults[1].ParentID != "OBJ-1" {
-		t.Errorf("Expected new KR ParentID OBJ-1, got %s", saved.Objectives[0].KeyResults[1].ParentID)
+	if saved.Objectives[0].KeyResults[1].ParentID != "C-O1" {
+		t.Errorf("Expected new KR ParentID C-O1, got %s", saved.Objectives[0].KeyResults[1].ParentID)
 	}
-	if saved.Objectives[0].Objectives[1].ID != "OBJ-3" {
-		t.Errorf("Expected new child ID OBJ-3, got %s", saved.Objectives[0].Objectives[1].ID)
+	if saved.Objectives[0].Objectives[1].ID != "C-O3" {
+		t.Errorf("Expected new child ID C-O3, got %s", saved.Objectives[0].Objectives[1].ID)
 	}
-	if saved.Objectives[0].Objectives[1].ParentID != "OBJ-1" {
-		t.Errorf("Expected new child ParentID OBJ-1, got %s", saved.Objectives[0].Objectives[1].ParentID)
+	if saved.Objectives[0].Objectives[1].ParentID != "C-O1" {
+		t.Errorf("Expected new child ParentID C-O1, got %s", saved.Objectives[0].Objectives[1].ParentID)
 	}
-	if saved.Objectives[1].ID != "OBJ-4" {
-		t.Errorf("Expected new objective ID OBJ-4, got %s", saved.Objectives[1].ID)
+	if saved.Objectives[1].ID != "C-O4" {
+		t.Errorf("Expected new objective ID C-O4, got %s", saved.Objectives[1].ID)
 	}
-	if saved.Objectives[1].ParentID != "THEME-1" {
-		t.Errorf("Expected new objective ParentID THEME-1, got %s", saved.Objectives[1].ParentID)
+	if saved.Objectives[1].ParentID != "C" {
+		t.Errorf("Expected new objective ParentID C, got %s", saved.Objectives[1].ParentID)
 	}
 }
 
@@ -1273,16 +1273,16 @@ func TestBackwardCompatibility_NoObjectivesField(t *testing.T) {
 	jsonData := `{
 		"themes": [
 			{
-				"id": "THEME-1",
+				"id": "H",
 				"name": "Health",
 				"color": "#00FF00",
 				"objectives": [
 					{
-						"id": "OBJ-1",
-						"parentId": "THEME-1",
+						"id": "H-O1",
+						"parentId": "H",
 						"title": "Fitness",
 						"keyResults": [
-							{"id": "KR-1", "parentId": "OBJ-1", "description": "Run 5k"}
+							{"id": "H-KR1", "parentId": "H-O1", "description": "Run 5k"}
 						]
 					}
 				]
@@ -1303,5 +1303,85 @@ func TestBackwardCompatibility_NoObjectivesField(t *testing.T) {
 	obj := themesFile.Themes[0].Objectives[0]
 	if len(obj.Objectives) != 0 {
 		t.Errorf("Expected 0 child objectives for backward-compat JSON, got %d", len(obj.Objectives))
+	}
+}
+
+// Theme-Scoped ID Tests
+
+func TestSuggestAbbreviation(t *testing.T) {
+	tests := []struct {
+		name     string
+		existing []LifeTheme
+		expected string
+	}{
+		{"Health", nil, "H"},
+		{"Career", nil, "C"},
+		{"Personal Finance", nil, "PF"},
+		{"Health And Wellness", nil, "HAW"},
+		// Collision: single-letter taken
+		{"Health", []LifeTheme{{ID: "H"}}, "HE"},
+		// Collision: first 2 letters taken
+		{"Health", []LifeTheme{{ID: "H"}, {ID: "HE"}}, "HEA"},
+		// Multi-word collision
+		{"Career Growth", []LifeTheme{{ID: "CG"}}, "C"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := SuggestAbbreviation(tt.name, tt.existing)
+			if result != tt.expected {
+				t.Errorf("SuggestAbbreviation(%q) = %q, want %q", tt.name, result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestIsValidThemeID(t *testing.T) {
+	tests := []struct {
+		id    string
+		valid bool
+	}{
+		{"H", true},
+		{"CF", true},
+		{"LRN", true},
+		{"ABCD", false},
+		{"h", false},
+		{"", false},
+		{"H-O1", false},
+		{"123", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			result := IsValidThemeID(tt.id)
+			if result != tt.valid {
+				t.Errorf("IsValidThemeID(%q) = %v, want %v", tt.id, result, tt.valid)
+			}
+		})
+	}
+}
+
+func TestExtractThemeAbbr(t *testing.T) {
+	tests := []struct {
+		id       string
+		expected string
+	}{
+		{"H", "H"},
+		{"CF", "CF"},
+		{"LRN", "LRN"},
+		{"H-O1", "H"},
+		{"CF-KR2", "CF"},
+		{"LRN-T5", "LRN"},
+		{"INVALID", ""},
+		{"", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			result := ExtractThemeAbbr(tt.id)
+			if result != tt.expected {
+				t.Errorf("ExtractThemeAbbr(%q) = %q, want %q", tt.id, result, tt.expected)
+			}
+		})
 	}
 }

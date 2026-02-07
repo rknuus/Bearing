@@ -17,7 +17,7 @@ type mockPlanAccess struct {
 func newMockPlanAccess() *mockPlanAccess {
 	return &mockPlanAccess{
 		themes: []access.LifeTheme{
-			{ID: "THEME-01", Name: "Test Theme", Color: "#3b82f6"},
+			{ID: "T", Name: "Test Theme", Color: "#3b82f6"},
 		},
 		tasks: make(map[string]map[string][]access.Task),
 	}
@@ -27,53 +27,81 @@ func (m *mockPlanAccess) GetThemes() ([]access.LifeTheme, error) {
 	return m.themes, nil
 }
 
-// ensureMockIDs recursively assigns IDs to objectives and key results, simulating the real ensureThemeIDs.
-func ensureMockObjectiveIDs(parentID string, objectives []access.Objective) []access.Objective {
-	nextOKR := 1
-	// Find max existing OKR number
+// collectMockMaxObjNum scans objectives to find the highest O number for a theme abbreviation.
+func collectMockMaxObjNum(abbr string, objectives []access.Objective) int {
+	max := 0
 	for _, obj := range objectives {
 		if obj.ID != "" {
 			var n int
-			// Simple parse: extract the last number after "OKR-"
-			fmt.Sscanf(obj.ID[len(obj.ID)-2:], "%d", &n)
-			if n >= nextOKR {
-				nextOKR = n + 1
+			fmt.Sscanf(obj.ID, abbr+"-O%d", &n)
+			if n > max {
+				max = n
 			}
 		}
+		if childMax := collectMockMaxObjNum(abbr, obj.Objectives); childMax > max {
+			max = childMax
+		}
 	}
+	return max
+}
+
+// collectMockMaxKRNum scans key results to find the highest KR number for a theme abbreviation.
+func collectMockMaxKRNum(abbr string, objectives []access.Objective) int {
+	max := 0
+	for _, obj := range objectives {
+		for _, kr := range obj.KeyResults {
+			if kr.ID != "" {
+				var n int
+				fmt.Sscanf(kr.ID, abbr+"-KR%d", &n)
+				if n > max {
+					max = n
+				}
+			}
+		}
+		if childMax := collectMockMaxKRNum(abbr, obj.Objectives); childMax > max {
+			max = childMax
+		}
+	}
+	return max
+}
+
+// ensureMockObjectiveIDs recursively assigns theme-scoped IDs to objectives and key results.
+func ensureMockObjectiveIDs(abbr, parentID string, objectives []access.Objective, nextO, nextKR int) ([]access.Objective, int, int) {
 	for i := range objectives {
+		objectives[i].ParentID = parentID
 		if objectives[i].ID == "" {
-			objectives[i].ID = fmt.Sprintf("%s.OKR-%02d", parentID, nextOKR)
-			nextOKR++
+			nextO++
+			objectives[i].ID = fmt.Sprintf("%s-O%d", abbr, nextO)
 		}
-		// Assign KR IDs
-		nextKR := 1
 		for j := range objectives[i].KeyResults {
+			objectives[i].KeyResults[j].ParentID = objectives[i].ID
 			if objectives[i].KeyResults[j].ID == "" {
-				objectives[i].KeyResults[j].ID = fmt.Sprintf("%s.KR-%02d", objectives[i].ID, nextKR)
 				nextKR++
+				objectives[i].KeyResults[j].ID = fmt.Sprintf("%s-KR%d", abbr, nextKR)
 			}
 		}
-		// Recurse into child objectives
-		objectives[i].Objectives = ensureMockObjectiveIDs(objectives[i].ID, objectives[i].Objectives)
+		objectives[i].Objectives, nextO, nextKR = ensureMockObjectiveIDs(abbr, objectives[i].ID, objectives[i].Objectives, nextO, nextKR)
 	}
-	return objectives
+	return objectives, nextO, nextKR
 }
 
 func (m *mockPlanAccess) SaveTheme(theme access.LifeTheme) error {
-	// Simulate ID generation like ensureThemeIDs
-	theme.Objectives = ensureMockObjectiveIDs(theme.ID, theme.Objectives)
-
 	for i, t := range m.themes {
 		if t.ID == theme.ID {
+			// Simulate ensureThemeIDs
+			maxO := collectMockMaxObjNum(theme.ID, theme.Objectives)
+			maxKR := collectMockMaxKRNum(theme.ID, theme.Objectives)
+			theme.Objectives, _, _ = ensureMockObjectiveIDs(theme.ID, theme.ID, theme.Objectives, maxO, maxKR)
 			m.themes[i] = theme
 			return nil
 		}
 	}
 	if theme.ID == "" {
-		theme.ID = fmt.Sprintf("THEME-%02d", len(m.themes)+1)
-		theme.Objectives = ensureMockObjectiveIDs(theme.ID, theme.Objectives)
+		theme.ID = access.SuggestAbbreviation(theme.Name, m.themes)
 	}
+	maxO := collectMockMaxObjNum(theme.ID, theme.Objectives)
+	maxKR := collectMockMaxKRNum(theme.ID, theme.Objectives)
+	theme.Objectives, _, _ = ensureMockObjectiveIDs(theme.ID, theme.ID, theme.Objectives, maxO, maxKR)
 	m.themes = append(m.themes, theme)
 	return nil
 }
@@ -218,7 +246,7 @@ func TestCreateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		obj, err := manager.CreateObjective("THEME-01", "My Objective")
+		obj, err := manager.CreateObjective("T", "My Objective")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -228,8 +256,8 @@ func TestCreateObjective(t *testing.T) {
 		if obj.Title != "My Objective" {
 			t.Errorf("expected title 'My Objective', got '%s'", obj.Title)
 		}
-		if obj.ID != "THEME-01.OKR-01" {
-			t.Errorf("expected ID 'THEME-01.OKR-01', got '%s'", obj.ID)
+		if obj.ID != "T-O1" {
+			t.Errorf("expected ID 'T-O1', got '%s'", obj.ID)
 		}
 	})
 
@@ -237,7 +265,7 @@ func TestCreateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, err := manager.CreateObjective("THEME-01", "Parent Objective")
+		parent, err := manager.CreateObjective("T", "Parent Objective")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -249,8 +277,8 @@ func TestCreateObjective(t *testing.T) {
 		if child.Title != "Child Objective" {
 			t.Errorf("expected title 'Child Objective', got '%s'", child.Title)
 		}
-		if child.ID != "THEME-01.OKR-01.OKR-01" {
-			t.Errorf("expected ID 'THEME-01.OKR-01.OKR-01', got '%s'", child.ID)
+		if child.ID != "T-O2" {
+			t.Errorf("expected ID 'T-O2', got '%s'", child.ID)
 		}
 	})
 
@@ -258,13 +286,13 @@ func TestCreateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		l1, _ := manager.CreateObjective("THEME-01", "Level 1")
+		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
 		l3, err := manager.CreateObjective(l2.ID, "Level 3")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if l3.ID != "THEME-01.OKR-01.OKR-01.OKR-01" {
+		if l3.ID != "T-O3" {
 			t.Errorf("expected deeply nested ID, got '%s'", l3.ID)
 		}
 	})
@@ -283,7 +311,7 @@ func TestCreateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateObjective("THEME-01", "")
+		_, err := manager.CreateObjective("T", "")
 		if err == nil {
 			t.Fatal("expected error for empty title")
 		}
@@ -305,7 +333,7 @@ func TestUpdateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		obj, _ := manager.CreateObjective("THEME-01", "Original")
+		obj, _ := manager.CreateObjective("T", "Original")
 		err := manager.UpdateObjective(obj.ID, "Updated")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -326,7 +354,7 @@ func TestUpdateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 
 		err := manager.UpdateObjective(child.ID, "Updated Child")
@@ -370,7 +398,7 @@ func TestDeleteObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		obj, _ := manager.CreateObjective("THEME-01", "To Delete")
+		obj, _ := manager.CreateObjective("T", "To Delete")
 		err := manager.DeleteObjective(obj.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -386,7 +414,7 @@ func TestDeleteObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		manager.CreateObjective(parent.ID, "Child")
 
 		// Delete the parent -- child should be gone too
@@ -405,7 +433,7 @@ func TestDeleteObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		l1, _ := manager.CreateObjective("THEME-01", "Level 1")
+		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
 		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
 		manager.CreateKeyResult(l3.ID, "Deep KR")
@@ -436,7 +464,7 @@ func TestDeleteObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 
 		err := manager.DeleteObjective(child.ID)
@@ -486,7 +514,7 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		obj, _ := manager.CreateObjective("THEME-01", "Objective")
+		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, err := manager.CreateKeyResult(obj.ID, "My KR")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -494,8 +522,8 @@ func TestCreateKeyResult(t *testing.T) {
 		if kr.Description != "My KR" {
 			t.Errorf("expected description 'My KR', got '%s'", kr.Description)
 		}
-		if kr.ID != "THEME-01.OKR-01.KR-01" {
-			t.Errorf("expected ID 'THEME-01.OKR-01.KR-01', got '%s'", kr.ID)
+		if kr.ID != "T-KR1" {
+			t.Errorf("expected ID 'T-KR1', got '%s'", kr.ID)
 		}
 	})
 
@@ -503,13 +531,13 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 		kr, err := manager.CreateKeyResult(child.ID, "Nested KR")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if kr.ID != "THEME-01.OKR-01.OKR-01.KR-01" {
+		if kr.ID != "T-KR1" {
 			t.Errorf("expected nested KR ID, got '%s'", kr.ID)
 		}
 	})
@@ -518,7 +546,7 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		manager.CreateObjective(parent.ID, "Child")
 
 		// Add KR to the parent (intermediate node with children)
@@ -526,8 +554,8 @@ func TestCreateKeyResult(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if kr.ID != "THEME-01.OKR-01.KR-01" {
-			t.Errorf("expected ID 'THEME-01.OKR-01.KR-01', got '%s'", kr.ID)
+		if kr.ID != "T-KR1" {
+			t.Errorf("expected ID 'T-KR1', got '%s'", kr.ID)
 		}
 
 		// Verify the parent still has both children and the key result
@@ -570,7 +598,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		obj, _ := manager.CreateObjective("THEME-01", "Objective")
+		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "Original")
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated")
@@ -589,7 +617,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 		kr, _ := manager.CreateKeyResult(child.ID, "Original")
 
@@ -631,7 +659,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		obj, _ := manager.CreateObjective("THEME-01", "Objective")
+		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete")
 
 		err := manager.DeleteKeyResult(kr.ID)
@@ -650,7 +678,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateObjective("THEME-01", "Parent")
+		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR")
 
@@ -696,7 +724,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "important-urgent")
+		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -715,7 +743,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "important-not-urgent")
+		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "important-not-urgent")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -728,7 +756,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "not-important-urgent")
+		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "not-important-urgent")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -741,7 +769,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "not-important-not-urgent")
+		_, err := manager.CreateTask("Test Task", "T", "2026-01-31", "not-important-not-urgent")
 		if err == nil {
 			t.Fatal("expected error for Q4 priority")
 		}
@@ -751,7 +779,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "invalid-priority")
+		_, err := manager.CreateTask("Test Task", "T", "2026-01-31", "invalid-priority")
 		if err == nil {
 			t.Fatal("expected error for invalid priority")
 		}
@@ -764,7 +792,7 @@ func TestMoveTask(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create a task first
-		task, _ := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "important-urgent")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent")
 
 		// Move to doing
 		err := manager.MoveTask(task.ID, "doing")
@@ -790,8 +818,8 @@ func TestGetTasks(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create tasks
-		manager.CreateTask("Task 1", "THEME-01", "2026-01-31", "important-urgent")
-		manager.CreateTask("Task 2", "THEME-01", "2026-01-31", "important-not-urgent")
+		manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent")
+		manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent")
 
 		tasks, err := manager.GetTasks()
 		if err != nil {
@@ -816,7 +844,7 @@ func TestDeleteTask(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create a task
-		task, _ := manager.CreateTask("Test Task", "THEME-01", "2026-01-31", "important-urgent")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent")
 
 		// Delete it
 		err := manager.DeleteTask(task.ID)

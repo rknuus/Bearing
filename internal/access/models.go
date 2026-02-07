@@ -6,7 +6,7 @@ package access
 // LifeTheme represents a long-term life focus area with associated objectives.
 // Life themes are the top-level organizational unit for goals and tasks.
 type LifeTheme struct {
-	ID         string      `json:"id"`         // Flat unique ID: THEME-1
+	ID         string      `json:"id"`         // 1-3 uppercase letter abbreviation: H, CF, LRN
 	Name       string      `json:"name"`       // Human-readable theme name
 	Color      string      `json:"color"`      // Hex color code for UI display
 	Objectives []Objective `json:"objectives"` // Associated objectives for this theme
@@ -16,7 +16,7 @@ type LifeTheme struct {
 // Objectives contain key results that measure progress toward the goal.
 // Objectives can be nested to arbitrary depth.
 type Objective struct {
-	ID         string      `json:"id"`                   // Flat globally unique ID: OBJ-1
+	ID         string      `json:"id"`                   // Theme-scoped ID: H-O1, CF-O3
 	ParentID   string      `json:"parentId"`             // ID of parent theme or objective
 	Title      string      `json:"title"`                // Objective title/description
 	KeyResults []KeyResult `json:"keyResults"`           // Measurable key results
@@ -26,7 +26,7 @@ type Objective struct {
 // KeyResult represents a measurable outcome for an objective.
 // Key results define how progress toward an objective is measured.
 type KeyResult struct {
-	ID          string `json:"id"`          // Flat globally unique ID: KR-1
+	ID          string `json:"id"`          // Theme-scoped ID: H-KR1, CF-KR2
 	ParentID    string `json:"parentId"`    // ID of owning objective
 	Description string `json:"description"` // Description of the measurable result
 }

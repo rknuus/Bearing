@@ -1,7 +1,7 @@
 /**
- * Flat ID Parser
+ * Theme-Scoped ID Parser
  *
- * Parses flat IDs like "THEME-01", "OBJ-02", "KR-03" by detecting type from prefix.
+ * Parses theme-scoped IDs like "H", "H-O1", "H-KR1", "H-T1" by detecting type from pattern.
  * Builds breadcrumb trails by walking the nested theme/objective/key-result hierarchy.
  */
 
@@ -16,25 +16,40 @@ export interface BreadcrumbSegment {
 }
 
 /**
- * Gets the type of a flat ID based on its prefix.
+ * Gets the type of a theme-scoped ID based on its pattern.
  *
  * @example
- * getIdType("THEME-01") // "theme"
- * getIdType("OBJ-02")   // "okr"
- * getIdType("KR-03")    // "kr"
- * getIdType("TASK-04")  // "task"
+ * getIdType("H")      // "theme"
+ * getIdType("CF-O1")  // "okr"
+ * getIdType("H-KR2")  // "kr"
+ * getIdType("H-T1")   // "task"
  */
 export function getIdType(id: string): SegmentType | null {
   if (!id || typeof id !== 'string') {
     return null;
   }
 
-  if (id.startsWith('THEME-')) return 'theme';
-  if (id.startsWith('OBJ-')) return 'okr';
-  if (id.startsWith('KR-')) return 'kr';
-  if (id.startsWith('TASK-')) return 'task';
+  if (/^[A-Z]{1,3}$/.test(id)) return 'theme';
+  if (/^[A-Z]{1,3}-O\d+$/.test(id)) return 'okr';
+  if (/^[A-Z]{1,3}-KR\d+$/.test(id)) return 'kr';
+  if (/^[A-Z]{1,3}-T\d+$/.test(id)) return 'task';
 
   return null;
+}
+
+/**
+ * Extracts the theme abbreviation from any theme-scoped ID.
+ *
+ * @example
+ * getThemeAbbr("H")      // "H"
+ * getThemeAbbr("CF-O1")  // "CF"
+ * getThemeAbbr("LRN-T5") // "LRN"
+ */
+export function getThemeAbbr(id: string): string | null {
+  if (!id || typeof id !== 'string') return null;
+  if (/^[A-Z]{1,3}$/.test(id)) return id;
+  const match = id.match(/^([A-Z]{1,3})-(?:O|KR|T)\d+$/);
+  return match ? match[1] : null;
 }
 
 /**
@@ -48,10 +63,14 @@ const DISPLAY_NAMES: Record<SegmentType, string> = {
 };
 
 /**
- * Creates a label for a flat ID (e.g., "THEME-01" -> "Theme 01", "OBJ-02" -> "OBJ 02").
+ * Creates a label for a theme-scoped ID.
+ * Theme: abbreviation itself (e.g., "H" -> "H")
+ * Others: type + number (e.g., "H-O1" -> "OKR 1", "CF-KR2" -> "KR 2")
  */
 function makeLabel(id: string, type: SegmentType): string {
-  const match = id.match(/^[A-Z]+-(\d+)$/);
+  if (type === 'theme') return id;
+
+  const match = id.match(/^[A-Z]{1,3}-(?:O|KR|T)(\d+)$/);
   if (!match) return id;
   return `${DISPLAY_NAMES[type]} ${match[1]}`;
 }
@@ -60,17 +79,17 @@ function makeLabel(id: string, type: SegmentType): string {
  * Builds a breadcrumb trail for a given entity ID by walking the nested
  * theme/objective/key-result hierarchy.
  *
- * @param id - The flat entity ID (e.g., "KR-03")
+ * @param id - The entity ID (e.g., "H-KR1")
  * @param themes - The full array of LifeTheme objects
  * @returns Array of BreadcrumbSegment objects from root to the target entity
  *
  * @example
- * buildBreadcrumbs("KR-03", themes)
+ * buildBreadcrumbs("H-KR1", themes)
  * // Returns:
  * // [
- * //   { id: "THEME-01", type: "theme", label: "Theme 01" },
- * //   { id: "OBJ-02", type: "okr", label: "OBJ 02" },
- * //   { id: "KR-03", type: "kr", label: "KR 03" }
+ * //   { id: "H", type: "theme", label: "H" },
+ * //   { id: "H-O1", type: "okr", label: "OKR 1" },
+ * //   { id: "H-KR1", type: "kr", label: "KR 1" }
  * // ]
  */
 export function buildBreadcrumbs(id: string, themes: main.LifeTheme[]): BreadcrumbSegment[] {

@@ -337,6 +337,15 @@ func (a *App) DeleteKeyResult(keyResultId string) error {
 	return a.planningManager.DeleteKeyResult(keyResultId)
 }
 
+// SuggestThemeAbbreviation suggests a unique abbreviation for a theme name
+func (a *App) SuggestThemeAbbreviation(name string) (string, error) {
+	if a.planningManager == nil {
+		return "", fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.SuggestThemeAbbreviation(name)
+}
+
 // GetYearFocus returns all day focus entries for a specific year
 func (a *App) GetYearFocus(year int) ([]DayFocus, error) {
 	if a.planningManager == nil {

@@ -145,7 +145,7 @@ func (pa *PlanAccess) SaveTheme(theme LifeTheme) error {
 
 	// Generate ID if not provided
 	if theme.ID == "" {
-		theme.ID = pa.generateThemeID(themes)
+		theme.ID = SuggestAbbreviation(theme.Name, themes)
 	}
 
 	// Ensure objective and key result IDs are generated
@@ -450,7 +450,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 		if err != nil {
 			return fmt.Errorf("PlanAccess.SaveTask: failed to get existing tasks: %w", err)
 		}
-		task.ID = pa.generateTaskID(existingTasks)
+		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
 	}
 
 	// Determine status - find existing task or default to todo
@@ -687,46 +687,107 @@ func (pa *PlanAccess) extractYearFromDate(date string) (int, error) {
 	return year, nil
 }
 
-// generateThemeID generates a new theme ID based on existing themes.
-func (pa *PlanAccess) generateThemeID(existingThemes []LifeTheme) string {
-	maxNum := 0
-	re := regexp.MustCompile(`^THEME-(\d+)$`)
+// IsValidThemeID checks whether an ID matches the theme abbreviation format (1-3 uppercase letters).
+func IsValidThemeID(id string) bool {
+	matched, _ := regexp.MatchString(`^[A-Z]{1,3}$`, id)
+	return matched
+}
 
-	for _, theme := range existingThemes {
-		matches := re.FindStringSubmatch(theme.ID)
-		if len(matches) == 2 {
-			num, err := strconv.Atoi(matches[1])
-			if err == nil && num > maxNum {
-				maxNum = num
+// ExtractThemeAbbr extracts the theme abbreviation from any theme-scoped ID.
+// For a theme ID like "H", returns "H". For "H-O1", returns "H". For "CF-KR2", returns "CF".
+// Returns empty string if the ID doesn't match any known pattern.
+func ExtractThemeAbbr(id string) string {
+	if IsValidThemeID(id) {
+		return id
+	}
+	re := regexp.MustCompile(`^([A-Z]{1,3})-(?:O|KR|T)\d+$`)
+	matches := re.FindStringSubmatch(id)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
+}
+
+// SuggestAbbreviation generates a 1-3 letter abbreviation from a theme name,
+// ensuring uniqueness among existing themes.
+func SuggestAbbreviation(name string, existingThemes []LifeTheme) string {
+	existing := make(map[string]bool)
+	for _, t := range existingThemes {
+		existing[t.ID] = true
+	}
+
+	words := strings.Fields(name)
+
+	// Multi-word: take first letter of each word (up to 3)
+	if len(words) > 1 {
+		candidate := ""
+		for i, w := range words {
+			if i >= 3 {
+				break
+			}
+			candidate += strings.ToUpper(w[:1])
+		}
+		if !existing[candidate] {
+			return candidate
+		}
+	}
+
+	// Single word or multi-word collision: try first 1, 2, 3 letters of first word
+	upper := strings.ToUpper(words[0])
+	for length := 1; length <= 3 && length <= len(upper); length++ {
+		candidate := upper[:length]
+		if !existing[candidate] {
+			return candidate
+		}
+	}
+
+	// Fallback: try 2-letter combinations with second letter varying
+	if len(upper) >= 1 {
+		first := string(upper[0])
+		for c := 'A'; c <= 'Z'; c++ {
+			candidate := first + string(c)
+			if !existing[candidate] {
+				return candidate
 			}
 		}
 	}
 
-	return fmt.Sprintf("THEME-%d", maxNum+1)
+	// Last resort: try all 3-letter combinations starting with first letter
+	if len(upper) >= 1 {
+		first := string(upper[0])
+		for c1 := 'A'; c1 <= 'Z'; c1++ {
+			for c2 := 'A'; c2 <= 'Z'; c2++ {
+				candidate := first + string(c1) + string(c2)
+				if !existing[candidate] {
+					return candidate
+				}
+			}
+		}
+	}
+
+	return "X"
 }
 
 // ensureThemeIDs ensures all objectives and key results within a theme have proper IDs.
-// allThemes is used to compute global counters across all themes.
+// Counters are per-theme scoped — only this theme's entities are scanned.
 func (pa *PlanAccess) ensureThemeIDs(theme LifeTheme, allThemes []LifeTheme) LifeTheme {
-	// Collect global max counters from all themes
-	maxOBJ := collectMaxObjNum(allThemes)
-	maxKR := collectMaxKRNum(allThemes)
+	abbr := theme.ID
 
-	theme.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(theme.ID, theme.Objectives, maxOBJ, maxKR)
+	// Collect max counters scoped to this theme only
+	maxOBJ := collectMaxObjNum(abbr, theme)
+	maxKR := collectMaxKRNum(abbr, theme)
+
+	theme.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(abbr, theme.ID, theme.Objectives, maxOBJ, maxKR)
 	return theme
 }
 
-// collectMaxObjNum scans all objectives across all themes to find the highest OBJ number.
-func collectMaxObjNum(themes []LifeTheme) int {
-	re := regexp.MustCompile(`^OBJ-(\d+)$`)
-	maxNum := 0
-	for _, theme := range themes {
-		maxNum = collectMaxObjNumFromObjectives(theme.Objectives, re, maxNum)
-	}
-	return maxNum
+// collectMaxObjNum scans objectives within a single theme to find the highest O number.
+func collectMaxObjNum(abbr string, theme LifeTheme) int {
+	re := regexp.MustCompile(`^` + regexp.QuoteMeta(abbr) + `-O(\d+)$`)
+	return collectMaxObjNumFromObjectives(theme.Objectives, re, 0)
 }
 
-// collectMaxObjNumFromObjectives recursively scans objectives to find the highest OBJ number.
+// collectMaxObjNumFromObjectives recursively scans objectives to find the highest O number.
 func collectMaxObjNumFromObjectives(objectives []Objective, re *regexp.Regexp, maxNum int) int {
 	for _, obj := range objectives {
 		if obj.ID != "" {
@@ -743,14 +804,10 @@ func collectMaxObjNumFromObjectives(objectives []Objective, re *regexp.Regexp, m
 	return maxNum
 }
 
-// collectMaxKRNum scans all key results across all themes to find the highest KR number.
-func collectMaxKRNum(themes []LifeTheme) int {
-	re := regexp.MustCompile(`^KR-(\d+)$`)
-	maxNum := 0
-	for _, theme := range themes {
-		maxNum = collectMaxKRNumFromObjectives(theme.Objectives, re, maxNum)
-	}
-	return maxNum
+// collectMaxKRNum scans key results within a single theme to find the highest KR number.
+func collectMaxKRNum(abbr string, theme LifeTheme) int {
+	re := regexp.MustCompile(`^` + regexp.QuoteMeta(abbr) + `-KR(\d+)$`)
+	return collectMaxKRNumFromObjectives(theme.Objectives, re, 0)
 }
 
 // collectMaxKRNumFromObjectives recursively scans objectives and their key results
@@ -773,20 +830,20 @@ func collectMaxKRNumFromObjectives(objectives []Objective, re *regexp.Regexp, ma
 	return maxNum
 }
 
-// ensureObjectiveIDs recursively assigns flat globally unique IDs to objectives and their key results.
-// parentID is the ID of the parent entity (theme or parent objective) for setting ParentID.
-// maxOBJ and maxKR are the current global counters, returned updated after assignment.
-func (pa *PlanAccess) ensureObjectiveIDs(parentID string, objectives []Objective, maxOBJ, maxKR int) ([]Objective, int, int) {
+// ensureObjectiveIDs recursively assigns theme-scoped IDs to objectives and their key results.
+// abbr is the theme abbreviation used as prefix. parentID is the ID of the parent entity.
+// maxOBJ and maxKR are the current per-theme counters, returned updated after assignment.
+func (pa *PlanAccess) ensureObjectiveIDs(abbr, parentID string, objectives []Objective, maxOBJ, maxKR int) ([]Objective, int, int) {
 	for i := range objectives {
 		obj := &objectives[i]
 
 		// Set ParentID to the parent's ID
 		obj.ParentID = parentID
 
-		// Assign a new flat ID if missing
+		// Assign a new theme-scoped ID if missing
 		if obj.ID == "" {
 			maxOBJ++
-			obj.ID = fmt.Sprintf("OBJ-%d", maxOBJ)
+			obj.ID = fmt.Sprintf("%s-O%d", abbr, maxOBJ)
 		}
 
 		// Assign key result IDs
@@ -795,21 +852,21 @@ func (pa *PlanAccess) ensureObjectiveIDs(parentID string, objectives []Objective
 			kr.ParentID = obj.ID
 			if kr.ID == "" {
 				maxKR++
-				kr.ID = fmt.Sprintf("KR-%d", maxKR)
+				kr.ID = fmt.Sprintf("%s-KR%d", abbr, maxKR)
 			}
 		}
 
 		// Recurse into child objectives
-		obj.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(obj.ID, obj.Objectives, maxOBJ, maxKR)
+		obj.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(abbr, obj.ID, obj.Objectives, maxOBJ, maxKR)
 	}
 
 	return objectives, maxOBJ, maxKR
 }
 
-// generateTaskID generates a new task ID based on existing tasks.
-func (pa *PlanAccess) generateTaskID(existingTasks []Task) string {
+// generateTaskID generates a new theme-scoped task ID based on existing tasks.
+func (pa *PlanAccess) generateTaskID(themeAbbr string, existingTasks []Task) string {
 	maxNum := 0
-	re := regexp.MustCompile(`^TASK-(\d+)$`)
+	re := regexp.MustCompile(`^` + regexp.QuoteMeta(themeAbbr) + `-T(\d+)$`)
 
 	for _, task := range existingTasks {
 		matches := re.FindStringSubmatch(task.ID)
@@ -821,7 +878,7 @@ func (pa *PlanAccess) generateTaskID(existingTasks []Task) string {
 		}
 	}
 
-	return fmt.Sprintf("TASK-%d", maxNum+1)
+	return fmt.Sprintf("%s-T%d", themeAbbr, maxNum+1)
 }
 
 // findTaskStatus finds the current status of a task by searching through all status directories.

@@ -96,8 +96,8 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	if theme.ID == "" {
 		t.Error("Theme should have a generated ID")
 	}
-	if theme.ID != "THEME-1" {
-		t.Errorf("Expected theme ID THEME-1, got %s", theme.ID)
+	if theme.ID != "H" {
+		t.Errorf("Expected theme ID H, got %s", theme.ID)
 	}
 	if theme.Color != "#22c55e" {
 		t.Errorf("Expected color #22c55e, got %s", theme.Color)
@@ -195,8 +195,8 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
 
-	if theme.ID != "THEME-1" {
-		t.Errorf("Expected theme ID THEME-1, got %s", theme.ID)
+	if theme.ID != "C" {
+		t.Errorf("Expected theme ID C, got %s", theme.ID)
 	}
 
 	// Create objectives
@@ -209,12 +209,12 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 		t.Fatalf("Failed to create objective 2: %v", err)
 	}
 
-	// Verify objective IDs are flat and globally unique
-	if obj1.ID != "OBJ-1" {
-		t.Errorf("Expected objective 1 ID OBJ-1, got %s", obj1.ID)
+	// Verify objective IDs are theme-scoped
+	if obj1.ID != "C-O1" {
+		t.Errorf("Expected objective 1 ID C-O1, got %s", obj1.ID)
 	}
-	if obj2.ID != "OBJ-2" {
-		t.Errorf("Expected objective 2 ID OBJ-2, got %s", obj2.ID)
+	if obj2.ID != "C-O2" {
+		t.Errorf("Expected objective 2 ID C-O2, got %s", obj2.ID)
 	}
 
 	// Verify objective ParentIDs point to the theme
@@ -231,12 +231,12 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 		t.Fatalf("Failed to create key result 2: %v", err)
 	}
 
-	// Verify key result IDs are flat and globally unique
-	if kr1.ID != "KR-1" {
-		t.Errorf("Expected key result 1 ID KR-1, got %s", kr1.ID)
+	// Verify key result IDs are theme-scoped
+	if kr1.ID != "C-KR1" {
+		t.Errorf("Expected key result 1 ID C-KR1, got %s", kr1.ID)
 	}
-	if kr2.ID != "KR-2" {
-		t.Errorf("Expected key result 2 ID KR-2, got %s", kr2.ID)
+	if kr2.ID != "C-KR2" {
+		t.Errorf("Expected key result 2 ID C-KR2, got %s", kr2.ID)
 	}
 
 	// Verify key result ParentIDs point to the objective

@@ -55,6 +55,9 @@ type IPlanningManager interface {
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
 
+	// Theme Abbreviation
+	SuggestThemeAbbreviation(name string) (string, error)
+
 	// Navigation
 	LoadNavigationContext() (*NavigationContext, error)
 	SaveNavigationContext(ctx NavigationContext) error
@@ -603,6 +606,15 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 	}
 
 	return nil
+}
+
+// SuggestThemeAbbreviation suggests a unique abbreviation for a theme name.
+func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) {
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return "", fmt.Errorf("PlanningManager.SuggestThemeAbbreviation: %w", err)
+	}
+	return access.SuggestAbbreviation(name, themes), nil
 }
 
 // LoadNavigationContext retrieves the saved navigation context.
