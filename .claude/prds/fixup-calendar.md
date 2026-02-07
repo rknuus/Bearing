@@ -1,7 +1,7 @@
 ---
 name: fixup-calendar
 description: Fix Calendar view stuck on "Loading calendar..." - data never loads
-status: complete
+status: completed
 created: 2026-02-01T14:28:13Z
 ---
 

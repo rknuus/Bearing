@@ -1,7 +1,7 @@
 ---
 name: bearing
 description: Personal planning system with interlinked long-, medium-, and short-term planning layers
-status: complete
+status: completed
 created: 2026-01-31T13:56:42Z
 completed: 2026-02-01T13:33:40Z
 ---

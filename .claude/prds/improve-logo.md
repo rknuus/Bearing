@@ -1,7 +1,7 @@
 ---
 name: improve-logo
 description: Refine the compass logo with angled needle, cardinal labels, stronger colors, and optional zig-zag pattern
-status: backlog
+status: done
 created: 2026-02-06T12:03:31Z
 ---
 

@@ -1,7 +1,7 @@
 ---
 name: improve-calendar-design
 description: Redesign calendar grid to weekday-aligned layout with rectangular text cells per day
-status: backlog
+status: completed
 created: 2026-02-06T14:48:58Z
 ---
 
