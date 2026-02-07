@@ -1,70 +1,14 @@
 /**
  * Unit tests for id-parser utility
- *
- * These are simple runtime tests that can be run in the browser console
- * or with a test runner like Vitest.
  */
 
+import { describe, it, expect } from 'vitest';
 import {
   getIdType,
   getThemeAbbr,
   buildBreadcrumbs,
 } from './id-parser';
 import { main } from '../wails/wailsjs/go/models';
-
-// Simple test runner for browser console
-function assertEqual<T>(actual: T, expected: T, message: string): void {
-  const actualStr = JSON.stringify(actual);
-  const expectedStr = JSON.stringify(expected);
-  if (actualStr !== expectedStr) {
-    throw new Error(`${message}\n  Expected: ${expectedStr}\n  Actual: ${actualStr}`);
-  }
-}
-
-// Test getIdType
-export function testGetIdType(): void {
-  // Theme IDs: 1-3 uppercase letters
-  assertEqual(getIdType('H'), 'theme', 'Single letter theme');
-  assertEqual(getIdType('CF'), 'theme', 'Two letter theme');
-  assertEqual(getIdType('LRN'), 'theme', 'Three letter theme');
-
-  // Objective IDs: <abbr>-O<n>
-  assertEqual(getIdType('H-O1'), 'okr', 'Single letter objective');
-  assertEqual(getIdType('CF-O42'), 'okr', 'Two letter objective');
-  assertEqual(getIdType('LRN-O3'), 'okr', 'Three letter objective');
-
-  // Key Result IDs: <abbr>-KR<n>
-  assertEqual(getIdType('H-KR1'), 'kr', 'Single letter KR');
-  assertEqual(getIdType('CF-KR12'), 'kr', 'Two letter KR');
-  assertEqual(getIdType('LRN-KR3'), 'kr', 'Three letter KR');
-
-  // Task IDs: <abbr>-T<n>
-  assertEqual(getIdType('H-T1'), 'task', 'Single letter task');
-  assertEqual(getIdType('CF-T7'), 'task', 'Two letter task');
-  assertEqual(getIdType('LRN-T99'), 'task', 'Three letter task');
-
-  // Invalid IDs
-  assertEqual(getIdType(''), null, 'Empty string returns null');
-  assertEqual(getIdType('INVALID'), null, 'Four+ letter string returns null');
-  assertEqual(getIdType('h-O1'), null, 'Lowercase abbreviation returns null');
-  assertEqual(getIdType('H-X1'), null, 'Unknown type prefix returns null');
-  assertEqual(getIdType('THEME-1'), null, 'Old format returns null');
-
-  console.log('getIdType tests passed');
-}
-
-// Test getThemeAbbr
-export function testGetThemeAbbr(): void {
-  assertEqual(getThemeAbbr('H'), 'H', 'Theme ID returns itself');
-  assertEqual(getThemeAbbr('CF'), 'CF', 'Two-letter theme returns itself');
-  assertEqual(getThemeAbbr('H-O1'), 'H', 'Objective returns theme abbr');
-  assertEqual(getThemeAbbr('CF-KR2'), 'CF', 'KR returns theme abbr');
-  assertEqual(getThemeAbbr('LRN-T5'), 'LRN', 'Task returns theme abbr');
-  assertEqual(getThemeAbbr(''), null, 'Empty string returns null');
-  assertEqual(getThemeAbbr('INVALID'), null, 'Invalid ID returns null');
-
-  console.log('getThemeAbbr tests passed');
-}
 
 // Helper to create test theme data
 function makeThemes(): main.LifeTheme[] {
@@ -115,108 +59,184 @@ function makeThemes(): main.LifeTheme[] {
   ];
 }
 
-// Test buildBreadcrumbs
-export function testBuildBreadcrumbs(): void {
-  const themes = makeThemes();
+describe('getIdType', () => {
+  // Theme IDs: 1-3 uppercase letters
+  it('returns "theme" for single letter theme', () => {
+    expect(getIdType('H')).toBe('theme');
+  });
 
-  // Theme itself
-  assertEqual(
-    buildBreadcrumbs('H', themes),
-    [{ id: 'H', type: 'theme', label: 'H' }],
-    'Theme returns single breadcrumb'
-  );
+  it('returns "theme" for two letter theme', () => {
+    expect(getIdType('CF')).toBe('theme');
+  });
 
-  // Objective under a theme
-  assertEqual(
-    buildBreadcrumbs('H-O1', themes),
-    [
+  it('returns "theme" for three letter theme', () => {
+    expect(getIdType('LRN')).toBe('theme');
+  });
+
+  // Objective IDs: <abbr>-O<n>
+  it('returns "okr" for single letter objective', () => {
+    expect(getIdType('H-O1')).toBe('okr');
+  });
+
+  it('returns "okr" for two letter objective', () => {
+    expect(getIdType('CF-O42')).toBe('okr');
+  });
+
+  it('returns "okr" for three letter objective', () => {
+    expect(getIdType('LRN-O3')).toBe('okr');
+  });
+
+  // Key Result IDs: <abbr>-KR<n>
+  it('returns "kr" for single letter KR', () => {
+    expect(getIdType('H-KR1')).toBe('kr');
+  });
+
+  it('returns "kr" for two letter KR', () => {
+    expect(getIdType('CF-KR12')).toBe('kr');
+  });
+
+  it('returns "kr" for three letter KR', () => {
+    expect(getIdType('LRN-KR3')).toBe('kr');
+  });
+
+  // Task IDs: <abbr>-T<n>
+  it('returns "task" for single letter task', () => {
+    expect(getIdType('H-T1')).toBe('task');
+  });
+
+  it('returns "task" for two letter task', () => {
+    expect(getIdType('CF-T7')).toBe('task');
+  });
+
+  it('returns "task" for three letter task', () => {
+    expect(getIdType('LRN-T99')).toBe('task');
+  });
+
+  // Invalid IDs
+  it('returns null for empty string', () => {
+    expect(getIdType('')).toBe(null);
+  });
+
+  it('returns null for four+ letter string', () => {
+    expect(getIdType('INVALID')).toBe(null);
+  });
+
+  it('returns null for lowercase abbreviation', () => {
+    expect(getIdType('h-O1')).toBe(null);
+  });
+
+  it('returns null for unknown type prefix', () => {
+    expect(getIdType('H-X1')).toBe(null);
+  });
+
+  it('returns null for old format', () => {
+    expect(getIdType('THEME-1')).toBe(null);
+  });
+});
+
+describe('getThemeAbbr', () => {
+  it('returns itself for single-letter theme ID', () => {
+    expect(getThemeAbbr('H')).toBe('H');
+  });
+
+  it('returns itself for two-letter theme ID', () => {
+    expect(getThemeAbbr('CF')).toBe('CF');
+  });
+
+  it('returns theme abbr from objective ID', () => {
+    expect(getThemeAbbr('H-O1')).toBe('H');
+  });
+
+  it('returns theme abbr from KR ID', () => {
+    expect(getThemeAbbr('CF-KR2')).toBe('CF');
+  });
+
+  it('returns theme abbr from task ID', () => {
+    expect(getThemeAbbr('LRN-T5')).toBe('LRN');
+  });
+
+  it('returns null for empty string', () => {
+    expect(getThemeAbbr('')).toBe(null);
+  });
+
+  it('returns null for invalid ID', () => {
+    expect(getThemeAbbr('INVALID')).toBe(null);
+  });
+});
+
+describe('buildBreadcrumbs', () => {
+  it('returns single breadcrumb for theme itself', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('H', themes)).toEqual([
+      { id: 'H', type: 'theme', label: 'H' },
+    ]);
+  });
+
+  it('returns theme + objective breadcrumbs for objective under a theme', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('H-O1', themes)).toEqual([
       { id: 'H', type: 'theme', label: 'H' },
       { id: 'H-O1', type: 'okr', label: 'OKR 1' },
-    ],
-    'Objective returns theme + objective breadcrumbs'
-  );
+    ]);
+  });
 
-  // Key result under an objective
-  assertEqual(
-    buildBreadcrumbs('H-KR1', themes),
-    [
+  it('returns full breadcrumb path for key result under an objective', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('H-KR1', themes)).toEqual([
       { id: 'H', type: 'theme', label: 'H' },
       { id: 'H-O1', type: 'okr', label: 'OKR 1' },
       { id: 'H-KR1', type: 'kr', label: 'KR 1' },
-    ],
-    'Key result returns full breadcrumb path'
-  );
+    ]);
+  });
 
-  // Key result in second theme
-  assertEqual(
-    buildBreadcrumbs('C-KR1', themes),
-    [
+  it('returns correct path for key result in second theme', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('C-KR1', themes)).toEqual([
       { id: 'C', type: 'theme', label: 'C' },
       { id: 'C-O1', type: 'okr', label: 'OKR 1' },
       { id: 'C-KR1', type: 'kr', label: 'KR 1' },
-    ],
-    'Key result in second theme returns correct path'
-  );
+    ]);
+  });
 
-  // Nested objective
-  assertEqual(
-    buildBreadcrumbs('H-O2', themes),
-    [
+  it('returns full path through parent for nested objective', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('H-O2', themes)).toEqual([
       { id: 'H', type: 'theme', label: 'H' },
       { id: 'H-O1', type: 'okr', label: 'OKR 1' },
       { id: 'H-O2', type: 'okr', label: 'OKR 2' },
-    ],
-    'Nested objective returns full path through parent objective'
-  );
+    ]);
+  });
 
-  // Key result under nested objective
-  assertEqual(
-    buildBreadcrumbs('H-KR3', themes),
-    [
+  it('returns full path for KR under nested objective', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('H-KR3', themes)).toEqual([
       { id: 'H', type: 'theme', label: 'H' },
       { id: 'H-O1', type: 'okr', label: 'OKR 1' },
       { id: 'H-O2', type: 'okr', label: 'OKR 2' },
       { id: 'H-KR3', type: 'kr', label: 'KR 3' },
-    ],
-    'KR under nested objective returns full path'
-  );
+    ]);
+  });
 
-  // ID not in any theme but has recognizable type
-  assertEqual(
-    buildBreadcrumbs('X-O99', themes),
-    [{ id: 'X-O99', type: 'okr', label: 'OKR 99' }],
-    'Unknown ID with valid pattern returns single segment'
-  );
+  it('returns single segment for unknown ID with valid pattern', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('X-O99', themes)).toEqual([
+      { id: 'X-O99', type: 'okr', label: 'OKR 99' },
+    ]);
+  });
 
-  // Completely unknown ID
-  assertEqual(
-    buildBreadcrumbs('INVALID', themes),
-    [],
-    'Unknown ID with no valid pattern returns empty array'
-  );
+  it('returns empty array for completely unknown ID', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('INVALID', themes)).toEqual([]);
+  });
 
-  // Empty inputs
-  assertEqual(buildBreadcrumbs('', themes), [], 'Empty ID returns empty array');
-  assertEqual(
-    buildBreadcrumbs('H', []),
-    [{ id: 'H', type: 'theme', label: 'H' }],
-    'Empty themes with valid pattern returns single fallback segment'
-  );
+  it('returns empty array for empty ID', () => {
+    const themes = makeThemes();
+    expect(buildBreadcrumbs('', themes)).toEqual([]);
+  });
 
-  console.log('buildBreadcrumbs tests passed');
-}
-
-// Run all tests
-export function runAllTests(): void {
-  console.log('Running id-parser tests...');
-  testGetIdType();
-  testGetThemeAbbr();
-  testBuildBreadcrumbs();
-  console.log('All id-parser tests passed!');
-}
-
-// Auto-run if this module is executed directly
-if (typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>).runIdParserTests = runAllTests;
-  console.log('ID parser tests loaded. Run window.runIdParserTests() to execute.');
-}
+  it('returns single fallback segment for valid pattern with empty themes', () => {
+    expect(buildBreadcrumbs('H', [])).toEqual([
+      { id: 'H', type: 'theme', label: 'H' },
+    ]);
+  });
+});

@@ -13,7 +13,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
-    exclude: ['src/lib/wails/**', 'src/lib/utils/id-parser.test.ts', 'node_modules/**'],
+    exclude: ['src/lib/wails/**', 'node_modules/**'],
     passWithNoTests: true
   },
   resolve: {
