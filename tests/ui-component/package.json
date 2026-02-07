@@ -1,0 +1,11 @@
+{
+  "name": "bearing-ui-component-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run-all-tests.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}
