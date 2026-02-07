@@ -6,7 +6,7 @@
 
 See [README](README.md) for background about the project.
 
-Add your project-specific instructions here.
+To run common development operations, use `make` commands. Do not come up with own commands. If a `make` command you need is missing, tell the user.
 
 ## Testing
 
