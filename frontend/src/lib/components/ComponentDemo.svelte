@@ -11,21 +11,21 @@
 
   // Demo theme colors
   const themes = [
-    { id: 'THEME-01', name: 'Health & Fitness', color: '#10b981' },
-    { id: 'THEME-02', name: 'Career Growth', color: '#3b82f6' },
-    { id: 'THEME-03', name: 'Personal Finance', color: '#f59e0b' },
-    { id: 'THEME-04', name: 'Learning', color: '#8b5cf6' },
+    { id: 'HF', name: 'Health & Fitness', color: '#10b981' },
+    { id: 'CG', name: 'Career Growth', color: '#3b82f6' },
+    { id: 'PF', name: 'Personal Finance', color: '#f59e0b' },
+    { id: 'L', name: 'Learning', color: '#8b5cf6' },
   ];
 
-  // Demo hierarchical items
+  // Demo items using theme-scoped IDs
   const demoItems = [
-    { id: 'THEME-01', label: 'Theme only' },
-    { id: 'THEME-02.OKR-01', label: 'Theme + OKR' },
-    { id: 'THEME-03.OKR-02.KR-01', label: 'Theme + OKR + KR' },
-    { id: 'THEME-04.OKR-01.KR-02.TASK-01', label: 'Full hierarchy' },
+    { id: 'HF', label: 'Theme only' },
+    { id: 'HF-O1', label: 'Objective' },
+    { id: 'HF-KR1', label: 'Key Result' },
+    { id: 'HF-T1', label: 'Task' },
   ];
 
-  let selectedItem = $state('THEME-02.OKR-01.KR-03');
+  let selectedItem = $state('HF-KR1');
   let navigationLog = $state<string[]>([]);
 
   function handleNavigate(segmentId: string) {
@@ -108,7 +108,7 @@
           id="item-id"
           type="text"
           bind:value={selectedItem}
-          placeholder="e.g., THEME-01.OKR-02.KR-03"
+          placeholder="e.g., HF-KR3"
         />
       </div>
 

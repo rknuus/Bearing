@@ -1,124 +1,161 @@
 /**
- * Hierarchical ID Parser
+ * Theme-Scoped ID Parser
  *
- * Parses hierarchical IDs like "THEME-01.OKR-02.KR-03" into breadcrumb segments.
- * Each segment contains the full ID path up to that point, the type, and a display label.
+ * Parses theme-scoped IDs like "H", "H-O1", "H-KR1", "H-T1" by detecting type from pattern.
+ * Builds breadcrumb trails by walking the nested theme/objective/key-result hierarchy.
  */
+
+import type { main } from '../wails/wailsjs/go/models';
 
 export type SegmentType = 'theme' | 'okr' | 'kr' | 'task';
 
 export interface BreadcrumbSegment {
-  id: string;      // Full ID up to this point (e.g., "THEME-01.OKR-02")
+  id: string;
   type: SegmentType;
-  label: string;   // Display name (e.g., "OKR 02")
+  label: string;
 }
 
 /**
- * Mapping of ID prefixes to their types and display names
- */
-const SEGMENT_TYPE_MAP: Record<string, { type: SegmentType; displayName: string }> = {
-  'THEME': { type: 'theme', displayName: 'Theme' },
-  'OKR': { type: 'okr', displayName: 'OKR' },
-  'KR': { type: 'kr', displayName: 'KR' },
-  'TASK': { type: 'task', displayName: 'Task' },
-};
-
-/**
- * Parses a single segment string like "THEME-01" into type and number parts
- */
-function parseSegmentPart(segment: string): { prefix: string; number: string } | null {
-  const match = segment.match(/^([A-Z]+)-(\d+)$/);
-  if (!match) return null;
-  return { prefix: match[1], number: match[2] };
-}
-
-/**
- * Parses a hierarchical ID into an array of breadcrumb segments.
- *
- * @param id - The hierarchical ID (e.g., "THEME-01.OKR-02.KR-03")
- * @returns Array of BreadcrumbSegment objects
+ * Gets the type of a theme-scoped ID based on its pattern.
  *
  * @example
- * parseHierarchicalId("THEME-01.OKR-02.KR-03")
- * // Returns:
- * // [
- * //   { id: "THEME-01", type: "theme", label: "Theme 01" },
- * //   { id: "THEME-01.OKR-02", type: "okr", label: "OKR 02" },
- * //   { id: "THEME-01.OKR-02.KR-03", type: "kr", label: "KR 03" }
- * // ]
- */
-export function parseHierarchicalId(id: string): BreadcrumbSegment[] {
-  if (!id || typeof id !== 'string') {
-    return [];
-  }
-
-  const parts = id.split('.');
-  const segments: BreadcrumbSegment[] = [];
-  const idParts: string[] = [];
-
-  for (const part of parts) {
-    const parsed = parseSegmentPart(part);
-    if (!parsed) {
-      // Invalid segment format, skip or handle gracefully
-      continue;
-    }
-
-    const typeInfo = SEGMENT_TYPE_MAP[parsed.prefix];
-    if (!typeInfo) {
-      // Unknown prefix, skip
-      continue;
-    }
-
-    idParts.push(part);
-
-    segments.push({
-      id: idParts.join('.'),
-      type: typeInfo.type,
-      label: `${typeInfo.displayName} ${parsed.number}`,
-    });
-  }
-
-  return segments;
-}
-
-/**
- * Gets the parent ID from a hierarchical ID.
- * Returns null if the ID has no parent.
- *
- * @example
- * getParentId("THEME-01.OKR-02.KR-03") // "THEME-01.OKR-02"
- * getParentId("THEME-01") // null
- */
-export function getParentId(id: string): string | null {
-  if (!id || typeof id !== 'string') {
-    return null;
-  }
-
-  const lastDotIndex = id.lastIndexOf('.');
-  if (lastDotIndex === -1) {
-    return null;
-  }
-
-  return id.substring(0, lastDotIndex);
-}
-
-/**
- * Gets the type of a hierarchical ID based on its last segment.
- *
- * @example
- * getIdType("THEME-01.OKR-02") // "okr"
+ * getIdType("H")      // "theme"
+ * getIdType("CF-O1")  // "okr"
+ * getIdType("H-KR2")  // "kr"
+ * getIdType("H-T1")   // "task"
  */
 export function getIdType(id: string): SegmentType | null {
   if (!id || typeof id !== 'string') {
     return null;
   }
 
-  const parts = id.split('.');
-  const lastPart = parts[parts.length - 1];
-  const parsed = parseSegmentPart(lastPart);
+  if (/^[A-Z]{1,3}$/.test(id)) return 'theme';
+  if (/^[A-Z]{1,3}-O\d+$/.test(id)) return 'okr';
+  if (/^[A-Z]{1,3}-KR\d+$/.test(id)) return 'kr';
+  if (/^[A-Z]{1,3}-T\d+$/.test(id)) return 'task';
 
-  if (!parsed) return null;
+  return null;
+}
 
-  const typeInfo = SEGMENT_TYPE_MAP[parsed.prefix];
-  return typeInfo?.type ?? null;
+/**
+ * Extracts the theme abbreviation from any theme-scoped ID.
+ *
+ * @example
+ * getThemeAbbr("H")      // "H"
+ * getThemeAbbr("CF-O1")  // "CF"
+ * getThemeAbbr("LRN-T5") // "LRN"
+ */
+export function getThemeAbbr(id: string): string | null {
+  if (!id || typeof id !== 'string') return null;
+  if (/^[A-Z]{1,3}$/.test(id)) return id;
+  const match = id.match(/^([A-Z]{1,3})-(?:O|KR|T)\d+$/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Display name mapping for segment types
+ */
+const DISPLAY_NAMES: Record<SegmentType, string> = {
+  theme: 'Theme',
+  okr: 'OKR',
+  kr: 'KR',
+  task: 'Task',
+};
+
+/**
+ * Creates a label for a theme-scoped ID.
+ * Theme: abbreviation itself (e.g., "H" -> "H")
+ * Others: type + number (e.g., "H-O1" -> "OKR 1", "CF-KR2" -> "KR 2")
+ */
+function makeLabel(id: string, type: SegmentType): string {
+  if (type === 'theme') return id;
+
+  const match = id.match(/^[A-Z]{1,3}-(?:O|KR|T)(\d+)$/);
+  if (!match) return id;
+  return `${DISPLAY_NAMES[type]} ${match[1]}`;
+}
+
+/**
+ * Builds a breadcrumb trail for a given entity ID by walking the nested
+ * theme/objective/key-result hierarchy.
+ *
+ * @param id - The entity ID (e.g., "H-KR1")
+ * @param themes - The full array of LifeTheme objects
+ * @returns Array of BreadcrumbSegment objects from root to the target entity
+ *
+ * @example
+ * buildBreadcrumbs("H-KR1", themes)
+ * // Returns:
+ * // [
+ * //   { id: "H", type: "theme", label: "H" },
+ * //   { id: "H-O1", type: "okr", label: "OKR 1" },
+ * //   { id: "H-KR1", type: "kr", label: "KR 1" }
+ * // ]
+ */
+export function buildBreadcrumbs(id: string, themes: main.LifeTheme[]): BreadcrumbSegment[] {
+  if (!id || !themes) return [];
+
+  for (const theme of themes) {
+    const path = findPathInTheme(id, theme);
+    if (path.length > 0) return path;
+  }
+
+  // ID not found in any theme; return a single segment if the type is recognizable
+  const type = getIdType(id);
+  if (type) {
+    return [{ id, type, label: makeLabel(id, type) }];
+  }
+  return [];
+}
+
+/**
+ * Searches for an entity ID within a theme and returns the breadcrumb path if found.
+ */
+function findPathInTheme(targetId: string, theme: main.LifeTheme): BreadcrumbSegment[] {
+  const themeSeg: BreadcrumbSegment = {
+    id: theme.id,
+    type: 'theme',
+    label: makeLabel(theme.id, 'theme'),
+  };
+
+  if (theme.id === targetId) return [themeSeg];
+
+  if (theme.objectives) {
+    for (const obj of theme.objectives) {
+      const path = findPathInObjective(targetId, obj);
+      if (path.length > 0) return [themeSeg, ...path];
+    }
+  }
+
+  return [];
+}
+
+/**
+ * Searches for an entity ID within an objective tree (including nested objectives and KRs).
+ */
+function findPathInObjective(targetId: string, obj: main.Objective): BreadcrumbSegment[] {
+  const objSeg: BreadcrumbSegment = {
+    id: obj.id,
+    type: 'okr',
+    label: makeLabel(obj.id, 'okr'),
+  };
+
+  if (obj.id === targetId) return [objSeg];
+
+  if (obj.keyResults) {
+    for (const kr of obj.keyResults) {
+      if (kr.id === targetId) {
+        return [objSeg, { id: kr.id, type: 'kr', label: makeLabel(kr.id, 'kr') }];
+      }
+    }
+  }
+
+  if (obj.objectives) {
+    for (const nested of obj.objectives) {
+      const path = findPathInObjective(targetId, nested);
+      if (path.length > 0) return [objSeg, ...path];
+    }
+  }
+
+  return [];
 }
