@@ -245,7 +245,7 @@
       <div class="calendar-grid">
         <!-- Header row (month names) -->
         <div class="header-cell day-header">Day</div>
-        {#each monthNames as monthName, monthIndex}
+        {#each monthNames as monthName}
           <div class="header-cell month-header">{monthName}</div>
         {/each}
 
