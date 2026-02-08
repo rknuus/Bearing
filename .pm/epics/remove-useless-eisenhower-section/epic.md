@@ -4,7 +4,7 @@ status: backlog
 created: 2026-02-08T19:24:31Z
 progress: 0%
 prd: .pm/prds/remove-useless-eisenhower-section.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/rknuus/Bearing/issues/89
 ---
 
 # Epic: remove-useless-eisenhower-section
@@ -39,13 +39,13 @@ Remove the Q4 (`not-important-not-urgent`) priority from the data model and boar
 9. Update `EisenKanView.test.ts`: remove Q4 section from test board config fixture and any assertions about it
 
 ## Tasks Created
-- [ ] 001.md - Remove Q4 from backend model and board configuration (parallel: true)
-- [ ] 002.md - Simplify CreateTask priority validation in planning manager (parallel: false, depends on 001)
-- [ ] 003.md - Update frontend mock config and tests (parallel: true)
+- [ ] #90 - Remove Q4 from backend model and board configuration (parallel: true)
+- [ ] #91 - Simplify CreateTask priority validation in planning manager (parallel: false, depends on #90)
+- [ ] #92 - Update frontend mock config and tests (parallel: true)
 
 Total tasks: 3
-Parallel tasks: 2 (001, 003)
-Sequential tasks: 1 (002 depends on 001)
+Parallel tasks: 2 (#90, #92)
+Sequential tasks: 1 (#91 depends on #90)
 
 ## Dependencies
 
