@@ -272,6 +272,7 @@ describe('CalendarView', () => {
   });
 
   it('shows error state with retry button on fetch failure', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockBindings.GetThemes.mockRejectedValue(new Error('Network error'));
 
     render(CalendarView, {
@@ -292,6 +293,8 @@ describe('CalendarView', () => {
     const retryButton = errorEl?.querySelector('button');
     expect(retryButton).toBeTruthy();
     expect(retryButton?.textContent).toContain('Retry');
+
+    spy.mockRestore();
   });
 
   it('displays day text for days with focus data', async () => {
