@@ -126,7 +126,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 
 	// Step 3: Create a task "Go for a run" on January 15th
-	task, err := manager.CreateTask("Go for a run", theme.ID, "2026-01-15", "important-urgent")
+	task, err := manager.CreateTask("Go for a run", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
@@ -276,7 +276,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
 
-	task, err := manager.CreateTask("Morning run", theme.ID, "2026-01-15", "important-urgent")
+	task, err := manager.CreateTask("Morning run", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
@@ -360,7 +360,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 
 	// Create theme and task with all fields populated
 	theme, _ := manager.CreateTheme("Health", "#22c55e")
-	task, _ := manager.CreateTask("Complex task", theme.ID, "2026-01-20", "important-not-urgent")
+	task, _ := manager.CreateTask("Complex task", theme.ID, "2026-01-20", "important-not-urgent", "", "", "", "")
 
 	// Get original task details
 	originalTasks, _ := planAccess.GetTasksByStatus(theme.ID, "todo")
@@ -429,9 +429,9 @@ func TestIntegration_DataPersistence(t *testing.T) {
 
 	// Create all tasks in the same theme to avoid task ID collision issue
 	// (Task IDs are unique within a theme, but MoveTask searches across all themes)
-	_, _ = manager1.CreateTask("Morning run", theme1.ID, "2026-01-15", "important-urgent")
-	task2, _ := manager1.CreateTask("Update resume", theme1.ID, "2026-01-16", "important-not-urgent")
-	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent")
+	_, _ = manager1.CreateTask("Morning run", theme1.ID, "2026-01-15", "important-urgent", "", "", "", "")
+	task2, _ := manager1.CreateTask("Update resume", theme1.ID, "2026-01-16", "important-not-urgent", "", "", "", "")
+	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent", "", "", "", "")
 
 	// Move one task to doing
 	_, _ = manager1.MoveTask(task2.ID, "doing")
@@ -604,8 +604,8 @@ func TestIntegration_DeleteTheme(t *testing.T) {
 	theme2, _ := manager.CreateTheme("Theme to Keep", "#00ff00")
 
 	// Create tasks under both themes
-	_, _ = manager.CreateTask("Task 1", theme1.ID, "2026-01-15", "important-urgent")
-	_, _ = manager.CreateTask("Task 2", theme2.ID, "2026-01-16", "important-urgent")
+	_, _ = manager.CreateTask("Task 1", theme1.ID, "2026-01-15", "important-urgent", "", "", "", "")
+	_, _ = manager.CreateTask("Task 2", theme2.ID, "2026-01-16", "important-urgent", "", "", "", "")
 
 	// Delete the first theme
 	err := manager.DeleteTheme(theme1.ID)
@@ -647,9 +647,9 @@ func TestIntegration_MultipleThemesAndTasks(t *testing.T) {
 
 	// Create tasks across themes
 	for i := 0; i < 5; i++ {
-		_, _ = manager.CreateTask("Health task", healthTheme.ID, "2026-01-15", "important-urgent")
-		_, _ = manager.CreateTask("Career task", careerTheme.ID, "2026-01-16", "important-not-urgent")
-		_, _ = manager.CreateTask("Family task", familyTheme.ID, "2026-01-17", "not-important-urgent")
+		_, _ = manager.CreateTask("Health task", healthTheme.ID, "2026-01-15", "important-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Career task", careerTheme.ID, "2026-01-16", "important-not-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Family task", familyTheme.ID, "2026-01-17", "not-important-urgent", "", "", "", "")
 	}
 
 	// Get all tasks
@@ -696,7 +696,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	theme, _ := manager.CreateTheme("Test Theme", "#ff0000")
 
 	// Create task
-	task, _ := manager.CreateTask("Test task", theme.ID, "2026-01-15", "important-urgent")
+	task, _ := manager.CreateTask("Test task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 
 	// Move task
 	_, _ = manager.MoveTask(task.ID, "doing")
@@ -792,7 +792,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	theme, _ := manager.CreateTheme("Workflow Theme", "#ff0000")
 
 	// Create task
-	task, err := manager.CreateTask("Workflow task", theme.ID, "2026-01-15", "important-urgent")
+	task, err := manager.CreateTask("Workflow task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
