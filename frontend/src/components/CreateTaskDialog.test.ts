@@ -233,4 +233,130 @@ describe('CreateTaskDialog', () => {
     const title = container.querySelector('#create-dialog-title');
     expect(title?.textContent).toBe('Create Tasks');
   });
+
+  it('shows day date picker defaulting to today', async () => {
+    await renderDialog();
+
+    const dateInput = container.querySelector<HTMLInputElement>('#day-date-input');
+    expect(dateInput).toBeTruthy();
+    const today = new Date().toISOString().split('T')[0];
+    expect(dateInput!.value).toBe(today);
+  });
+
+  it('allows changing the day date', async () => {
+    await renderDialog();
+
+    const dateInput = container.querySelector<HTMLInputElement>('#day-date-input');
+    await fireEvent.input(dateInput!, { target: { value: '2026-03-15' } });
+    await tick();
+
+    expect(dateInput!.value).toBe('2026-03-15');
+  });
+
+  it('shows expand toggle button on each task', async () => {
+    await renderDialog();
+
+    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    await fireEvent.input(input!, { target: { value: 'Test task' } });
+    await tick();
+    await fireEvent.keyDown(input!, { key: 'Enter' });
+    await tick();
+
+    const toggle = container.querySelector('[data-testid="expand-toggle-pending-1"]');
+    expect(toggle).toBeTruthy();
+  });
+
+  it('expands task details when toggle is clicked', async () => {
+    await renderDialog();
+
+    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    await fireEvent.input(input!, { target: { value: 'Detail task' } });
+    await tick();
+    await fireEvent.keyDown(input!, { key: 'Enter' });
+    await tick();
+
+    // Details should not be visible initially
+    expect(container.querySelector('[data-testid="task-details-pending-1"]')).toBeNull();
+
+    // Click expand toggle
+    const toggle = container.querySelector<HTMLButtonElement>('[data-testid="expand-toggle-pending-1"]');
+    await fireEvent.click(toggle!);
+    await tick();
+
+    // Details should now be visible
+    const details = container.querySelector('[data-testid="task-details-pending-1"]');
+    expect(details).toBeTruthy();
+
+    // Should have all four fields
+    expect(container.querySelector('[data-testid="task-description-pending-1"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="task-tags-pending-1"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="task-dueDate-pending-1"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="task-promotionDate-pending-1"]')).toBeTruthy();
+  });
+
+  it('collapses task details when toggle is clicked again', async () => {
+    await renderDialog();
+
+    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    await fireEvent.input(input!, { target: { value: 'Collapse task' } });
+    await tick();
+    await fireEvent.keyDown(input!, { key: 'Enter' });
+    await tick();
+
+    const toggle = container.querySelector<HTMLButtonElement>('[data-testid="expand-toggle-pending-1"]');
+
+    // Expand
+    await fireEvent.click(toggle!);
+    await tick();
+    expect(container.querySelector('[data-testid="task-details-pending-1"]')).toBeTruthy();
+
+    // Collapse
+    await fireEvent.click(toggle!);
+    await tick();
+    expect(container.querySelector('[data-testid="task-details-pending-1"]')).toBeNull();
+  });
+
+  it('optional fields default to empty', async () => {
+    await renderDialog();
+
+    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    await fireEvent.input(input!, { target: { value: 'Empty fields task' } });
+    await tick();
+    await fireEvent.keyDown(input!, { key: 'Enter' });
+    await tick();
+
+    // Expand
+    const toggle = container.querySelector<HTMLButtonElement>('[data-testid="expand-toggle-pending-1"]');
+    await fireEvent.click(toggle!);
+    await tick();
+
+    const desc = container.querySelector<HTMLTextAreaElement>('[data-testid="task-description-pending-1"]');
+    const tags = container.querySelector<HTMLInputElement>('[data-testid="task-tags-pending-1"]');
+    const dueDate = container.querySelector<HTMLInputElement>('[data-testid="task-dueDate-pending-1"]');
+    const promotionDate = container.querySelector<HTMLInputElement>('[data-testid="task-promotionDate-pending-1"]');
+
+    expect(desc!.value).toBe('');
+    expect(tags!.value).toBe('');
+    expect(dueDate!.value).toBe('');
+    expect(promotionDate!.value).toBe('');
+  });
+
+  it('quick entry works without touching optional fields', async () => {
+    await renderDialog();
+
+    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+
+    // Add task via Enter - no expansion needed
+    await fireEvent.input(input!, { target: { value: 'Quick task' } });
+    await tick();
+    await fireEvent.keyDown(input!, { key: 'Enter' });
+    await tick();
+
+    // Task is in staging with just a title
+    const stagingQuadrant = container.querySelector('[data-testid="quadrant-staging"]');
+    const taskTitles = stagingQuadrant!.querySelectorAll('.task-title');
+    expect(taskTitles.length).toBe(1);
+    expect(taskTitles[0].textContent).toBe('Quick task');
+    expect(input!.value).toBe('');
+  });
 });

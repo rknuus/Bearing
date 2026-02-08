@@ -41,6 +41,7 @@
   });
   let newTaskTitle = $state('');
   let selectedThemeId = $state('');
+  let dayDate = $state(new Date().toISOString().split('T')[0]);
   let isSubmitting = $state(false);
   let error = $state<string | null>(null);
   let nextId = $state(1);
@@ -67,6 +68,7 @@
           'staging': [],
         };
         newTaskTitle = '';
+        dayDate = new Date().toISOString().split('T')[0];
         isSubmitting = false;
         error = null;
         nextId = 1;
@@ -115,8 +117,6 @@
     isSubmitting = true;
     error = null;
 
-    const today = new Date().toISOString().split('T')[0];
-
     try {
       // Create tasks from Q1, Q2, Q3 sequentially; skip Q4 (staging)
       for (const quadrant of quadrants) {
@@ -124,7 +124,7 @@
 
         const tasks = tasksByQuadrant[quadrant.id];
         for (const task of tasks) {
-          await createTask(task.title, selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
+          await createTask(task.title, selectedThemeId, dayDate, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
         }
       }
 
@@ -153,6 +153,17 @@
           <button type="button" onclick={() => error = null}>Dismiss</button>
         </div>
       {/if}
+
+      <!-- Day date picker -->
+      <div class="form-group">
+        <label for="day-date-input">Day Date</label>
+        <input
+          id="day-date-input"
+          type="date"
+          bind:value={dayDate}
+          disabled={isSubmitting}
+        />
+      </div>
 
       <!-- Task input -->
       <div class="form-group">
@@ -300,6 +311,7 @@
   }
 
   .form-group input[type="text"],
+  .form-group input[type="date"],
   .form-group select {
     width: 100%;
     padding: 0.5rem 0.75rem;
@@ -310,6 +322,7 @@
   }
 
   .form-group input[type="text"]:focus,
+  .form-group input[type="date"]:focus,
   .form-group select:focus {
     outline: none;
     border-color: #2563eb;
