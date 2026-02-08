@@ -162,11 +162,12 @@ type YearFocusFile struct {
 
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
-	CurrentView   string `json:"currentView"`
-	CurrentItem   string `json:"currentItem"`
-	FilterThemeID string `json:"filterThemeId"`
-	FilterDate    string `json:"filterDate"`
-	LastAccessed  string `json:"lastAccessed"`
-	ShowCompleted bool   `json:"showCompleted,omitempty"`
-	ShowArchived  bool   `json:"showArchived,omitempty"`
+	CurrentView    string   `json:"currentView"`
+	CurrentItem    string   `json:"currentItem"`
+	FilterThemeID  string   `json:"filterThemeId"`
+	FilterDate     string   `json:"filterDate"`
+	LastAccessed   string   `json:"lastAccessed"`
+	ShowCompleted  bool     `json:"showCompleted,omitempty"`
+	ShowArchived   bool     `json:"showArchived,omitempty"`
+	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
 }
