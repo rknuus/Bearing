@@ -740,26 +740,10 @@ func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engi
 }
 
 // CreateTask creates a new task with the given properties.
-// Priority must be one of: important-urgent, important-not-urgent, not-important-urgent.
-// Note: not-important-not-urgent (Q4) is intentionally excluded from EisenKan.
+// Priority must be one of the valid Eisenhower priorities.
 func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority string) (*access.Task, error) {
-	// Validate priority is one of the allowed values (no Q4)
-	validPriorities := []string{
-		string(access.PriorityImportantUrgent),
-		string(access.PriorityImportantNotUrgent),
-		string(access.PriorityNotImportantUrgent),
-	}
-
-	isValid := false
-	for _, p := range validPriorities {
-		if priority == p {
-			isValid = true
-			break
-		}
-	}
-
-	if !isValid {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: invalid priority %s, must be one of: important-urgent, important-not-urgent, not-important-urgent", priority)
+	if !access.IsValidPriority(priority) {
+		return nil, fmt.Errorf("PlanningManager.CreateTask: invalid priority: %s", priority)
 	}
 
 	task := access.Task{
