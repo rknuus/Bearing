@@ -185,37 +185,42 @@
     return theme?.color ?? '#6b7280';
   }
 
+  // Get Wails bindings (with mock fallback for browser testing)
+  function getBindings() {
+    return window.go?.main?.App ?? mockAppBindings;
+  }
+
   // API functions using Wails bindings (or mocks in browser mode)
   async function fetchTasks(): Promise<TaskWithStatus[]> {
-    return mockAppBindings.GetTasks();
+    return getBindings().GetTasks();
   }
 
   async function fetchThemes(): Promise<Theme[]> {
-    return mockAppBindings.GetThemes();
+    return getBindings().GetThemes();
   }
 
   async function fetchBoardConfig(): Promise<BoardConfiguration> {
-    return mockAppBindings.GetBoardConfiguration();
+    return getBindings().GetBoardConfiguration();
   }
 
   async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string): Promise<Task> {
-    return mockAppBindings.CreateTask(title, themeId, dayDate, priority);
+    return getBindings().CreateTask(title, themeId, dayDate, priority);
   }
 
   async function apiMoveTask(taskId: string, newStatus: string): Promise<MoveTaskResult> {
-    return await mockAppBindings.MoveTask(taskId, newStatus);
+    return await getBindings().MoveTask(taskId, newStatus);
   }
 
   async function apiDeleteTask(taskId: string): Promise<void> {
-    await mockAppBindings.DeleteTask(taskId);
+    await getBindings().DeleteTask(taskId);
   }
 
   async function apiUpdateTask(task: Task): Promise<void> {
-    await mockAppBindings.UpdateTask(task);
+    await getBindings().UpdateTask(task);
   }
 
   async function apiProcessPromotions(): Promise<PromotedTask[]> {
-    return mockAppBindings.ProcessPriorityPromotions();
+    return getBindings().ProcessPriorityPromotions();
   }
 
   // Load data on mount
