@@ -532,11 +532,12 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 
 	// Save navigation context
 	ctx := managers.NavigationContext{
-		CurrentView:   "eisenkan",
-		CurrentItem:   "task-123",
-		FilterThemeID: theme.ID,
-		FilterDate:    "2026-02-15",
-		LastAccessed:  time.Now().Format(time.RFC3339),
+		CurrentView:    "eisenkan",
+		CurrentItem:    "task-123",
+		FilterThemeID:  theme.ID,
+		FilterDate:     "2026-02-15",
+		LastAccessed:   time.Now().Format(time.RFC3339),
+		ExpandedOkrIds: []string{"TST", "TST-O1", "TST-O2"},
 	}
 	if err := manager1.SaveNavigationContext(ctx); err != nil {
 		t.Fatalf("Failed to save navigation context: %v", err)
@@ -569,6 +570,15 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	}
 	if loadedCtx.FilterDate != ctx.FilterDate {
 		t.Errorf("FilterDate mismatch: expected %s, got %s", ctx.FilterDate, loadedCtx.FilterDate)
+	}
+	if len(loadedCtx.ExpandedOkrIds) != len(ctx.ExpandedOkrIds) {
+		t.Errorf("ExpandedOkrIds length mismatch: expected %d, got %d", len(ctx.ExpandedOkrIds), len(loadedCtx.ExpandedOkrIds))
+	} else {
+		for i, id := range ctx.ExpandedOkrIds {
+			if loadedCtx.ExpandedOkrIds[i] != id {
+				t.Errorf("ExpandedOkrIds[%d] mismatch: expected %s, got %s", i, id, loadedCtx.ExpandedOkrIds[i])
+			}
+		}
 	}
 }
 

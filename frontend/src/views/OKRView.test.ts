@@ -182,6 +182,43 @@ describe('OKRView', () => {
     expect(progressInputs[1].value).toBe('4');
   });
 
+  it('restores expanded nodes from navigation context on mount', async () => {
+    mockBindings.LoadNavigationContext.mockResolvedValue({
+      currentView: 'okr',
+      currentItem: '',
+      filterThemeId: '',
+      filterDate: '',
+      lastAccessed: '',
+      expandedOkrIds: ['TST', 'TST-O1'],
+    });
+    await renderView();
+
+    // Theme and objective should be expanded, so KR items should be visible
+    const krItems = container.querySelectorAll('.kr-item');
+    expect(krItems.length).toBe(3);
+  });
+
+  it('saves expanded IDs to navigation context when node is expanded', async () => {
+    await renderView();
+
+    // Click expand on the theme
+    const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+    expandButtons[0]?.click();
+    await tick();
+
+    // The $effect should trigger SaveNavigationContext with expandedOkrIds containing the theme ID
+    await vi.waitFor(() => {
+      const saveCalls = mockBindings.SaveNavigationContext.mock.calls;
+      const hasExpandedIds = saveCalls.some(
+        (call: unknown[]) => {
+          const ctx = call[0] as { expandedOkrIds?: string[] };
+          return ctx.expandedOkrIds && ctx.expandedOkrIds.includes('TST');
+        }
+      );
+      if (!hasExpandedIds) throw new Error('expandedOkrIds not saved yet');
+    });
+  });
+
   it('checkbox click calls UpdateKeyResultProgress with toggled value', async () => {
     await renderView();
     await expandThemeAndObjective();
