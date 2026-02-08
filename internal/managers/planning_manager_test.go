@@ -209,6 +209,10 @@ func (m *mockPlanAccess) DeleteTask(taskID string) error {
 	return nil
 }
 
+func (m *mockPlanAccess) GetBoardConfiguration() (*access.BoardConfiguration, error) {
+	return access.DefaultBoardConfiguration(), nil
+}
+
 func (m *mockPlanAccess) LoadNavigationContext() (*access.NavigationContext, error) {
 	return nil, nil
 }
@@ -1009,7 +1013,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
 		if err == nil {
-			t.Fatal("expected error for active→archived transition")
+			t.Fatal("expected error for active->archived transition")
 		}
 	})
 
@@ -1178,7 +1182,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 		err := manager.SetObjectiveStatus(obj.ID, "archived")
 		if err == nil {
-			t.Fatal("expected error for active→archived transition")
+			t.Fatal("expected error for active->archived transition")
 		}
 	})
 
@@ -1295,9 +1299,12 @@ func TestMoveTask(t *testing.T) {
 		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent")
 
 		// Move to doing
-		err := manager.MoveTask(task.ID, "doing")
+		result, err := manager.MoveTask(task.ID, "doing")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
+		}
+		if !result.Success {
+			t.Errorf("expected success, got violations: %v", result.Violations)
 		}
 	})
 
@@ -1305,7 +1312,7 @@ func TestMoveTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		err := manager.MoveTask("task-001", "invalid-status")
+		_, err := manager.MoveTask("task-001", "invalid-status")
 		if err == nil {
 			t.Fatal("expected error for invalid status")
 		}
@@ -1366,6 +1373,125 @@ func TestDeleteTask(t *testing.T) {
 		err := manager.DeleteTask("")
 		if err == nil {
 			t.Fatal("expected error for empty ID")
+		}
+	})
+}
+
+// =============================================================================
+// Board Configuration Tests
+// =============================================================================
+
+func TestGetBoardConfiguration(t *testing.T) {
+	t.Run("returns default board configuration", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		config, err := manager.GetBoardConfiguration()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if config == nil {
+			t.Fatal("expected config, got nil")
+		}
+		if config.Name != "Bearing Board" {
+			t.Errorf("expected name 'Bearing Board', got '%s'", config.Name)
+		}
+		if len(config.ColumnDefinitions) != 3 {
+			t.Errorf("expected 3 columns, got %d", len(config.ColumnDefinitions))
+		}
+		// Verify column names
+		expectedColumns := []string{"todo", "doing", "done"}
+		for i, col := range config.ColumnDefinitions {
+			if col.Name != expectedColumns[i] {
+				t.Errorf("expected column %d name '%s', got '%s'", i, expectedColumns[i], col.Name)
+			}
+		}
+		// Verify todo column has 4 Eisenhower sections
+		todoCol := config.ColumnDefinitions[0]
+		if len(todoCol.Sections) != 4 {
+			t.Errorf("expected 4 sections in todo column, got %d", len(todoCol.Sections))
+		}
+	})
+}
+
+// =============================================================================
+// SubtaskIDs Computation Tests
+// =============================================================================
+
+func TestGetTasksSubtaskIDs(t *testing.T) {
+	t.Run("computes subtask IDs for parent tasks", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		// Create a parent task
+		parent, _ := manager.CreateTask("Parent Task", "T", "2026-01-31", "important-urgent")
+
+		// Manually add subtasks with ParentTaskID set
+		parentID := parent.ID
+		subtask1 := access.Task{
+			ID:           "T-T2",
+			Title:        "Subtask 1",
+			ThemeID:      "T",
+			DayDate:      "2026-01-31",
+			Priority:     "important-urgent",
+			ParentTaskID: &parentID,
+		}
+		subtask2 := access.Task{
+			ID:           "T-T3",
+			Title:        "Subtask 2",
+			ThemeID:      "T",
+			DayDate:      "2026-01-31",
+			Priority:     "important-not-urgent",
+			ParentTaskID: &parentID,
+		}
+		mockAccess.tasks["T"]["todo"] = append(mockAccess.tasks["T"]["todo"], subtask1, subtask2)
+
+		tasks, err := manager.GetTasks()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Find the parent task and check SubtaskIDs
+		for _, task := range tasks {
+			if task.ID == parent.ID {
+				if len(task.SubtaskIDs) != 2 {
+					t.Errorf("expected 2 subtask IDs, got %d", len(task.SubtaskIDs))
+				}
+				// Check that subtask IDs are present
+				foundSub1, foundSub2 := false, false
+				for _, id := range task.SubtaskIDs {
+					if id == "T-T2" {
+						foundSub1 = true
+					}
+					if id == "T-T3" {
+						foundSub2 = true
+					}
+				}
+				if !foundSub1 {
+					t.Error("expected T-T2 in subtask IDs")
+				}
+				if !foundSub2 {
+					t.Error("expected T-T3 in subtask IDs")
+				}
+			}
+		}
+	})
+
+	t.Run("tasks without subtasks have nil SubtaskIDs", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, _ = manager.CreateTask("Solo Task", "T", "2026-01-31", "important-urgent")
+
+		tasks, err := manager.GetTasks()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		for _, task := range tasks {
+			if task.SubtaskIDs != nil {
+				t.Errorf("expected nil SubtaskIDs for task without subtasks, got %v", task.SubtaskIDs)
+			}
 		}
 	})
 }

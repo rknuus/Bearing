@@ -40,8 +40,22 @@ function makeMockBindings() {
     // EisenKanView APIs (used via mockAppBindings, but provided for completeness)
     GetTasks: vi.fn().mockResolvedValue([]),
     CreateTask: vi.fn().mockResolvedValue(null),
-    MoveTask: vi.fn().mockResolvedValue(undefined),
+    UpdateTask: vi.fn().mockResolvedValue(undefined),
+    MoveTask: vi.fn().mockResolvedValue({ success: true }),
     DeleteTask: vi.fn().mockResolvedValue(undefined),
+    GetBoardConfiguration: vi.fn().mockResolvedValue({
+      name: 'Bearing Board',
+      columnDefinitions: [
+        { name: 'todo', title: 'TODO', type: 'todo' },
+        { name: 'doing', title: 'DOING', type: 'doing' },
+        { name: 'done', title: 'DONE', type: 'done' },
+      ],
+    }),
+    ProcessPriorityPromotions: vi.fn().mockResolvedValue([]),
+    // Status operations
+    SetObjectiveStatus: vi.fn().mockResolvedValue(undefined),
+    SetKeyResultStatus: vi.fn().mockResolvedValue(undefined),
+    SuggestThemeAbbreviation: vi.fn().mockResolvedValue('T'),
   };
 }
 
@@ -241,5 +255,63 @@ describe('App', () => {
     const homeLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
       .find(l => l.textContent?.trim() === 'Home');
     expect(homeLink?.classList.contains('active')).toBe(true);
+  });
+
+  it('restores EisenKan view with filterThemeId from navigation context', async () => {
+    mockBindings.LoadNavigationContext.mockResolvedValue({
+      currentView: 'eisenkan',
+      currentItem: '',
+      filterThemeId: 'HF',
+      filterDate: '',
+      lastAccessed: '',
+    });
+
+    await renderApp();
+
+    // Tasks nav link should be active
+    const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'Tasks');
+    expect(taskLink?.classList.contains('active')).toBe(true);
+
+    // Breadcrumb bar should show filter context
+    const breadcrumbBar = container.querySelector('.breadcrumb-bar');
+    expect(breadcrumbBar).toBeTruthy();
+
+    // Clear button should be visible (since filterThemeId is set)
+    const clearBtn = container.querySelector('.clear-filters-btn');
+    expect(clearBtn).toBeTruthy();
+  });
+
+  it('restores Calendar view with filterDate from navigation context', async () => {
+    mockBindings.LoadNavigationContext.mockResolvedValue({
+      currentView: 'calendar',
+      currentItem: '',
+      filterThemeId: '',
+      filterDate: '2026-01-15',
+      lastAccessed: '',
+    });
+
+    await renderApp();
+
+    // Calendar nav link should be active
+    const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'Calendar');
+    expect(calLink?.classList.contains('active')).toBe(true);
+  });
+
+  it('quick nav buttons on home navigate to correct views', async () => {
+    await renderApp();
+
+    // Click "Tasks" quick nav button (third button)
+    const quickNavBtns = container.querySelectorAll<HTMLButtonElement>('.quick-nav-btn');
+    expect(quickNavBtns.length).toBe(3);
+
+    // Click the Tasks quick nav button
+    quickNavBtns[2].click();
+    await tick();
+
+    const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'Tasks');
+    expect(taskLink?.classList.contains('active')).toBe(true);
   });
 });

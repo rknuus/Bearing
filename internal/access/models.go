@@ -48,11 +48,107 @@ type DayFocus struct {
 // Task represents a single actionable item linked to a life theme.
 // Tasks are organized in a kanban-style board with status derived from directory location.
 type Task struct {
-	ID       string `json:"id"`       // Unique task identifier
-	Title    string `json:"title"`    // Task title/description
-	ThemeID  string `json:"themeId"`  // Links to a LifeTheme.ID
-	DayDate  string `json:"dayDate"`  // Associated date in YYYY-MM-DD format
-	Priority string `json:"priority"` // Eisenhower matrix: important-urgent, not-important-urgent, important-not-urgent, not-important-not-urgent
+	ID            string   `json:"id"`                       // Unique task identifier
+	Title         string   `json:"title"`                    // Task title/description
+	Description   string   `json:"description,omitempty"`    // Detailed task description
+	ThemeID       string   `json:"themeId"`                  // Links to a LifeTheme.ID
+	DayDate       string   `json:"dayDate"`                  // Associated date in YYYY-MM-DD format
+	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, not-important-urgent, important-not-urgent, not-important-not-urgent
+	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
+	DueDate       string   `json:"dueDate,omitempty"`        // Due date in YYYY-MM-DD format
+	PromotionDate string   `json:"promotionDate,omitempty"`  // Date when priority should be promoted (YYYY-MM-DD)
+	ParentTaskID  *string  `json:"parentTaskId,omitempty"`   // ID of parent task for subtask hierarchy
+	CreatedAt     string   `json:"createdAt,omitempty"`      // ISO 8601 creation timestamp
+	UpdatedAt     string   `json:"updatedAt,omitempty"`      // ISO 8601 last-update timestamp
+}
+
+// CascadePolicy defines how parent task operations affect subtasks.
+type CascadePolicy string
+
+const (
+	// CascadePolicyNoAction leaves subtasks unchanged
+	CascadePolicyNoAction CascadePolicy = "no_action"
+	// CascadePolicyArchive archives subtasks along with the parent
+	CascadePolicyArchive CascadePolicy = "archive"
+	// CascadePolicyDelete deletes subtasks along with the parent
+	CascadePolicyDelete CascadePolicy = "delete"
+	// CascadePolicyPromote promotes subtasks to top-level tasks
+	CascadePolicyPromote CascadePolicy = "promote"
+)
+
+// ColumnType represents the semantic type of a board column.
+type ColumnType string
+
+const (
+	// ColumnTypeTodo represents the backlog/todo column with Eisenhower priority sections
+	ColumnTypeTodo ColumnType = "todo"
+	// ColumnTypeDoing represents work-in-progress columns
+	ColumnTypeDoing ColumnType = "doing"
+	// ColumnTypeDone represents the completed tasks column
+	ColumnTypeDone ColumnType = "done"
+)
+
+// SectionDefinition defines a priority section within a column.
+type SectionDefinition struct {
+	Name  string `json:"name"`  // Internal identifier matching a priority value
+	Title string `json:"title"` // Display title
+	Color string `json:"color"` // Hex color for UI display
+}
+
+// ColumnDefinition defines a single column's structure and display properties.
+type ColumnDefinition struct {
+	Name     string              `json:"name"`               // Internal identifier: "todo", "doing", "done"
+	Title    string              `json:"title"`              // Display title: "TODO", "DOING", "DONE"
+	Type     ColumnType          `json:"type"`               // Semantic type for UI behavior
+	Sections []SectionDefinition `json:"sections,omitempty"` // Priority sections (only for ColumnTypeTodo)
+}
+
+// BoardConfiguration defines the board structure and column layout.
+type BoardConfiguration struct {
+	Name              string             `json:"name"`
+	ColumnDefinitions []ColumnDefinition `json:"columnDefinitions"`
+}
+
+// DefaultBoardConfiguration returns the default board configuration with
+// three columns (todo with Eisenhower sections, doing, done).
+func DefaultBoardConfiguration() *BoardConfiguration {
+	return &BoardConfiguration{
+		Name: "Bearing Board",
+		ColumnDefinitions: []ColumnDefinition{
+			{
+				Name:  "todo",
+				Title: "TODO",
+				Type:  ColumnTypeTodo,
+				Sections: []SectionDefinition{
+					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
+					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#f59e0b"},
+					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#3b82f6"},
+					{Name: "not-important-not-urgent", Title: "Not Important & Not Urgent", Color: "#6b7280"},
+				},
+			},
+			{
+				Name:  "doing",
+				Title: "DOING",
+				Type:  ColumnTypeDoing,
+			},
+			{
+				Name:  "done",
+				Title: "DONE",
+				Type:  ColumnTypeDone,
+			},
+		},
+	}
+}
+
+// QueryCriteria defines search parameters for filtered task retrieval.
+type QueryCriteria struct {
+	Columns        []string `json:"columns,omitempty"`        // Filter by column names (todo, doing, done)
+	Sections       []string `json:"sections,omitempty"`       // Filter by priority section names
+	Priority       string   `json:"priority,omitempty"`       // Filter by priority value
+	Tags           []string `json:"tags,omitempty"`           // Filter by tags (any match)
+	DueDateFrom    string   `json:"dueDateFrom,omitempty"`    // Filter tasks due on or after this date
+	DueDateTo      string   `json:"dueDateTo,omitempty"`      // Filter tasks due on or before this date
+	HierarchyLevel string   `json:"hierarchyLevel,omitempty"` // "top" for root tasks, "sub" for subtasks, empty for all
 }
 
 // TaskStatus represents the kanban column status for tasks

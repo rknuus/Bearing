@@ -3,13 +3,30 @@
    * EisenKanView Component
    *
    * A Kanban board for short-term task execution using Eisenhower priority.
-   * Tasks are auto-sorted in the Todo column by priority (Q1 -> Q2 -> Q3).
-   * Theme colors are inherited from the assigned theme.
+   * Board configuration is fetched dynamically from GetBoardConfiguration API.
+   * The Todo column renders tasks grouped by priority sections from the config.
+   * Subtasks are nested under their parent tasks with expand/collapse.
+   * Drag-and-drop powered by svelte-dnd-action with optimistic rollback.
    */
 
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
+  import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
-  import { mockAppBindings, type TaskWithStatus, type LifeTheme } from '../lib/wails-mock';
+  import EditTaskDialog from '../components/EditTaskDialog.svelte';
+  import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
+  import ErrorDialog from '../components/ErrorDialog.svelte';
+  import {
+    mockAppBindings,
+    type TaskWithStatus,
+    type LifeTheme,
+    type MoveTaskResult,
+    type BoardConfiguration,
+    type ColumnDefinition,
+    type RuleViolation,
+    type Task,
+    type PromotedTask,
+  } from '../lib/wails-mock';
 
   // Props for cross-view navigation
   interface Props {
@@ -22,17 +39,9 @@
   let { onNavigateToTheme, onNavigateToDay, filterThemeId, filterDate }: Props = $props();
 
   // Types
-  type Task = TaskWithStatus;
   type Theme = LifeTheme;
 
-  type ColumnStatus = 'todo' | 'doing' | 'done';
-
-  // Priority order for sorting (lower = higher priority)
-  const priorityOrder: Record<string, number> = {
-    'important-urgent': 1,      // Q1 - Do first
-    'important-not-urgent': 2,  // Q2 - Schedule
-    'not-important-urgent': 3   // Q3 - Delegate
-  };
+  const flipDurationMs = 200;
 
   // Priority display labels
   const priorityLabels: Record<string, string> = {
@@ -48,33 +57,38 @@
     'not-important-urgent': '#f59e0b'   // Amber
   };
 
-  // Columns configuration
-  const columns: { status: ColumnStatus; title: string }[] = [
-    { status: 'todo', title: 'Todo' },
-    { status: 'doing', title: 'Doing' },
-    { status: 'done', title: 'Done' }
-  ];
-
   // State
-  let tasks = $state<Task[]>([]);
+  let tasks = $state<TaskWithStatus[]>([]);
   let themes = $state<Theme[]>([]);
+  let boardConfig = $state<BoardConfiguration | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
   // Create task dialog state
   let showCreateDialog = $state(false);
-  let newTaskTitle = $state('');
-  let newTaskThemeId = $state('');
-  let newTaskPriority = $state('important-urgent');
-  let creating = $state(false);
 
-  // Drag and drop state
-  let draggedTask = $state<Task | null>(null);
-  let dragOverColumn = $state<ColumnStatus | null>(null);
+  // Edit task dialog state
+  let selectedTask = $state<Task | null>(null);
+
+  // Error dialog state (rule violations)
+  let errorViolations = $state<RuleViolation[]>([]);
+
+  // Subtask expand/collapse state
+  let collapsedParents = new SvelteSet<string>();
+
+  // Drag-and-drop state (svelte-dnd-action)
+  let isValidating = $state(false);
+  let isRollingBack = $state(false);
+
+  // Per-column items managed by svelte-dnd-action
+  let columnItems = $state<Record<string, TaskWithStatus[]>>({});
 
   // Context menu state for cross-view navigation
-  let contextMenuTask = $state<Task | null>(null);
+  let contextMenuTask = $state<TaskWithStatus | null>(null);
   let contextMenuPosition = $state<{ x: number; y: number } | null>(null);
+
+  // Derive columns from board config
+  const columns = $derived<ColumnDefinition[]>(boardConfig?.columnDefinitions ?? []);
 
   // Filter tasks based on props
   const filteredTasks = $derived.by(() => {
@@ -88,30 +102,77 @@
     return result;
   });
 
-  // Computed: tasks grouped by column with auto-sorting for Todo
-  const tasksByColumn = $derived.by(() => {
-    const grouped: Record<ColumnStatus, Task[]> = {
-      todo: [],
-      doing: [],
-      done: []
-    };
+  // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
+  $effect(() => {
+    const cols = columns;
+    const ft = filteredTasks;
+    const grouped: Record<string, TaskWithStatus[]> = {};
 
-    for (const task of filteredTasks) {
-      const status = task.status as ColumnStatus;
+    for (const col of cols) {
+      grouped[col.name] = [];
+    }
+
+    for (const task of ft) {
+      const status = task.status;
       if (grouped[status]) {
         grouped[status].push(task);
       }
     }
 
     // Auto-sort Todo column by priority
-    grouped.todo.sort((a, b) => {
-      const orderA = priorityOrder[a.priority] ?? 999;
-      const orderB = priorityOrder[b.priority] ?? 999;
-      return orderA - orderB;
-    });
+    const todoCol = cols.find(c => c.type === 'todo');
+    if (todoCol && grouped[todoCol.name]) {
+      const priorityOrder: Record<string, number> = {};
+      if (todoCol.sections) {
+        todoCol.sections.forEach((s, i) => {
+          priorityOrder[s.name] = i;
+        });
+      }
+      grouped[todoCol.name].sort((a, b) => {
+        const orderA = priorityOrder[a.priority] ?? 999;
+        const orderB = priorityOrder[b.priority] ?? 999;
+        return orderA - orderB;
+      });
+    }
 
-    return grouped;
+    untrack(() => {
+      columnItems = grouped;
+    });
   });
+
+  // Helper: get top-level tasks (no parent) for a column
+  function getTopLevelTasks(columnName: string): TaskWithStatus[] {
+    return (columnItems[columnName] ?? []).filter(t => !t.parentTaskId);
+  }
+
+  // Helper: get subtasks for a parent task within a column
+  function getSubtasks(parentId: string, columnName: string): TaskWithStatus[] {
+    return (columnItems[columnName] ?? []).filter(t => t.parentTaskId === parentId);
+  }
+
+  // Helper: get subtask count for a parent task (across all tasks, not just column)
+  function getSubtaskCount(parentId: string): number {
+    return tasks.filter(t => t.parentTaskId === parentId).length;
+  }
+
+  // Helper: check if a task has subtasks
+  function hasSubtasks(taskId: string): boolean {
+    return tasks.some(t => t.parentTaskId === taskId);
+  }
+
+  // Toggle parent expand/collapse
+  function toggleParentCollapse(taskId: string) {
+    if (collapsedParents.has(taskId)) {
+      collapsedParents.delete(taskId);
+    } else {
+      collapsedParents.add(taskId);
+    }
+  }
+
+  // Helper: get tasks for a specific section within a column
+  function getTasksForSection(columnName: string, sectionName: string): TaskWithStatus[] {
+    return (columnItems[columnName] ?? []).filter(t => t.priority === sectionName);
+  }
 
   // Helper: get theme by ID
   function getTheme(themeId: string): Theme | undefined {
@@ -125,7 +186,7 @@
   }
 
   // API functions using Wails bindings (or mocks in browser mode)
-  async function fetchTasks(): Promise<Task[]> {
+  async function fetchTasks(): Promise<TaskWithStatus[]> {
     return mockAppBindings.GetTasks();
   }
 
@@ -133,31 +194,51 @@
     return mockAppBindings.GetThemes();
   }
 
-  async function apiCreateTask(title: string, themeId: string, priority: string): Promise<Task> {
-    const today = new Date().toISOString().split('T')[0];
-    const task = await mockAppBindings.CreateTask(title, themeId, today, priority);
-    return { ...task, status: 'todo' };
+  async function fetchBoardConfig(): Promise<BoardConfiguration> {
+    return mockAppBindings.GetBoardConfiguration();
   }
 
-  async function apiMoveTask(taskId: string, newStatus: string): Promise<void> {
-    await mockAppBindings.MoveTask(taskId, newStatus);
+  async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string): Promise<Task> {
+    return mockAppBindings.CreateTask(title, themeId, dayDate, priority);
+  }
+
+  async function apiMoveTask(taskId: string, newStatus: string): Promise<MoveTaskResult> {
+    return await mockAppBindings.MoveTask(taskId, newStatus);
   }
 
   async function apiDeleteTask(taskId: string): Promise<void> {
     await mockAppBindings.DeleteTask(taskId);
   }
 
+  async function apiUpdateTask(task: Task): Promise<void> {
+    await mockAppBindings.UpdateTask(task);
+  }
+
+  async function apiProcessPromotions(): Promise<PromotedTask[]> {
+    return mockAppBindings.ProcessPriorityPromotions();
+  }
+
   // Load data on mount
   onMount(async () => {
     try {
-      const [fetchedTasks, fetchedThemes] = await Promise.all([
+      const [fetchedTasks, fetchedThemes, fetchedConfig] = await Promise.all([
         fetchTasks(),
-        fetchThemes()
+        fetchThemes(),
+        fetchBoardConfig()
       ]);
       tasks = fetchedTasks;
       themes = fetchedThemes;
-      if (fetchedThemes.length > 0) {
-        newTaskThemeId = fetchedThemes[0].id;
+      boardConfig = fetchedConfig;
+
+      // Process priority promotions on startup and refresh if any promoted
+      try {
+        const promoted = await apiProcessPromotions();
+        if (promoted.length > 0) {
+          tasks = await fetchTasks();
+        }
+      } catch {
+        // Non-critical: log but don't block the view
+        console.error('[EisenKan] Failed to process priority promotions');
       }
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load data';
@@ -166,92 +247,99 @@
     }
   });
 
-  // Create task handler
-  async function handleCreateTask() {
-    if (!newTaskTitle.trim() || !newTaskThemeId || !newTaskPriority) {
-      return;
-    }
-
-    creating = true;
+  // Refresh tasks from API
+  async function refreshTasks() {
     try {
-      const newTask = await apiCreateTask(newTaskTitle, newTaskThemeId, newTaskPriority);
-      tasks = [...tasks, newTask];
-      closeCreateDialog();
+      tasks = await fetchTasks();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to create task';
-    } finally {
-      creating = false;
+      error = e instanceof Error ? e.message : 'Failed to refresh tasks';
     }
   }
 
+  // Create task dialog handlers
   function openCreateDialog() {
     showCreateDialog = true;
-    newTaskTitle = '';
-    newTaskPriority = 'important-urgent';
-    if (themes.length > 0) {
-      newTaskThemeId = themes[0].id;
-    }
   }
 
-  function closeCreateDialog() {
+  function handleCreateDone() {
     showCreateDialog = false;
-    newTaskTitle = '';
+    refreshTasks();
   }
 
-  // Drag and drop handlers
-  function handleDragStart(event: DragEvent, task: Task) {
-    draggedTask = task;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', task.id);
-    }
+  function handleCreateCancel() {
+    showCreateDialog = false;
   }
 
-  function handleDragEnd() {
-    draggedTask = null;
-    dragOverColumn = null;
+  // Edit task dialog handlers
+  function handleTaskClick(task: TaskWithStatus) {
+    selectedTask = task;
   }
 
-  function handleDragOver(event: DragEvent, status: ColumnStatus) {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-    dragOverColumn = status;
+  async function handleEditSave(updatedTask: Task) {
+    await apiUpdateTask(updatedTask);
+    selectedTask = null;
+    await refreshTasks();
   }
 
-  function handleDragLeave() {
-    dragOverColumn = null;
+  function handleEditCancel() {
+    selectedTask = null;
   }
 
-  async function handleDrop(event: DragEvent, newStatus: ColumnStatus) {
-    event.preventDefault();
-    dragOverColumn = null;
+  // Error dialog handler
+  function handleErrorClose() {
+    errorViolations = [];
+  }
 
-    if (!draggedTask || draggedTask.status === newStatus) {
-      draggedTask = null;
-      return;
-    }
+  // svelte-dnd-action handlers
+  function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    columnItems = { ...columnItems, [status]: event.detail.items };
+  }
 
-    const taskId = draggedTask.id;
-    const oldStatus = draggedTask.status;
+  async function handleDndFinalize(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    if (isValidating || isRollingBack) return;
 
-    // Optimistic update
+    const newItems = event.detail.items;
+
+    // Update column items optimistically
+    columnItems = { ...columnItems, [status]: newItems };
+
+    // Find the task that was moved into this column (its status differs from column)
+    const movedTask = newItems.find(t => t.status !== status);
+    if (!movedTask) return; // Reorder within same column -- no backend call needed
+
+    const taskId = movedTask.id;
+
+    // Snapshot pre-move state for rollback
+    const snapshotTasks = [...tasks];
+
+    // Optimistically update master task list
     tasks = tasks.map(t =>
-      t.id === taskId ? { ...t, status: newStatus } : t
+      t.id === taskId ? { ...t, status } : t
     );
 
+    isValidating = true;
     try {
-      await apiMoveTask(taskId, newStatus);
+      const result = await apiMoveTask(taskId, status);
+      if (!result.success) {
+        // Rule violation -- rollback
+        isRollingBack = true;
+        tasks = snapshotTasks;
+        queueMicrotask(() => { isRollingBack = false; });
+        if (result.violations && result.violations.length > 0) {
+          errorViolations = result.violations;
+        } else {
+          error = 'Move rejected by rules';
+        }
+      }
     } catch (e) {
-      // Revert on error
-      tasks = tasks.map(t =>
-        t.id === taskId ? { ...t, status: oldStatus } : t
-      );
+      // Network error -- rollback
+      isRollingBack = true;
+      tasks = snapshotTasks;
+      queueMicrotask(() => { isRollingBack = false; });
       error = e instanceof Error ? e.message : 'Failed to move task';
+    } finally {
+      isValidating = false;
     }
-
-    draggedTask = null;
   }
 
   // Delete task handler
@@ -272,7 +360,7 @@
   }
 
   // Context menu handlers
-  function handleTaskContextMenu(event: MouseEvent, task: Task) {
+  function handleTaskContextMenu(event: MouseEvent, task: TaskWithStatus) {
     event.preventDefault();
     contextMenuTask = task;
     contextMenuPosition = { x: event.clientX, y: event.clientY };
@@ -296,6 +384,11 @@
     }
     closeContextMenu();
   }
+
+  // Column task count
+  function getColumnTaskCount(columnName: string): number {
+    return (columnItems[columnName] ?? []).length;
+  }
 </script>
 
 <div class="eisenkan-container">
@@ -318,76 +411,203 @@
       <p>Loading tasks...</p>
     </div>
   {:else}
-    <div class="kanban-board">
-      {#each columns as column (column.status)}
+    <div class="kanban-board" style="grid-template-columns: repeat({columns.length}, 1fr);">
+      {#each columns as column (column.name)}
         <div
           class="kanban-column"
-          class:drag-over={dragOverColumn === column.status}
-          ondragover={(e) => handleDragOver(e, column.status)}
-          ondragleave={handleDragLeave}
-          ondrop={(e) => handleDrop(e, column.status)}
           role="region"
           aria-label="{column.title} column"
         >
           <div class="column-header">
             <h2>{column.title}</h2>
-            <span class="task-count">{tasksByColumn[column.status].length}</span>
+            <span class="task-count">{getColumnTaskCount(column.name)}</span>
           </div>
 
-          <div class="column-content">
-            {#each tasksByColumn[column.status] as task (task.id)}
-              <div
-                class="task-card"
-                draggable="true"
-                ondragstart={(e) => handleDragStart(e, task)}
-                ondragend={handleDragEnd}
-                oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                style="--theme-color: {getThemeColor(task.themeId)};"
-                role="article"
-                aria-label="{task.title}"
-              >
-                <div class="task-header">
-                  <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
-                  <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
-                    {priorityLabels[task.priority]}
-                  </span>
+          {#if column.sections && column.sections.length > 0}
+            <!-- Sectioned column: render sections as separate groups -->
+            <div class="section-container">
+              {#each column.sections as section (section.name)}
+                {@const sectionTasks = getTasksForSection(column.name, section.name)}
+                <div class="column-section" data-testid="section-{section.name}">
+                  <div class="section-header">
+                    <span class="section-color" style="background-color: {section.color};"></span>
+                    <span class="section-title">{section.title}</span>
+                    <span class="section-count">{sectionTasks.length}</span>
+                  </div>
+                  <div
+                    class="column-content"
+                    use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, dragDisabled: isValidating || isRollingBack }}
+                    onconsider={(e) => handleDndConsider(column.name, e)}
+                    onfinalize={(e) => handleDndFinalize(column.name, e)}
+                  >
+                    {#each sectionTasks as task (task.id)}
+                      {#if !task.parentTaskId}
+                        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                        <div
+                          class="task-card"
+                          onclick={() => handleTaskClick(task)}
+                          oncontextmenu={(e) => handleTaskContextMenu(e, task)}
+                          style="--theme-color: {getThemeColor(task.themeId)};"
+                          role="article"
+                          aria-label="{task.title}"
+                        >
+                          <div class="task-header">
+                            <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+                            <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
+                              {priorityLabels[task.priority]}
+                            </span>
+                            {#if hasSubtasks(task.id)}
+                              <button
+                                type="button"
+                                class="toggle-btn"
+                                onclick={(e) => { e.stopPropagation(); toggleParentCollapse(task.id); }}
+                                aria-label="{collapsedParents.has(task.id) ? 'Expand' : 'Collapse'} subtasks"
+                              >
+                                {collapsedParents.has(task.id) ? '+' : '-'}
+                              </button>
+                              {#if collapsedParents.has(task.id)}
+                                <span class="subtask-count">{getSubtaskCount(task.id)}</span>
+                              {/if}
+                            {/if}
+                          </div>
+                          <h3 class="task-title">{task.title}</h3>
+                          <div class="task-footer">
+                            <button
+                              type="button"
+                              class="theme-name-btn"
+                              onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
+                              title="Go to theme"
+                            >
+                              {getTheme(task.themeId)?.name ?? 'Unknown'}
+                            </button>
+                            <button
+                              type="button"
+                              class="task-date"
+                              title="Go to day"
+                              onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
+                            >
+                              {task.dayDate}
+                            </button>
+                            <button
+                              type="button"
+                              class="delete-btn"
+                              onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                              aria-label="Delete task"
+                            >
+                              x
+                            </button>
+                          </div>
+                        </div>
+                        {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
+                          {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
+                            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                            <div
+                              class="task-card subtask-card"
+                              onclick={() => handleTaskClick(subtask)}
+                              oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
+                              style="--theme-color: {getThemeColor(subtask.themeId)};"
+                              role="article"
+                              aria-label="{subtask.title}"
+                            >
+                              <h3 class="task-title">{subtask.title}</h3>
+                            </div>
+                          {/each}
+                        {/if}
+                      {/if}
+                    {/each}
+                  </div>
                 </div>
-                <h3 class="task-title">{task.title}</h3>
-                <div class="task-footer">
-                  <button
-                    type="button"
-                    class="theme-name-btn"
-                    onclick={() => onNavigateToTheme?.(task.themeId)}
-                    title="Go to theme"
-                  >
-                    {getTheme(task.themeId)?.name ?? 'Unknown'}
-                  </button>
-                  <button
-                    type="button"
-                    class="task-date"
-                    title="Go to day"
-                    onclick={() => onNavigateToDay?.(task.dayDate)}
-                  >
-                    {task.dayDate}
-                  </button>
-                  <button
-                    type="button"
-                    class="delete-btn"
-                    onclick={() => handleDeleteTask(task.id)}
-                    aria-label="Delete task"
-                  >
-                    x
-                  </button>
+              {/each}
+            </div>
+          {:else}
+            <!-- Regular column: single drop zone -->
+            <div
+              class="column-content"
+              use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, dragDisabled: isValidating || isRollingBack }}
+              onconsider={(e) => handleDndConsider(column.name, e)}
+              onfinalize={(e) => handleDndFinalize(column.name, e)}
+            >
+              {#each getTopLevelTasks(column.name) as task (task.id)}
+                <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                <div
+                  class="task-card"
+                  onclick={() => handleTaskClick(task)}
+                  oncontextmenu={(e) => handleTaskContextMenu(e, task)}
+                  style="--theme-color: {getThemeColor(task.themeId)};"
+                  role="article"
+                  aria-label="{task.title}"
+                >
+                  <div class="task-header">
+                    <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+                    <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
+                      {priorityLabels[task.priority]}
+                    </span>
+                    {#if hasSubtasks(task.id)}
+                      <button
+                        type="button"
+                        class="toggle-btn"
+                        onclick={(e) => { e.stopPropagation(); toggleParentCollapse(task.id); }}
+                        aria-label="{collapsedParents.has(task.id) ? 'Expand' : 'Collapse'} subtasks"
+                      >
+                        {collapsedParents.has(task.id) ? '+' : '-'}
+                      </button>
+                      {#if collapsedParents.has(task.id)}
+                        <span class="subtask-count">{getSubtaskCount(task.id)}</span>
+                      {/if}
+                    {/if}
+                  </div>
+                  <h3 class="task-title">{task.title}</h3>
+                  <div class="task-footer">
+                    <button
+                      type="button"
+                      class="theme-name-btn"
+                      onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
+                      title="Go to theme"
+                    >
+                      {getTheme(task.themeId)?.name ?? 'Unknown'}
+                    </button>
+                    <button
+                      type="button"
+                      class="task-date"
+                      title="Go to day"
+                      onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
+                    >
+                      {task.dayDate}
+                    </button>
+                    <button
+                      type="button"
+                      class="delete-btn"
+                      onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                      aria-label="Delete task"
+                    >
+                      x
+                    </button>
+                  </div>
                 </div>
-              </div>
-            {/each}
+                {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
+                  {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
+                    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                    <div
+                      class="task-card subtask-card"
+                      onclick={() => handleTaskClick(subtask)}
+                      oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
+                      style="--theme-color: {getThemeColor(subtask.themeId)};"
+                      role="article"
+                      aria-label="{subtask.title}"
+                    >
+                      <h3 class="task-title">{subtask.title}</h3>
+                    </div>
+                  {/each}
+                {/if}
+              {/each}
 
-            {#if tasksByColumn[column.status].length === 0}
-              <div class="empty-column">
-                <p>No tasks</p>
-              </div>
-            {/if}
-          </div>
+              {#if (columnItems[column.name] ?? []).length === 0}
+                <div class="empty-column">
+                  <p>No tasks</p>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
       {/each}
     </div>
@@ -411,66 +631,25 @@
     </div>
   {/if}
 
-  <!-- Create Task Dialog -->
-  {#if showCreateDialog}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div class="dialog-overlay" onclick={closeCreateDialog} role="presentation">
-      <!-- svelte-ignore a11y_interactive_supports_focus -->
-      <div class="dialog" onclick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="dialog-title">
-        <h2 id="dialog-title">Create New Task</h2>
+  <!-- Create Task Dialog (Eisenhower matrix) -->
+  <CreateTaskDialog
+    open={showCreateDialog}
+    {themes}
+    onDone={handleCreateDone}
+    onCancel={handleCreateCancel}
+    createTask={apiCreateTask}
+  />
 
-        <div class="form-group">
-          <label for="task-title">Title</label>
-          <input
-            id="task-title"
-            type="text"
-            bind:value={newTaskTitle}
-            placeholder="Enter task title"
-          />
-        </div>
+  <!-- Edit Task Dialog -->
+  <EditTaskDialog
+    task={selectedTask}
+    onSave={handleEditSave}
+    onCancel={handleEditCancel}
+  />
 
-        <div class="form-group">
-          <label for="task-theme">Theme</label>
-          <select id="task-theme" bind:value={newTaskThemeId}>
-            {#each themes as theme (theme.id)}
-              <option value={theme.id}>{theme.name}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="form-group" role="radiogroup" aria-labelledby="priority-group-label">
-          <span id="priority-group-label" class="group-label">Priority (Eisenhower Matrix)</span>
-          <div class="priority-options">
-            <label class="priority-option">
-              <input type="radio" bind:group={newTaskPriority} value="important-urgent" />
-              <span class="priority-label q1">Q1 - Important & Urgent</span>
-            </label>
-            <label class="priority-option">
-              <input type="radio" bind:group={newTaskPriority} value="important-not-urgent" />
-              <span class="priority-label q2">Q2 - Important, Not Urgent</span>
-            </label>
-            <label class="priority-option">
-              <input type="radio" bind:group={newTaskPriority} value="not-important-urgent" />
-              <span class="priority-label q3">Q3 - Not Important, Urgent</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="dialog-actions">
-          <button type="button" class="btn-secondary" onclick={closeCreateDialog}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="btn-primary"
-            onclick={handleCreateTask}
-            disabled={creating || !newTaskTitle.trim()}
-          >
-            {creating ? 'Creating...' : 'Create Task'}
-          </button>
-        </div>
-      </div>
-    </div>
+  <!-- Error Dialog (rule violations) -->
+  {#if errorViolations.length > 0}
+    <ErrorDialog violations={errorViolations} onClose={handleErrorClose} />
   {/if}
 </div>
 
@@ -542,7 +721,6 @@
 
   .kanban-board {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     flex: 1;
     min-height: 0;
@@ -556,10 +734,6 @@
     padding: 0.75rem;
     min-height: 200px;
     transition: background-color 0.2s;
-  }
-
-  .kanban-column.drag-over {
-    background-color: #dbeafe;
   }
 
   .column-header {
@@ -588,12 +762,60 @@
     border-radius: 9999px;
   }
 
+  /* Section styles */
+  .section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex: 1;
+  }
+
+  .column-section {
+    background-color: #f3f4f6;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    padding: 0.5rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #4b5563;
+    flex: 1;
+  }
+
+  .section-count {
+    background-color: #9ca3af;
+    color: white;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 9999px;
+    min-width: 1.25rem;
+    text-align: center;
+  }
+
   .column-content {
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    min-height: 60px;
   }
 
   .task-card {
@@ -615,6 +837,19 @@
     transform: rotate(2deg);
   }
 
+  /* Subtask card: indented and smaller */
+  .subtask-card {
+    margin-left: 1.5rem;
+    padding: 0.5rem 0.625rem;
+    opacity: 0.85;
+    font-size: 0.8125rem;
+  }
+
+  .subtask-card .task-title {
+    font-size: 0.8125rem;
+    margin: 0;
+  }
+
   .task-header {
     display: flex;
     align-items: center;
@@ -630,6 +865,29 @@
     border-radius: 4px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  .toggle-btn {
+    background: none;
+    border: 1px solid #d1d5db;
+    color: #6b7280;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0 0.375rem;
+    line-height: 1.25;
+    border-radius: 3px;
+    transition: background-color 0.15s;
+  }
+
+  .toggle-btn:hover {
+    background-color: #f3f4f6;
+  }
+
+  .subtask-count {
+    font-size: 0.6875rem;
+    color: #6b7280;
+    font-weight: 500;
   }
 
   .task-title {
@@ -703,145 +961,6 @@
   .empty-column p {
     color: #9ca3af;
     font-size: 0.875rem;
-  }
-
-  /* Dialog styles */
-  .dialog-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .dialog {
-    background-color: white;
-    border-radius: 8px;
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  }
-
-  .dialog h2 {
-    font-size: 1.25rem;
-    color: #1f2937;
-    margin: 0 0 1.5rem 0;
-  }
-
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  .form-group label,
-  .form-group .group-label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 0.375rem;
-  }
-
-  .form-group input[type="text"],
-  .form-group select {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
-
-  .form-group input[type="text"]:focus,
-  .form-group select:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-
-  .priority-options {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .priority-option {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-  }
-
-  .priority-option input[type="radio"] {
-    width: 1rem;
-    height: 1rem;
-    cursor: pointer;
-  }
-
-  .priority-label {
-    font-size: 0.875rem;
-    color: #374151;
-  }
-
-  .priority-label.q1 {
-    color: #dc2626;
-  }
-
-  .priority-label.q2 {
-    color: #2563eb;
-  }
-
-  .priority-label.q3 {
-    color: #f59e0b;
-  }
-
-  .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1.5rem;
-  }
-
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    background-color: white;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-secondary:hover {
-    background-color: #f9fafb;
-  }
-
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background-color: #1d4ed8;
-  }
-
-  .btn-primary:disabled {
-    background-color: #93c5fd;
-    cursor: not-allowed;
   }
 
   /* Context menu styles */

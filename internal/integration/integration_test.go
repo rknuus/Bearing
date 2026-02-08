@@ -301,8 +301,12 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	commitCountBefore := len(historyBefore)
 
 	// Move task to "doing"
-	if err := manager.MoveTask(task.ID, "doing"); err != nil {
+	moveResult, err := manager.MoveTask(task.ID, "doing")
+	if err != nil {
 		t.Fatalf("Failed to move task: %v", err)
+	}
+	if !moveResult.Success {
+		t.Fatalf("Move task rejected: %v", moveResult.Violations)
 	}
 
 	// Verify task file moved to new location
@@ -371,8 +375,12 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 	// Move through all statuses
 	statuses := []string{"doing", "done", "todo", "doing"}
 	for _, status := range statuses {
-		if err := manager.MoveTask(task.ID, status); err != nil {
+		moveResult, err := manager.MoveTask(task.ID, status)
+		if err != nil {
 			t.Fatalf("Failed to move task to %s: %v", status, err)
+		}
+		if !moveResult.Success {
+			t.Fatalf("Move task to %s rejected: %v", status, moveResult.Violations)
 		}
 
 		// Verify task content after each move
@@ -426,7 +434,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent")
 
 	// Move one task to doing
-	_ = manager1.MoveTask(task2.ID, "doing")
+	_, _ = manager1.MoveTask(task2.ID, "doing")
 
 	// Save navigation context
 	navCtx := managers.NavigationContext{
@@ -691,7 +699,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	task, _ := manager.CreateTask("Test task", theme.ID, "2026-01-15", "important-urgent")
 
 	// Move task
-	_ = manager.MoveTask(task.ID, "doing")
+	_, _ = manager.MoveTask(task.ID, "doing")
 
 	// Update theme
 	theme.Color = "#00ff00"
@@ -806,7 +814,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to doing
-	_ = manager.MoveTask(task.ID, "doing")
+	_, _ = manager.MoveTask(task.ID, "doing")
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {
@@ -818,7 +826,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to done
-	_ = manager.MoveTask(task.ID, "done")
+	_, _ = manager.MoveTask(task.ID, "done")
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {

@@ -121,6 +121,50 @@ type DayFocus struct {
 	Text    string `json:"text"`
 }
 
+// Task represents a single actionable item (for Wails binding)
+type Task struct {
+	ID            string   `json:"id"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	ThemeID       string   `json:"themeId"`
+	DayDate       string   `json:"dayDate"`
+	Priority      string   `json:"priority"`
+	Tags          []string `json:"tags,omitempty"`
+	DueDate       string   `json:"dueDate,omitempty"`
+	PromotionDate string   `json:"promotionDate,omitempty"`
+	ParentTaskID  *string  `json:"parentTaskId,omitempty"`
+	CreatedAt     string   `json:"createdAt,omitempty"`
+	UpdatedAt     string   `json:"updatedAt,omitempty"`
+}
+
+// TaskWithStatus represents a task with its kanban column status (for Wails binding)
+type TaskWithStatus struct {
+	Task
+	Status     string   `json:"status"`
+	SubtaskIDs []string `json:"subtaskIds,omitempty"`
+}
+
+// SectionDefinition defines a priority section within a column (for Wails binding)
+type SectionDefinition struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	Color string `json:"color"`
+}
+
+// ColumnDefinition defines a single column's structure (for Wails binding)
+type ColumnDefinition struct {
+	Name     string              `json:"name"`
+	Title    string              `json:"title"`
+	Type     string              `json:"type"`
+	Sections []SectionDefinition `json:"sections,omitempty"`
+}
+
+// BoardConfiguration defines the board structure and column layout (for Wails binding)
+type BoardConfiguration struct {
+	Name              string             `json:"name"`
+	ColumnDefinitions []ColumnDefinition `json:"columnDefinitions"`
+}
+
 // NavigationContext represents the user's navigation state (for Wails binding)
 type NavigationContext struct {
 	CurrentView    string   `json:"currentView"`
@@ -439,6 +483,208 @@ func (a *App) ClearDayFocus(date string) error {
 	}
 
 	return a.planningManager.ClearDayFocus(date)
+}
+
+// GetTasks returns all tasks with their kanban status
+func (a *App) GetTasks() ([]TaskWithStatus, error) {
+	if a.planningManager == nil {
+		return []TaskWithStatus{}, nil
+	}
+
+	tasks, err := a.planningManager.GetTasks()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]TaskWithStatus, len(tasks))
+	for i, t := range tasks {
+		result[i] = TaskWithStatus{
+			Task: Task{
+				ID:            t.ID,
+				Title:         t.Title,
+				Description:   t.Description,
+				ThemeID:       t.ThemeID,
+				DayDate:       t.DayDate,
+				Priority:      t.Priority,
+				Tags:          t.Tags,
+				DueDate:       t.DueDate,
+				PromotionDate: t.PromotionDate,
+				ParentTaskID:  t.ParentTaskID,
+				CreatedAt:     t.CreatedAt,
+				UpdatedAt:     t.UpdatedAt,
+			},
+			Status:     t.Status,
+			SubtaskIDs: t.SubtaskIDs,
+		}
+	}
+	return result, nil
+}
+
+// CreateTask creates a new task with the given properties
+func (a *App) CreateTask(title, themeId, dayDate, priority string) (*Task, error) {
+	if a.planningManager == nil {
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	task, err := a.planningManager.CreateTask(title, themeId, dayDate, priority)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Task{
+		ID:            task.ID,
+		Title:         task.Title,
+		Description:   task.Description,
+		ThemeID:       task.ThemeID,
+		DayDate:       task.DayDate,
+		Priority:      task.Priority,
+		Tags:          task.Tags,
+		DueDate:       task.DueDate,
+		PromotionDate: task.PromotionDate,
+		ParentTaskID:  task.ParentTaskID,
+		CreatedAt:     task.CreatedAt,
+		UpdatedAt:     task.UpdatedAt,
+	}, nil
+}
+
+// UpdateTask updates an existing task
+func (a *App) UpdateTask(task Task) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.UpdateTask(access.Task{
+		ID:            task.ID,
+		Title:         task.Title,
+		Description:   task.Description,
+		ThemeID:       task.ThemeID,
+		DayDate:       task.DayDate,
+		Priority:      task.Priority,
+		Tags:          task.Tags,
+		DueDate:       task.DueDate,
+		PromotionDate: task.PromotionDate,
+		ParentTaskID:  task.ParentTaskID,
+		CreatedAt:     task.CreatedAt,
+		UpdatedAt:     task.UpdatedAt,
+	})
+}
+
+// RuleViolation represents a single rule violation (for Wails binding)
+type RuleViolation struct {
+	RuleID   string `json:"ruleId"`
+	Priority int    `json:"priority"`
+	Message  string `json:"message"`
+	Category string `json:"category"`
+}
+
+// MoveTaskResult contains the result of a MoveTask operation (for Wails binding)
+type MoveTaskResult struct {
+	Success    bool            `json:"success"`
+	Violations []RuleViolation `json:"violations,omitempty"`
+}
+
+// PromotedTask represents a task that was promoted (for Wails binding)
+type PromotedTask struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	OldPriority string `json:"oldPriority"`
+	NewPriority string `json:"newPriority"`
+}
+
+// MoveTask moves a task to a new kanban column status
+func (a *App) MoveTask(taskId, newStatus string) (*MoveTaskResult, error) {
+	if a.planningManager == nil {
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	result, err := a.planningManager.MoveTask(taskId, newStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert violations
+	var violations []RuleViolation
+	for _, v := range result.Violations {
+		violations = append(violations, RuleViolation{
+			RuleID:   v.RuleID,
+			Priority: v.Priority,
+			Message:  v.Message,
+			Category: v.Category,
+		})
+	}
+
+	return &MoveTaskResult{
+		Success:    result.Success,
+		Violations: violations,
+	}, nil
+}
+
+// ProcessPriorityPromotions promotes tasks whose PromotionDate has been reached
+func (a *App) ProcessPriorityPromotions() ([]PromotedTask, error) {
+	if a.planningManager == nil {
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	promoted, err := a.planningManager.ProcessPriorityPromotions()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []PromotedTask
+	for _, p := range promoted {
+		result = append(result, PromotedTask{
+			ID:          p.ID,
+			Title:       p.Title,
+			OldPriority: p.OldPriority,
+			NewPriority: p.NewPriority,
+		})
+	}
+	return result, nil
+}
+
+// DeleteTask deletes a task by ID
+func (a *App) DeleteTask(taskId string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.DeleteTask(taskId)
+}
+
+// GetBoardConfiguration returns the board structure and column layout
+func (a *App) GetBoardConfiguration() (*BoardConfiguration, error) {
+	if a.planningManager == nil {
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	config, err := a.planningManager.GetBoardConfiguration()
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to Wails binding types
+	columns := make([]ColumnDefinition, len(config.ColumnDefinitions))
+	for i, col := range config.ColumnDefinitions {
+		sections := make([]SectionDefinition, len(col.Sections))
+		for j, sec := range col.Sections {
+			sections[j] = SectionDefinition{
+				Name:  sec.Name,
+				Title: sec.Title,
+				Color: sec.Color,
+			}
+		}
+		columns[i] = ColumnDefinition{
+			Name:     col.Name,
+			Title:    col.Title,
+			Type:     string(col.Type),
+			Sections: sections,
+		}
+	}
+
+	return &BoardConfiguration{
+		Name:              config.Name,
+		ColumnDefinitions: columns,
+	}, nil
 }
 
 // LoadNavigationContext retrieves the saved navigation state

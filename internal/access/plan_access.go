@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -32,6 +33,9 @@ type IPlanAccess interface {
 	SaveTask(task Task) error
 	MoveTask(taskID, newStatus string) error
 	DeleteTask(taskID string) error
+
+	// Board Configuration
+	GetBoardConfiguration() (*BoardConfiguration, error)
 
 	// Navigation
 	LoadNavigationContext() (*NavigationContext, error)
@@ -438,20 +442,30 @@ func (pa *PlanAccess) GetTasksByStatus(themeID, status string) ([]Task, error) {
 }
 
 // SaveTask saves or updates a task.
-// If the task ID is empty, a new ID will be generated.
+// If the task ID is empty, a new ID will be generated and CreatedAt is set.
+// UpdatedAt is always set to the current time on every save.
 func (pa *PlanAccess) SaveTask(task Task) error {
 	if task.ThemeID == "" {
 		return fmt.Errorf("PlanAccess.SaveTask: themeID cannot be empty")
 	}
 
+	now := time.Now().UTC().Format(time.RFC3339)
+	isNew := task.ID == ""
+
 	// Generate ID if not provided
-	if task.ID == "" {
+	if isNew {
 		existingTasks, err := pa.GetTasksByTheme(task.ThemeID)
 		if err != nil {
 			return fmt.Errorf("PlanAccess.SaveTask: failed to get existing tasks: %w", err)
 		}
 		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
 	}
+
+	// Set timestamps
+	if task.CreatedAt == "" {
+		task.CreatedAt = now
+	}
+	task.UpdatedAt = now
 
 	// Determine status - find existing task or default to todo
 	status := string(TaskStatusTodo)
@@ -497,7 +511,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	}
 
 	action := "Update"
-	if existingStatus == "" {
+	if isNew {
 		action = "Add"
 	}
 	_, err = tx.Commit(fmt.Sprintf("%s task: %s", action, task.Title))
@@ -669,6 +683,11 @@ func (pa *PlanAccess) DeleteTask(taskID string) error {
 	}
 
 	return nil
+}
+
+// GetBoardConfiguration returns the static board configuration.
+func (pa *PlanAccess) GetBoardConfiguration() (*BoardConfiguration, error) {
+	return DefaultBoardConfiguration(), nil
 }
 
 // Helper functions
