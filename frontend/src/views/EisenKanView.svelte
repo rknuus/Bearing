@@ -442,7 +442,7 @@
                   >
                     {#each sectionTasks as task (task.id)}
                       {#if !task.parentTaskId}
-                        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
                         <div
                           class="task-card"
                           onclick={() => handleTaskClick(task)}
@@ -500,7 +500,7 @@
                         </div>
                         {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
                           {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
-                            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
                             <div
                               class="task-card subtask-card"
                               onclick={() => handleTaskClick(subtask)}
@@ -528,7 +528,7 @@
               onfinalize={(e) => handleDndFinalize(column.name, e)}
             >
               {#each getTopLevelTasks(column.name) as task (task.id)}
-                <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
                 <div
                   class="task-card"
                   onclick={() => handleTaskClick(task)}
@@ -586,7 +586,7 @@
                 </div>
                 {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
                   {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
-                    <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_noninteractive_element_interactions -->
+                    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
                     <div
                       class="task-card subtask-card"
                       onclick={() => handleTaskClick(subtask)}
