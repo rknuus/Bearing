@@ -1,8 +1,9 @@
 ---
 name: add-missing-ui-tests
-status: backlog
+status: completed
 created: 2026-02-08T11:54:19Z
-progress: 0%
+completed: 2026-02-08T13:22:00Z
+progress: 100%
 prd: .claude/prds/add-missing-ui-tests.md
 github: https://github.com/rknuus/Bearing/issues/70
 ---
