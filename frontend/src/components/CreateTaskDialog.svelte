@@ -40,6 +40,10 @@
     'staging': [],
   });
   let newTaskTitle = $state('');
+  let newTaskDescription = $state('');
+  let newTaskTags = $state('');
+  let newTaskDueDate = $state('');
+  let newTaskPromotionDate = $state('');
   let selectedThemeId = $state('');
   let dayDate = $state(new Date().toISOString().split('T')[0]);
   let isSubmitting = $state(false);
@@ -68,6 +72,10 @@
           'staging': [],
         };
         newTaskTitle = '';
+        newTaskDescription = '';
+        newTaskTags = '';
+        newTaskDueDate = '';
+        newTaskPromotionDate = '';
         dayDate = new Date().toISOString().split('T')[0];
         isSubmitting = false;
         error = null;
@@ -90,13 +98,24 @@
     const title = newTaskTitle.trim();
     if (!title) return;
 
-    const task: PendingTask = { id: `pending-${nextId}`, title };
+    const task: PendingTask = {
+      id: `pending-${nextId}`,
+      title,
+      description: newTaskDescription.trim() || undefined,
+      tags: newTaskTags.trim() || undefined,
+      dueDate: newTaskDueDate || undefined,
+      promotionDate: newTaskPromotionDate || undefined,
+    };
     nextId++;
     tasksByQuadrant = {
       ...tasksByQuadrant,
       staging: [...tasksByQuadrant.staging, task],
     };
     newTaskTitle = '';
+    newTaskDescription = '';
+    newTaskTags = '';
+    newTaskDueDate = '';
+    newTaskPromotionDate = '';
   }
 
   function handleKeyDown(event: KeyboardEvent) {
@@ -165,20 +184,61 @@
         />
       </div>
 
-      <!-- Task input -->
-      <div class="form-group">
-        <label for="new-task-input">New Task</label>
-        <div class="input-row">
+      <!-- Task entry form -->
+      <fieldset class="task-entry" disabled={isSubmitting}>
+        <legend>New Task</legend>
+        <div class="form-group">
+          <label for="new-task-input">Title</label>
           <input
             id="new-task-input"
             type="text"
             bind:value={newTaskTitle}
             onkeydown={handleKeyDown}
-            placeholder="Enter task title, press Enter"
+            placeholder="Enter task title, press Enter to add"
             disabled={isSubmitting}
           />
         </div>
-      </div>
+        <div class="form-group">
+          <label for="new-task-description">Description</label>
+          <textarea
+            id="new-task-description"
+            bind:value={newTaskDescription}
+            placeholder="Enter task description"
+            rows="2"
+            disabled={isSubmitting}
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="new-task-tags">Tags (comma-separated)</label>
+          <input
+            id="new-task-tags"
+            type="text"
+            bind:value={newTaskTags}
+            placeholder="e.g. urgent, backend, review"
+            disabled={isSubmitting}
+          />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-task-due-date">Due Date</label>
+            <input
+              id="new-task-due-date"
+              type="date"
+              bind:value={newTaskDueDate}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-task-promotion-date">Promotion Date</label>
+            <input
+              id="new-task-promotion-date"
+              type="date"
+              bind:value={newTaskPromotionDate}
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+      </fieldset>
 
       <!-- Eisenhower grid -->
       <div class="eisenhower-grid" data-testid="eisenhower-grid">
@@ -305,28 +365,51 @@
     margin-bottom: 0.375rem;
   }
 
-  .input-row {
-    display: flex;
-    gap: 0.5rem;
-  }
-
   .form-group input[type="text"],
   .form-group input[type="date"],
+  .form-group textarea,
   .form-group select {
     width: 100%;
     padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.875rem;
+    font-family: inherit;
     transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
   }
 
   .form-group input[type="text"]:focus,
   .form-group input[type="date"]:focus,
+  .form-group textarea:focus,
   .form-group select:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+  }
+
+  .task-entry {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .task-entry legend {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    padding: 0 0.25rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
   }
 
   .eisenhower-grid {
