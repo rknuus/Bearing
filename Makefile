@@ -93,7 +93,7 @@ clean: ## Clean build artifacts
 ##@ Testing
 
 .PHONY: test
-test: test-backend test-frontend ## Run all tests (Go + frontend)
+test: lint test-backend test-frontend ## Lint all code and run all tests (Go + frontend)
 
 .PHONY: test-backend
 test-backend: ## Run all Go tests
@@ -195,7 +195,7 @@ frontend-lint: ## Run frontend linter (ESLint + Svelte)
 .PHONY: lint
 lint: frontend-lint ## Run all linters (Go + frontend)
 	@echo "Running Go linter..."
-	golangci-lint run ./...
+	go tool golangci-lint run ./...
 
 .PHONY: fmt
 fmt: ## Format Go code
