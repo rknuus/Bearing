@@ -45,13 +45,39 @@ export interface DayFocus {
 export interface Task {
   id: string;
   title: string;
+  description?: string;
   themeId: string;
   dayDate: string;
   priority: string;
+  tags?: string[];
+  dueDate?: string;
+  promotionDate?: string;
+  parentTaskId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface TaskWithStatus extends Task {
   status: string;
+  subtaskIds?: string[];
+}
+
+export interface SectionDefinition {
+  name: string;
+  title: string;
+  color: string;
+}
+
+export interface ColumnDefinition {
+  name: string;
+  title: string;
+  type: string;
+  sections?: SectionDefinition[];
+}
+
+export interface BoardConfiguration {
+  name: string;
+  columnDefinitions: ColumnDefinition[];
 }
 
 export interface NavigationContext {
@@ -229,6 +255,22 @@ function suggestAbbreviation(name: string, existingThemes: LifeTheme[]): string 
   return word.substring(0, 3);
 }
 
+/** Compute subtaskIds for each task based on parentTaskId relationships. */
+function computeSubtaskIds(tasks: TaskWithStatus[]): TaskWithStatus[] {
+  const parentToChildren = new Map<string, string[]>();
+  for (const t of tasks) {
+    if (t.parentTaskId) {
+      const children = parentToChildren.get(t.parentTaskId) || [];
+      children.push(t.id);
+      parentToChildren.set(t.parentTaskId, children);
+    }
+  }
+  return tasks.map(t => ({
+    ...t,
+    subtaskIds: parentToChildren.get(t.id),
+  }));
+}
+
 // Mock data storage for browser testing
 let mockThemes: LifeTheme[] = [
   {
@@ -293,10 +335,10 @@ const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
-  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo' },
-  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo' },
-  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing' },
-  { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done' },
+  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
+  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
+  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing', createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T10:00:00Z' },
+  { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done', createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
 ];
 
 // Mock navigation context storage
@@ -306,6 +348,34 @@ let mockNavigationContext: NavigationContext = {
   filterThemeId: '',
   filterDate: '',
   lastAccessed: ''
+};
+
+// Default board configuration matching Go DefaultBoardConfiguration()
+const defaultBoardConfiguration: BoardConfiguration = {
+  name: 'Bearing Board',
+  columnDefinitions: [
+    {
+      name: 'todo',
+      title: 'TODO',
+      type: 'todo',
+      sections: [
+        { name: 'important-urgent', title: 'Important & Urgent', color: '#ef4444' },
+        { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#f59e0b' },
+        { name: 'not-important-urgent', title: 'Not Important & Urgent', color: '#3b82f6' },
+        { name: 'not-important-not-urgent', title: 'Not Important & Not Urgent', color: '#6b7280' },
+      ],
+    },
+    {
+      name: 'doing',
+      title: 'DOING',
+      type: 'doing',
+    },
+    {
+      name: 'done',
+      title: 'DONE',
+      type: 'done',
+    },
+  ],
 };
 
 // Check if we're running in Wails (has window.go)
@@ -546,10 +616,11 @@ export const mockAppBindings = {
 
   // Task operations
   GetTasks: async (): Promise<TaskWithStatus[]> => {
-    return [...mockTasks];
+    return computeSubtaskIds([...mockTasks]);
   },
 
   CreateTask: async (title: string, themeId: string, dayDate: string, priority: string): Promise<Task> => {
+    const now = new Date().toISOString();
     const maxNum = getMaxTaskNumForTheme(mockTasks, themeId);
     const newTask: TaskWithStatus = {
       id: `${themeId}-T${maxNum + 1}`,
@@ -558,6 +629,8 @@ export const mockAppBindings = {
       dayDate,
       priority,
       status: 'todo',
+      createdAt: now,
+      updatedAt: now,
     };
     mockTasks.push(newTask);
     return newTask;
@@ -567,18 +640,24 @@ export const mockAppBindings = {
     const task = mockTasks.find(t => t.id === taskId);
     if (task) {
       task.status = newStatus;
+      task.updatedAt = new Date().toISOString();
     }
   },
 
   UpdateTask: async (task: Task): Promise<void> => {
     const index = mockTasks.findIndex(t => t.id === task.id);
     if (index >= 0) {
-      mockTasks[index] = { ...mockTasks[index], ...task };
+      mockTasks[index] = { ...mockTasks[index], ...task, updatedAt: new Date().toISOString() };
     }
   },
 
   DeleteTask: async (taskId: string): Promise<void> => {
     mockTasks = mockTasks.filter(t => t.id !== taskId);
+  },
+
+  // Board configuration
+  GetBoardConfiguration: async (): Promise<BoardConfiguration> => {
+    return JSON.parse(JSON.stringify(defaultBoardConfiguration)); // Deep copy
   },
 
   // Navigation context operations
@@ -614,7 +693,7 @@ export const mockAppBindings = {
     if (date) {
       filtered = filtered.filter(t => t.dayDate === date);
     }
-    return filtered;
+    return computeSubtaskIds(filtered);
   },
 
   // Get days in calendar that use a specific theme

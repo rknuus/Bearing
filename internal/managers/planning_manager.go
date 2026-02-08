@@ -12,7 +12,8 @@ import (
 // TaskWithStatus represents a task with its current status.
 type TaskWithStatus struct {
 	access.Task
-	Status string `json:"status"`
+	Status     string   `json:"status"`
+	SubtaskIDs []string `json:"subtaskIds,omitempty"`
 }
 
 // NavigationContext stores the user's navigation state for persistence.
@@ -62,6 +63,9 @@ type IPlanningManager interface {
 	MoveTask(taskId, newStatus string) error
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
+
+	// Board Configuration
+	GetBoardConfiguration() (*access.BoardConfiguration, error)
 
 	// Theme Abbreviation
 	SuggestThemeAbbreviation(name string) (string, error)
@@ -633,6 +637,7 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 }
 
 // GetTasks returns all tasks with their status across all themes.
+// SubtaskIDs are computed at runtime by scanning for tasks with matching ParentTaskID.
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
@@ -654,6 +659,19 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 					Status: string(status),
 				})
 			}
+		}
+	}
+
+	// Compute SubtaskIDs: for each task, find children whose ParentTaskID matches
+	parentToChildren := make(map[string][]string)
+	for _, t := range allTasks {
+		if t.ParentTaskID != nil && *t.ParentTaskID != "" {
+			parentToChildren[*t.ParentTaskID] = append(parentToChildren[*t.ParentTaskID], t.ID)
+		}
+	}
+	for i := range allTasks {
+		if children, ok := parentToChildren[allTasks[i].ID]; ok {
+			allTasks[i].SubtaskIDs = children
 		}
 	}
 
@@ -747,6 +765,15 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 	}
 
 	return nil
+}
+
+// GetBoardConfiguration returns the board configuration.
+func (m *PlanningManager) GetBoardConfiguration() (*access.BoardConfiguration, error) {
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.GetBoardConfiguration: %w", err)
+	}
+	return config, nil
 }
 
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name.
