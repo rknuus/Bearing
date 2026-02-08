@@ -192,7 +192,7 @@ func (pa *PlanAccess) SaveTheme(theme LifeTheme) error {
 	}
 
 	if err := tx.Stage([]string{relPath}); err != nil {
-		tx.Cancel()
+		_ = tx.Cancel()
 		return fmt.Errorf("PlanAccess.SaveTheme: failed to stage file: %w", err)
 	}
 
@@ -256,7 +256,7 @@ func (pa *PlanAccess) DeleteTheme(id string) error {
 	}
 
 	if err := tx.Stage([]string{relPath}); err != nil {
-		tx.Cancel()
+		_ = tx.Cancel()
 		return fmt.Errorf("PlanAccess.DeleteTheme: failed to stage file: %w", err)
 	}
 
@@ -347,7 +347,7 @@ func (pa *PlanAccess) SaveDayFocus(day DayFocus) error {
 	}
 
 	if err := tx.Stage([]string{relPath}); err != nil {
-		tx.Cancel()
+		_ = tx.Cancel()
 		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to stage file: %w", err)
 	}
 
@@ -492,7 +492,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	}
 
 	if err := tx.Stage([]string{relPath}); err != nil {
-		tx.Cancel()
+		_ = tx.Cancel()
 		return fmt.Errorf("PlanAccess.SaveTask: failed to stage file: %w", err)
 	}
 
@@ -589,7 +589,7 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 
 	// Stage the new file and the deletion of the old file
 	if err := tx.Stage([]string{newRelPath, oldRelPath}); err != nil {
-		tx.Cancel()
+		_ = tx.Cancel()
 		return fmt.Errorf("PlanAccess.MoveTask: failed to stage files: %w", err)
 	}
 
@@ -659,7 +659,7 @@ func (pa *PlanAccess) DeleteTask(taskID string) error {
 	}
 
 	if err := tx.Stage([]string{relPath}); err != nil {
-		tx.Cancel()
+		_ = tx.Cancel()
 		return fmt.Errorf("PlanAccess.DeleteTask: failed to stage deletion: %w", err)
 	}
 
@@ -777,7 +777,7 @@ func (pa *PlanAccess) ensureThemeIDs(theme LifeTheme, allThemes []LifeTheme) Lif
 	maxOBJ := collectMaxObjNum(abbr, theme)
 	maxKR := collectMaxKRNum(abbr, theme)
 
-	theme.Objectives, maxOBJ, maxKR = pa.ensureObjectiveIDs(abbr, theme.ID, theme.Objectives, maxOBJ, maxKR)
+	theme.Objectives, _, _ = pa.ensureObjectiveIDs(abbr, theme.ID, theme.Objectives, maxOBJ, maxKR)
 	return theme
 }
 

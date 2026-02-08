@@ -280,7 +280,9 @@ func TestIntegration_VersioningUtility_DestructiveAPITesting(t *testing.T) {
 
 				// Create and stage a file
 				testFile := filepath.Join(repoPath, "test.txt")
-				os.WriteFile(testFile, []byte("content"), 0644)
+				if err := os.WriteFile(testFile, []byte("content"), 0644); err != nil {
+					return err
+				}
 				tx, txErr := handle.Begin()
 				if txErr != nil {
 					return txErr
@@ -311,7 +313,9 @@ func TestIntegration_VersioningUtility_DestructiveAPITesting(t *testing.T) {
 
 				// Create and stage a file
 				testFile := filepath.Join(repoPath, "test.txt")
-				os.WriteFile(testFile, []byte("content"), 0644)
+				if err := os.WriteFile(testFile, []byte("content"), 0644); err != nil {
+					return err
+				}
 				tx, txErr := handle.Begin()
 				if txErr != nil {
 					return txErr

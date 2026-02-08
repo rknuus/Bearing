@@ -413,20 +413,20 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	theme1, _ := manager1.CreateTheme("Health", "#22c55e")
 	theme2, _ := manager1.CreateTheme("Career", "#3b82f6")
 
-	manager1.CreateObjective(theme1.ID, "Fitness Goals")
-	manager1.CreateObjective(theme2.ID, "Career Growth")
+	_, _ = manager1.CreateObjective(theme1.ID, "Fitness Goals")
+	_, _ = manager1.CreateObjective(theme2.ID, "Career Growth")
 
-	manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-15", ThemeID: theme1.ID, Notes: "Health day"})
-	manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-16", ThemeID: theme2.ID, Notes: "Career day"})
+	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-15", ThemeID: theme1.ID, Notes: "Health day"})
+	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-16", ThemeID: theme2.ID, Notes: "Career day"})
 
 	// Create all tasks in the same theme to avoid task ID collision issue
 	// (Task IDs are unique within a theme, but MoveTask searches across all themes)
-	manager1.CreateTask("Morning run", theme1.ID, "2026-01-15", "important-urgent")
+	_, _ = manager1.CreateTask("Morning run", theme1.ID, "2026-01-15", "important-urgent")
 	task2, _ := manager1.CreateTask("Update resume", theme1.ID, "2026-01-16", "important-not-urgent")
-	manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent")
+	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent")
 
 	// Move one task to doing
-	manager1.MoveTask(task2.ID, "doing")
+	_ = manager1.MoveTask(task2.ID, "doing")
 
 	// Save navigation context
 	navCtx := managers.NavigationContext{
@@ -435,7 +435,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 		FilterDate:    "2026-01-15",
 		LastAccessed:  "2026-01-31T10:00:00Z",
 	}
-	manager1.SaveNavigationContext(navCtx)
+	_ = manager1.SaveNavigationContext(navCtx)
 
 	// Close the first set of handles
 	repo1.Close()
@@ -596,8 +596,8 @@ func TestIntegration_DeleteTheme(t *testing.T) {
 	theme2, _ := manager.CreateTheme("Theme to Keep", "#00ff00")
 
 	// Create tasks under both themes
-	manager.CreateTask("Task 1", theme1.ID, "2026-01-15", "important-urgent")
-	manager.CreateTask("Task 2", theme2.ID, "2026-01-16", "important-urgent")
+	_, _ = manager.CreateTask("Task 1", theme1.ID, "2026-01-15", "important-urgent")
+	_, _ = manager.CreateTask("Task 2", theme2.ID, "2026-01-16", "important-urgent")
 
 	// Delete the first theme
 	err := manager.DeleteTheme(theme1.ID)
@@ -639,9 +639,9 @@ func TestIntegration_MultipleThemesAndTasks(t *testing.T) {
 
 	// Create tasks across themes
 	for i := 0; i < 5; i++ {
-		manager.CreateTask("Health task", healthTheme.ID, "2026-01-15", "important-urgent")
-		manager.CreateTask("Career task", careerTheme.ID, "2026-01-16", "important-not-urgent")
-		manager.CreateTask("Family task", familyTheme.ID, "2026-01-17", "not-important-urgent")
+		_, _ = manager.CreateTask("Health task", healthTheme.ID, "2026-01-15", "important-urgent")
+		_, _ = manager.CreateTask("Career task", careerTheme.ID, "2026-01-16", "important-not-urgent")
+		_, _ = manager.CreateTask("Family task", familyTheme.ID, "2026-01-17", "not-important-urgent")
 	}
 
 	// Get all tasks
@@ -691,11 +691,11 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	task, _ := manager.CreateTask("Test task", theme.ID, "2026-01-15", "important-urgent")
 
 	// Move task
-	manager.MoveTask(task.ID, "doing")
+	_ = manager.MoveTask(task.ID, "doing")
 
 	// Update theme
 	theme.Color = "#00ff00"
-	manager.UpdateTheme(*theme)
+	_ = manager.UpdateTheme(*theme)
 
 	// Get history
 	history, err := repo.GetHistory(0)
@@ -748,7 +748,7 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 	for _, m := range months {
 		for day := 1; day <= m.days; day++ {
 			date := time.Date(2026, time.Month(m.month), day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
-			manager.SaveDayFocus(access.DayFocus{
+			_ = manager.SaveDayFocus(access.DayFocus{
 				Date:    date,
 				ThemeID: theme.ID,
 				Notes:   "Daily focus",
@@ -806,7 +806,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to doing
-	manager.MoveTask(task.ID, "doing")
+	_ = manager.MoveTask(task.ID, "doing")
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {
@@ -818,7 +818,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to done
-	manager.MoveTask(task.ID, "done")
+	_ = manager.MoveTask(task.ID, "done")
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {

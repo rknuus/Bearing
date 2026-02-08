@@ -79,7 +79,7 @@ func TestPerformance_CalendarYearLoad(t *testing.T) {
 	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < 365; i++ {
 		date := startDate.AddDate(0, 0, i).Format("2006-01-02")
-		manager.SaveDayFocus(access.DayFocus{
+		_ = manager.SaveDayFocus(access.DayFocus{
 			Date:    date,
 			ThemeID: theme.ID,
 			Notes:   "Daily focus note",
@@ -116,7 +116,7 @@ func TestPerformance_ViewTransition_ThemesToTasks(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		theme, _ := manager.CreateTheme("Theme", "#ff0000")
 		for j := 0; j < 10; j++ {
-			manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
 		}
 	}
 
@@ -185,7 +185,7 @@ func TestPerformance_NavigationContextLoad(t *testing.T) {
 		FilterDate:    "2026-01-15",
 		LastAccessed:  time.Now().Format(time.RFC3339),
 	}
-	manager.SaveNavigationContext(ctx)
+	_ = manager.SaveNavigationContext(ctx)
 
 	// Measure load time
 	start := time.Now()
@@ -222,7 +222,7 @@ func BenchmarkCalendarYearLoad(b *testing.B) {
 	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < 365; i++ {
 		date := startDate.AddDate(0, 0, i).Format("2006-01-02")
-		manager.SaveDayFocus(access.DayFocus{
+		_ = manager.SaveDayFocus(access.DayFocus{
 			Date:    date,
 			ThemeID: theme.ID,
 			Notes:   "Daily focus note",
@@ -248,7 +248,7 @@ func BenchmarkViewTransition(b *testing.B) {
 	for i := 0; i < 5; i++ {
 		theme, _ := manager.CreateTheme("Theme", "#ff0000")
 		for j := 0; j < 10; j++ {
-			manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
 		}
 	}
 
@@ -329,7 +329,7 @@ func BenchmarkGetAllTasks(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		theme, _ := manager.CreateTheme("Theme", "#ff0000")
 		for j := 0; j < 20; j++ {
-			manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
 		}
 	}
 
@@ -415,7 +415,7 @@ func TestPerformance_LargeDataset(t *testing.T) {
 			obj, _ := manager.CreateObjective(theme.ID, "Objective")
 			// Add 3 key results per objective
 			for k := 0; k < 3; k++ {
-				manager.CreateKeyResult(obj.ID, "Key Result", 0, 0)
+				_, _ = manager.CreateKeyResult(obj.ID, "Key Result", 0, 0)
 			}
 		}
 	}
@@ -423,7 +423,7 @@ func TestPerformance_LargeDataset(t *testing.T) {
 	// Create 100 tasks distributed across themes
 	for i := 0; i < 100; i++ {
 		themeID := themes[i%10]
-		manager.CreateTask("Task", themeID, "2026-01-15", "important-urgent")
+		_, _ = manager.CreateTask("Task", themeID, "2026-01-15", "important-urgent")
 	}
 
 	// Measure full data retrieval

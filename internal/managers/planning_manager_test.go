@@ -33,7 +33,7 @@ func collectMockMaxObjNum(abbr string, objectives []access.Objective) int {
 	for _, obj := range objectives {
 		if obj.ID != "" {
 			var n int
-			fmt.Sscanf(obj.ID, abbr+"-O%d", &n)
+			_, _ = fmt.Sscanf(obj.ID, abbr+"-O%d", &n)
 			if n > max {
 				max = n
 			}
@@ -52,7 +52,7 @@ func collectMockMaxKRNum(abbr string, objectives []access.Objective) int {
 		for _, kr := range obj.KeyResults {
 			if kr.ID != "" {
 				var n int
-				fmt.Sscanf(kr.ID, abbr+"-KR%d", &n)
+				_, _ = fmt.Sscanf(kr.ID, abbr+"-KR%d", &n)
 				if n > max {
 					max = n
 				}
@@ -537,7 +537,7 @@ func TestDeleteObjective(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		parent, _ := manager.CreateObjective("T", "Parent")
-		manager.CreateObjective(parent.ID, "Child")
+		_, _ = manager.CreateObjective(parent.ID, "Child")
 
 		// Delete the parent -- child should be gone too
 		err := manager.DeleteObjective(parent.ID)
@@ -558,7 +558,7 @@ func TestDeleteObjective(t *testing.T) {
 		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
 		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
-		manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0)
+		_, _ = manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0)
 
 		// Delete the middle objective (Level 2) -- Level 3 and its KR should be gone too
 		err := manager.DeleteObjective(l2.ID)
@@ -686,7 +686,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		parent, _ := manager.CreateObjective("T", "Parent")
-		manager.CreateObjective(parent.ID, "Child")
+		_, _ = manager.CreateObjective(parent.ID, "Child")
 
 		// Add KR to the parent (intermediate node with children)
 		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0)
@@ -945,7 +945,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
-		manager.SetKeyResultStatus(kr.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
 		if err != nil {
@@ -965,7 +965,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
-		manager.SetKeyResultStatus(kr.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "active")
 		if err != nil {
@@ -985,8 +985,8 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
-		manager.SetKeyResultStatus(kr.ID, "completed")
-		manager.SetKeyResultStatus(kr.ID, "archived")
+		_ = manager.SetKeyResultStatus(kr.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr.ID, "archived")
 
 		err := manager.SetKeyResultStatus(kr.ID, "active")
 		if err != nil {
@@ -1057,8 +1057,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
 
 		// Complete both KRs
-		manager.SetKeyResultStatus(kr1.ID, "completed")
-		manager.SetKeyResultStatus(kr2.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 
 		// Now complete the objective
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
@@ -1081,9 +1081,9 @@ func TestSetObjectiveStatus(t *testing.T) {
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
 		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
 
-		manager.SetKeyResultStatus(kr1.ID, "completed")
-		manager.SetKeyResultStatus(kr2.ID, "completed")
-		manager.SetKeyResultStatus(kr2.ID, "archived")
+		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr2.ID, "archived")
 
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err != nil {
@@ -1096,7 +1096,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
+		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
 
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err == nil {
@@ -1109,7 +1109,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		parent, _ := manager.CreateObjective("T", "Parent")
-		manager.CreateObjective(parent.ID, "Active Child")
+		_, _ = manager.CreateObjective(parent.ID, "Active Child")
 
 		err := manager.SetObjectiveStatus(parent.ID, "completed")
 		if err == nil {
@@ -1124,7 +1124,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 
-		manager.SetObjectiveStatus(child.ID, "completed")
+		_ = manager.SetObjectiveStatus(child.ID, "completed")
 
 		err := manager.SetObjectiveStatus(parent.ID, "completed")
 		if err != nil {
@@ -1137,7 +1137,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		manager.SetObjectiveStatus(obj.ID, "completed")
+		_ = manager.SetObjectiveStatus(obj.ID, "completed")
 
 		err := manager.SetObjectiveStatus(obj.ID, "archived")
 		if err != nil {
@@ -1156,7 +1156,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		manager.SetObjectiveStatus(obj.ID, "completed")
+		_ = manager.SetObjectiveStatus(obj.ID, "completed")
 
 		err := manager.SetObjectiveStatus(obj.ID, "active")
 		if err != nil {
@@ -1318,8 +1318,8 @@ func TestGetTasks(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create tasks
-		manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent")
-		manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent")
+		_, _ = manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent")
+		_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent")
 
 		tasks, err := manager.GetTasks()
 		if err != nil {

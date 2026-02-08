@@ -17,19 +17,6 @@ func testAuthorConfig() *AuthorConfiguration {
 	}
 }
 
-// stageAndCommit stages patterns and commits via a Transaction on the repository.
-func stageAndCommit(repo IRepository, patterns []string, message string) (string, error) {
-	tx, err := repo.Begin()
-	if err != nil {
-		return "", err
-	}
-	if err := tx.Stage(patterns); err != nil {
-		_ = tx.Cancel()
-		return "", err
-	}
-	return tx.Commit(message)
-}
-
 // TestVersioningUtility_InitializeRepository_FactoryFunction tests factory function availability
 func TestUnit_VersioningUtility_FactoryFunction(t *testing.T) {
 	// Test that the factory function is available and works
@@ -1025,7 +1012,7 @@ func TestUnit_VersioningUtility_Transaction_DifferentRepos_NoBlocking(t *testing
 	if err != nil {
 		t.Fatalf("Begin on repoA failed: %v", err)
 	}
-	defer txA.Cancel()
+	defer func() { _ = txA.Cancel() }()
 
 	done := make(chan error, 1)
 	go func() {
