@@ -12,6 +12,10 @@
   export interface PendingTask {
     id: string;
     title: string;
+    description?: string;
+    tags?: string;
+    dueDate?: string;
+    promotionDate?: string;
   }
 
   interface Props {

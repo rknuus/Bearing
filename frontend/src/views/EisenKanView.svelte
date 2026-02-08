@@ -203,8 +203,8 @@
     return getBindings().GetBoardConfiguration();
   }
 
-  async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string): Promise<Task> {
-    return getBindings().CreateTask(title, themeId, dayDate, priority);
+  async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> {
+    return getBindings().CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate);
   }
 
   async function apiMoveTask(taskId: string, newStatus: string): Promise<MoveTaskResult> {

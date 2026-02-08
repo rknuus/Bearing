@@ -13,7 +13,7 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeCreateTaskMock() {
   let callCount = 0;
-  return vi.fn<(title: string, themeId: string, dayDate: string, priority: string) => Promise<Task>>(
+  return vi.fn<(title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>>(
     async (title, themeId, dayDate, priority) => {
       callCount++;
       return {
@@ -45,7 +45,7 @@ describe('CreateTaskDialog', () => {
     themes: LifeTheme[];
     onDone: () => void;
     onCancel: () => void;
-    createTask: (title: string, themeId: string, dayDate: string, priority: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
   }> = {}) {
     const result = render(CreateTaskDialog, {
       target: container,

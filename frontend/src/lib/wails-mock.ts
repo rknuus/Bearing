@@ -637,7 +637,7 @@ export const mockAppBindings = {
     return computeSubtaskIds([...mockTasks]);
   },
 
-  CreateTask: async (title: string, themeId: string, dayDate: string, priority: string): Promise<Task> => {
+  CreateTask: async (title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> => {
     const now = new Date().toISOString();
     const maxNum = getMaxTaskNumForTheme(mockTasks, themeId);
     const newTask: TaskWithStatus = {
@@ -650,6 +650,10 @@ export const mockAppBindings = {
       createdAt: now,
       updatedAt: now,
     };
+    if (description) newTask.description = description;
+    if (tags) newTask.tags = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (dueDate) newTask.dueDate = dueDate;
+    if (promotionDate) newTask.promotionDate = promotionDate;
     mockTasks.push(newTask);
     return newTask;
   },

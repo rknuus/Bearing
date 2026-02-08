@@ -19,7 +19,7 @@
     themes: LifeTheme[];
     onDone: () => void;
     onCancel: () => void;
-    createTask: (title: string, themeId: string, dayDate: string, priority: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
   }
 
   let { open, themes, onDone, onCancel, createTask }: Props = $props();
@@ -124,7 +124,7 @@
 
         const tasks = tasksByQuadrant[quadrant.id];
         for (const task of tasks) {
-          await createTask(task.title, selectedThemeId, today, quadrant.priority);
+          await createTask(task.title, selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
         }
       }
 
