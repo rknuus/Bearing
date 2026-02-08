@@ -32,7 +32,6 @@ function makeTestBoardConfig(): BoardConfiguration {
           { name: 'important-urgent', title: 'Important & Urgent', color: '#ef4444' },
           { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#f59e0b' },
           { name: 'not-important-urgent', title: 'Not Important & Urgent', color: '#3b82f6' },
-          { name: 'not-important-not-urgent', title: 'Not Important & Not Urgent', color: '#6b7280' },
         ],
       },
       { name: 'doing', title: 'DOING', type: 'doing' },
@@ -146,20 +145,19 @@ describe('EisenKanView', () => {
     await renderView();
 
     const sections = container.querySelectorAll('.column-section');
-    expect(sections.length).toBe(4);
+    expect(sections.length).toBe(3);
 
     const sectionTitles = container.querySelectorAll('.section-title');
     expect(sectionTitles[0].textContent).toBe('Important & Urgent');
     expect(sectionTitles[1].textContent).toBe('Important & Not Urgent');
     expect(sectionTitles[2].textContent).toBe('Not Important & Urgent');
-    expect(sectionTitles[3].textContent).toBe('Not Important & Not Urgent');
   });
 
   it('renders section color indicators', async () => {
     await renderView();
 
     const colors = container.querySelectorAll('.section-color');
-    expect(colors.length).toBe(4);
+    expect(colors.length).toBe(3);
 
     const firstColor = colors[0] as HTMLElement;
     expect(firstColor.style.backgroundColor).toBe('rgb(239, 68, 68)'); // #ef4444
@@ -336,7 +334,7 @@ describe('EisenKanView', () => {
     await renderView();
 
     const sectionCounts = container.querySelectorAll('.section-count');
-    expect(sectionCounts.length).toBe(4);
+    expect(sectionCounts.length).toBe(3);
 
     // important-urgent section should have 1 task (T1: Exercise)
     expect(sectionCounts[0].textContent).toBe('1');
@@ -344,8 +342,6 @@ describe('EisenKanView', () => {
     expect(sectionCounts[1].textContent).toBe('1');
     // not-important-urgent section should have 0 tasks
     expect(sectionCounts[2].textContent).toBe('0');
-    // not-important-not-urgent section should have 0 tasks
-    expect(sectionCounts[3].textContent).toBe('0');
   });
 
   it('shows MoveTask rule violations in ErrorDialog', async () => {

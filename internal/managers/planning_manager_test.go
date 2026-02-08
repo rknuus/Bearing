@@ -1406,10 +1406,10 @@ func TestGetBoardConfiguration(t *testing.T) {
 				t.Errorf("expected column %d name '%s', got '%s'", i, expectedColumns[i], col.Name)
 			}
 		}
-		// Verify todo column has 4 Eisenhower sections
+		// Verify todo column has 3 Eisenhower sections
 		todoCol := config.ColumnDefinitions[0]
-		if len(todoCol.Sections) != 4 {
-			t.Errorf("expected 4 sections in todo column, got %d", len(todoCol.Sections))
+		if len(todoCol.Sections) != 3 {
+			t.Errorf("expected 3 sections in todo column, got %d", len(todoCol.Sections))
 		}
 	})
 }
