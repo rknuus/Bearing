@@ -521,12 +521,12 @@ func (a *App) GetTasks() ([]TaskWithStatus, error) {
 }
 
 // CreateTask creates a new task with the given properties
-func (a *App) CreateTask(title, themeId, dayDate, priority string) (*Task, error) {
+func (a *App) CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate string) (*Task, error) {
 	if a.planningManager == nil {
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	task, err := a.planningManager.CreateTask(title, themeId, dayDate, priority)
+	task, err := a.planningManager.CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate)
 	if err != nil {
 		return nil, err
 	}

@@ -62,7 +62,7 @@ type IPlanningManager interface {
 
 	// Tasks
 	GetTasks() ([]TaskWithStatus, error)
-	CreateTask(title, themeId, dayDate, priority string) (*access.Task, error)
+	CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate string) (*access.Task, error)
 	MoveTask(taskId, newStatus string) (*MoveTaskResult, error)
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
@@ -741,16 +741,39 @@ func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engi
 
 // CreateTask creates a new task with the given properties.
 // Priority must be one of the valid Eisenhower priorities.
-func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority string) (*access.Task, error) {
+// Optional fields: description, tags (comma-separated), dueDate (YYYY-MM-DD), promotionDate (YYYY-MM-DD).
+func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate string) (*access.Task, error) {
 	if !access.IsValidPriority(priority) {
 		return nil, fmt.Errorf("PlanningManager.CreateTask: invalid priority: %s", priority)
 	}
 
+	if dueDate != "" {
+		if _, err := time.Parse("2006-01-02", dueDate); err != nil {
+			return nil, fmt.Errorf("PlanningManager.CreateTask: invalid dueDate format: %s", dueDate)
+		}
+	}
+	if promotionDate != "" {
+		if _, err := time.Parse("2006-01-02", promotionDate); err != nil {
+			return nil, fmt.Errorf("PlanningManager.CreateTask: invalid promotionDate format: %s", promotionDate)
+		}
+	}
+
+	var tagSlice []string
+	if tags != "" {
+		for _, tag := range strings.Split(tags, ",") {
+			tagSlice = append(tagSlice, strings.TrimSpace(tag))
+		}
+	}
+
 	task := access.Task{
-		Title:    title,
-		ThemeID:  themeId,
-		DayDate:  dayDate,
-		Priority: priority,
+		Title:         title,
+		ThemeID:       themeId,
+		DayDate:       dayDate,
+		Priority:      priority,
+		Description:   description,
+		Tags:          tagSlice,
+		DueDate:       dueDate,
+		PromotionDate: promotionDate,
 	}
 
 	// Evaluate rules before creating

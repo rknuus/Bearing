@@ -19,7 +19,7 @@
     themes: LifeTheme[];
     onDone: () => void;
     onCancel: () => void;
-    createTask: (title: string, themeId: string, dayDate: string, priority: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
   }
 
   let { open, themes, onDone, onCancel, createTask }: Props = $props();
@@ -40,6 +40,10 @@
     'staging': [],
   });
   let newTaskTitle = $state('');
+  let newTaskDescription = $state('');
+  let newTaskTags = $state('');
+  let newTaskDueDate = $state('');
+  let newTaskPromotionDate = $state('');
   let selectedThemeId = $state('');
   let isSubmitting = $state(false);
   let error = $state<string | null>(null);
@@ -67,6 +71,10 @@
           'staging': [],
         };
         newTaskTitle = '';
+        newTaskDescription = '';
+        newTaskTags = '';
+        newTaskDueDate = '';
+        newTaskPromotionDate = '';
         isSubmitting = false;
         error = null;
         nextId = 1;
@@ -88,20 +96,25 @@
     const title = newTaskTitle.trim();
     if (!title) return;
 
-    const task: PendingTask = { id: `pending-${nextId}`, title };
+    const task: PendingTask = {
+      id: `pending-${nextId}`,
+      title,
+      themeId: selectedThemeId,
+      description: newTaskDescription.trim() || undefined,
+      tags: newTaskTags.trim() || undefined,
+      dueDate: newTaskDueDate || undefined,
+      promotionDate: newTaskPromotionDate || undefined,
+    };
     nextId++;
     tasksByQuadrant = {
       ...tasksByQuadrant,
       staging: [...tasksByQuadrant.staging, task],
     };
     newTaskTitle = '';
-  }
-
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      handleAddTask();
-    }
+    newTaskDescription = '';
+    newTaskTags = '';
+    newTaskDueDate = '';
+    newTaskPromotionDate = '';
   }
 
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
@@ -115,16 +128,15 @@
     isSubmitting = true;
     error = null;
 
-    const today = new Date().toISOString().split('T')[0];
-
     try {
       // Create tasks from Q1, Q2, Q3 sequentially; skip Q4 (staging)
+      const today = new Date().toISOString().split('T')[0];
       for (const quadrant of quadrants) {
         if (quadrant.isStaging) continue;
 
         const tasks = tasksByQuadrant[quadrant.id];
         for (const task of tasks) {
-          await createTask(task.title, selectedThemeId, today, quadrant.priority);
+          await createTask(task.title, task.themeId ?? selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
         }
       }
 
@@ -154,20 +166,74 @@
         </div>
       {/if}
 
-      <!-- Task input -->
-      <div class="form-group">
-        <label for="new-task-input">New Task</label>
-        <div class="input-row">
+      <!-- Task entry form -->
+      <fieldset class="task-entry" disabled={isSubmitting}>
+        <legend>New Task</legend>
+        <div class="form-group">
+          <label for="new-task-input">Title</label>
           <input
             id="new-task-input"
             type="text"
             bind:value={newTaskTitle}
-            onkeydown={handleKeyDown}
-            placeholder="Enter task title, press Enter"
+            placeholder="Task title"
             disabled={isSubmitting}
           />
         </div>
-      </div>
+        <div class="form-group">
+          <label for="theme-select">Theme</label>
+          <select id="theme-select" bind:value={selectedThemeId} disabled={isSubmitting}>
+            {#each themes as theme (theme.id)}
+              <option value={theme.id}>{theme.name}</option>
+            {/each}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-task-description">Description</label>
+          <textarea
+            id="new-task-description"
+            bind:value={newTaskDescription}
+            placeholder="Enter task description"
+            rows="2"
+            disabled={isSubmitting}
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label for="new-task-tags">Tags (comma-separated)</label>
+          <input
+            id="new-task-tags"
+            type="text"
+            bind:value={newTaskTags}
+            placeholder="e.g. urgent, backend, review"
+            disabled={isSubmitting}
+          />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-task-due-date">Due Date</label>
+            <input
+              id="new-task-due-date"
+              type="date"
+              bind:value={newTaskDueDate}
+              disabled={isSubmitting}
+            />
+          </div>
+          <div class="form-group">
+            <label for="new-task-promotion-date">Promotion Date</label>
+            <input
+              id="new-task-promotion-date"
+              type="date"
+              bind:value={newTaskPromotionDate}
+              disabled={isSubmitting}
+            />
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn-add"
+          onclick={handleAddTask}
+          disabled={isSubmitting || !newTaskTitle.trim()}
+        >Add Task</button>
+      </fieldset>
 
       <!-- Eisenhower grid -->
       <div class="eisenhower-grid" data-testid="eisenhower-grid">
@@ -202,16 +268,6 @@
           Tasks in staging (Q4) will be discarded. Drag them to a priority quadrant to save them.
         </p>
       {/if}
-
-      <!-- Theme selector -->
-      <div class="form-group">
-        <label for="theme-select">Theme</label>
-        <select id="theme-select" bind:value={selectedThemeId} disabled={isSubmitting}>
-          {#each themes as theme (theme.id)}
-            <option value={theme.id}>{theme.name}</option>
-          {/each}
-        </select>
-      </div>
 
       <!-- Actions -->
       <div class="dialog-actions">
@@ -294,26 +350,72 @@
     margin-bottom: 0.375rem;
   }
 
-  .input-row {
-    display: flex;
-    gap: 0.5rem;
-  }
-
   .form-group input[type="text"],
+  .form-group input[type="date"],
+  .form-group textarea,
   .form-group select {
     width: 100%;
     padding: 0.5rem 0.75rem;
     border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.875rem;
+    font-family: inherit;
     transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
   }
 
   .form-group input[type="text"]:focus,
+  .form-group input[type="date"]:focus,
+  .form-group textarea:focus,
   .form-group select:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+  }
+
+  .task-entry {
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .task-entry legend {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    padding: 0 0.25rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  .btn-add {
+    padding: 0.5rem 1rem;
+    background-color: #059669;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-add:hover:not(:disabled) {
+    background-color: #047857;
+  }
+
+  .btn-add:disabled {
+    background-color: #6ee7b7;
+    cursor: not-allowed;
   }
 
   .eisenhower-grid {

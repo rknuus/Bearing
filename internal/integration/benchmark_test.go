@@ -116,7 +116,7 @@ func TestPerformance_ViewTransition_ThemesToTasks(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		theme, _ := manager.CreateTheme("Theme", "#ff0000")
 		for j := 0; j < 10; j++ {
-			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 		}
 	}
 
@@ -153,7 +153,7 @@ func TestPerformance_TaskMoveOperation(t *testing.T) {
 	defer cleanup()
 
 	theme, _ := manager.CreateTheme("Move Test", "#ff0000")
-	task, _ := manager.CreateTask("Task to move", theme.ID, "2026-01-15", "important-urgent")
+	task, _ := manager.CreateTask("Task to move", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 
 	// Measure move time
 	start := time.Now()
@@ -251,7 +251,7 @@ func BenchmarkViewTransition(b *testing.B) {
 	for i := 0; i < 5; i++ {
 		theme, _ := manager.CreateTheme("Theme", "#ff0000")
 		for j := 0; j < 10; j++ {
-			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 		}
 	}
 
@@ -289,7 +289,7 @@ func BenchmarkTaskCreation(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+		_, err := manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 		if err != nil {
 			b.Fatalf("CreateTask failed: %v", err)
 		}
@@ -305,7 +305,7 @@ func BenchmarkTaskMove(b *testing.B) {
 	theme, _ := manager.CreateTheme("Move Theme", "#ff0000")
 	var taskIDs []string
 	for i := 0; i < b.N; i++ {
-		task, _ := manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+		task, _ := manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 		taskIDs = append(taskIDs, task.ID)
 	}
 
@@ -332,7 +332,7 @@ func BenchmarkGetAllTasks(b *testing.B) {
 	for i := 0; i < 10; i++ {
 		theme, _ := manager.CreateTheme("Theme", "#ff0000")
 		for j := 0; j < 20; j++ {
-			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent")
+			_, _ = manager.CreateTask("Task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 		}
 	}
 
@@ -426,7 +426,7 @@ func TestPerformance_LargeDataset(t *testing.T) {
 	// Create 100 tasks distributed across themes
 	for i := 0; i < 100; i++ {
 		themeID := themes[i%10]
-		_, _ = manager.CreateTask("Task", themeID, "2026-01-15", "important-urgent")
+		_, _ = manager.CreateTask("Task", themeID, "2026-01-15", "important-urgent", "", "", "", "")
 	}
 
 	// Measure full data retrieval
