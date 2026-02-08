@@ -25,6 +25,7 @@
     type ColumnDefinition,
     type RuleViolation,
     type Task,
+    type PromotedTask,
   } from '../lib/wails-mock';
 
   // Props for cross-view navigation
@@ -213,6 +214,10 @@
     await mockAppBindings.UpdateTask(task);
   }
 
+  async function apiProcessPromotions(): Promise<PromotedTask[]> {
+    return mockAppBindings.ProcessPriorityPromotions();
+  }
+
   // Load data on mount
   onMount(async () => {
     try {
@@ -224,6 +229,17 @@
       tasks = fetchedTasks;
       themes = fetchedThemes;
       boardConfig = fetchedConfig;
+
+      // Process priority promotions on startup and refresh if any promoted
+      try {
+        const promoted = await apiProcessPromotions();
+        if (promoted.length > 0) {
+          tasks = await fetchTasks();
+        }
+      } catch {
+        // Non-critical: log but don't block the view
+        console.error('[EisenKan] Failed to process priority promotions');
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to load data';
     } finally {

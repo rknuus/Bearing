@@ -58,6 +58,7 @@ const mockCreateTask = vi.fn();
 const mockMoveTask = vi.fn();
 const mockDeleteTask = vi.fn();
 const mockUpdateTask = vi.fn();
+const mockProcessPriorityPromotions = vi.fn();
 
 vi.mock('../lib/wails-mock', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../lib/wails-mock')>();
@@ -72,6 +73,7 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
       MoveTask: (...args: unknown[]) => mockMoveTask(...args),
       DeleteTask: (...args: unknown[]) => mockDeleteTask(...args),
       UpdateTask: (...args: unknown[]) => mockUpdateTask(...args),
+      ProcessPriorityPromotions: (...args: unknown[]) => mockProcessPriorityPromotions(...args),
     },
   };
 });
@@ -89,6 +91,7 @@ describe('EisenKanView', () => {
     mockMoveTask.mockResolvedValue({ success: true });
     mockDeleteTask.mockResolvedValue(undefined);
     mockUpdateTask.mockResolvedValue(undefined);
+    mockProcessPriorityPromotions.mockResolvedValue([]);
   });
 
   afterEach(() => {
@@ -109,6 +112,22 @@ describe('EisenKanView', () => {
   it('fetches board configuration on mount', async () => {
     await renderView();
     expect(mockGetBoardConfiguration).toHaveBeenCalledOnce();
+  });
+
+  it('calls ProcessPriorityPromotions on mount', async () => {
+    await renderView();
+    expect(mockProcessPriorityPromotions).toHaveBeenCalledOnce();
+  });
+
+  it('refreshes tasks when promotions are processed', async () => {
+    mockProcessPriorityPromotions.mockResolvedValue([
+      { id: 'T2', title: 'Study', oldPriority: 'important-not-urgent', newPriority: 'important-urgent' },
+    ]);
+
+    await renderView();
+
+    // GetTasks should be called twice: once on initial load, once after promotions
+    expect(mockGetTasks).toHaveBeenCalledTimes(2);
   });
 
   it('renders three Kanban columns with titles from board config', async () => {
