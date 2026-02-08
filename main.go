@@ -123,13 +123,14 @@ type DayFocus struct {
 
 // NavigationContext represents the user's navigation state (for Wails binding)
 type NavigationContext struct {
-	CurrentView   string `json:"currentView"`
-	CurrentItem   string `json:"currentItem"`
-	FilterThemeID string `json:"filterThemeId"`
-	FilterDate    string `json:"filterDate"`
-	LastAccessed  string `json:"lastAccessed"`
-	ShowCompleted bool   `json:"showCompleted,omitempty"`
-	ShowArchived  bool   `json:"showArchived,omitempty"`
+	CurrentView    string   `json:"currentView"`
+	CurrentItem    string   `json:"currentItem"`
+	FilterThemeID  string   `json:"filterThemeId"`
+	FilterDate     string   `json:"filterDate"`
+	LastAccessed   string   `json:"lastAccessed"`
+	ShowCompleted  bool     `json:"showCompleted,omitempty"`
+	ShowArchived   bool     `json:"showArchived,omitempty"`
+	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
 }
 
 // convertObjective recursively converts an access.Objective to a Wails Objective
@@ -452,13 +453,14 @@ func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 	}
 
 	return &NavigationContext{
-		CurrentView:   ctx.CurrentView,
-		CurrentItem:   ctx.CurrentItem,
-		FilterThemeID: ctx.FilterThemeID,
-		FilterDate:    ctx.FilterDate,
-		LastAccessed:  ctx.LastAccessed,
-		ShowCompleted: ctx.ShowCompleted,
-		ShowArchived:  ctx.ShowArchived,
+		CurrentView:    ctx.CurrentView,
+		CurrentItem:    ctx.CurrentItem,
+		FilterThemeID:  ctx.FilterThemeID,
+		FilterDate:     ctx.FilterDate,
+		LastAccessed:   ctx.LastAccessed,
+		ShowCompleted:  ctx.ShowCompleted,
+		ShowArchived:   ctx.ShowArchived,
+		ExpandedOkrIds: ctx.ExpandedOkrIds,
 	}, nil
 }
 
@@ -469,13 +471,14 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 	}
 
 	return a.planningManager.SaveNavigationContext(managers.NavigationContext{
-		CurrentView:   ctx.CurrentView,
-		CurrentItem:   ctx.CurrentItem,
-		FilterThemeID: ctx.FilterThemeID,
-		FilterDate:    ctx.FilterDate,
-		LastAccessed:  ctx.LastAccessed,
-		ShowCompleted: ctx.ShowCompleted,
-		ShowArchived:  ctx.ShowArchived,
+		CurrentView:    ctx.CurrentView,
+		CurrentItem:    ctx.CurrentItem,
+		FilterThemeID:  ctx.FilterThemeID,
+		FilterDate:     ctx.FilterDate,
+		LastAccessed:   ctx.LastAccessed,
+		ShowCompleted:  ctx.ShowCompleted,
+		ShowArchived:   ctx.ShowArchived,
+		ExpandedOkrIds: ctx.ExpandedOkrIds,
 	})
 }
 

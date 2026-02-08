@@ -1,8 +1,8 @@
 ---
 name: remember-okr-view-state-accross-sessions
-status: backlog
+status: completed
 created: 2026-02-08T10:01:48Z
-progress: 0%
+progress: 100%
 prd: .claude/prds/remember-okr-view-state-accross-sessions.md
 github: https://github.com/rknuus/Bearing/issues/65
 ---

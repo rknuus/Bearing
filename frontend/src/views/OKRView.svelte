@@ -421,6 +421,11 @@
       if (navCtx) {
         showCompleted = navCtx.showCompleted ?? false;
         showArchived = navCtx.showArchived ?? false;
+        if (navCtx.expandedOkrIds?.length) {
+          for (const id of navCtx.expandedOkrIds) {
+            expandedIds.add(id);
+          }
+        }
       }
     } catch {
       // Ignore errors loading nav context
@@ -436,6 +441,19 @@
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
           getBindings().SaveNavigationContext({ ...ctx, showCompleted: sc, showArchived: sa });
+        }
+      }).catch(() => { /* ignore */ });
+    });
+  });
+
+  // Persist expanded node IDs to NavigationContext
+  $effect(() => {
+    const _size = expandedIds.size;
+    const ids = [...expandedIds];
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, expandedOkrIds: ids });
         }
       }).catch(() => { /* ignore */ });
     });

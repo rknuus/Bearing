@@ -62,6 +62,7 @@ export interface NavigationContext {
   lastAccessed: string;
   showCompleted?: boolean;
   showArchived?: boolean;
+  expandedOkrIds?: string[];
 }
 
 // Type declarations for extended Window properties
