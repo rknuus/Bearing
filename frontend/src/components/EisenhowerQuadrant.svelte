@@ -12,6 +12,7 @@
   export interface PendingTask {
     id: string;
     title: string;
+    themeId?: string;
     description?: string;
     tags?: string;
     dueDate?: string;

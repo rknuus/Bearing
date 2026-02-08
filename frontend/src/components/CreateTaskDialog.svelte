@@ -101,6 +101,7 @@
     const task: PendingTask = {
       id: `pending-${nextId}`,
       title,
+      themeId: selectedThemeId,
       description: newTaskDescription.trim() || undefined,
       tags: newTaskTags.trim() || undefined,
       dueDate: newTaskDueDate || undefined,
@@ -143,7 +144,7 @@
 
         const tasks = tasksByQuadrant[quadrant.id];
         for (const task of tasks) {
-          await createTask(task.title, selectedThemeId, dayDate, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
+          await createTask(task.title, task.themeId ?? selectedThemeId, dayDate, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
         }
       }
 
@@ -197,6 +198,14 @@
             placeholder="Enter task title, press Enter to add"
             disabled={isSubmitting}
           />
+        </div>
+        <div class="form-group">
+          <label for="theme-select">Theme</label>
+          <select id="theme-select" bind:value={selectedThemeId} disabled={isSubmitting}>
+            {#each themes as theme (theme.id)}
+              <option value={theme.id}>{theme.name}</option>
+            {/each}
+          </select>
         </div>
         <div class="form-group">
           <label for="new-task-description">Description</label>
@@ -273,16 +282,6 @@
           Tasks in staging (Q4) will be discarded. Drag them to a priority quadrant to save them.
         </p>
       {/if}
-
-      <!-- Theme selector -->
-      <div class="form-group">
-        <label for="theme-select">Theme</label>
-        <select id="theme-select" bind:value={selectedThemeId} disabled={isSubmitting}>
-          {#each themes as theme (theme.id)}
-            <option value={theme.id}>{theme.name}</option>
-          {/each}
-        </select>
-      </div>
 
       <!-- Actions -->
       <div class="dialog-actions">
