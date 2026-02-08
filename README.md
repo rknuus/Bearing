@@ -47,12 +47,14 @@ Build:
   make clean              Clean build artifacts
 
 Testing:
-  make test               Run all Go tests
-  make test-unit          Run unit tests only
-  make test-integration   Run integration tests
-  make test-performance   Run performance tests
-  make test-bench         Run benchmarks
-  make test-frontend      Run frontend TypeScript checks
+  make test                       Run all tests (Go + frontend)
+  make test-backend               Run all Go tests
+  make test-backend-unit          Run Go unit tests only
+  make test-backend-integration   Run Go integration tests
+  make test-backend-performance   Run Go performance tests
+  make test-backend-bench         Run Go benchmarks
+  make test-frontend              Run frontend TypeScript checks and Vitest tests
+  make test-frontend-e2e          Run Playwright E2E tests
 
 Frontend:
   make frontend-install   Install frontend dependencies
@@ -90,10 +92,12 @@ The built application will be in `build/bin/bearing`.
 make test
 
 # Run specific test categories
-make test-unit          # Unit tests
-make test-integration   # Integration tests
-make test-performance   # Performance tests
-make test-bench         # Benchmarks
+make test-backend-unit          # Go unit tests
+make test-backend-integration   # Go integration tests
+make test-backend-performance   # Go performance tests
+make test-backend-bench         # Go benchmarks
+make test-frontend              # Frontend type checks + Vitest
+make test-frontend-e2e          # Playwright E2E tests
 ```
 
 ### Test Structure

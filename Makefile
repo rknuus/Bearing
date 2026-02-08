@@ -21,12 +21,12 @@ endif
 
 .PHONY: help
 help: ## Show this help message
-	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-28s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
 
 .PHONY: setup
-setup: frontend-install test-ui-component-install ## Setup project (install all dependencies)
+setup: frontend-install test-frontend-e2e-install ## Setup project (install all dependencies)
 	@echo "Project setup complete!"
 	@echo ""
 	@echo "To run the application:"
@@ -104,36 +104,36 @@ else
 	go test ./...
 endif
 
-.PHONY: test-unit
-test-unit: ## Run unit tests only
-	@echo "Running unit tests..."
+.PHONY: test-backend-unit
+test-backend-unit: ## Run Go unit tests only
+	@echo "Running Go unit tests..."
 ifeq ($(shell uname),Darwin)
 	CGO_LDFLAGS="$(CGO_LDFLAGS) -Wl,-no_warn_duplicate_libraries" go test -short -run "TestUnit_" ./...
 else
 	go test -short -run "TestUnit_" ./...
 endif
 
-.PHONY: test-integration
-test-integration: ## Run integration tests
-	@echo "Running integration tests..."
+.PHONY: test-backend-integration
+test-backend-integration: ## Run Go integration tests
+	@echo "Running Go integration tests..."
 ifeq ($(shell uname),Darwin)
 	CGO_LDFLAGS="$(CGO_LDFLAGS) -Wl,-no_warn_duplicate_libraries" go test -run "TestIntegration_" ./internal/integration/...
 else
 	go test -run "TestIntegration_" ./internal/integration/...
 endif
 
-.PHONY: test-performance
-test-performance: ## Run performance tests
-	@echo "Running performance tests..."
+.PHONY: test-backend-performance
+test-backend-performance: ## Run Go performance tests
+	@echo "Running Go performance tests..."
 ifeq ($(shell uname),Darwin)
 	CGO_LDFLAGS="$(CGO_LDFLAGS) -Wl,-no_warn_duplicate_libraries" go test -run "TestPerformance_" ./internal/integration/...
 else
 	go test -run "TestPerformance_" ./internal/integration/...
 endif
 
-.PHONY: test-bench
-test-bench: ## Run benchmarks
-	@echo "Running benchmarks..."
+.PHONY: test-backend-bench
+test-backend-bench: ## Run Go benchmarks
+	@echo "Running Go benchmarks..."
 ifeq ($(shell uname),Darwin)
 	CGO_LDFLAGS="$(CGO_LDFLAGS) -Wl,-no_warn_duplicate_libraries" go test -bench=. -benchmem ./internal/integration/...
 else
@@ -144,32 +144,25 @@ endif
 test-frontend: ## Run frontend TypeScript checks and Vitest unit tests
 	@echo "Running TypeScript type checking..."
 	@cd frontend && npm run check
-	@echo "Running Vitest unit tests for UI components..."
+	@echo "Running Vitest unit tests..."
 	@cd frontend && npm test -- --run
 
-.PHONY: test-ui-unit
-test-ui-unit: ## Run Vitest unit tests for UI components
-	@echo "Running TypeScript type checking..."
-	@cd frontend && npm run check
-	@echo "Running Vitest unit tests for UI components..."
-	@cd frontend && npm test -- --run
-
-.PHONY: test-ui-component-install
-test-ui-component-install: ## Install Playwright test dependencies
+.PHONY: test-frontend-e2e-install
+test-frontend-e2e-install: ## Install Playwright test dependencies
 	@echo "Installing Playwright test dependencies..."
 	@cd tests/ui-component && npm install
 	@echo "Installing Playwright browsers..."
 	@cd tests/ui-component && npx playwright install chromium
 
-.PHONY: test-ui-component
-test-ui-component: ## Run Playwright UI component tests (requires frontend-dev running)
-	@echo "Running Playwright UI component tests against Vite dev server..."
+.PHONY: test-frontend-e2e
+test-frontend-e2e: ## Run Playwright E2E tests (requires frontend-dev running)
+	@echo "Running Playwright E2E tests against Vite dev server..."
 	@echo "Note: Ensure 'make frontend-dev' is running in another terminal first"
 	@echo "      Vite server: http://localhost:5173 (with mock Wails bindings)"
 	@cd tests/ui-component && npm test
 
-.PHONY: test-ui-component-headless
-test-ui-component-headless: ## Run UI component tests in headless mode
+.PHONY: test-frontend-e2e-headless
+test-frontend-e2e-headless: ## Run Playwright E2E tests in headless mode
 	@echo "Running Playwright UI component tests in headless mode..."
 	@cd tests/ui-component && HEADLESS=true npm test
 
