@@ -117,13 +117,6 @@
     newTaskPromotionDate = '';
   }
 
-  function handleKeyDown(event: KeyboardEvent) {
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      handleAddTask();
-    }
-  }
-
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
     tasksByQuadrant = {
       ...tasksByQuadrant,
@@ -182,8 +175,7 @@
             id="new-task-input"
             type="text"
             bind:value={newTaskTitle}
-            onkeydown={handleKeyDown}
-            placeholder="Enter task title, press Enter to add"
+            placeholder="Task title"
             disabled={isSubmitting}
           />
         </div>
@@ -235,6 +227,12 @@
             />
           </div>
         </div>
+        <button
+          type="button"
+          class="btn-add"
+          onclick={handleAddTask}
+          disabled={isSubmitting || !newTaskTitle.trim()}
+        >Add Task</button>
       </fieldset>
 
       <!-- Eisenhower grid -->
@@ -397,6 +395,27 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+  }
+
+  .btn-add {
+    padding: 0.5rem 1rem;
+    background-color: #059669;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .btn-add:hover:not(:disabled) {
+    background-color: #047857;
+  }
+
+  .btn-add:disabled {
+    background-color: #6ee7b7;
+    cursor: not-allowed;
   }
 
   .eisenhower-grid {
