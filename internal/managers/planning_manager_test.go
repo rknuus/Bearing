@@ -1299,9 +1299,12 @@ func TestMoveTask(t *testing.T) {
 		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent")
 
 		// Move to doing
-		err := manager.MoveTask(task.ID, "doing")
+		result, err := manager.MoveTask(task.ID, "doing")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
+		}
+		if !result.Success {
+			t.Errorf("expected success, got violations: %v", result.Violations)
 		}
 	})
 
@@ -1309,7 +1312,7 @@ func TestMoveTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		err := manager.MoveTask("task-001", "invalid-status")
+		_, err := manager.MoveTask("task-001", "invalid-status")
 		if err == nil {
 			t.Fatal("expected error for invalid status")
 		}

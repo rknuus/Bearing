@@ -157,11 +157,14 @@ func TestPerformance_TaskMoveOperation(t *testing.T) {
 
 	// Measure move time
 	start := time.Now()
-	err := manager.MoveTask(task.ID, "doing")
+	moveResult, err := manager.MoveTask(task.ID, "doing")
 	elapsed := time.Since(start)
 
 	if err != nil {
 		t.Fatalf("Failed to move task: %v", err)
+	}
+	if !moveResult.Success {
+		t.Fatalf("Move task rejected: %v", moveResult.Violations)
 	}
 
 	// Performance target: < 100ms (includes git commit)
@@ -312,7 +315,7 @@ func BenchmarkTaskMove(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err := manager.MoveTask(taskIDs[i], statuses[statusIndex])
+		_, err := manager.MoveTask(taskIDs[i], statuses[statusIndex])
 		if err != nil {
 			b.Fatalf("MoveTask failed: %v", err)
 		}

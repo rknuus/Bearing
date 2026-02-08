@@ -5,8 +5,11 @@ package managers
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/rkn/bearing/internal/access"
+	"github.com/rkn/bearing/internal/engines/rule_engine"
 )
 
 // TaskWithStatus represents a task with its current status.
@@ -60,9 +63,12 @@ type IPlanningManager interface {
 	// Tasks
 	GetTasks() ([]TaskWithStatus, error)
 	CreateTask(title, themeId, dayDate, priority string) (*access.Task, error)
-	MoveTask(taskId, newStatus string) error
+	MoveTask(taskId, newStatus string) (*MoveTaskResult, error)
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
+
+	// Priority Promotions
+	ProcessPriorityPromotions() ([]PromotedTask, error)
 
 	// Board Configuration
 	GetBoardConfiguration() (*access.BoardConfiguration, error)
@@ -75,9 +81,25 @@ type IPlanningManager interface {
 	SaveNavigationContext(ctx NavigationContext) error
 }
 
+// MoveTaskResult contains the result of a MoveTask operation,
+// including any rule violations that caused rejection.
+type MoveTaskResult struct {
+	Success    bool                        `json:"success"`
+	Violations []rule_engine.RuleViolation `json:"violations,omitempty"`
+}
+
+// PromotedTask represents a task that was promoted by ProcessPriorityPromotions.
+type PromotedTask struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	OldPriority string `json:"oldPriority"`
+	NewPriority string `json:"newPriority"`
+}
+
 // PlanningManager implements IPlanningManager with business logic.
 type PlanningManager struct {
 	planAccess        access.IPlanAccess
+	ruleEngine        rule_engine.IRuleEngine
 	navigationContext *NavigationContext
 }
 
@@ -87,8 +109,11 @@ func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error)
 		return nil, fmt.Errorf("PlanningManager.New: planAccess cannot be nil")
 	}
 
+	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
+
 	return &PlanningManager{
 		planAccess: planAccess,
+		ruleEngine: engine,
 	}, nil
 }
 
@@ -678,6 +703,42 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	return allTasks, nil
 }
 
+// buildTaskInfoList converts all tasks to rule engine TaskInfo for context.
+func (m *PlanningManager) buildTaskInfoList() ([]rule_engine.TaskInfo, error) {
+	allTasks, err := m.GetTasks()
+	if err != nil {
+		return nil, err
+	}
+	infos := make([]rule_engine.TaskInfo, len(allTasks))
+	for i, t := range allTasks {
+		infos[i] = rule_engine.TaskInfo{
+			ID:           t.ID,
+			Title:        t.Title,
+			Status:       t.Status,
+			Priority:     t.Priority,
+			ParentTaskID: t.ParentTaskID,
+			CreatedAt:    t.CreatedAt,
+		}
+	}
+	return infos, nil
+}
+
+// evaluateRules runs the rule engine and returns an error with violation details if not allowed.
+func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engine.RuleEvaluationResult, error) {
+	result, err := m.ruleEngine.EvaluateTaskChange(event)
+	if err != nil {
+		return nil, err
+	}
+	if !result.Allowed {
+		msgs := make([]string, len(result.Violations))
+		for i, v := range result.Violations {
+			msgs[i] = v.Message
+		}
+		return result, fmt.Errorf("rule violation: %s", strings.Join(msgs, "; "))
+	}
+	return result, nil
+}
+
 // CreateTask creates a new task with the given properties.
 // Priority must be one of: important-urgent, important-not-urgent, not-important-urgent.
 // Note: not-important-not-urgent (Q4) is intentionally excluded from EisenKan.
@@ -708,6 +769,20 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority string) (
 		Priority: priority,
 	}
 
+	// Evaluate rules before creating
+	taskInfos, err := m.buildTaskInfoList()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to build task context: %w", err)
+	}
+	event := rule_engine.TaskEvent{
+		Type:     rule_engine.EventTaskCreate,
+		Task:     &task,
+		AllTasks: taskInfos,
+	}
+	if _, err := m.evaluateRules(event); err != nil {
+		return nil, fmt.Errorf("PlanningManager.CreateTask: %w", err)
+	}
+
 	if err := m.planAccess.SaveTask(task); err != nil {
 		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to save task: %w", err)
 	}
@@ -729,16 +804,91 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority string) (
 }
 
 // MoveTask moves a task to a new status (todo, doing, done).
-func (m *PlanningManager) MoveTask(taskId, newStatus string) error {
+// Returns a MoveTaskResult with violation details on rejection.
+func (m *PlanningManager) MoveTask(taskId, newStatus string) (*MoveTaskResult, error) {
 	if !access.IsValidTaskStatus(newStatus) {
-		return fmt.Errorf("PlanningManager.MoveTask: invalid status %s", newStatus)
+		return nil, fmt.Errorf("PlanningManager.MoveTask: invalid status %s", newStatus)
 	}
 
+	// Get all tasks to find the task being moved and build context
+	allTasks, err := m.GetTasks()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to get tasks: %w", err)
+	}
+
+	// Find the task being moved
+	var movingTask *access.Task
+	var oldStatus string
+	for _, t := range allTasks {
+		if t.ID == taskId {
+			taskCopy := t.Task
+			movingTask = &taskCopy
+			oldStatus = t.Status
+			break
+		}
+	}
+	if movingTask == nil {
+		return nil, fmt.Errorf("PlanningManager.MoveTask: task %s not found", taskId)
+	}
+
+	// Build task info list for rule context
+	taskInfos := make([]rule_engine.TaskInfo, len(allTasks))
+	for i, t := range allTasks {
+		taskInfos[i] = rule_engine.TaskInfo{
+			ID:           t.ID,
+			Title:        t.Title,
+			Status:       t.Status,
+			Priority:     t.Priority,
+			ParentTaskID: t.ParentTaskID,
+			CreatedAt:    t.CreatedAt,
+		}
+	}
+
+	// Evaluate rules before moving
+	event := rule_engine.TaskEvent{
+		Type:      rule_engine.EventTaskMove,
+		Task:      movingTask,
+		OldStatus: oldStatus,
+		NewStatus: newStatus,
+		AllTasks:  taskInfos,
+	}
+	result, evalErr := m.ruleEngine.EvaluateTaskChange(event)
+	if evalErr != nil {
+		return nil, fmt.Errorf("PlanningManager.MoveTask: rule evaluation failed: %w", evalErr)
+	}
+	if !result.Allowed {
+		return &MoveTaskResult{
+			Success:    false,
+			Violations: result.Violations,
+		}, nil
+	}
+
+	// Perform the move
 	if err := m.planAccess.MoveTask(taskId, newStatus); err != nil {
-		return fmt.Errorf("PlanningManager.MoveTask: failed to move task: %w", err)
+		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to move task: %w", err)
 	}
 
-	return nil
+	// Subtask cascade: parent auto-moves to "doing" when first child starts
+	if newStatus == string(access.TaskStatusDoing) && movingTask.ParentTaskID != nil && *movingTask.ParentTaskID != "" {
+		parentID := *movingTask.ParentTaskID
+		for _, t := range allTasks {
+			if t.ID == parentID && t.Status == string(access.TaskStatusTodo) {
+				_ = m.planAccess.MoveTask(parentID, string(access.TaskStatusDoing))
+				break
+			}
+		}
+	}
+
+	// Subtask cascade: parent completion cascades children to "done"
+	if newStatus == string(access.TaskStatusDone) {
+		for _, t := range allTasks {
+			if t.ParentTaskID != nil && *t.ParentTaskID == taskId && t.Status != string(access.TaskStatusDone) {
+				_ = m.planAccess.MoveTask(t.ID, string(access.TaskStatusDone))
+			}
+		}
+	}
+
+	return &MoveTaskResult{Success: true}, nil
 }
 
 // UpdateTask updates an existing task.
@@ -747,11 +897,70 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 		return fmt.Errorf("PlanningManager.UpdateTask: task ID cannot be empty")
 	}
 
+	// Evaluate rules before updating
+	taskInfos, err := m.buildTaskInfoList()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.UpdateTask: failed to build task context: %w", err)
+	}
+	event := rule_engine.TaskEvent{
+		Type:     rule_engine.EventTaskUpdate,
+		Task:     &task,
+		AllTasks: taskInfos,
+	}
+	if _, err := m.evaluateRules(event); err != nil {
+		return fmt.Errorf("PlanningManager.UpdateTask: %w", err)
+	}
+
 	if err := m.planAccess.SaveTask(task); err != nil {
 		return fmt.Errorf("PlanningManager.UpdateTask: failed to update task: %w", err)
 	}
 
 	return nil
+}
+
+// ProcessPriorityPromotions promotes tasks whose PromotionDate has been reached.
+// Tasks with priority "important-not-urgent" are promoted to "important-urgent"
+// and their PromotionDate is cleared.
+func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
+	allTasks, err := m.GetTasks()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.ProcessPriorityPromotions: failed to get tasks: %w", err)
+	}
+
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	var promoted []PromotedTask
+
+	for _, t := range allTasks {
+		if t.PromotionDate == "" {
+			continue
+		}
+		if t.Priority != string(access.PriorityImportantNotUrgent) {
+			continue
+		}
+		if t.PromotionDate > today {
+			continue
+		}
+
+		// Promote: important-not-urgent -> important-urgent
+		updatedTask := t.Task
+		oldPriority := updatedTask.Priority
+		updatedTask.Priority = string(access.PriorityImportantUrgent)
+		updatedTask.PromotionDate = "" // Clear after promotion
+
+		if err := m.planAccess.SaveTask(updatedTask); err != nil {
+			return nil, fmt.Errorf("PlanningManager.ProcessPriorityPromotions: failed to promote task %s: %w", t.ID, err)
+		}
+
+		promoted = append(promoted, PromotedTask{
+			ID:          t.ID,
+			Title:       t.Title,
+			OldPriority: oldPriority,
+			NewPriority: string(access.PriorityImportantUrgent),
+		})
+	}
+
+	return promoted, nil
 }
 
 // DeleteTask deletes a task by ID.
