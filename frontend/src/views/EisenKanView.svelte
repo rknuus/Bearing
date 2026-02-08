@@ -5,9 +5,11 @@
    * A Kanban board for short-term task execution using Eisenhower priority.
    * Tasks are auto-sorted in the Todo column by priority (Q1 -> Q2 -> Q3).
    * Theme colors are inherited from the assigned theme.
+   * Drag-and-drop powered by svelte-dnd-action with optimistic rollback.
    */
 
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
+  import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import { mockAppBindings, type TaskWithStatus, type LifeTheme, type MoveTaskResult } from '../lib/wails-mock';
 
@@ -26,6 +28,8 @@
   type Theme = LifeTheme;
 
   type ColumnStatus = 'todo' | 'doing' | 'done';
+
+  const flipDurationMs = 200;
 
   // Priority order for sorting (lower = higher priority)
   const priorityOrder: Record<string, number> = {
@@ -68,9 +72,16 @@
   let newTaskPriority = $state('important-urgent');
   let creating = $state(false);
 
-  // Drag and drop state
-  let draggedTask = $state<Task | null>(null);
-  let dragOverColumn = $state<ColumnStatus | null>(null);
+  // Drag-and-drop state (svelte-dnd-action)
+  let isValidating = $state(false);
+  let isRollingBack = $state(false);
+
+  // Per-column items managed by svelte-dnd-action
+  let columnItems = $state<Record<ColumnStatus, Task[]>>({
+    todo: [],
+    doing: [],
+    done: []
+  });
 
   // Context menu state for cross-view navigation
   let contextMenuTask = $state<Task | null>(null);
@@ -88,8 +99,8 @@
     return result;
   });
 
-  // Computed: tasks grouped by column with auto-sorting for Todo
-  const tasksByColumn = $derived.by(() => {
+  // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
+  $effect(() => {
     const grouped: Record<ColumnStatus, Task[]> = {
       todo: [],
       doing: [],
@@ -110,8 +121,13 @@
       return orderA - orderB;
     });
 
-    return grouped;
+    untrack(() => {
+      columnItems = grouped;
+    });
   });
+
+  // Derived task counts from columnItems (for header badges)
+  const tasksByColumn = $derived(columnItems);
 
   // Helper: get theme by ID
   function getTheme(themeId: string): Theme | undefined {
@@ -198,68 +214,53 @@
     newTaskTitle = '';
   }
 
-  // Drag and drop handlers
-  function handleDragStart(event: DragEvent, task: Task) {
-    draggedTask = task;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', task.id);
-    }
+  // svelte-dnd-action handlers
+  function handleDndConsider(status: ColumnStatus, event: CustomEvent<DndEvent<Task>>) {
+    columnItems = { ...columnItems, [status]: event.detail.items };
   }
 
-  function handleDragEnd() {
-    draggedTask = null;
-    dragOverColumn = null;
-  }
+  async function handleDndFinalize(status: ColumnStatus, event: CustomEvent<DndEvent<Task>>) {
+    if (isValidating || isRollingBack) return;
 
-  function handleDragOver(event: DragEvent, status: ColumnStatus) {
-    event.preventDefault();
-    if (event.dataTransfer) {
-      event.dataTransfer.dropEffect = 'move';
-    }
-    dragOverColumn = status;
-  }
+    const newItems = event.detail.items;
 
-  function handleDragLeave() {
-    dragOverColumn = null;
-  }
+    // Update column items optimistically
+    columnItems = { ...columnItems, [status]: newItems };
 
-  async function handleDrop(event: DragEvent, newStatus: ColumnStatus) {
-    event.preventDefault();
-    dragOverColumn = null;
+    // Find the task that was moved into this column (its status differs from column)
+    const movedTask = newItems.find(t => t.status !== status);
+    if (!movedTask) return; // Reorder within same column -- no backend call needed
 
-    if (!draggedTask || draggedTask.status === newStatus) {
-      draggedTask = null;
-      return;
-    }
+    const taskId = movedTask.id;
 
-    const taskId = draggedTask.id;
-    const oldStatus = draggedTask.status;
+    // Snapshot pre-move state for rollback
+    const snapshotTasks = [...tasks];
 
-    // Optimistic update
+    // Optimistically update master task list
     tasks = tasks.map(t =>
-      t.id === taskId ? { ...t, status: newStatus } : t
+      t.id === taskId ? { ...t, status } : t
     );
 
+    isValidating = true;
     try {
-      const result = await apiMoveTask(taskId, newStatus);
+      const result = await apiMoveTask(taskId, status);
       if (!result.success) {
-        // Rule violation - revert optimistic update
-        tasks = tasks.map(t =>
-          t.id === taskId ? { ...t, status: oldStatus } : t
-        );
+        // Rule violation -- rollback
+        isRollingBack = true;
+        tasks = snapshotTasks;
+        queueMicrotask(() => { isRollingBack = false; });
         const messages = (result.violations ?? []).map(v => v.message);
         error = messages.length > 0 ? messages.join('; ') : 'Move rejected by rules';
       }
     } catch (e) {
-      // Revert on error
-      tasks = tasks.map(t =>
-        t.id === taskId ? { ...t, status: oldStatus } : t
-      );
+      // Network error -- rollback
+      isRollingBack = true;
+      tasks = snapshotTasks;
+      queueMicrotask(() => { isRollingBack = false; });
       error = e instanceof Error ? e.message : 'Failed to move task';
+    } finally {
+      isValidating = false;
     }
-
-    draggedTask = null;
   }
 
   // Delete task handler
@@ -330,10 +331,6 @@
       {#each columns as column (column.status)}
         <div
           class="kanban-column"
-          class:drag-over={dragOverColumn === column.status}
-          ondragover={(e) => handleDragOver(e, column.status)}
-          ondragleave={handleDragLeave}
-          ondrop={(e) => handleDrop(e, column.status)}
           role="region"
           aria-label="{column.title} column"
         >
@@ -342,13 +339,15 @@
             <span class="task-count">{tasksByColumn[column.status].length}</span>
           </div>
 
-          <div class="column-content">
-            {#each tasksByColumn[column.status] as task (task.id)}
+          <div
+            class="column-content"
+            use:dndzone={{ items: columnItems[column.status], flipDurationMs, dragDisabled: isValidating || isRollingBack }}
+            onconsider={(e) => handleDndConsider(column.status, e)}
+            onfinalize={(e) => handleDndFinalize(column.status, e)}
+          >
+            {#each columnItems[column.status] as task (task.id)}
               <div
                 class="task-card"
-                draggable="true"
-                ondragstart={(e) => handleDragStart(e, task)}
-                ondragend={handleDragEnd}
                 oncontextmenu={(e) => handleTaskContextMenu(e, task)}
                 style="--theme-color: {getThemeColor(task.themeId)};"
                 role="article"
@@ -390,7 +389,7 @@
               </div>
             {/each}
 
-            {#if tasksByColumn[column.status].length === 0}
+            {#if columnItems[column.status].length === 0}
               <div class="empty-column">
                 <p>No tasks</p>
               </div>
@@ -566,10 +565,6 @@
     transition: background-color 0.2s;
   }
 
-  .kanban-column.drag-over {
-    background-color: #dbeafe;
-  }
-
   .column-header {
     display: flex;
     justify-content: space-between;
@@ -602,6 +597,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    min-height: 60px;
   }
 
   .task-card {

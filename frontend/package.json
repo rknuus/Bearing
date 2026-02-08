@@ -26,5 +26,8 @@
     "typescript-eslint": "^8.54.0",
     "vite": "^6.0.0",
     "vitest": "^3.0.0"
+  },
+  "dependencies": {
+    "svelte-dnd-action": "^0.9.69"
   }
 }
