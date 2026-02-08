@@ -1,8 +1,9 @@
 ---
 name: improve-ccpm
-status: backlog
+status: completed
 created: 2026-02-08T12:36:49Z
-progress: 0%
+completed: 2026-02-08T14:42:00Z
+progress: 100%
 prd: .pm/prds/improve-ccpm.md
 github: https://github.com/rknuus/Bearing/issues/76
 ---
@@ -91,10 +92,10 @@ Note: The path adaptation fix (`d6b905d`) changed `ccpm/scripts/pm/` → `.claud
 - Total: ~1 session
 
 ## Tasks Created
-- [ ] #77 - Fix gh issue create --json syntax error (parallel: true)
-- [ ] #78 - Relocate PM data from .claude/ to .pm/ (parallel: false)
-- [ ] #79 - Upstream archived-epic and task-closing fixes to fork (parallel: true)
-- [ ] #80 - Verify all PM commands work after changes (parallel: false, depends on #77-#79)
+- [x] #77 - Fix gh issue create --json syntax error (parallel: true)
+- [x] #78 - Relocate PM data from .claude/ to .pm/ (parallel: false)
+- [x] #79 - Upstream archived-epic and task-closing fixes to fork (parallel: true)
+- [x] #80 - Verify all PM commands work after changes (parallel: false, depends on #77-#79)
 
 Total tasks: 4
 Parallel tasks: 2
