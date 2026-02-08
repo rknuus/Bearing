@@ -40,7 +40,7 @@ function makeMockBindings() {
     // EisenKanView APIs (used via mockAppBindings, but provided for completeness)
     GetTasks: vi.fn().mockResolvedValue([]),
     CreateTask: vi.fn().mockResolvedValue(null),
-    MoveTask: vi.fn().mockResolvedValue(undefined),
+    MoveTask: vi.fn().mockResolvedValue({ success: true }),
     DeleteTask: vi.fn().mockResolvedValue(undefined),
   };
 }

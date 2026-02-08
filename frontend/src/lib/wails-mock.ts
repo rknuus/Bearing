@@ -80,6 +80,25 @@ export interface BoardConfiguration {
   columnDefinitions: ColumnDefinition[];
 }
 
+export interface RuleViolation {
+  ruleId: string;
+  priority: number;
+  message: string;
+  category: string;
+}
+
+export interface MoveTaskResult {
+  success: boolean;
+  violations?: RuleViolation[];
+}
+
+export interface PromotedTask {
+  id: string;
+  title: string;
+  oldPriority: string;
+  newPriority: string;
+}
+
 export interface NavigationContext {
   currentView: string;
   currentItem: string;
@@ -636,12 +655,13 @@ export const mockAppBindings = {
     return newTask;
   },
 
-  MoveTask: async (taskId: string, newStatus: string): Promise<void> => {
+  MoveTask: async (taskId: string, newStatus: string): Promise<MoveTaskResult> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (task) {
       task.status = newStatus;
       task.updatedAt = new Date().toISOString();
     }
+    return { success: true };
   },
 
   UpdateTask: async (task: Task): Promise<void> => {
@@ -653,6 +673,27 @@ export const mockAppBindings = {
 
   DeleteTask: async (taskId: string): Promise<void> => {
     mockTasks = mockTasks.filter(t => t.id !== taskId);
+  },
+
+  // Priority promotions
+  ProcessPriorityPromotions: async (): Promise<PromotedTask[]> => {
+    const now = new Date().toISOString().split('T')[0];
+    const promoted: PromotedTask[] = [];
+    for (const task of mockTasks) {
+      if (task.promotionDate && task.promotionDate <= now && task.priority === 'important-not-urgent') {
+        const oldPriority = task.priority;
+        task.priority = 'important-urgent';
+        task.promotionDate = undefined;
+        task.updatedAt = new Date().toISOString();
+        promoted.push({
+          id: task.id,
+          title: task.title,
+          oldPriority,
+          newPriority: 'important-urgent',
+        });
+      }
+    }
+    return promoted;
   },
 
   // Board configuration

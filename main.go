@@ -569,13 +569,77 @@ func (a *App) UpdateTask(task Task) error {
 	})
 }
 
+// RuleViolation represents a single rule violation (for Wails binding)
+type RuleViolation struct {
+	RuleID   string `json:"ruleId"`
+	Priority int    `json:"priority"`
+	Message  string `json:"message"`
+	Category string `json:"category"`
+}
+
+// MoveTaskResult contains the result of a MoveTask operation (for Wails binding)
+type MoveTaskResult struct {
+	Success    bool            `json:"success"`
+	Violations []RuleViolation `json:"violations,omitempty"`
+}
+
+// PromotedTask represents a task that was promoted (for Wails binding)
+type PromotedTask struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	OldPriority string `json:"oldPriority"`
+	NewPriority string `json:"newPriority"`
+}
+
 // MoveTask moves a task to a new kanban column status
-func (a *App) MoveTask(taskId, newStatus string) error {
+func (a *App) MoveTask(taskId, newStatus string) (*MoveTaskResult, error) {
 	if a.planningManager == nil {
-		return fmt.Errorf("planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	return a.planningManager.MoveTask(taskId, newStatus)
+	result, err := a.planningManager.MoveTask(taskId, newStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert violations
+	var violations []RuleViolation
+	for _, v := range result.Violations {
+		violations = append(violations, RuleViolation{
+			RuleID:   v.RuleID,
+			Priority: v.Priority,
+			Message:  v.Message,
+			Category: v.Category,
+		})
+	}
+
+	return &MoveTaskResult{
+		Success:    result.Success,
+		Violations: violations,
+	}, nil
+}
+
+// ProcessPriorityPromotions promotes tasks whose PromotionDate has been reached
+func (a *App) ProcessPriorityPromotions() ([]PromotedTask, error) {
+	if a.planningManager == nil {
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	promoted, err := a.planningManager.ProcessPriorityPromotions()
+	if err != nil {
+		return nil, err
+	}
+
+	var result []PromotedTask
+	for _, p := range promoted {
+		result = append(result, PromotedTask{
+			ID:          p.ID,
+			Title:       p.Title,
+			OldPriority: p.OldPriority,
+			NewPriority: p.NewPriority,
+		})
+	}
+	return result, nil
 }
 
 // DeleteTask deletes a task by ID

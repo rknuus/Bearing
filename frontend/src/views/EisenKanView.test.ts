@@ -51,7 +51,7 @@ describe('EisenKanView', () => {
     mockGetTasks.mockResolvedValue(JSON.parse(JSON.stringify(makeTestTasks())));
     mockGetThemes.mockResolvedValue(JSON.parse(JSON.stringify(makeTestThemes())));
     mockCreateTask.mockResolvedValue({ id: 'T-NEW', title: '', themeId: '', dayDate: '', priority: 'important-urgent' });
-    mockMoveTask.mockResolvedValue(undefined);
+    mockMoveTask.mockResolvedValue({ success: true });
     mockDeleteTask.mockResolvedValue(undefined);
   });
 

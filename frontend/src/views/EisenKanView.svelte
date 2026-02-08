@@ -9,7 +9,7 @@
 
   import { onMount } from 'svelte';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
-  import { mockAppBindings, type TaskWithStatus, type LifeTheme } from '../lib/wails-mock';
+  import { mockAppBindings, type TaskWithStatus, type LifeTheme, type MoveTaskResult } from '../lib/wails-mock';
 
   // Props for cross-view navigation
   interface Props {
@@ -139,8 +139,8 @@
     return { ...task, status: 'todo' };
   }
 
-  async function apiMoveTask(taskId: string, newStatus: string): Promise<void> {
-    await mockAppBindings.MoveTask(taskId, newStatus);
+  async function apiMoveTask(taskId: string, newStatus: string): Promise<MoveTaskResult> {
+    return await mockAppBindings.MoveTask(taskId, newStatus);
   }
 
   async function apiDeleteTask(taskId: string): Promise<void> {
@@ -242,7 +242,15 @@
     );
 
     try {
-      await apiMoveTask(taskId, newStatus);
+      const result = await apiMoveTask(taskId, newStatus);
+      if (!result.success) {
+        // Rule violation - revert optimistic update
+        tasks = tasks.map(t =>
+          t.id === taskId ? { ...t, status: oldStatus } : t
+        );
+        const messages = (result.violations ?? []).map(v => v.message);
+        error = messages.length > 0 ? messages.join('; ') : 'Move rejected by rules';
+      }
     } catch (e) {
       // Revert on error
       tasks = tasks.map(t =>
