@@ -95,8 +95,8 @@ func TestIsValidTaskStatus(t *testing.T) {
 
 func TestValidPriorities(t *testing.T) {
 	priorities := ValidPriorities()
-	if len(priorities) != 4 {
-		t.Errorf("Expected 4 priorities, got %d", len(priorities))
+	if len(priorities) != 3 {
+		t.Errorf("Expected 3 priorities, got %d", len(priorities))
 	}
 }
 
@@ -108,7 +108,7 @@ func TestIsValidPriority(t *testing.T) {
 		{"important-urgent", true},
 		{"important-not-urgent", true},
 		{"not-important-urgent", true},
-		{"not-important-not-urgent", true},
+		{"not-important-not-urgent", false},
 		{"invalid", false},
 		{"", false},
 	}

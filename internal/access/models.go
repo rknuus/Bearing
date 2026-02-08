@@ -53,7 +53,7 @@ type Task struct {
 	Description   string   `json:"description,omitempty"`    // Detailed task description
 	ThemeID       string   `json:"themeId"`                  // Links to a LifeTheme.ID
 	DayDate       string   `json:"dayDate"`                  // Associated date in YYYY-MM-DD format
-	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, not-important-urgent, important-not-urgent, not-important-not-urgent
+	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, important-not-urgent, not-important-urgent
 	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
 	DueDate       string   `json:"dueDate,omitempty"`        // Due date in YYYY-MM-DD format
 	PromotionDate string   `json:"promotionDate,omitempty"`  // Date when priority should be promoted (YYYY-MM-DD)
@@ -123,7 +123,6 @@ func DefaultBoardConfiguration() *BoardConfiguration {
 					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
 					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#f59e0b"},
 					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#3b82f6"},
-					{Name: "not-important-not-urgent", Title: "Not Important & Not Urgent", Color: "#6b7280"},
 				},
 			},
 			{
@@ -221,8 +220,6 @@ const (
 	PriorityImportantNotUrgent Priority = "important-not-urgent"
 	// PriorityNotImportantUrgent represents not important but urgent tasks (Delegate)
 	PriorityNotImportantUrgent Priority = "not-important-urgent"
-	// PriorityNotImportantNotUrgent represents neither important nor urgent tasks (Eliminate)
-	PriorityNotImportantNotUrgent Priority = "not-important-not-urgent"
 )
 
 // ValidPriorities returns all valid priority values
@@ -231,7 +228,6 @@ func ValidPriorities() []Priority {
 		PriorityImportantUrgent,
 		PriorityImportantNotUrgent,
 		PriorityNotImportantUrgent,
-		PriorityNotImportantNotUrgent,
 	}
 }
 
