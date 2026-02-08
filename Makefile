@@ -93,8 +93,11 @@ clean: ## Clean build artifacts
 ##@ Testing
 
 .PHONY: test
-test: ## Run all Go tests
-	@echo "Running all tests..."
+test: test-backend test-frontend ## Run all tests (Go + frontend)
+
+.PHONY: test-backend
+test-backend: ## Run all Go tests
+	@echo "Running all Go tests..."
 ifeq ($(shell uname),Darwin)
 	CGO_LDFLAGS="$(CGO_LDFLAGS) -Wl,-no_warn_duplicate_libraries" go test ./...
 else
