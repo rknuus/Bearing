@@ -4,7 +4,7 @@ status: backlog
 created: 2026-02-08T19:54:30Z
 progress: 0%
 prd: .pm/prds/support-all-fields-when-creating-task.md
-github: [Will be updated when synced to GitHub]
+github: https://github.com/rknuus/Bearing/issues/93
 ---
 
 # Epic: support-all-fields-when-creating-task
@@ -44,12 +44,12 @@ Extend the `CreateTask` API from 4 parameters (title, themeId, dayDate, priority
 9. Update frontend tests for CreateTaskDialog and EisenKanView
 
 ## Tasks Created
-- [ ] 001.md - Extend CreateTask backend API and Wails binding with new parameters (parallel: true)
-- [ ] 002.md - Update frontend mock bindings, types, and EisenKanView callsite (depends on 001)
-- [ ] 003.md - Add optional fields UI to CreateTaskDialog (depends on 002)
+- [ ] #94 - Extend CreateTask backend API and Wails binding with new parameters (parallel: true)
+- [ ] #95 - Update frontend mock bindings, types, and EisenKanView callsite (depends on #94)
+- [ ] #96 - Add optional fields UI to CreateTaskDialog (depends on #95)
 
 Total tasks: 3
-Sequential: all 3 (001 → 002 → 003)
+Sequential: all 3 (#94 → #95 → #96)
 
 ## Dependencies
 
