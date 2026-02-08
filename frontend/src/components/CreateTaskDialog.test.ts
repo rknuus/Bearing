@@ -234,25 +234,6 @@ describe('CreateTaskDialog', () => {
     expect(title?.textContent).toBe('Create Tasks');
   });
 
-  it('shows day date picker defaulting to today', async () => {
-    await renderDialog();
-
-    const dateInput = container.querySelector<HTMLInputElement>('#day-date-input');
-    expect(dateInput).toBeTruthy();
-    const today = new Date().toISOString().split('T')[0];
-    expect(dateInput!.value).toBe(today);
-  });
-
-  it('allows changing the day date', async () => {
-    await renderDialog();
-
-    const dateInput = container.querySelector<HTMLInputElement>('#day-date-input');
-    await fireEvent.input(dateInput!, { target: { value: '2026-03-15' } });
-    await tick();
-
-    expect(dateInput!.value).toBe('2026-03-15');
-  });
-
   it('shows optional field inputs in task entry form', async () => {
     await renderDialog();
 
