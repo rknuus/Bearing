@@ -1,8 +1,9 @@
 ---
 name: refactor-task-creation-and-editing
-status: backlog
+status: completed
 created: 2026-02-11T19:36:56Z
-progress: 0%
+completed: 2026-02-11T19:57:25Z
+progress: 100%
 prd: .pm/prds/refactor-task-creation-and-editing.md
 github: https://github.com/rknuus/Bearing/issues/97
 ---
