@@ -63,7 +63,7 @@ describe('CreateTaskDialog', () => {
   }
 
   async function addTask(title: string) {
-    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    const input = container.querySelector<HTMLInputElement>('#new-task-title');
     await fireEvent.input(input!, { target: { value: title } });
     await tick();
     const addBtn = container.querySelector<HTMLButtonElement>('.btn-add');
@@ -112,7 +112,7 @@ describe('CreateTaskDialog', () => {
     expect(taskTitles[0].textContent).toBe('Buy groceries');
 
     // Input should be cleared
-    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    const input = container.querySelector<HTMLInputElement>('#new-task-title');
     expect(input!.value).toBe('');
   });
 
@@ -134,7 +134,7 @@ describe('CreateTaskDialog', () => {
     expect(addBtn?.disabled).toBe(true);
 
     // Type something — button should enable
-    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    const input = container.querySelector<HTMLInputElement>('#new-task-title');
     await fireEvent.input(input!, { target: { value: 'A task' } });
     await tick();
     expect(addBtn?.disabled).toBe(false);
@@ -164,7 +164,7 @@ describe('CreateTaskDialog', () => {
   it('theme selector shows all themes and defaults to first', async () => {
     await renderDialog();
 
-    const select = container.querySelector<HTMLSelectElement>('#theme-select');
+    const select = container.querySelector<HTMLSelectElement>('#new-task-theme');
     expect(select).toBeTruthy();
     expect(select!.value).toBe('HF');
 
@@ -177,7 +177,7 @@ describe('CreateTaskDialog', () => {
   it('theme selector allows changing theme', async () => {
     await renderDialog();
 
-    const select = container.querySelector<HTMLSelectElement>('#theme-select');
+    const select = container.querySelector<HTMLSelectElement>('#new-task-theme');
     await fireEvent.change(select!, { target: { value: 'CG' } });
     await tick();
 
@@ -238,7 +238,7 @@ describe('CreateTaskDialog', () => {
   it('optional fields are cleared after adding a task', async () => {
     await renderDialog();
 
-    const input = container.querySelector<HTMLInputElement>('#new-task-input');
+    const input = container.querySelector<HTMLInputElement>('#new-task-title');
     const desc = container.querySelector<HTMLTextAreaElement>('#new-task-description');
     const tags = container.querySelector<HTMLInputElement>('#new-task-tags');
 
