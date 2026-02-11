@@ -648,6 +648,7 @@
   <!-- Edit Task Dialog -->
   <EditTaskDialog
     task={selectedTask}
+    {themes}
     onSave={handleEditSave}
     onCancel={handleEditCancel}
   />
