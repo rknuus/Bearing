@@ -10,6 +10,7 @@
 
   import { untrack } from 'svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
+  import TaskFormFields from './TaskFormFields.svelte';
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
   type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent' | 'staging';
@@ -169,64 +170,17 @@
       <!-- Task entry form -->
       <fieldset class="task-entry" disabled={isSubmitting}>
         <legend>New Task</legend>
-        <div class="form-group">
-          <label for="new-task-input">Title</label>
-          <input
-            id="new-task-input"
-            type="text"
-            bind:value={newTaskTitle}
-            placeholder="Task title"
-            disabled={isSubmitting}
-          />
-        </div>
-        <div class="form-group">
-          <label for="theme-select">Theme</label>
-          <select id="theme-select" bind:value={selectedThemeId} disabled={isSubmitting}>
-            {#each themes as theme (theme.id)}
-              <option value={theme.id}>{theme.name}</option>
-            {/each}
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="new-task-description">Description</label>
-          <textarea
-            id="new-task-description"
-            bind:value={newTaskDescription}
-            placeholder="Enter task description"
-            rows="2"
-            disabled={isSubmitting}
-          ></textarea>
-        </div>
-        <div class="form-group">
-          <label for="new-task-tags">Tags (comma-separated)</label>
-          <input
-            id="new-task-tags"
-            type="text"
-            bind:value={newTaskTags}
-            placeholder="e.g. urgent, backend, review"
-            disabled={isSubmitting}
-          />
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="new-task-due-date">Due Date</label>
-            <input
-              id="new-task-due-date"
-              type="date"
-              bind:value={newTaskDueDate}
-              disabled={isSubmitting}
-            />
-          </div>
-          <div class="form-group">
-            <label for="new-task-promotion-date">Promotion Date</label>
-            <input
-              id="new-task-promotion-date"
-              type="date"
-              bind:value={newTaskPromotionDate}
-              disabled={isSubmitting}
-            />
-          </div>
-        </div>
+        <TaskFormFields
+          bind:title={newTaskTitle}
+          bind:themeId={selectedThemeId}
+          bind:description={newTaskDescription}
+          bind:tags={newTaskTags}
+          bind:dueDate={newTaskDueDate}
+          bind:promotionDate={newTaskPromotionDate}
+          {themes}
+          disabled={isSubmitting}
+          idPrefix="new-task"
+        />
         <button
           type="button"
           class="btn-add"
@@ -338,45 +292,6 @@
     font-weight: 500;
   }
 
-  .form-group {
-    margin-bottom: 1rem;
-  }
-
-  .form-group label {
-    display: block;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 0.375rem;
-  }
-
-  .form-group input[type="text"],
-  .form-group input[type="date"],
-  .form-group textarea,
-  .form-group select {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-family: inherit;
-    transition: border-color 0.2s, box-shadow 0.2s;
-    box-sizing: border-box;
-  }
-
-  .form-group input[type="text"]:focus,
-  .form-group input[type="date"]:focus,
-  .form-group textarea:focus,
-  .form-group select:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-  }
-
-  .form-group textarea {
-    resize: vertical;
-  }
-
   .task-entry {
     border: 1px solid #e5e7eb;
     border-radius: 6px;
@@ -389,12 +304,6 @@
     font-weight: 600;
     color: #374151;
     padding: 0 0.25rem;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
   }
 
   .btn-add {
