@@ -132,7 +132,7 @@ export async function runTests() {
       const columnHeaders = await page.$$eval('.column-header h2', els =>
         els.map(el => el.textContent.trim())
       )
-      if (columnHeaders[0] !== 'Todo' || columnHeaders[1] !== 'Doing' || columnHeaders[2] !== 'Done') {
+      if (columnHeaders[0] !== 'TODO' || columnHeaders[1] !== 'DOING' || columnHeaders[2] !== 'DONE') {
         throw new Error(`Unexpected column headers: ${columnHeaders.join(', ')}`)
       }
 
@@ -147,8 +147,8 @@ export async function runTests() {
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       const dialogTitle = await page.$eval('.dialog h2', el => el.textContent.trim())
-      if (dialogTitle !== 'Create New Task') {
-        throw new Error(`Expected dialog title "Create New Task", got "${dialogTitle}"`)
+      if (dialogTitle !== 'Create Tasks') {
+        throw new Error(`Expected dialog title "Create Tasks", got "${dialogTitle}"`)
       }
 
       // Cancel the dialog
@@ -158,6 +158,14 @@ export async function runTests() {
       reporter.pass('Task board loads with correct columns and create dialog')
     } catch (err) {
       reporter.fail(err)
+      // Ensure dialog is closed so subsequent tests aren't blocked by overlay
+      try {
+        const dialog = await page.$('.dialog')
+        if (dialog) {
+          await page.click('.btn-secondary')
+          await page.waitForSelector('.dialog', { state: 'detached', timeout: 3000 })
+        }
+      } catch { /* best effort */ }
     }
 
     // ---- Test 4: Keyboard navigation — use shortcuts to switch views ----
