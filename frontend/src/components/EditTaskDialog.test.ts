@@ -1,8 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import type { Task } from '../lib/wails-mock';
+import type { Task, LifeTheme } from '../lib/wails-mock';
 import EditTaskDialog from './EditTaskDialog.svelte';
+
+function makeTestThemes(): LifeTheme[] {
+  return [
+    { id: 'HF', name: 'Health & Fitness', color: '#10b981', objectives: [] },
+    { id: 'CG', name: 'Career Growth', color: '#3b82f6', objectives: [] },
+  ];
+}
 
 function makeTestTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -35,6 +42,7 @@ describe('EditTaskDialog', () => {
 
   async function renderDialog(props: {
     task: Task | null;
+    themes?: LifeTheme[];
     onSave?: (t: Task) => Promise<void>;
     onCancel?: () => void;
   }) {
@@ -42,6 +50,7 @@ describe('EditTaskDialog', () => {
       target: container,
       props: {
         task: props.task,
+        themes: props.themes ?? makeTestThemes(),
         onSave: props.onSave ?? (async () => {}),
         onCancel: props.onCancel ?? (() => {}),
       },
@@ -86,8 +95,8 @@ describe('EditTaskDialog', () => {
     const promotionDateInput = container.querySelector<HTMLInputElement>('#edit-task-promotion-date');
     expect(promotionDateInput?.value).toBe('2026-02-10');
 
-    const q1Radio = container.querySelector<HTMLInputElement>('input[type="radio"][value="important-urgent"]');
-    expect(q1Radio?.checked).toBe(true);
+    const themeSelect = container.querySelector<HTMLSelectElement>('#edit-task-theme');
+    expect(themeSelect?.value).toBe('HF');
   });
 
   it('calls onSave with updated task data', async () => {
