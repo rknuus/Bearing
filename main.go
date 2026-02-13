@@ -7,7 +7,9 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/managers"
@@ -82,6 +84,36 @@ func (a *App) startup(ctx context.Context) {
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, Welcome to Bearing!", name)
+}
+
+// GetLocale detects the macOS system locale and returns a BCP 47 locale tag.
+func (a *App) GetLocale() string {
+	// Try macOS defaults command
+	out, err := exec.Command("defaults", "read", "NSGlobalDomain", "AppleLocale").Output()
+	if err == nil {
+		locale := strings.TrimSpace(string(out))
+		// Strip variant suffix (e.g. "@rg=chzzzz")
+		if idx := strings.Index(locale, "@"); idx != -1 {
+			locale = locale[:idx]
+		}
+		if locale != "" {
+			return strings.ReplaceAll(locale, "_", "-")
+		}
+	}
+
+	// Fall back to LANG environment variable
+	lang := os.Getenv("LANG")
+	if lang != "" {
+		// Strip encoding suffix (e.g. ".UTF-8")
+		if idx := strings.Index(lang, "."); idx != -1 {
+			lang = lang[:idx]
+		}
+		if lang != "" {
+			return strings.ReplaceAll(lang, "_", "-")
+		}
+	}
+
+	return "en-US"
 }
 
 // KeyResult represents a measurable outcome (for Wails binding)
