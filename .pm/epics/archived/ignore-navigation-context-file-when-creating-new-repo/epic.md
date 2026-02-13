@@ -1,8 +1,9 @@
 ---
 name: ignore-navigation-context-file-when-creating-new-repo
-status: backlog
+status: completed
 created: 2026-02-13T10:42:48Z
-progress: 0%
+completed: 2026-02-13T10:45:55Z
+progress: 100%
 prd: .pm/prds/ignore-navigation-context-file-when-creating-new-repo.md
 github: [Will be updated when synced to GitHub]
 ---
