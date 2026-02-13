@@ -376,7 +376,6 @@
     <div
       class="dialog-overlay"
       role="presentation"
-      onclick={cancelEdit}
       onkeydown={(e) => e.key === 'Escape' && cancelEdit()}
     >
       <div
@@ -385,7 +384,6 @@
         aria-modal="true"
         aria-labelledby="dialog-title"
         tabindex="-1"
-        onclick={(e) => e.stopPropagation()}
         onkeydown={(e) => e.stopPropagation()}
       >
         <h2 id="dialog-title" class="dialog-title">
