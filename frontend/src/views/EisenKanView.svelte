@@ -9,7 +9,7 @@
    * Drag-and-drop powered by svelte-dnd-action with optimistic rollback.
    */
 
-  import { onMount, untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner } from '../lib/components';
@@ -84,6 +84,25 @@
 
   // Per-section items for sectioned columns (keyed by section name)
   let sectionItems = $state<Record<string, TaskWithStatus[]>>({});
+
+  // Current day display (updates at midnight)
+  function formatToday(): string {
+    return new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  }
+  let today = $state(formatToday());
+  let midnightTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function scheduleMidnightUpdate() {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    midnightTimer = setTimeout(() => {
+      today = formatToday();
+      scheduleMidnightUpdate();
+    }, msUntilMidnight);
+  }
+  scheduleMidnightUpdate();
+  onDestroy(() => clearTimeout(midnightTimer));
 
   // Context menu state for cross-view navigation
   let contextMenuTask = $state<TaskWithStatus | null>(null);
@@ -455,7 +474,10 @@
 
 <div class="eisenkan-container">
   <header class="eisenkan-header">
-    <h1>EisenKan Board</h1>
+    <div class="header-left">
+      <h1>EisenKan Board</h1>
+      <span class="current-day">{today}</span>
+    </div>
     <Button variant="primary" id="create-task-btn" onclick={openCreateDialog}>
       + New Task
     </Button>
@@ -734,10 +756,21 @@
     margin-bottom: 1rem;
   }
 
+  .header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+  }
+
   .eisenkan-header h1 {
     font-size: 1.5rem;
     color: var(--color-gray-800);
     margin: 0;
+  }
+
+  .current-day {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
   }
 
   .loading-state {

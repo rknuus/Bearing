@@ -22,6 +22,7 @@
 </script>
 
 <div class="theme-filter-bar">
+  <span class="filter-label">Filter by theme:</span>
   <button
     class="filter-pill all-pill"
     class:active={allActive}
@@ -54,8 +55,16 @@
   .theme-filter-bar {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
     padding: var(--space-2) 0;
+  }
+
+  .filter-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-gray-600);
+    white-space: nowrap;
   }
 
   .filter-pill {
