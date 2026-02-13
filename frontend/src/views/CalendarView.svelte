@@ -11,6 +11,7 @@
   import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
   import { Dialog, Button } from '../lib/components';
   import { getBindings } from '../lib/utils/bindings';
+  import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
   // Props
   interface Props {
@@ -34,12 +35,9 @@
   let editText = $state('');
 
   // Full month names for headers and dialog
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+  const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
 
-  const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekdayNames = Array.from({ length: 7 }, (_, i) => formatWeekdayShort(i));
 
   // Load data on mount and reload when year changes
   $effect(() => {
@@ -110,11 +108,6 @@
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 
-  const shortMonthNames = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ];
-
   function formatDate(month: number, day: number): string {
     const m = String(month + 1).padStart(2, '0');
     const d = String(day).padStart(2, '0');
@@ -122,8 +115,7 @@
   }
 
   function displayDate(month: number, day: number): string {
-    const d = String(day).padStart(2, '0');
-    return `${d}-${shortMonthNames[month]}-${year}`;
+    return formatDateLocale(formatDate(month, day));
   }
 
   // ISO week number (ISO 8601)

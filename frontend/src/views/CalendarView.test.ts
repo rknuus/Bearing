@@ -3,6 +3,7 @@ import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { LifeTheme, DayFocus } from '../lib/wails-mock';
 import CalendarView from './CalendarView.svelte';
+import { formatDate as formatDateLocale, formatMonthName } from '../lib/utils/date-format';
 
 function makeTestThemes(): LifeTheme[] {
   return [
@@ -94,8 +95,8 @@ describe('CalendarView', () => {
 
     const monthHeaders = container.querySelectorAll('.month-header');
     expect(monthHeaders.length).toBe(12);
-    expect(monthHeaders[0].textContent).toBe('January');
-    expect(monthHeaders[11].textContent).toBe('December');
+    expect(monthHeaders[0].textContent).toBe(formatMonthName(0));
+    expect(monthHeaders[11].textContent).toBe(formatMonthName(11));
   });
 
   it('renders theme legend with theme names and colors', async () => {
@@ -179,7 +180,7 @@ describe('CalendarView', () => {
     const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
     let targetCell: HTMLButtonElement | null = null;
     for (const cell of dayCells) {
-      if (cell.title?.includes('01-Jan-2025')) {
+      if (cell.title?.includes(formatDateLocale('2025-01-01'))) {
         targetCell = cell;
         break;
       }
