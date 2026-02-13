@@ -1,8 +1,9 @@
 ---
 name: consistently-format-dates-by-locale
-status: backlog
+status: completed
 created: 2026-02-13T16:09:43Z
-progress: 0%
+completed: 2026-02-13T16:33:52Z
+progress: 100%
 prd: .pm/prds/consistently-format-dates-by-locale.md
 github: [Will be updated when synced to GitHub]
 ---

@@ -31,6 +31,7 @@
   import { getBindings } from '../lib/utils/bindings';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
+  import { formatDate, formatDateLong } from '../lib/utils/date-format';
 
   // Props for cross-view navigation
   interface Props {
@@ -87,7 +88,8 @@
 
   // Current day display (updates at midnight)
   function formatToday(): string {
-    return new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const iso = new Date().toISOString().split('T')[0];
+    return formatDateLong(iso);
   }
   let today = $state(formatToday());
   let midnightTimer: ReturnType<typeof setTimeout> | undefined;
@@ -573,7 +575,7 @@
                             title="Go to day"
                             onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
                           >
-                            {task.dayDate}
+                            {formatDate(task.dayDate)}
                           </button>
                           <button
                             type="button"
@@ -658,7 +660,7 @@
                       title="Go to day"
                       onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
                     >
-                      {task.dayDate}
+                      {formatDate(task.dayDate)}
                     </button>
                     <button
                       type="button"
@@ -711,7 +713,7 @@
           Go to Theme: {getTheme(themes, contextMenuTask.themeId)?.name ?? 'Unknown'}
         </button>
         <button type="button" class="context-menu-item" onclick={handleGoToDay}>
-          Go to Day: {contextMenuTask.dayDate}
+          Go to Day: {formatDate(contextMenuTask.dayDate)}
         </button>
       </div>
     </div>

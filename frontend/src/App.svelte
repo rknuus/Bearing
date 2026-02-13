@@ -8,6 +8,7 @@
   import Breadcrumb from './lib/components/Breadcrumb.svelte';
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
+  import { initLocale } from './lib/utils/date-format';
 
   // View types
   type ViewType = 'home' | 'calendar' | 'eisenkan' | 'okr' | 'components';
@@ -252,12 +253,25 @@
     return [];
   }
 
+  // Initialize locale from OS detection
+  async function initializeLocale() {
+    try {
+      const locale = await getBindings().GetLocale();
+      initLocale(locale);
+    } catch {
+      initLocale('en-US');
+    }
+  }
+
   // Initialize mock bindings for browser-based testing
   onMount(() => {
     if (!isWailsRuntime()) {
       initMockBindings();
       console.log('[App] Running in browser mode with mock Wails bindings');
     }
+
+    // Initialize locale before views render
+    initializeLocale();
 
     // Load saved navigation context
     loadNavigationContext();

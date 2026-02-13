@@ -411,6 +411,10 @@ export const mockAppBindings = {
     return `Hello ${name}, Welcome to Bearing!`;
   },
 
+  GetLocale: async (): Promise<string> => {
+    return navigator.language;
+  },
+
   // Theme operations
   GetThemes: async (): Promise<LifeTheme[]> => {
     return JSON.parse(JSON.stringify(mockThemes)); // Deep copy
