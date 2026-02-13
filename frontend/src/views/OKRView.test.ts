@@ -158,7 +158,7 @@ describe('OKRView', () => {
     expect(progressInputs[0].value).toBe('0');
     // Target input
     expect(progressInputs[1].type).toBe('number');
-    expect(progressInputs[1].value).toBe('0');
+    expect(progressInputs[1].value).toBe('1');
   });
 
   it('shows Start and Target inputs pre-filled in KR edit form', async () => {

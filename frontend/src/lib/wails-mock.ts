@@ -509,7 +509,7 @@ export const mockAppBindings = {
   },
 
   // Key Result operations
-  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 0): Promise<KeyResult> => {
+  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 1): Promise<KeyResult> => {
     const objective = findObjectiveById(mockThemes, parentObjectiveId);
     if (!objective) {
       throw new Error(`Objective ${parentObjectiveId} not found`);

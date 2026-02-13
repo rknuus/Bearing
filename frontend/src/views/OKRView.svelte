@@ -87,7 +87,7 @@
   let addingKeyResultToObjective = $state<string | null>(null);
   let newKeyResultDescription = $state('');
   let newKeyResultStartValue = $state(0);
-  let newKeyResultTargetValue = $state(0);
+  let newKeyResultTargetValue = $state(1);
 
   // View toggle state
   let showCompleted = $state(false);
@@ -255,7 +255,7 @@
       await loadThemes();
       newKeyResultDescription = '';
       newKeyResultStartValue = 0;
-      newKeyResultTargetValue = 0;
+      newKeyResultTargetValue = 1;
       addingKeyResultToObjective = null;
       // Expand the objective to show the new key result
       expandId(objectiveId);
