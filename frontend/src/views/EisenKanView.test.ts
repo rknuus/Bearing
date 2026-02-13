@@ -153,14 +153,14 @@ describe('EisenKanView', () => {
     expect(sectionTitles[2].textContent).toBe('Not Important & Urgent');
   });
 
-  it('renders section color indicators', async () => {
+  it('renders section color on header backgrounds', async () => {
     await renderView();
 
-    const colors = container.querySelectorAll('.section-color');
-    expect(colors.length).toBe(3);
+    const headers = container.querySelectorAll('.section-header');
+    expect(headers.length).toBe(3);
 
-    const firstColor = colors[0] as HTMLElement;
-    expect(firstColor.style.backgroundColor).toBe('rgb(239, 68, 68)'); // #ef4444
+    const firstHeader = headers[0] as HTMLElement;
+    expect(firstHeader.style.backgroundColor).toBe('rgb(239, 68, 68)'); // #ef4444
   });
 
   it('renders task cards in correct columns based on status', async () => {

@@ -506,9 +506,8 @@
             <div class="section-container">
               {#each column.sections as section (section.name)}
                 {@const sectionTaskItems = sectionItems[section.name] ?? []}
-                <div class="column-section" data-testid="section-{section.name}">
-                  <div class="section-header">
-                    <span class="section-color" style="background-color: {section.color};"></span>
+                <div class="column-section" style="--section-color: {section.color};" data-testid="section-{section.name}">
+                  <div class="section-header" style="background-color: {section.color};">
                     <span class="section-title">{section.title}</span>
                     <span class="section-count">{sectionTaskItems.length}</span>
                   </div>
@@ -848,7 +847,7 @@
   }
 
   .column-section {
-    background-color: #f3f4f6;
+    background-color: color-mix(in srgb, var(--section-color) 8%, white);
     border-radius: 6px;
     border: 1px solid #d1d5db;
     padding: 0.5rem;
@@ -858,28 +857,23 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .section-color {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
+    padding: 0.375rem 0.625rem;
+    margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+    border-radius: 6px 6px 0 0;
   }
 
   .section-title {
     font-size: 0.8125rem;
-    font-weight: 500;
-    color: #4b5563;
+    font-weight: 600;
+    color: white;
     flex: 1;
   }
 
   .section-count {
-    background-color: #9ca3af;
+    background-color: rgba(255, 255, 255, 0.25);
     color: white;
     font-size: 0.6875rem;
-    font-weight: 500;
+    font-weight: 600;
     padding: 0.0625rem 0.375rem;
     border-radius: 9999px;
     min-width: 1.25rem;

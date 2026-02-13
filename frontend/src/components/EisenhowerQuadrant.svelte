@@ -62,11 +62,11 @@
 <div
   class="quadrant"
   class:staging={isStaging}
+  style="--quadrant-color: {color};"
   data-quadrant-id={quadrantId}
   data-testid="quadrant-{quadrantId}"
 >
-  <div class="quadrant-header">
-    <span class="color-indicator" style="background-color: {color};"></span>
+  <div class="quadrant-header" style="background-color: {color};">
     <span class="quadrant-title">{title}</span>
     <span class="task-count">{tasks.length}</span>
   </div>
@@ -107,7 +107,7 @@
   .quadrant {
     display: flex;
     flex-direction: column;
-    background-color: #f9fafb;
+    background-color: color-mix(in srgb, var(--quadrant-color) 8%, white);
     border: 1px solid #e5e7eb;
     border-radius: 6px;
     min-height: 120px;
@@ -122,30 +122,21 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background-color: #f3f4f6;
-    border-bottom: 1px solid #e5e7eb;
     border-radius: 6px 6px 0 0;
-  }
-
-  .color-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
   }
 
   .quadrant-title {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: #374151;
+    color: white;
     flex: 1;
   }
 
   .task-count {
-    background-color: #9ca3af;
+    background-color: rgba(255, 255, 255, 0.25);
     color: white;
     font-size: 0.6875rem;
-    font-weight: 500;
+    font-weight: 600;
     padding: 0.0625rem 0.375rem;
     border-radius: 9999px;
     min-width: 1.25rem;
