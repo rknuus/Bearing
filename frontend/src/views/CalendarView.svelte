@@ -9,6 +9,7 @@
 
   import { SvelteMap } from 'svelte/reactivity';
   import { mockAppBindings, type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { Dialog, Button } from '../lib/components';
 
   // Props
   interface Props {
@@ -373,49 +374,32 @@
 
   <!-- Day Editor Dialog -->
   {#if editingDay}
-    <div
-      class="dialog-overlay"
-      role="presentation"
-      onkeydown={(e) => e.key === 'Escape' && cancelEdit()}
-    >
-      <div
-        class="dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="dialog-title"
-        tabindex="-1"
-        onkeydown={(e) => e.stopPropagation()}
-      >
-        <h2 id="dialog-title" class="dialog-title">
-          {displayDate(editingDay.month, editingDay.day)}
-        </h2>
-
-        <div class="form-group">
-          <label for="theme-select">Theme</label>
-          <select id="theme-select" bind:value={editThemeId}>
-            <option value="">No theme</option>
-            {#each themes as theme (theme.id)}
-              <option value={theme.id}>{theme.name}</option>
-            {/each}
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="text-input">Text</label>
-          <input
-            id="text-input"
-            type="text"
-            bind:value={editText}
-            placeholder="Add text for this day..."
-          />
-        </div>
-
-        <div class="dialog-actions">
-          <button class="btn-secondary" onclick={cancelEdit}>Cancel</button>
-          <button class="btn-primary" onclick={saveDayFocus}>Save</button>
-        </div>
+    <Dialog title={displayDate(editingDay.month, editingDay.day)} onclose={cancelEdit}>
+      <div class="form-group">
+        <label for="theme-select">Theme</label>
+        <select id="theme-select" bind:value={editThemeId}>
+          <option value="">No theme</option>
+          {#each themes as theme (theme.id)}
+            <option value={theme.id}>{theme.name}</option>
+          {/each}
+        </select>
       </div>
-    </div>
+
+      <div class="form-group">
+        <label for="text-input">Text</label>
+        <input
+          id="text-input"
+          type="text"
+          bind:value={editText}
+          placeholder="Add text for this day..."
+        />
+      </div>
+
+      {#snippet actions()}
+        <Button variant="secondary" onclick={cancelEdit}>Cancel</Button>
+        <Button variant="primary" onclick={saveDayFocus}>Save</Button>
+      {/snippet}
+    </Dialog>
   {/if}
 </div>
 
@@ -673,36 +657,6 @@
     color: #4b5563;
   }
 
-  /* Dialog Overlay */
-  .dialog-overlay {
-    position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-
-  .dialog {
-    background: white;
-    border-radius: 8px;
-    padding: 1.5rem;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  }
-
-  .dialog-title {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 1rem;
-  }
-
   .form-group {
     margin-bottom: 1rem;
   }
@@ -732,39 +686,4 @@
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
   }
 
-  .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    margin-top: 1.5rem;
-  }
-
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    background: #e5e7eb;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-secondary:hover {
-    background: #d1d5db;
-  }
-
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-primary:hover {
-    background: #1d4ed8;
-  }
 </style>
