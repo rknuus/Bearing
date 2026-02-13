@@ -630,7 +630,7 @@ func (a *App) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		return nil, err
 	}
 
-	var result []PromotedTask
+	result := make([]PromotedTask, 0, len(promoted))
 	for _, p := range promoted {
 		result = append(result, PromotedTask{
 			ID:          p.ID,
