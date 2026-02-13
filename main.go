@@ -43,8 +43,8 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	dataPath := filepath.Join(homeDir, ".bearing", "data")
-	if err := os.MkdirAll(dataPath, 0755); err != nil {
+	repoPath := filepath.Join(homeDir, ".bearing")
+	if err := os.MkdirAll(repoPath, 0755); err != nil {
 		log.Printf("Warning: Failed to create data directory: %v", err)
 		return
 	}
@@ -55,14 +55,14 @@ func (a *App) startup(ctx context.Context) {
 		Email: "bearing@localhost",
 	}
 
-	repo, err := utilities.InitializeRepositoryWithConfig(dataPath, gitConfig)
+	repo, err := utilities.InitializeRepositoryWithConfig(repoPath, gitConfig)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize repository: %v", err)
 		return
 	}
 
 	// Initialize PlanAccess
-	planAccess, err := access.NewPlanAccess(dataPath, repo)
+	planAccess, err := access.NewPlanAccess(repoPath, repo)
 	if err != nil {
 		log.Printf("Warning: Failed to initialize PlanAccess: %v", err)
 		return
@@ -76,7 +76,7 @@ func (a *App) startup(ctx context.Context) {
 	}
 
 	a.planningManager = planningManager
-	log.Printf("Bearing initialized with data path: %s", dataPath)
+	log.Printf("Bearing initialized with data path: %s", repoPath)
 }
 
 // Greet returns a greeting for the given name
