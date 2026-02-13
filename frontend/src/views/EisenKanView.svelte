@@ -12,6 +12,7 @@
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
@@ -472,16 +473,13 @@
 <div class="eisenkan-container">
   <header class="eisenkan-header">
     <h1>EisenKan Board</h1>
-    <button type="button" class="create-btn" onclick={openCreateDialog}>
+    <Button variant="primary" onclick={openCreateDialog}>
       + New Task
-    </button>
+    </Button>
   </header>
 
   {#if error}
-    <div class="error-banner" role="alert">
-      <span>{error}</span>
-      <button type="button" onclick={() => error = null}>Dismiss</button>
-    </div>
+    <ErrorBanner message={error} ondismiss={() => error = null} />
   {/if}
 
   {#if loading}
@@ -749,42 +747,6 @@
     font-size: 1.5rem;
     color: #1f2937;
     margin: 0;
-  }
-
-  .create-btn {
-    padding: 0.5rem 1rem;
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .create-btn:hover {
-    background-color: #1d4ed8;
-  }
-
-  .error-banner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background-color: #fee2e2;
-    border: 1px solid #fecaca;
-    border-radius: 6px;
-    color: #991b1b;
-    margin-bottom: 1rem;
-  }
-
-  .error-banner button {
-    background: none;
-    border: none;
-    color: #991b1b;
-    cursor: pointer;
-    font-weight: 500;
   }
 
   .loading-state {

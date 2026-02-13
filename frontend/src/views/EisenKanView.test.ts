@@ -200,7 +200,7 @@ describe('EisenKanView', () => {
   it('opens create dialog when clicking New Task button', async () => {
     await renderView();
 
-    const createBtn = container.querySelector<HTMLButtonElement>('.create-btn');
+    const createBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
     expect(createBtn?.textContent?.trim()).toBe('+ New Task');
     createBtn!.click();
     await tick();
