@@ -52,9 +52,9 @@
 
   // Priority colors for badges
   const priorityColors: Record<string, string> = {
-    'important-urgent': '#dc2626',      // Red
+    'important-urgent': '#ef4444',      // Red
     'not-important-urgent': '#f59e0b',  // Amber
-    'important-not-urgent': '#2563eb'   // Blue
+    'important-not-urgent': '#3b82f6'   // Blue
   };
 
   // State

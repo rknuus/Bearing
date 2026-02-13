@@ -27,9 +27,9 @@
 
   // Quadrant configuration
   const quadrants: { id: QuadrantId; title: string; color: string; priority: string; isStaging: boolean }[] = [
-    { id: 'important-urgent', title: 'Q1 - Important & Urgent', color: '#dc2626', priority: 'important-urgent', isStaging: false },
-    { id: 'important-not-urgent', title: 'Q2 - Important, Not Urgent', color: '#2563eb', priority: 'important-not-urgent', isStaging: false },
-    { id: 'not-important-urgent', title: 'Q3 - Urgent, Not Important', color: '#f59e0b', priority: 'not-important-urgent', isStaging: false },
+    { id: 'important-urgent', title: 'Q1 - Important & Urgent', color: '#ef4444', priority: 'important-urgent', isStaging: false },
+    { id: 'not-important-urgent', title: 'Q2 - Not Important & Urgent', color: '#f59e0b', priority: 'not-important-urgent', isStaging: false },
+    { id: 'important-not-urgent', title: 'Q3 - Important & Not Urgent', color: '#3b82f6', priority: 'important-not-urgent', isStaging: false },
     { id: 'staging', title: 'Q4 - Staging', color: '#6b7280', priority: '', isStaging: true },
   ];
 

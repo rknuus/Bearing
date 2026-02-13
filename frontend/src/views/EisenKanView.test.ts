@@ -30,8 +30,8 @@ function makeTestBoardConfig(): BoardConfiguration {
         type: 'todo',
         sections: [
           { name: 'important-urgent', title: 'Important & Urgent', color: '#ef4444' },
-          { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#f59e0b' },
-          { name: 'not-important-urgent', title: 'Not Important & Urgent', color: '#3b82f6' },
+          { name: 'not-important-urgent', title: 'Not Important & Urgent', color: '#f59e0b' },
+          { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#3b82f6' },
         ],
       },
       { name: 'doing', title: 'DOING', type: 'doing' },
@@ -149,8 +149,8 @@ describe('EisenKanView', () => {
 
     const sectionTitles = container.querySelectorAll('.section-title');
     expect(sectionTitles[0].textContent).toBe('Important & Urgent');
-    expect(sectionTitles[1].textContent).toBe('Important & Not Urgent');
-    expect(sectionTitles[2].textContent).toBe('Not Important & Urgent');
+    expect(sectionTitles[1].textContent).toBe('Not Important & Urgent');
+    expect(sectionTitles[2].textContent).toBe('Important & Not Urgent');
   });
 
   it('renders section color on header backgrounds', async () => {
@@ -338,10 +338,10 @@ describe('EisenKanView', () => {
 
     // important-urgent section should have 1 task (T1: Exercise)
     expect(sectionCounts[0].textContent).toBe('1');
-    // important-not-urgent section should have 1 task (T2: Study)
-    expect(sectionCounts[1].textContent).toBe('1');
     // not-important-urgent section should have 0 tasks
-    expect(sectionCounts[2].textContent).toBe('0');
+    expect(sectionCounts[1].textContent).toBe('0');
+    // important-not-urgent section should have 1 task (T2: Study)
+    expect(sectionCounts[2].textContent).toBe('1');
   });
 
   it('shows MoveTask rule violations in ErrorDialog', async () => {
