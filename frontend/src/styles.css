@@ -26,6 +26,59 @@ body {
 :root {
   /* Default theme color when none is set */
   --default-theme-color: #6b7280;
+
+  /* ========================================================================
+     Design Tokens
+     ======================================================================== */
+
+  /* Gray scale */
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f3f4f6;
+  --color-gray-200: #e5e7eb;
+  --color-gray-300: #d1d5db;
+  --color-gray-400: #9ca3af;
+  --color-gray-500: #6b7280;
+  --color-gray-600: #4b5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1f2937;
+
+  /* Primary (blue) */
+  --color-primary-300: #93c5fd;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  --color-primary-700: #1d4ed8;
+
+  /* Success (green) */
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+
+  /* Warning (amber) */
+  --color-warning-400: #fcd34d;
+  --color-warning-500: #f59e0b;
+
+  /* Error (red) */
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-800: #991b1b;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 3rem;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
 }
 
 /* Example themed component styles that use --theme-color */
