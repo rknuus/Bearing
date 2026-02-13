@@ -198,6 +198,7 @@
               title={q.title}
               color={q.color}
               tasks={tasksByQuadrant[q.id]}
+              {themes}
               onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
               isStaging={q.isStaging}
             />
@@ -210,6 +211,7 @@
               title={q.title}
               color={q.color}
               tasks={tasksByQuadrant[q.id]}
+              {themes}
               onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
               isStaging={q.isStaging}
             />

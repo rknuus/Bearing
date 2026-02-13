@@ -7,6 +7,8 @@
    */
 
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+  import type { LifeTheme } from '../lib/wails-mock';
 
   /** Pending task not yet saved to the backend. */
   export interface PendingTask {
@@ -24,11 +26,29 @@
     title: string;
     color: string;
     tasks: PendingTask[];
+    themes: LifeTheme[];
     onTasksChange: (tasks: PendingTask[]) => void;
     isStaging?: boolean;
   }
 
-  let { quadrantId, title, color, tasks, onTasksChange, isStaging = false }: Props = $props();
+  let { quadrantId, title, color, tasks, themes, onTasksChange, isStaging = false }: Props = $props();
+
+  const priorityLabels: Record<string, string> = {
+    'important-urgent': 'Q1',
+    'not-important-urgent': 'Q2',
+    'important-not-urgent': 'Q3',
+  };
+
+  const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
+  const today = new Date().toISOString().split('T')[0];
+
+  function getTheme(themeId?: string): LifeTheme | undefined {
+    return themeId ? themes.find((t) => t.id === themeId) : undefined;
+  }
+
+  function getThemeColor(themeId?: string): string {
+    return getTheme(themeId)?.color ?? '#6b7280';
+  }
 
   function handleDndConsider(event: CustomEvent<DndEvent<PendingTask>>) {
     onTasksChange(event.detail.items);
@@ -57,8 +77,24 @@
     onfinalize={handleDndFinalize}
   >
     {#each tasks as task (task.id)}
-      <div class="pending-task" data-testid="pending-task-{task.id}">
+      <div
+        class="pending-task"
+        data-testid="pending-task-{task.id}"
+        style="--theme-color: {getThemeColor(task.themeId)};"
+      >
+        <div class="task-header">
+          <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+          {#if priorityLabel}
+            <span class="priority-badge" style="background-color: {color};">{priorityLabel}</span>
+          {/if}
+          {#if getTheme(task.themeId)}
+            <span class="theme-name">{getTheme(task.themeId)?.name}</span>
+          {/if}
+        </div>
         <span class="task-title">{task.title}</span>
+        <div class="task-footer">
+          <span class="task-date">{today}</span>
+        </div>
       </div>
     {/each}
     {#if tasks.length === 0 && isStaging}
@@ -126,23 +162,58 @@
   }
 
   .pending-task {
-    padding: 0.375rem 0.625rem;
+    padding: 0.75rem;
     background-color: white;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: grab;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border-left: 4px solid var(--theme-color, #6b7280);
+    transition: box-shadow 0.2s;
   }
 
   .pending-task:hover {
-    border-color: #9ca3af;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .task-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.375rem;
+  }
+
+  .priority-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .theme-name {
+    font-size: 0.6875rem;
+    color: #6b7280;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .task-title {
     font-size: 0.8125rem;
     font-weight: 500;
     color: #1f2937;
+    line-height: 1.3;
+  }
+
+  .task-footer {
+    margin-top: 0.375rem;
+  }
+
+  .task-date {
+    font-size: 0.7rem;
+    color: #9ca3af;
   }
 
   .empty-hint {
