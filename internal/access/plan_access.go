@@ -86,6 +86,14 @@ func (pa *PlanAccess) ensureDirectoryStructure() error {
 		}
 	}
 
+	// Create .gitignore if it doesn't exist (excludes non-versioned files)
+	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
+	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
+		if err := os.WriteFile(gitignorePath, []byte("navigation_context.json\n"), 0644); err != nil {
+			return fmt.Errorf("failed to create .gitignore: %w", err)
+		}
+	}
+
 	return nil
 }
 

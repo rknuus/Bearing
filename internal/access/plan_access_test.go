@@ -1385,3 +1385,42 @@ func TestExtractThemeAbbr(t *testing.T) {
 		})
 	}
 }
+
+func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
+	data, err := os.ReadFile(gitignorePath)
+	if err != nil {
+		t.Fatalf("Expected .gitignore to exist: %v", err)
+	}
+	if string(data) != "navigation_context.json\n" {
+		t.Errorf("Expected .gitignore to contain 'navigation_context.json\\n', got %q", string(data))
+	}
+}
+
+func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Overwrite with custom content
+	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
+	custom := "custom_file.txt\nnavigation_context.json\n"
+	if err := os.WriteFile(gitignorePath, []byte(custom), 0644); err != nil {
+		t.Fatalf("Failed to write custom .gitignore: %v", err)
+	}
+
+	// Re-run ensureDirectoryStructure
+	if err := pa.ensureDirectoryStructure(); err != nil {
+		t.Fatalf("ensureDirectoryStructure failed: %v", err)
+	}
+
+	data, err := os.ReadFile(gitignorePath)
+	if err != nil {
+		t.Fatalf("Failed to read .gitignore: %v", err)
+	}
+	if string(data) != custom {
+		t.Errorf("Expected .gitignore to be preserved, got %q", string(data))
+	}
+}
