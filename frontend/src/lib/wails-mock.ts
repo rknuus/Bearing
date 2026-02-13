@@ -379,8 +379,8 @@ const defaultBoardConfiguration: BoardConfiguration = {
       type: 'todo',
       sections: [
         { name: 'important-urgent', title: 'Important & Urgent', color: '#ef4444' },
-        { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#f59e0b' },
         { name: 'not-important-urgent', title: 'Not Important & Urgent', color: '#3b82f6' },
+        { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#f59e0b' },
       ],
     },
     {

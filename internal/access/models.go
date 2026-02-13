@@ -121,8 +121,8 @@ func DefaultBoardConfiguration() *BoardConfiguration {
 				Type:  ColumnTypeTodo,
 				Sections: []SectionDefinition{
 					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
-					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#f59e0b"},
 					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#3b82f6"},
+					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#f59e0b"},
 				},
 			},
 			{
