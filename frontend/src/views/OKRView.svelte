@@ -838,27 +838,27 @@
     align-items: center;
     gap: 0.25rem;
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     cursor: pointer;
     user-select: none;
   }
 
   .toggle-label input[type="checkbox"] {
     cursor: pointer;
-    accent-color: #6b7280;
+    accent-color: var(--color-gray-500);
   }
 
   .okr-header h1 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--color-gray-800);
     margin: 0;
   }
 
   .loading {
     text-align: center;
     padding: 2rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
   }
 
   .themes-list {
@@ -869,7 +869,7 @@
 
   .theme-item {
     background: white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-gray-200);
     border-radius: 8px;
     overflow: hidden;
     border-left: 4px solid var(--theme-color);
@@ -878,7 +878,7 @@
   .theme-item.highlighted,
   .objective-item.highlighted,
   .kr-item.highlighted {
-    background-color: #fef3c7;
+    background-color: var(--color-warning-100);
     animation: highlight-pulse 2s ease-out;
   }
 
@@ -887,7 +887,7 @@
       background-color: #fde68a;
     }
     100% {
-      background-color: #fef3c7;
+      background-color: var(--color-warning-100);
     }
   }
 
@@ -899,7 +899,7 @@
   }
 
   .theme-header {
-    background-color: #f9fafb;
+    background-color: var(--color-gray-50);
   }
 
   .expand-button {
@@ -907,7 +907,7 @@
     border: none;
     padding: 0.25rem;
     cursor: pointer;
-    color: #6b7280;
+    color: var(--color-gray-500);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -921,12 +921,12 @@
   .item-name {
     flex: 1;
     font-weight: 500;
-    color: #1f2937;
+    color: var(--color-gray-800);
   }
 
   .item-id {
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--color-gray-400);
     font-family: monospace;
   }
 
@@ -956,7 +956,7 @@
   }
 
   .objective-item {
-    border-left: 2px solid #e5e7eb;
+    border-left: 2px solid var(--color-gray-200);
     margin-left: 0.5rem;
   }
 
@@ -976,7 +976,7 @@
   }
 
   .kr-item {
-    border-left: 1px dashed #d1d5db;
+    border-left: 1px dashed var(--color-gray-300);
     margin-left: 0.5rem;
   }
 
@@ -998,7 +998,7 @@
     gap: 0.75rem;
     padding: 0.75rem 1rem;
     background-color: #f0f9ff;
-    border: 1px dashed #3b82f6;
+    border: 1px dashed var(--color-primary-500);
     border-radius: 6px;
     margin-bottom: 0.5rem;
     flex-wrap: wrap;
@@ -1008,14 +1008,14 @@
     flex: 1;
     min-width: 200px;
     padding: 0.5rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-300);
     border-radius: 4px;
     font-size: 0.875rem;
   }
 
   .new-item-form input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--color-primary-500);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 
@@ -1043,7 +1043,7 @@
   }
 
   .color-option.selected {
-    border-color: #1f2937;
+    border-color: var(--color-gray-800);
   }
 
   .color-option.small {
@@ -1059,7 +1059,7 @@
   .inline-edit {
     flex: 1;
     padding: 0.375rem 0.5rem;
-    border: 1px solid #3b82f6;
+    border: 1px solid var(--color-primary-500);
     border-radius: 4px;
     font-size: 0.875rem;
     background-color: white;
@@ -1072,7 +1072,7 @@
 
   .empty-state {
     padding: 1rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     font-size: 0.875rem;
     text-align: center;
   }
@@ -1088,7 +1088,7 @@
   .link-button {
     background: none;
     border: none;
-    color: #3b82f6;
+    color: var(--color-primary-500);
     cursor: pointer;
     font-size: inherit;
     padding: 0;
@@ -1096,7 +1096,7 @@
   }
 
   .link-button:hover {
-    color: #2563eb;
+    color: var(--color-primary-600);
   }
 
   .objective-form,
@@ -1116,14 +1116,14 @@
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: #10b981;
+    accent-color: var(--color-success-500);
     flex-shrink: 0;
   }
 
   .kr-progress {
     width: 80px;
     height: 6px;
-    background-color: #e5e7eb;
+    background-color: var(--color-gray-200);
     border-radius: 3px;
     overflow: visible;
     position: relative;
@@ -1133,7 +1133,7 @@
 
   .kr-progress-bar {
     height: 100%;
-    background-color: #10b981;
+    background-color: var(--color-success-500);
     border-radius: 3px 0 0 3px;
     transition: width 0.3s;
   }
@@ -1143,14 +1143,14 @@
   }
 
   .kr-progress-over {
-    background-color: #f59e0b;
+    background-color: var(--color-warning-500);
     border-radius: 0 3px 3px 0;
   }
 
   .kr-current-input {
     width: 40px;
     padding: 0 0.25rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-300);
     border-radius: 3px;
     font-size: 0.75rem;
     text-align: center;
@@ -1159,18 +1159,18 @@
 
   .kr-current-input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--color-primary-500);
   }
 
   .kr-target-label {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     flex-shrink: 0;
   }
 
   .kr-progress-label {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -1180,13 +1180,13 @@
   .kr-progress-input {
     width: 50px;
     padding: 0.25rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-300);
     border-radius: 3px;
     font-size: 0.75rem;
   }
 
   .kr-progress-input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: var(--color-primary-500);
   }
 </style>

@@ -58,7 +58,7 @@
     right: 1rem;
     z-index: 2000;
     background-color: white;
-    border: 2px solid #dc2626;
+    border: 2px solid var(--color-error-600);
     border-radius: 8px;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     min-width: 300px;
@@ -82,21 +82,21 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.75rem 1rem;
-    background-color: #fee2e2;
-    border-bottom: 1px solid #fecaca;
+    background-color: var(--color-error-100);
+    border-bottom: 1px solid var(--color-error-200);
     border-radius: 6px 6px 0 0;
   }
 
   .toast-title {
     font-weight: 600;
     font-size: 0.875rem;
-    color: #991b1b;
+    color: var(--color-error-800);
   }
 
   .close-btn {
     background: none;
     border: none;
-    color: #991b1b;
+    color: var(--color-error-800);
     font-size: 1rem;
     cursor: pointer;
     padding: 0.25rem;
@@ -120,7 +120,7 @@
     flex-direction: column;
     gap: 0.125rem;
     padding: 0.5rem 0;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--color-gray-100);
   }
 
   .violation-item:last-child {
@@ -130,13 +130,13 @@
   .violation-category {
     font-size: 0.6875rem;
     font-weight: 600;
-    color: #6b7280;
+    color: var(--color-gray-500);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .violation-message {
     font-size: 0.8125rem;
-    color: #1f2937;
+    color: var(--color-gray-800);
   }
 </style>

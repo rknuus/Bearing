@@ -43,6 +43,7 @@ body {
   --color-gray-800: #1f2937;
 
   /* Primary (blue) */
+  --color-primary-50: #eff6ff;
   --color-primary-300: #93c5fd;
   --color-primary-500: #3b82f6;
   --color-primary-600: #2563eb;
@@ -53,6 +54,7 @@ body {
   --color-success-600: #059669;
 
   /* Warning (amber) */
+  --color-warning-100: #fef3c7;
   --color-warning-400: #fcd34d;
   --color-warning-500: #f59e0b;
 
@@ -107,7 +109,7 @@ body {
 /* Progress bar with theme color */
 .progress-bar {
   height: 4px;
-  background-color: #e5e7eb;
+  background-color: var(--color-gray-200);
   border-radius: 2px;
   overflow: hidden;
 }

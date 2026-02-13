@@ -235,7 +235,7 @@
 
 <style>
   .task-entry {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-gray-200);
     border-radius: 6px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -244,13 +244,13 @@
   .task-entry legend {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-gray-700);
     padding: 0 0.25rem;
   }
 
   .btn-add {
     padding: 0.5rem 1rem;
-    background-color: #059669;
+    background-color: var(--color-success-600);
     color: white;
     border: none;
     border-radius: 6px;
@@ -287,8 +287,8 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
     color: #92400e;
-    background-color: #fef3c7;
-    border: 1px solid #fcd34d;
+    background-color: var(--color-warning-100);
+    border: 1px solid var(--color-warning-400);
     border-radius: 4px;
   }
 

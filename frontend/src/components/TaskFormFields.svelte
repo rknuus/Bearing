@@ -103,7 +103,7 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-gray-700);
     margin-bottom: 0.375rem;
   }
 
@@ -113,7 +113,7 @@
   .form-group select {
     width: 100%;
     padding: 0.5rem 0.75rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-300);
     border-radius: 6px;
     font-size: 0.875rem;
     font-family: inherit;
@@ -126,7 +126,7 @@
   .form-group textarea:focus,
   .form-group select:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: var(--color-primary-600);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
   }
 

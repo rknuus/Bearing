@@ -425,14 +425,14 @@
   .year-title {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--color-gray-800);
     min-width: 80px;
     text-align: center;
   }
 
   .nav-button {
     padding: 0.5rem 1rem;
-    background: #e5e7eb;
+    background: var(--color-gray-200);
     border: none;
     border-radius: 4px;
     font-size: 1rem;
@@ -441,12 +441,12 @@
   }
 
   .nav-button:hover {
-    background: #d1d5db;
+    background: var(--color-gray-300);
   }
 
   .today-button {
     padding: 0.5rem 1rem;
-    background: #2563eb;
+    background: var(--color-primary-600);
     color: white;
     border: none;
     border-radius: 4px;
@@ -456,7 +456,7 @@
   }
 
   .today-button:hover {
-    background: #1d4ed8;
+    background: var(--color-primary-700);
   }
 
   /* Loading / Error states */
@@ -467,17 +467,17 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #6b7280;
+    color: var(--color-gray-500);
   }
 
   .error {
-    color: #dc2626;
+    color: var(--color-error-600);
   }
 
   .error button {
     margin-top: 1rem;
     padding: 0.5rem 1rem;
-    background: #2563eb;
+    background: var(--color-primary-600);
     color: white;
     border: none;
     border-radius: 4px;
@@ -498,18 +498,18 @@
     display: grid;
     grid-template-columns: 50px repeat(12, 24px 1fr 24px);
     gap: 1px;
-    background: #e5e7eb;
+    background: var(--color-gray-200);
     font-size: 0.7rem;
     min-width: fit-content;
   }
 
   /* Header cells */
   .header-cell {
-    background: #f3f4f6;
+    background: var(--color-gray-100);
     padding: 0.375rem 0.25rem;
     text-align: center;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-gray-700);
     position: sticky;
     top: 0;
     z-index: 10;
@@ -527,10 +527,10 @@
 
   /* Weekday label column */
   .weekday-label {
-    background: #f9fafb;
+    background: var(--color-gray-50);
     padding: 0 4px;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--color-gray-500);
     position: sticky;
     left: 0;
     z-index: 5;
@@ -548,7 +548,7 @@
     padding: 0 4px;
     text-align: right;
     font-size: 0.7rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     background: white;
     border: none;
     cursor: pointer;
@@ -562,29 +562,29 @@
   .week-num {
     padding: 0 4px;
     font-size: 0.65rem;
-    color: #9ca3af;
-    background: #f9fafb;
+    color: var(--color-gray-400);
+    background: var(--color-gray-50);
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
   .day-num:hover {
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
   }
 
   .day-num.today {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--color-primary-600);
     outline-offset: -2px;
     font-weight: bold;
-    color: #1f2937;
+    color: var(--color-gray-800);
   }
 
   /* Text cells */
   .day-text {
     padding: 0 4px;
     font-size: 0.7rem;
-    color: #374151;
+    color: var(--color-gray-700);
     background: white;
     border: none;
     cursor: pointer;
@@ -598,11 +598,11 @@
   }
 
   .day-text:hover {
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
   }
 
   .day-text.today {
-    outline: 2px solid #2563eb;
+    outline: 2px solid var(--color-primary-600);
     outline-offset: -2px;
   }
 
@@ -620,7 +620,7 @@
   .legend-label {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #6b7280;
+    color: var(--color-gray-500);
   }
 
   .legend-item {
@@ -636,13 +636,13 @@
   }
 
   .legend-item:hover {
-    background-color: #f3f4f6;
-    border-color: #e5e7eb;
+    background-color: var(--color-gray-100);
+    border-color: var(--color-gray-200);
   }
 
   .legend-item.active {
-    background-color: #eff6ff;
-    border-color: #3b82f6;
+    background-color: var(--color-primary-50);
+    border-color: var(--color-primary-500);
   }
 
   .legend-color {
@@ -654,7 +654,7 @@
 
   .legend-name {
     font-size: 0.75rem;
-    color: #4b5563;
+    color: var(--color-gray-600);
   }
 
   .form-group {
@@ -665,7 +665,7 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-gray-700);
     margin-bottom: 0.375rem;
   }
 
@@ -673,7 +673,7 @@
   .form-group input[type="text"] {
     width: 100%;
     padding: 0.5rem;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-300);
     border-radius: 4px;
     font-size: 0.875rem;
     font-family: inherit;
@@ -682,7 +682,7 @@
   .form-group select:focus,
   .form-group input[type="text"]:focus {
     outline: none;
-    border-color: #2563eb;
+    border-color: var(--color-primary-600);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
   }
 

@@ -161,6 +161,6 @@
 
   .btn-icon.icon-nav:hover {
     color: var(--color-primary-600);
-    background-color: #eff6ff;
+    background-color: var(--color-primary-50);
   }
 </style>
