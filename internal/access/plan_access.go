@@ -127,6 +127,72 @@ func (pa *PlanAccess) relativePathFromRepo(absPath string) (string, error) {
 	return relPath, nil
 }
 
+// writeJSON marshals v as indented JSON and writes it to filePath.
+func writeJSON(filePath string, v any) error {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	if err := os.WriteFile(filePath, data, 0644); err != nil {
+		return fmt.Errorf("failed to write file: %w", err)
+	}
+	return nil
+}
+
+// commitFiles resolves paths relative to the repository, begins a transaction,
+// stages the given absolute file paths, and commits with the provided message.
+func (pa *PlanAccess) commitFiles(paths []string, message string) error {
+	relPaths := make([]string, 0, len(paths))
+	for _, p := range paths {
+		rel, err := pa.relativePathFromRepo(p)
+		if err != nil {
+			return fmt.Errorf("failed to get relative path: %w", err)
+		}
+		relPaths = append(relPaths, rel)
+	}
+
+	tx, err := pa.repo.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	if err := tx.Stage(relPaths); err != nil {
+		_ = tx.Cancel()
+		return fmt.Errorf("failed to stage files: %w", err)
+	}
+
+	if _, err := tx.Commit(message); err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+
+	return nil
+}
+
+// findTaskInPlan searches all themes and statuses for a task by ID.
+// Returns the task, theme ID, status name, and task index within the status list.
+func (pa *PlanAccess) findTaskInPlan(taskID string) (*Task, string, string, int, error) {
+	themes, err := pa.GetThemes()
+	if err != nil {
+		return nil, "", "", -1, fmt.Errorf("failed to get themes: %w", err)
+	}
+
+	for _, theme := range themes {
+		for _, status := range ValidTaskStatuses() {
+			tasks, err := pa.GetTasksByStatus(theme.ID, string(status))
+			if err != nil {
+				continue
+			}
+			for i, task := range tasks {
+				if task.ID == taskID {
+					return &task, theme.ID, string(status), i, nil
+				}
+			}
+		}
+	}
+
+	return nil, "", "", -1, nil
+}
+
 // GetThemes returns all life themes.
 func (pa *PlanAccess) GetThemes() ([]LifeTheme, error) {
 	filePath := pa.themesFilePath()
@@ -177,44 +243,22 @@ func (pa *PlanAccess) SaveTheme(theme LifeTheme) error {
 	}
 
 	// Save to file with versioning
-	themesFile := ThemesFile{Themes: themes}
-	data, err := json.MarshalIndent(themesFile, "", "  ")
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTheme: failed to marshal themes: %w", err)
-	}
-
 	filePath := pa.themesFilePath()
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTheme: failed to create themes directory: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		return fmt.Errorf("PlanAccess.SaveTheme: failed to write themes file: %w", err)
+	if err := writeJSON(filePath, ThemesFile{Themes: themes}); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTheme: %w", err)
 	}
 
 	// Commit with git
-	relPath, err := pa.relativePathFromRepo(filePath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTheme: failed to get relative path: %w", err)
-	}
-
-	tx, err := pa.repo.Begin()
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTheme: failed to begin transaction: %w", err)
-	}
-
-	if err := tx.Stage([]string{relPath}); err != nil {
-		_ = tx.Cancel()
-		return fmt.Errorf("PlanAccess.SaveTheme: failed to stage file: %w", err)
-	}
-
 	action := "Update"
 	if !found {
 		action = "Add"
 	}
-	_, err = tx.Commit(fmt.Sprintf("%s theme: %s", action, theme.Name))
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTheme: failed to commit: %w", err)
+	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("%s theme: %s", action, theme.Name)); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTheme: %w", err)
 	}
 
 	return nil
@@ -245,36 +289,14 @@ func (pa *PlanAccess) DeleteTheme(id string) error {
 	}
 
 	// Save updated themes
-	themesFile := ThemesFile{Themes: newThemes}
-	data, err := json.MarshalIndent(themesFile, "", "  ")
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTheme: failed to marshal themes: %w", err)
-	}
-
 	filePath := pa.themesFilePath()
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTheme: failed to write themes file: %w", err)
+	if err := writeJSON(filePath, ThemesFile{Themes: newThemes}); err != nil {
+		return fmt.Errorf("PlanAccess.DeleteTheme: %w", err)
 	}
 
 	// Commit with git
-	relPath, err := pa.relativePathFromRepo(filePath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTheme: failed to get relative path: %w", err)
-	}
-
-	tx, err := pa.repo.Begin()
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTheme: failed to begin transaction: %w", err)
-	}
-
-	if err := tx.Stage([]string{relPath}); err != nil {
-		_ = tx.Cancel()
-		return fmt.Errorf("PlanAccess.DeleteTheme: failed to stage file: %w", err)
-	}
-
-	_, err = tx.Commit(fmt.Sprintf("Delete theme: %s", deletedTheme.Name))
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTheme: failed to commit: %w", err)
+	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("Delete theme: %s", deletedTheme.Name)); err != nil {
+		return fmt.Errorf("PlanAccess.DeleteTheme: %w", err)
 	}
 
 	return nil
@@ -332,44 +354,22 @@ func (pa *PlanAccess) SaveDayFocus(day DayFocus) error {
 	})
 
 	// Save to file
-	yearFile := YearFocusFile{Year: year, Entries: entries}
-	data, err := json.MarshalIndent(yearFile, "", "  ")
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to marshal year focus: %w", err)
-	}
-
 	filePath := pa.yearFocusFilePath(year)
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
 		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to create calendar directory: %w", err)
 	}
 
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to write year focus file: %w", err)
+	if err := writeJSON(filePath, YearFocusFile{Year: year, Entries: entries}); err != nil {
+		return fmt.Errorf("PlanAccess.SaveDayFocus: %w", err)
 	}
 
 	// Commit with git
-	relPath, err := pa.relativePathFromRepo(filePath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to get relative path: %w", err)
-	}
-
-	tx, err := pa.repo.Begin()
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to begin transaction: %w", err)
-	}
-
-	if err := tx.Stage([]string{relPath}); err != nil {
-		_ = tx.Cancel()
-		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to stage file: %w", err)
-	}
-
 	action := "Update"
 	if !found {
 		action = "Add"
 	}
-	_, err = tx.Commit(fmt.Sprintf("%s day focus: %s", action, day.Date))
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveDayFocus: failed to commit: %w", err)
+	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("%s day focus: %s", action, day.Date)); err != nil {
+		return fmt.Errorf("PlanAccess.SaveDayFocus: %w", err)
 	}
 
 	return nil
@@ -492,39 +492,18 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	}
 
 	// Save task to file
-	data, err := json.MarshalIndent(task, "", "  ")
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to marshal task: %w", err)
-	}
-
 	filePath := pa.taskFilePath(task.ThemeID, status, task.ID)
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to write task file: %w", err)
+	if err := writeJSON(filePath, task); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTask: %w", err)
 	}
 
 	// Commit with git
-	relPath, err := pa.relativePathFromRepo(filePath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to get relative path: %w", err)
-	}
-
-	tx, err := pa.repo.Begin()
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to begin transaction: %w", err)
-	}
-
-	if err := tx.Stage([]string{relPath}); err != nil {
-		_ = tx.Cancel()
-		return fmt.Errorf("PlanAccess.SaveTask: failed to stage file: %w", err)
-	}
-
 	action := "Update"
 	if isNew {
 		action = "Add"
 	}
-	_, err = tx.Commit(fmt.Sprintf("%s task: %s", action, task.Title))
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to commit: %w", err)
+	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTask: %w", err)
 	}
 
 	return nil
@@ -537,39 +516,10 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 	}
 
 	// Find the task and its current status
-	var foundTask *Task
-	var currentStatus string
-	var themeID string
-
-	// We need to search through all themes to find this task
-	themes, err := pa.GetThemes()
+	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
-		return fmt.Errorf("PlanAccess.MoveTask: failed to get themes: %w", err)
+		return fmt.Errorf("PlanAccess.MoveTask: %w", err)
 	}
-
-	for _, theme := range themes {
-		for _, status := range ValidTaskStatuses() {
-			tasks, err := pa.GetTasksByStatus(theme.ID, string(status))
-			if err != nil {
-				continue
-			}
-			for _, task := range tasks {
-				if task.ID == taskID {
-					foundTask = &task
-					currentStatus = string(status)
-					themeID = theme.ID
-					break
-				}
-			}
-			if foundTask != nil {
-				break
-			}
-		}
-		if foundTask != nil {
-			break
-		}
-	}
-
 	if foundTask == nil {
 		return fmt.Errorf("PlanAccess.MoveTask: task with ID %s not found", taskID)
 	}
@@ -593,31 +543,9 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 		return fmt.Errorf("PlanAccess.MoveTask: failed to move task file: %w", err)
 	}
 
-	// Get relative paths for git
-	oldRelPath, err := pa.relativePathFromRepo(oldPath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.MoveTask: failed to get relative old path: %w", err)
-	}
-	newRelPath, err := pa.relativePathFromRepo(newPath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.MoveTask: failed to get relative new path: %w", err)
-	}
-
 	// Commit with git - stage both the removal of old and addition of new
-	tx, err := pa.repo.Begin()
-	if err != nil {
-		return fmt.Errorf("PlanAccess.MoveTask: failed to begin transaction: %w", err)
-	}
-
-	// Stage the new file and the deletion of the old file
-	if err := tx.Stage([]string{newRelPath, oldRelPath}); err != nil {
-		_ = tx.Cancel()
-		return fmt.Errorf("PlanAccess.MoveTask: failed to stage files: %w", err)
-	}
-
-	_, err = tx.Commit(fmt.Sprintf("Move task %s: %s -> %s", foundTask.Title, currentStatus, newStatus))
-	if err != nil {
-		return fmt.Errorf("PlanAccess.MoveTask: failed to commit: %w", err)
+	if err := pa.commitFiles([]string{newPath, oldPath}, fmt.Sprintf("Move task %s: %s -> %s", foundTask.Title, currentStatus, newStatus)); err != nil {
+		return fmt.Errorf("PlanAccess.MoveTask: %w", err)
 	}
 
 	return nil
@@ -626,38 +554,10 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 // DeleteTask deletes a task.
 func (pa *PlanAccess) DeleteTask(taskID string) error {
 	// Find the task
-	var foundTask *Task
-	var currentStatus string
-	var themeID string
-
-	themes, err := pa.GetThemes()
+	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTask: failed to get themes: %w", err)
+		return fmt.Errorf("PlanAccess.DeleteTask: %w", err)
 	}
-
-	for _, theme := range themes {
-		for _, status := range ValidTaskStatuses() {
-			tasks, err := pa.GetTasksByStatus(theme.ID, string(status))
-			if err != nil {
-				continue
-			}
-			for _, task := range tasks {
-				if task.ID == taskID {
-					foundTask = &task
-					currentStatus = string(status)
-					themeID = theme.ID
-					break
-				}
-			}
-			if foundTask != nil {
-				break
-			}
-		}
-		if foundTask != nil {
-			break
-		}
-	}
-
 	if foundTask == nil {
 		return fmt.Errorf("PlanAccess.DeleteTask: task with ID %s not found", taskID)
 	}
@@ -670,24 +570,8 @@ func (pa *PlanAccess) DeleteTask(taskID string) error {
 	}
 
 	// Commit with git
-	relPath, err := pa.relativePathFromRepo(filePath)
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTask: failed to get relative path: %w", err)
-	}
-
-	tx, err := pa.repo.Begin()
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTask: failed to begin transaction: %w", err)
-	}
-
-	if err := tx.Stage([]string{relPath}); err != nil {
-		_ = tx.Cancel()
-		return fmt.Errorf("PlanAccess.DeleteTask: failed to stage deletion: %w", err)
-	}
-
-	_, err = tx.Commit(fmt.Sprintf("Delete task: %s", foundTask.Title))
-	if err != nil {
-		return fmt.Errorf("PlanAccess.DeleteTask: failed to commit: %w", err)
+	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("Delete task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("PlanAccess.DeleteTask: %w", err)
 	}
 
 	return nil
@@ -908,15 +792,13 @@ func (pa *PlanAccess) generateTaskID(themeAbbr string, existingTasks []Task) str
 	return fmt.Sprintf("%s-T%d", themeAbbr, maxNum+1)
 }
 
-// findTaskStatus finds the current status of a task by searching through all status directories.
+// findTaskStatus finds the current status of a task by searching through all themes and statuses.
 func (pa *PlanAccess) findTaskStatus(taskID, themeID string) (string, error) {
-	for _, status := range ValidTaskStatuses() {
-		filePath := pa.taskFilePath(themeID, string(status), taskID)
-		if _, err := os.Stat(filePath); err == nil {
-			return string(status), nil
-		}
+	_, _, status, _, err := pa.findTaskInPlan(taskID)
+	if err != nil {
+		return "", err
 	}
-	return "", nil
+	return status, nil
 }
 
 // navigationContextFilePath returns the path to the navigation context file.
@@ -947,14 +829,9 @@ func (pa *PlanAccess) LoadNavigationContext() (*NavigationContext, error) {
 // SaveNavigationContext persists the navigation context.
 // Note: This is user preference data, not versioned with git.
 func (pa *PlanAccess) SaveNavigationContext(ctx NavigationContext) error {
-	data, err := json.MarshalIndent(ctx, "", "  ")
-	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveNavigationContext: failed to marshal context: %w", err)
-	}
-
 	filePath := pa.navigationContextFilePath()
-	if err := os.WriteFile(filePath, data, 0644); err != nil {
-		return fmt.Errorf("PlanAccess.SaveNavigationContext: failed to write file: %w", err)
+	if err := writeJSON(filePath, ctx); err != nil {
+		return fmt.Errorf("PlanAccess.SaveNavigationContext: %w", err)
 	}
 
 	return nil

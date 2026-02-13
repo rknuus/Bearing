@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { initMockBindings, isWailsRuntime, mockAppBindings } from './lib/wails-mock';
+  import { initMockBindings, isWailsRuntime } from './lib/wails-mock';
   import ComponentDemo from './lib/components/ComponentDemo.svelte';
   import CalendarView from './views/CalendarView.svelte';
   import EisenKanView from './views/EisenKanView.svelte';
   import OKRView from './views/OKRView.svelte';
   import Breadcrumb from './lib/components/Breadcrumb.svelte';
   import { getIdType } from './lib/utils/id-parser';
+  import { getBindings } from './lib/utils/bindings';
 
   // View types
   type ViewType = 'home' | 'calendar' | 'eisenkan' | 'okr' | 'components';
@@ -203,11 +204,6 @@
     } catch (e) {
       console.error('[App] Failed to load navigation context:', e);
     }
-  }
-
-  // Get Wails bindings
-  function getBindings() {
-    return window.go?.main?.App ?? mockAppBindings;
   }
 
   // Initialize mock bindings for browser-based testing

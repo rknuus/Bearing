@@ -18,7 +18,6 @@
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
   import ErrorDialog from '../components/ErrorDialog.svelte';
   import {
-    mockAppBindings,
     type TaskWithStatus,
     type LifeTheme,
     type MoveTaskResult,
@@ -28,6 +27,9 @@
     type Task,
     type PromotedTask,
   } from '../lib/wails-mock';
+  import { getBindings } from '../lib/utils/bindings';
+  import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
+  import { priorityLabels } from '../lib/constants/priorities';
 
   // Props for cross-view navigation
   interface Props {
@@ -43,13 +45,6 @@
   type Theme = LifeTheme;
 
   const flipDurationMs = 200;
-
-  // Priority display labels
-  const priorityLabels: Record<string, string> = {
-    'important-urgent': 'Q1',
-    'not-important-urgent': 'Q2',
-    'important-not-urgent': 'Q3'
-  };
 
   // Priority colors for badges
   const priorityColors: Record<string, string> = {
@@ -186,21 +181,6 @@
     }
   }
 
-  // Helper: get theme by ID
-  function getTheme(themeId: string): Theme | undefined {
-    return themes.find(t => t.id === themeId);
-  }
-
-  // Helper: get theme color
-  function getThemeColor(themeId: string): string {
-    const theme = getTheme(themeId);
-    return theme?.color ?? '#6b7280';
-  }
-
-  // Get Wails bindings (with mock fallback for browser testing)
-  function getBindings() {
-    return window.go?.main?.App ?? mockAppBindings;
-  }
 
   // API functions using Wails bindings (or mocks in browser mode)
   async function fetchTasks(): Promise<TaskWithStatus[]> {
@@ -521,12 +501,12 @@
                         class="task-card"
                         onclick={() => handleTaskClick(task)}
                         oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                        style="--theme-color: {getThemeColor(task.themeId)};"
+                        style="--theme-color: {getThemeColor(themes, task.themeId)};"
                         role="article"
                         aria-label="{task.title}"
                       >
                         <div class="task-header">
-                          <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+                          <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
                           <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                             {priorityLabels[task.priority]}
                           </span>
@@ -552,7 +532,7 @@
                             onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
                             title="Go to theme"
                           >
-                            {getTheme(task.themeId)?.name ?? 'Unknown'}
+                            {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
                           </button>
                           <button
                             type="button"
@@ -579,7 +559,7 @@
                             class="task-card subtask-card"
                             onclick={() => handleTaskClick(subtask)}
                             oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
-                            style="--theme-color: {getThemeColor(subtask.themeId)};"
+                            style="--theme-color: {getThemeColor(themes, subtask.themeId)};"
                             role="article"
                             aria-label="{subtask.title}"
                           >
@@ -606,12 +586,12 @@
                   class="task-card"
                   onclick={() => handleTaskClick(task)}
                   oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                  style="--theme-color: {getThemeColor(task.themeId)};"
+                  style="--theme-color: {getThemeColor(themes, task.themeId)};"
                   role="article"
                   aria-label="{task.title}"
                 >
                   <div class="task-header">
-                    <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+                    <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
                     <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                       {priorityLabels[task.priority]}
                     </span>
@@ -637,7 +617,7 @@
                       onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
                       title="Go to theme"
                     >
-                      {getTheme(task.themeId)?.name ?? 'Unknown'}
+                      {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
                     </button>
                     <button
                       type="button"
@@ -664,7 +644,7 @@
                       class="task-card subtask-card"
                       onclick={() => handleTaskClick(subtask)}
                       oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
-                      style="--theme-color: {getThemeColor(subtask.themeId)};"
+                      style="--theme-color: {getThemeColor(themes, subtask.themeId)};"
                       role="article"
                       aria-label="{subtask.title}"
                     >
@@ -695,7 +675,7 @@
         role="menu"
       >
         <button type="button" class="context-menu-item" onclick={handleGoToTheme}>
-          Go to Theme: {getTheme(contextMenuTask.themeId)?.name ?? 'Unknown'}
+          Go to Theme: {getTheme(themes, contextMenuTask.themeId)?.name ?? 'Unknown'}
         </button>
         <button type="button" class="context-menu-item" onclick={handleGoToDay}>
           Go to Day: {contextMenuTask.dayDate}
