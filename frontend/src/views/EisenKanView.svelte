@@ -83,6 +83,9 @@
   // Per-column items managed by svelte-dnd-action
   let columnItems = $state<Record<string, TaskWithStatus[]>>({});
 
+  // Per-section items for sectioned columns (keyed by section name)
+  let sectionItems = $state<Record<string, TaskWithStatus[]>>({});
+
   // Context menu state for cross-view navigation
   let contextMenuTask = $state<TaskWithStatus | null>(null);
   let contextMenuPosition = $state<{ x: number; y: number } | null>(null);
@@ -135,8 +138,21 @@
       });
     }
 
+    // Build per-section items for sectioned columns (only top-level tasks)
+    const sectionGrouped: Record<string, TaskWithStatus[]> = {};
+    for (const col of cols) {
+      if (col.sections) {
+        for (const section of col.sections) {
+          sectionGrouped[section.name] = (grouped[col.name] ?? []).filter(
+            t => t.priority === section.name && !t.parentTaskId
+          );
+        }
+      }
+    }
+
     untrack(() => {
       columnItems = grouped;
+      sectionItems = sectionGrouped;
     });
   });
 
@@ -167,11 +183,6 @@
     } else {
       collapsedParents.add(taskId);
     }
-  }
-
-  // Helper: get tasks for a specific section within a column
-  function getTasksForSection(columnName: string, sectionName: string): TaskWithStatus[] {
-    return (columnItems[columnName] ?? []).filter(t => t.priority === sectionName);
   }
 
   // Helper: get theme by ID
@@ -238,7 +249,7 @@
       // Process priority promotions on startup and refresh if any promoted
       try {
         const promoted = await apiProcessPromotions();
-        if (promoted.length > 0) {
+        if (promoted && promoted.length > 0) {
           tasks = await fetchTasks();
         }
       } catch {
@@ -347,6 +358,68 @@
     }
   }
 
+  // Section-aware svelte-dnd-action handlers (for sectioned columns)
+  function handleSectionDndConsider(sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    sectionItems = { ...sectionItems, [sectionName]: event.detail.items };
+  }
+
+  async function handleSectionDndFinalize(columnName: string, sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    if (isValidating || isRollingBack) return;
+
+    const newItems = event.detail.items;
+    sectionItems = { ...sectionItems, [sectionName]: newItems };
+
+    // Find the moved task (its status or priority differs from the target)
+    const movedTask = newItems.find(t => t.status !== columnName || t.priority !== sectionName);
+    if (!movedTask) return;
+
+    const taskId = movedTask.id;
+    const snapshotTasks = [...tasks];
+
+    if (movedTask.status !== columnName) {
+      // Cross-column move: status change -- use MoveTask
+      tasks = tasks.map(t => t.id === taskId ? { ...t, status: columnName } : t);
+
+      isValidating = true;
+      try {
+        const result = await apiMoveTask(taskId, columnName);
+        if (!result.success) {
+          isRollingBack = true;
+          tasks = snapshotTasks;
+          queueMicrotask(() => { isRollingBack = false; });
+          if (result.violations && result.violations.length > 0) {
+            errorViolations = result.violations;
+          } else {
+            error = 'Move rejected by rules';
+          }
+        }
+      } catch (e) {
+        isRollingBack = true;
+        tasks = snapshotTasks;
+        queueMicrotask(() => { isRollingBack = false; });
+        error = e instanceof Error ? e.message : 'Failed to move task';
+      } finally {
+        isValidating = false;
+      }
+    } else if (movedTask.priority !== sectionName) {
+      // Within-column move: priority change -- use UpdateTask
+      const updatedTask = { ...movedTask, priority: sectionName };
+      tasks = tasks.map(t => t.id === taskId ? { ...t, priority: sectionName } : t);
+
+      isValidating = true;
+      try {
+        await apiUpdateTask(updatedTask);
+      } catch (e) {
+        isRollingBack = true;
+        tasks = snapshotTasks;
+        queueMicrotask(() => { isRollingBack = false; });
+        error = e instanceof Error ? e.message : 'Failed to update priority';
+      } finally {
+        isValidating = false;
+      }
+    }
+  }
+
   // Delete task handler
   async function handleDeleteTask(taskId: string) {
     const taskToDelete = tasks.find(t => t.id === taskId);
@@ -432,92 +505,90 @@
             <!-- Sectioned column: render sections as separate groups -->
             <div class="section-container">
               {#each column.sections as section (section.name)}
-                {@const sectionTasks = getTasksForSection(column.name, section.name)}
+                {@const sectionTaskItems = sectionItems[section.name] ?? []}
                 <div class="column-section" data-testid="section-{section.name}">
                   <div class="section-header">
                     <span class="section-color" style="background-color: {section.color};"></span>
                     <span class="section-title">{section.title}</span>
-                    <span class="section-count">{sectionTasks.length}</span>
+                    <span class="section-count">{sectionTaskItems.length}</span>
                   </div>
                   <div
                     class="column-content"
-                    use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, dragDisabled: isValidating || isRollingBack }}
-                    onconsider={(e) => handleDndConsider(column.name, e)}
-                    onfinalize={(e) => handleDndFinalize(column.name, e)}
+                    use:dndzone={{ items: sectionTaskItems, flipDurationMs, dragDisabled: isValidating || isRollingBack }}
+                    onconsider={(e) => handleSectionDndConsider(section.name, e)}
+                    onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
                   >
-                    {#each sectionTasks as task (task.id)}
-                      {#if !task.parentTaskId}
-                        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-                        <div
-                          class="task-card"
-                          onclick={() => handleTaskClick(task)}
-                          oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                          style="--theme-color: {getThemeColor(task.themeId)};"
-                          role="article"
-                          aria-label="{task.title}"
-                        >
-                          <div class="task-header">
-                            <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
-                            <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
-                              {priorityLabels[task.priority]}
-                            </span>
-                            {#if hasSubtasks(task.id)}
-                              <button
-                                type="button"
-                                class="toggle-btn"
-                                onclick={(e) => { e.stopPropagation(); toggleParentCollapse(task.id); }}
-                                aria-label="{collapsedParents.has(task.id) ? 'Expand' : 'Collapse'} subtasks"
-                              >
-                                {collapsedParents.has(task.id) ? '+' : '-'}
-                              </button>
-                              {#if collapsedParents.has(task.id)}
-                                <span class="subtask-count">{getSubtaskCount(task.id)}</span>
-                              {/if}
+                    {#each sectionTaskItems as task (task.id)}
+                      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+                      <div
+                        class="task-card"
+                        onclick={() => handleTaskClick(task)}
+                        oncontextmenu={(e) => handleTaskContextMenu(e, task)}
+                        style="--theme-color: {getThemeColor(task.themeId)};"
+                        role="article"
+                        aria-label="{task.title}"
+                      >
+                        <div class="task-header">
+                          <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+                          <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
+                            {priorityLabels[task.priority]}
+                          </span>
+                          {#if hasSubtasks(task.id)}
+                            <button
+                              type="button"
+                              class="toggle-btn"
+                              onclick={(e) => { e.stopPropagation(); toggleParentCollapse(task.id); }}
+                              aria-label="{collapsedParents.has(task.id) ? 'Expand' : 'Collapse'} subtasks"
+                            >
+                              {collapsedParents.has(task.id) ? '+' : '-'}
+                            </button>
+                            {#if collapsedParents.has(task.id)}
+                              <span class="subtask-count">{getSubtaskCount(task.id)}</span>
                             {/if}
-                          </div>
-                          <h3 class="task-title">{task.title}</h3>
-                          <div class="task-footer">
-                            <button
-                              type="button"
-                              class="theme-name-btn"
-                              onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
-                              title="Go to theme"
-                            >
-                              {getTheme(task.themeId)?.name ?? 'Unknown'}
-                            </button>
-                            <button
-                              type="button"
-                              class="task-date"
-                              title="Go to day"
-                              onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
-                            >
-                              {task.dayDate}
-                            </button>
-                            <button
-                              type="button"
-                              class="delete-btn"
-                              onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                              aria-label="Delete task"
-                            >
-                              x
-                            </button>
-                          </div>
+                          {/if}
                         </div>
-                        {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
-                          {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
-                            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-                            <div
-                              class="task-card subtask-card"
-                              onclick={() => handleTaskClick(subtask)}
-                              oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
-                              style="--theme-color: {getThemeColor(subtask.themeId)};"
-                              role="article"
-                              aria-label="{subtask.title}"
-                            >
-                              <h3 class="task-title">{subtask.title}</h3>
-                            </div>
-                          {/each}
-                        {/if}
+                        <h3 class="task-title">{task.title}</h3>
+                        <div class="task-footer">
+                          <button
+                            type="button"
+                            class="theme-name-btn"
+                            onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
+                            title="Go to theme"
+                          >
+                            {getTheme(task.themeId)?.name ?? 'Unknown'}
+                          </button>
+                          <button
+                            type="button"
+                            class="task-date"
+                            title="Go to day"
+                            onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
+                          >
+                            {task.dayDate}
+                          </button>
+                          <button
+                            type="button"
+                            class="delete-btn"
+                            onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                            aria-label="Delete task"
+                          >
+                            x
+                          </button>
+                        </div>
+                      </div>
+                      {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
+                        {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
+                          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+                          <div
+                            class="task-card subtask-card"
+                            onclick={() => handleTaskClick(subtask)}
+                            oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
+                            style="--theme-color: {getThemeColor(subtask.themeId)};"
+                            role="article"
+                            aria-label="{subtask.title}"
+                          >
+                            <h3 class="task-title">{subtask.title}</h3>
+                          </div>
+                        {/each}
                       {/if}
                     {/each}
                   </div>
