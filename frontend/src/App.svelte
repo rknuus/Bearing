@@ -15,7 +15,7 @@
   // Current view state using Svelte 5 runes
   let currentView = $state<ViewType>('home');
   let currentItemId = $state<string>('');
-  let filterThemeId = $state<string | undefined>(undefined);
+  let filterThemeIds = $state<string[]>([]);
   let filterDate = $state<string | undefined>(undefined);
 
   // Build breadcrumb path including view context
@@ -36,8 +36,10 @@
     }
 
     // Add filter context if present
-    if (filterThemeId) {
-      parts.push({ id: `FILTER:theme:${filterThemeId}`, label: `Theme: ${filterThemeId}` });
+    if (filterThemeIds.length === 1) {
+      parts.push({ id: `FILTER:theme:${filterThemeIds[0]}`, label: `Theme: ${filterThemeIds[0]}` });
+    } else if (filterThemeIds.length > 1) {
+      parts.push({ id: 'FILTER:themes', label: `Themes: ${filterThemeIds.join(', ')}` });
     }
     if (filterDate) {
       parts.push({ id: `FILTER:date:${filterDate}`, label: filterDate });
@@ -50,7 +52,9 @@
   function navigateTo(view: ViewType, options?: { itemId?: string; themeId?: string; date?: string }) {
     currentView = view;
     currentItemId = options?.itemId ?? '';
-    filterThemeId = options?.themeId;
+    if (options?.themeId !== undefined) {
+      filterThemeIds = options.themeId ? [options.themeId] : [];
+    }
     filterDate = options?.date;
 
     // Save navigation context
@@ -106,6 +110,21 @@
     navigateToOKR({ itemId: themeId });
   }
 
+  // Theme filter handlers for ThemeFilterBar
+  function handleFilterThemeToggle(themeId: string) {
+    if (filterThemeIds.includes(themeId)) {
+      filterThemeIds = filterThemeIds.filter(id => id !== themeId);
+    } else {
+      filterThemeIds = [...filterThemeIds, themeId];
+    }
+    saveNavigationContext();
+  }
+
+  function handleFilterThemeClear() {
+    filterThemeIds = [];
+    saveNavigationContext();
+  }
+
   function handleNavigateToDay(date?: string, themeId?: string) {
     navigateToCalendar({ date, themeId });
   }
@@ -121,8 +140,8 @@
       saveNavigationContext();
       return;
     }
-    if (filterThemeId) {
-      filterThemeId = undefined;
+    if (filterThemeIds.length > 0) {
+      filterThemeIds = [];
       saveNavigationContext();
       return;
     }
@@ -178,7 +197,8 @@
         await bindings.SaveNavigationContext({
           currentView,
           currentItem: currentItemId,
-          filterThemeId: filterThemeId ?? '',
+          filterThemeId: filterThemeIds.length === 1 ? filterThemeIds[0] : '',
+          filterThemeIds: filterThemeIds.length > 0 ? filterThemeIds : undefined,
           filterDate: filterDate ?? '',
           lastAccessed: new Date().toISOString()
         });
@@ -197,13 +217,39 @@
         if (ctx && ctx.currentView) {
           currentView = ctx.currentView as ViewType;
           currentItemId = ctx.currentItem ?? '';
-          filterThemeId = ctx.filterThemeId || undefined;
           filterDate = ctx.filterDate || undefined;
+
+          // Load filterThemeIds: prefer array, fall back to single string (backward compat)
+          if (ctx.filterThemeIds && ctx.filterThemeIds.length > 0) {
+            filterThemeIds = ctx.filterThemeIds;
+          } else if (ctx.filterThemeId) {
+            filterThemeIds = [ctx.filterThemeId];
+          } else {
+            // Smart default: use today's DayFocus theme if available
+            filterThemeIds = await getSmartDefaultThemeIds(bindings);
+          }
         }
       }
     } catch (e) {
       console.error('[App] Failed to load navigation context:', e);
     }
+  }
+
+  // Smart default: find today's DayFocus theme from the calendar
+  async function getSmartDefaultThemeIds(bindings: ReturnType<typeof getBindings>): Promise<string[]> {
+    try {
+      if (!bindings?.GetYearFocus) return [];
+      const today = new Date();
+      const yearFocus = await bindings.GetYearFocus(today.getFullYear());
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const todayFocus = yearFocus.find((d: { date: string }) => d.date === todayStr);
+      if (todayFocus?.themeId) {
+        return [todayFocus.themeId];
+      }
+    } catch {
+      // Non-critical: fall through to show all
+    }
+    return [];
   }
 
   // Initialize mock bindings for browser-based testing
@@ -280,7 +326,7 @@
         itemId={currentItemId || ''}
         onNavigate={handleBreadcrumbNavigate}
       />
-      {#if filterThemeId || filterDate || currentItemId}
+      {#if filterThemeIds.length > 0 || filterDate || currentItemId}
         <button class="clear-filters-btn" onclick={navigateUp} title="Clear filters (Backspace)">
           Clear
         </button>
@@ -316,7 +362,7 @@
       <CalendarView
         onNavigateToTheme={handleNavigateToTheme}
         onNavigateToTasks={handleNavigateToTasks}
-        {filterThemeId}
+        {filterThemeIds}
       />
     {:else if currentView === 'okr'}
       <div class="scrollable-view">
@@ -330,8 +376,10 @@
       <EisenKanView
         onNavigateToTheme={handleNavigateToTheme}
         onNavigateToDay={handleNavigateToDay}
-        {filterThemeId}
+        {filterThemeIds}
         {filterDate}
+        onFilterThemeToggle={handleFilterThemeToggle}
+        onFilterThemeClear={handleFilterThemeClear}
       />
     {:else if currentView === 'components'}
       <div class="scrollable-view">

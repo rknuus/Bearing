@@ -232,8 +232,8 @@ describe('EisenKanView', () => {
     expect(newCardCount).toBe(3);
   });
 
-  it('filters tasks by filterThemeId prop', async () => {
-    await renderView({ filterThemeId: 'HF' });
+  it('filters tasks by filterThemeIds prop', async () => {
+    await renderView({ filterThemeIds: ['HF'] });
 
     // Only HF tasks (T1 in todo, T4 in done) should be visible
     const cards = container.querySelectorAll('.task-card');

@@ -17,10 +17,10 @@
     year?: number;
     onNavigateToTheme?: (themeId: string) => void;
     onNavigateToTasks?: (options?: { themeId?: string; date?: string }) => void;
-    filterThemeId?: string;
+    filterThemeIds?: string[];
   }
 
-  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeId }: Props = $props();
+  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [] }: Props = $props();
 
   // State
   let themes = $state<LifeTheme[]>([]);
@@ -357,7 +357,7 @@
       {#each themes as theme (theme.id)}
         <button
           class="legend-item"
-          class:active={filterThemeId === theme.id}
+          class:active={filterThemeIds.includes(theme.id)}
           onclick={() => handleThemeLegendClick(theme.id)}
           title="Click to view theme"
         >

@@ -257,11 +257,12 @@ describe('App', () => {
     expect(homeLink?.classList.contains('active')).toBe(true);
   });
 
-  it('restores EisenKan view with filterThemeId from navigation context', async () => {
+  it('restores EisenKan view with filterThemeIds from navigation context', async () => {
     mockBindings.LoadNavigationContext.mockResolvedValue({
       currentView: 'eisenkan',
       currentItem: '',
-      filterThemeId: 'HF',
+      filterThemeId: '',
+      filterThemeIds: ['HF'],
       filterDate: '',
       lastAccessed: '',
     });
@@ -277,7 +278,28 @@ describe('App', () => {
     const breadcrumbBar = container.querySelector('.breadcrumb-bar');
     expect(breadcrumbBar).toBeTruthy();
 
-    // Clear button should be visible (since filterThemeId is set)
+    // Clear button should be visible (since filterThemeIds is set)
+    const clearBtn = container.querySelector('.clear-filters-btn');
+    expect(clearBtn).toBeTruthy();
+  });
+
+  it('restores filterThemeIds from legacy filterThemeId (backward compat)', async () => {
+    mockBindings.LoadNavigationContext.mockResolvedValue({
+      currentView: 'eisenkan',
+      currentItem: '',
+      filterThemeId: 'CG',
+      filterDate: '',
+      lastAccessed: '',
+    });
+
+    await renderApp();
+
+    // Tasks nav link should be active
+    const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'Tasks');
+    expect(taskLink?.classList.contains('active')).toBe(true);
+
+    // Clear button should be visible (filterThemeId converted to filterThemeIds)
     const clearBtn = container.querySelector('.clear-filters-btn');
     expect(clearBtn).toBeTruthy();
   });

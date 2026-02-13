@@ -14,6 +14,7 @@
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+  import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
   import ErrorDialog from '../components/ErrorDialog.svelte';
@@ -35,11 +36,13 @@
   interface Props {
     onNavigateToTheme?: (themeId: string) => void;
     onNavigateToDay?: (date: string, themeId?: string) => void;
-    filterThemeId?: string;
+    filterThemeIds?: string[];
     filterDate?: string;
+    onFilterThemeToggle?: (themeId: string) => void;
+    onFilterThemeClear?: () => void;
   }
 
-  let { onNavigateToTheme, onNavigateToDay, filterThemeId, filterDate }: Props = $props();
+  let { onNavigateToTheme, onNavigateToDay, filterThemeIds = [], filterDate, onFilterThemeToggle, onFilterThemeClear }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -92,8 +95,8 @@
   // Filter tasks based on props
   const filteredTasks = $derived.by(() => {
     let result = [...tasks];
-    if (filterThemeId) {
-      result = result.filter(t => t.themeId === filterThemeId);
+    if (filterThemeIds.length > 0) {
+      result = result.filter(t => filterThemeIds.includes(t.themeId));
     }
     if (filterDate) {
       result = result.filter(t => t.dayDate === filterDate);
@@ -467,6 +470,14 @@
       <p>Loading tasks...</p>
     </div>
   {:else}
+    {#if themes.length > 0 && onFilterThemeToggle && onFilterThemeClear}
+      <ThemeFilterBar
+        {themes}
+        activeThemeIds={filterThemeIds}
+        onToggle={onFilterThemeToggle}
+        onClear={onFilterThemeClear}
+      />
+    {/if}
     <div class="kanban-board" style="grid-template-columns: repeat({columns.length}, 1fr);">
       {#each columns as column (column.name)}
         <div
