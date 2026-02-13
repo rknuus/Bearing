@@ -186,7 +186,7 @@
           class="btn-add"
           onclick={handleAddTask}
           disabled={isSubmitting || !newTaskTitle.trim()}
-        >Add Task</button>
+        >Stage Task to Q4</button>
       </fieldset>
 
       <!-- Eisenhower grid -->
@@ -236,7 +236,7 @@
           onclick={handleDone}
           disabled={isSubmitting || creatableTaskCount === 0}
         >
-          {isSubmitting ? 'Creating...' : 'Done'}
+          {isSubmitting ? 'Committing...' : 'Commit to Todo'}
         </button>
       </div>
     </div>
