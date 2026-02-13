@@ -11,6 +11,7 @@
   import type { LifeTheme } from '../lib/wails-mock';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
+  import { formatDate } from '../lib/utils/date-format';
 
   /** Pending task not yet saved to the backend. */
   export interface PendingTask {
@@ -37,6 +38,7 @@
 
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
   const today = new Date().toISOString().split('T')[0];
+  const todayDisplay = formatDate(today);
 
   function handleDndConsider(event: CustomEvent<DndEvent<PendingTask>>) {
     onTasksChange(event.detail.items);
@@ -81,7 +83,7 @@
         </div>
         <span class="task-title">{task.title}</span>
         <div class="task-footer">
-          <span class="task-date">{today}</span>
+          <span class="task-date">{todayDisplay}</span>
         </div>
       </div>
     {/each}
