@@ -9,9 +9,9 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { mockAppBindings } from '../lib/wails-mock';
   import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+  import { getBindings } from '../lib/utils/bindings';
 
   // Props for cross-view navigation
   interface Props {
@@ -101,11 +101,6 @@
   let editKeyResultDescription = $state('');
   let editKeyResultStartValue = $state(0);
   let editKeyResultTargetValue = $state(0);
-
-  // Get Wails bindings (with mock fallback for browser testing)
-  function getBindings() {
-    return window.go?.main?.App ?? mockAppBindings;
-  }
 
   // Toggle expansion for any ID (theme or objective)
   function toggleExpanded(id: string) {

@@ -8,8 +8,9 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { mockAppBindings, type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
   import { Dialog, Button } from '../lib/components';
+  import { getBindings } from '../lib/utils/bindings';
 
   // Props
   interface Props {
@@ -39,11 +40,6 @@
   ];
 
   const weekdayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  // Get the Wails bindings (with mock fallback for browser testing)
-  function getBindings() {
-    return window.go?.main?.App ?? mockAppBindings;
-  }
 
   // Load data on mount and reload when year changes
   $effect(() => {

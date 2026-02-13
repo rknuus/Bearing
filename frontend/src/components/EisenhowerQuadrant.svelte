@@ -9,6 +9,8 @@
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import type { LifeTheme } from '../lib/wails-mock';
+  import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
+  import { priorityLabels } from '../lib/constants/priorities';
 
   /** Pending task not yet saved to the backend. */
   export interface PendingTask {
@@ -33,22 +35,8 @@
 
   let { quadrantId, title, color, tasks, themes, onTasksChange, isStaging = false }: Props = $props();
 
-  const priorityLabels: Record<string, string> = {
-    'important-urgent': 'Q1',
-    'not-important-urgent': 'Q2',
-    'important-not-urgent': 'Q3',
-  };
-
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
   const today = new Date().toISOString().split('T')[0];
-
-  function getTheme(themeId?: string): LifeTheme | undefined {
-    return themeId ? themes.find((t) => t.id === themeId) : undefined;
-  }
-
-  function getThemeColor(themeId?: string): string {
-    return getTheme(themeId)?.color ?? '#6b7280';
-  }
 
   function handleDndConsider(event: CustomEvent<DndEvent<PendingTask>>) {
     onTasksChange(event.detail.items);
@@ -80,15 +68,15 @@
       <div
         class="pending-task"
         data-testid="pending-task-{task.id}"
-        style="--theme-color: {getThemeColor(task.themeId)};"
+        style="--theme-color: {getThemeColor(themes, task.themeId)};"
       >
         <div class="task-header">
-          <ThemeBadge color={getThemeColor(task.themeId)} size="sm" />
+          <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
           {#if priorityLabel}
             <span class="priority-badge" style="background-color: {color};">{priorityLabel}</span>
           {/if}
-          {#if getTheme(task.themeId)}
-            <span class="theme-name">{getTheme(task.themeId)?.name}</span>
+          {#if getTheme(themes, task.themeId)}
+            <span class="theme-name">{getTheme(themes, task.themeId)?.name}</span>
           {/if}
         </div>
         <span class="task-title">{task.title}</span>
