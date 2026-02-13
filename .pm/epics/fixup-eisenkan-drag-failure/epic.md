@@ -1,8 +1,9 @@
 ---
 name: fixup-eisenkan-drag-failure
-status: backlog
+status: completed
 created: 2026-02-13T10:13:33Z
-progress: 0%
+completed: 2026-02-13T10:37:13Z
+progress: 100%
 prd: .pm/prds/fixup-eisenkan-drag-failure.md
 github: [Will be updated when synced to GitHub]
 ---
