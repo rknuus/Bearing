@@ -86,9 +86,26 @@ func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, Welcome to Bearing!", name)
 }
 
-// GetLocale detects the macOS system locale and returns a BCP 47 locale tag.
+// GetLocale detects the system locale and returns a BCP 47 locale tag.
+// Environment variables (LC_ALL, LANG) take precedence over macOS system
+// settings, since setting them signals deliberate override intent.
 func (a *App) GetLocale() string {
-	// Try macOS defaults command
+	// Check POSIX locale environment variables (LC_ALL overrides LANG)
+	for _, key := range []string{"LC_ALL", "LANG"} {
+		env := os.Getenv(key)
+		if env == "" || env == "C" || env == "POSIX" {
+			continue
+		}
+		// Strip encoding suffix (e.g. ".UTF-8")
+		if idx := strings.Index(env, "."); idx != -1 {
+			env = env[:idx]
+		}
+		if env != "" {
+			return strings.ReplaceAll(env, "_", "-")
+		}
+	}
+
+	// Fall back to macOS system locale
 	out, err := exec.Command("defaults", "read", "NSGlobalDomain", "AppleLocale").Output()
 	if err == nil {
 		locale := strings.TrimSpace(string(out))
@@ -98,18 +115,6 @@ func (a *App) GetLocale() string {
 		}
 		if locale != "" {
 			return strings.ReplaceAll(locale, "_", "-")
-		}
-	}
-
-	// Fall back to LANG environment variable
-	lang := os.Getenv("LANG")
-	if lang != "" {
-		// Strip encoding suffix (e.g. ".UTF-8")
-		if idx := strings.Index(lang, "."); idx != -1 {
-			lang = lang[:idx]
-		}
-		if lang != "" {
-			return strings.ReplaceAll(lang, "_", "-")
 		}
 	}
 
