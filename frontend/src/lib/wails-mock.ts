@@ -103,6 +103,7 @@ export interface NavigationContext {
   currentView: string;
   currentItem: string;
   filterThemeId: string;
+  filterThemeIds?: string[];
   filterDate: string;
   lastAccessed: string;
   showCompleted?: boolean;

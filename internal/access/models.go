@@ -256,7 +256,8 @@ type YearFocusFile struct {
 type NavigationContext struct {
 	CurrentView    string   `json:"currentView"`
 	CurrentItem    string   `json:"currentItem"`
-	FilterThemeID  string   `json:"filterThemeId"`
+	FilterThemeID  string   `json:"filterThemeId"`              // deprecated: kept for backward compat
+	FilterThemeIDs []string `json:"filterThemeIds,omitempty"`   // multi-theme filter
 	FilterDate     string   `json:"filterDate"`
 	LastAccessed   string   `json:"lastAccessed"`
 	ShowCompleted  bool     `json:"showCompleted,omitempty"`
