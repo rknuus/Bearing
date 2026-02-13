@@ -12,6 +12,7 @@
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
@@ -472,16 +473,13 @@
 <div class="eisenkan-container">
   <header class="eisenkan-header">
     <h1>EisenKan Board</h1>
-    <button type="button" class="create-btn" onclick={openCreateDialog}>
+    <Button variant="primary" onclick={openCreateDialog}>
       + New Task
-    </button>
+    </Button>
   </header>
 
   {#if error}
-    <div class="error-banner" role="alert">
-      <span>{error}</span>
-      <button type="button" onclick={() => error = null}>Dismiss</button>
-    </div>
+    <ErrorBanner message={error} ondismiss={() => error = null} />
   {/if}
 
   {#if loading}
@@ -735,7 +733,7 @@
     flex-direction: column;
     height: 100%;
     padding: 1rem;
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
   }
 
   .eisenkan-header {
@@ -747,44 +745,8 @@
 
   .eisenkan-header h1 {
     font-size: 1.5rem;
-    color: #1f2937;
+    color: var(--color-gray-800);
     margin: 0;
-  }
-
-  .create-btn {
-    padding: 0.5rem 1rem;
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .create-btn:hover {
-    background-color: #1d4ed8;
-  }
-
-  .error-banner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background-color: #fee2e2;
-    border: 1px solid #fecaca;
-    border-radius: 6px;
-    color: #991b1b;
-    margin-bottom: 1rem;
-  }
-
-  .error-banner button {
-    background: none;
-    border: none;
-    color: #991b1b;
-    cursor: pointer;
-    font-weight: 500;
   }
 
   .loading-state {
@@ -792,7 +754,7 @@
     justify-content: center;
     align-items: center;
     flex: 1;
-    color: #6b7280;
+    color: var(--color-gray-500);
   }
 
   .kanban-board {
@@ -805,7 +767,7 @@
   .kanban-column {
     display: flex;
     flex-direction: column;
-    background-color: #e5e7eb;
+    background-color: var(--color-gray-200);
     border-radius: 8px;
     padding: 0.75rem;
     min-height: 200px;
@@ -823,14 +785,14 @@
   .column-header h2 {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-gray-700);
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .task-count {
-    background-color: #9ca3af;
+    background-color: var(--color-gray-400);
     color: white;
     font-size: 0.75rem;
     font-weight: 500;
@@ -849,7 +811,7 @@
   .column-section {
     background-color: color-mix(in srgb, var(--section-color) 8%, white);
     border-radius: 6px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--color-gray-300);
     padding: 0.5rem;
   }
 
@@ -895,7 +857,7 @@
     padding: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     cursor: grab;
-    border-left: 4px solid var(--theme-color, #6b7280);
+    border-left: 4px solid var(--theme-color, var(--color-gray-500));
     transition: box-shadow 0.2s, transform 0.1s;
   }
 
@@ -940,8 +902,8 @@
 
   .toggle-btn {
     background: none;
-    border: 1px solid #d1d5db;
-    color: #6b7280;
+    border: 1px solid var(--color-gray-300);
+    color: var(--color-gray-500);
     font-size: 0.75rem;
     font-weight: 700;
     cursor: pointer;
@@ -952,19 +914,19 @@
   }
 
   .toggle-btn:hover {
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
   }
 
   .subtask-count {
     font-size: 0.6875rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     font-weight: 500;
   }
 
   .task-title {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #1f2937;
+    color: var(--color-gray-800);
     margin: 0 0 0.5rem 0;
     line-height: 1.3;
   }
@@ -977,7 +939,7 @@
 
   .theme-name-btn {
     font-size: 0.75rem;
-    color: #3b82f6;
+    color: var(--color-primary-500);
     background: none;
     border: none;
     padding: 0;
@@ -986,12 +948,12 @@
   }
 
   .theme-name-btn:hover {
-    color: #2563eb;
+    color: var(--color-primary-600);
   }
 
   .task-date {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--color-gray-400);
     cursor: pointer;
     padding: 0.125rem 0.25rem;
     border-radius: 2px;
@@ -1000,14 +962,14 @@
   }
 
   .task-date:hover {
-    background-color: #f3f4f6;
-    color: #6b7280;
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-500);
   }
 
   .delete-btn {
     background: none;
     border: none;
-    color: #9ca3af;
+    color: var(--color-gray-400);
     font-size: 0.875rem;
     cursor: pointer;
     padding: 0.25rem;
@@ -1017,8 +979,8 @@
   }
 
   .delete-btn:hover {
-    color: #dc2626;
-    background-color: #fee2e2;
+    color: var(--color-error-600);
+    background-color: var(--color-error-100);
   }
 
   .empty-column {
@@ -1030,7 +992,7 @@
   }
 
   .empty-column p {
-    color: #9ca3af;
+    color: var(--color-gray-400);
     font-size: 0.875rem;
   }
 
@@ -1047,7 +1009,7 @@
   .context-menu {
     position: fixed;
     background: white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-gray-200);
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 180px;
@@ -1063,13 +1025,13 @@
     border: none;
     text-align: left;
     font-size: 0.875rem;
-    color: #374151;
+    color: var(--color-gray-700);
     cursor: pointer;
     transition: background-color 0.15s;
   }
 
   .context-menu-item:hover {
-    background-color: #f3f4f6;
+    background-color: var(--color-gray-100);
   }
 
   .context-menu-item:first-child {

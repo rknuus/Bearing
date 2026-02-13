@@ -108,7 +108,7 @@
     display: flex;
     flex-direction: column;
     background-color: color-mix(in srgb, var(--quadrant-color) 8%, white);
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-gray-200);
     border-radius: 6px;
     min-height: 120px;
   }
@@ -158,7 +158,7 @@
     border-radius: 6px;
     cursor: grab;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border-left: 4px solid var(--theme-color, #6b7280);
+    border-left: 4px solid var(--theme-color, var(--color-gray-500));
     transition: box-shadow 0.2s;
   }
 
@@ -185,7 +185,7 @@
 
   .theme-name {
     font-size: 0.6875rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -194,7 +194,7 @@
   .task-title {
     font-size: 0.8125rem;
     font-weight: 500;
-    color: #1f2937;
+    color: var(--color-gray-800);
     line-height: 1.3;
   }
 
@@ -204,7 +204,7 @@
 
   .task-date {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--color-gray-400);
   }
 
   .empty-hint {
@@ -213,7 +213,7 @@
     justify-content: center;
     flex: 1;
     font-size: 0.75rem;
-    color: #9ca3af;
+    color: var(--color-gray-400);
     font-style: italic;
   }
 </style>

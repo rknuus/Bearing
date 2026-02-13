@@ -80,7 +80,7 @@
   }
 
   .separator {
-    color: #9ca3af;
+    color: var(--color-gray-400);
     user-select: none;
   }
 
@@ -90,7 +90,7 @@
     padding: 0.25rem 0.5rem;
     margin: -0.25rem -0.5rem;
     border-radius: 4px;
-    color: #3b82f6;
+    color: var(--color-primary-500);
     cursor: pointer;
     font-size: inherit;
     font-family: inherit;
@@ -98,17 +98,17 @@
   }
 
   .breadcrumb-link:hover {
-    background-color: #eff6ff;
-    color: #2563eb;
+    background-color: var(--color-primary-50);
+    color: var(--color-primary-600);
   }
 
   .breadcrumb-link:focus-visible {
-    outline: 2px solid #3b82f6;
+    outline: 2px solid var(--color-primary-500);
     outline-offset: 2px;
   }
 
   .breadcrumb-current {
-    color: #6b7280;
+    color: var(--color-gray-500);
     font-weight: 500;
   }
 </style>

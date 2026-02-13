@@ -200,7 +200,7 @@ describe('EisenKanView', () => {
   it('opens create dialog when clicking New Task button', async () => {
     await renderView();
 
-    const createBtn = container.querySelector<HTMLButtonElement>('.create-btn');
+    const createBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
     expect(createBtn?.textContent?.trim()).toBe('+ New Task');
     createBtn!.click();
     await tick();
@@ -306,7 +306,7 @@ describe('EisenKanView', () => {
     firstCard.click();
     await tick();
 
-    const dialog = container.querySelector('#edit-dialog-title');
+    const dialog = container.querySelector('#dialog-title-edit-task');
     expect(dialog).toBeTruthy();
     expect(dialog?.textContent).toBe('Edit Task');
   });

@@ -125,7 +125,7 @@ describe('CalendarView', () => {
     const dialog = container.querySelector('.dialog');
     expect(dialog).toBeTruthy();
 
-    const dialogTitle = container.querySelector('.dialog-title');
+    const dialogTitle = container.querySelector('[role="dialog"] h2');
     expect(dialogTitle?.textContent).toBeTruthy();
 
     // Should have theme select and text input

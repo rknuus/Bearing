@@ -176,7 +176,7 @@ describe('EditTaskDialog', () => {
     await tick();
 
     await vi.waitFor(() => {
-      const errorArea = container.querySelector('.error-area');
+      const errorArea = container.querySelector('.error-banner');
       expect(errorArea).toBeTruthy();
       expect(errorArea?.textContent).toContain('Rule violation: too many Q1 tasks');
     });

@@ -143,7 +143,7 @@ describe('OKRView', () => {
     await expandThemeAndObjective();
 
     // Click "+KR" button on the objective to open creation form
-    const addKRButton = container.querySelector<HTMLButtonElement>('.objective-item .icon-button.add[title="Add Key Result"]');
+    const addKRButton = container.querySelector<HTMLButtonElement>('.objective-item .btn-icon.icon-add[title="Add Key Result"]');
     expect(addKRButton).toBeTruthy();
     addKRButton!.click();
     await tick();
@@ -168,7 +168,7 @@ describe('OKRView', () => {
     // Click edit button on the numeric KR (second KR item)
     const krItems = container.querySelectorAll('.kr-item');
     const numericKR = krItems[1];
-    const editButton = numericKR.querySelector<HTMLButtonElement>('.icon-button.edit');
+    const editButton = numericKR.querySelector<HTMLButtonElement>('.btn-icon.icon-edit');
     expect(editButton).toBeTruthy();
     editButton!.click();
     await tick();

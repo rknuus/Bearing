@@ -11,6 +11,7 @@
   import { untrack } from 'svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
+  import { Dialog, Button, ErrorBanner } from '../lib/components';
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
   type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent' | 'staging';
@@ -154,148 +155,87 @@
 </script>
 
 {#if open}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div class="dialog-overlay" onclick={handleCancel} role="presentation">
-    <!-- svelte-ignore a11y_interactive_supports_focus -->
-    <div class="dialog" onclick={(e) => e.stopPropagation()} role="dialog" aria-labelledby="create-dialog-title">
-      <h2 id="create-dialog-title">Create Tasks</h2>
+  <Dialog title="Create Tasks" maxWidth="700px" onclose={handleCancel}>
+    {#if error}
+      <ErrorBanner message={error} ondismiss={() => error = null} />
+    {/if}
 
-      {#if error}
-        <div class="error-banner" role="alert">
-          <span>{error}</span>
-          <button type="button" onclick={() => error = null}>Dismiss</button>
-        </div>
-      {/if}
+    <!-- Task entry form -->
+    <fieldset class="task-entry" disabled={isSubmitting}>
+      <legend>New Task</legend>
+      <TaskFormFields
+        bind:title={newTaskTitle}
+        bind:themeId={selectedThemeId}
+        bind:description={newTaskDescription}
+        bind:tags={newTaskTags}
+        bind:dueDate={newTaskDueDate}
+        bind:promotionDate={newTaskPromotionDate}
+        {themes}
+        disabled={isSubmitting}
+        idPrefix="new-task"
+      />
+      <button
+        type="button"
+        class="btn-add"
+        onclick={handleAddTask}
+        disabled={isSubmitting || !newTaskTitle.trim()}
+      >Stage Task to Q4</button>
+    </fieldset>
 
-      <!-- Task entry form -->
-      <fieldset class="task-entry" disabled={isSubmitting}>
-        <legend>New Task</legend>
-        <TaskFormFields
-          bind:title={newTaskTitle}
-          bind:themeId={selectedThemeId}
-          bind:description={newTaskDescription}
-          bind:tags={newTaskTags}
-          bind:dueDate={newTaskDueDate}
-          bind:promotionDate={newTaskPromotionDate}
-          {themes}
-          disabled={isSubmitting}
-          idPrefix="new-task"
-        />
-        <button
-          type="button"
-          class="btn-add"
-          onclick={handleAddTask}
-          disabled={isSubmitting || !newTaskTitle.trim()}
-        >Stage Task to Q4</button>
-      </fieldset>
-
-      <!-- Eisenhower grid -->
-      <div class="eisenhower-grid" data-testid="eisenhower-grid">
-        <div class="grid-row">
-          {#each quadrants.slice(0, 2) as q (q.id)}
-            <EisenhowerQuadrant
-              quadrantId={q.id}
-              title={q.title}
-              color={q.color}
-              tasks={tasksByQuadrant[q.id]}
-              {themes}
-              onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
-              isStaging={q.isStaging}
-            />
-          {/each}
-        </div>
-        <div class="grid-row">
-          {#each quadrants.slice(2, 4) as q (q.id)}
-            <EisenhowerQuadrant
-              quadrantId={q.id}
-              title={q.title}
-              color={q.color}
-              tasks={tasksByQuadrant[q.id]}
-              {themes}
-              onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
-              isStaging={q.isStaging}
-            />
-          {/each}
-        </div>
+    <!-- Eisenhower grid -->
+    <div class="eisenhower-grid" data-testid="eisenhower-grid">
+      <div class="grid-row">
+        {#each quadrants.slice(0, 2) as q (q.id)}
+          <EisenhowerQuadrant
+            quadrantId={q.id}
+            title={q.title}
+            color={q.color}
+            tasks={tasksByQuadrant[q.id]}
+            {themes}
+            onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+            isStaging={q.isStaging}
+          />
+        {/each}
       </div>
-
-      {#if tasksByQuadrant.staging.length > 0}
-        <p class="staging-hint">
-          Tasks in staging (Q4) will be discarded. Drag them to a priority quadrant to save them.
-        </p>
-      {/if}
-
-      <!-- Actions -->
-      <div class="dialog-actions">
-        <button type="button" class="btn-secondary" onclick={handleCancel} disabled={isSubmitting}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          class="btn-primary"
-          onclick={handleDone}
-          disabled={isSubmitting || creatableTaskCount === 0}
-        >
-          {isSubmitting ? 'Committing...' : 'Commit to Todo'}
-        </button>
+      <div class="grid-row">
+        {#each quadrants.slice(2, 4) as q (q.id)}
+          <EisenhowerQuadrant
+            quadrantId={q.id}
+            title={q.title}
+            color={q.color}
+            tasks={tasksByQuadrant[q.id]}
+            {themes}
+            onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+            isStaging={q.isStaging}
+          />
+        {/each}
       </div>
     </div>
-  </div>
+
+    {#if tasksByQuadrant.staging.length > 0}
+      <p class="staging-hint">
+        Tasks in staging (Q4) will be discarded. Drag them to a priority quadrant to save them.
+      </p>
+    {/if}
+
+    {#snippet actions()}
+      <Button variant="secondary" onclick={handleCancel} disabled={isSubmitting}>
+        Cancel
+      </Button>
+      <Button
+        variant="primary"
+        onclick={handleDone}
+        disabled={isSubmitting || creatableTaskCount === 0}
+      >
+        {isSubmitting ? 'Committing...' : 'Commit to Todo'}
+      </Button>
+    {/snippet}
+  </Dialog>
 {/if}
 
 <style>
-  .dialog-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-  }
-
-  .dialog {
-    background-color: white;
-    border-radius: 8px;
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 700px;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  }
-
-  .dialog h2 {
-    font-size: 1.25rem;
-    color: #1f2937;
-    margin: 0 0 1rem 0;
-  }
-
-  .error-banner {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.75rem 1rem;
-    background-color: #fee2e2;
-    border: 1px solid #fecaca;
-    border-radius: 6px;
-    color: #991b1b;
-    margin-bottom: 1rem;
-  }
-
-  .error-banner button {
-    background: none;
-    border: none;
-    color: #991b1b;
-    cursor: pointer;
-    font-weight: 500;
-  }
-
   .task-entry {
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-gray-200);
     border-radius: 6px;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -304,13 +244,13 @@
   .task-entry legend {
     font-size: 0.875rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--color-gray-700);
     padding: 0 0.25rem;
   }
 
   .btn-add {
     padding: 0.5rem 1rem;
-    background-color: #059669;
+    background-color: var(--color-success-600);
     color: white;
     border: none;
     border-radius: 6px;
@@ -347,57 +287,9 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.75rem;
     color: #92400e;
-    background-color: #fef3c7;
-    border: 1px solid #fcd34d;
+    background-color: var(--color-warning-100);
+    border: 1px solid var(--color-warning-400);
     border-radius: 4px;
   }
 
-  .dialog-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.75rem;
-    margin-top: 1rem;
-  }
-
-  .btn-secondary {
-    padding: 0.5rem 1rem;
-    background-color: white;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-secondary:hover:not(:disabled) {
-    background-color: #f9fafb;
-  }
-
-  .btn-primary {
-    padding: 0.5rem 1rem;
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .btn-primary:hover:not(:disabled) {
-    background-color: #1d4ed8;
-  }
-
-  .btn-primary:disabled {
-    background-color: #93c5fd;
-    cursor: not-allowed;
-  }
-
-  .btn-secondary:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 </style>

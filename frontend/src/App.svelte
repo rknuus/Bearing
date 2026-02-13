@@ -359,7 +359,7 @@
     align-items: center;
     padding: 0 1rem;
     height: 48px;
-    background-color: #2563eb;
+    background-color: var(--color-primary-600);
     color: white;
   }
 
@@ -415,12 +415,12 @@
   .placeholder-view h1 {
     font-size: 2rem;
     margin-bottom: 1rem;
-    color: #1f2937;
+    color: var(--color-gray-800);
   }
 
   .placeholder-view p {
     font-size: 1.1rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     max-width: 500px;
   }
 
@@ -435,24 +435,24 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.5rem 1rem;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #e5e7eb;
+    background-color: var(--color-gray-50);
+    border-bottom: 1px solid var(--color-gray-200);
     min-height: 36px;
   }
 
   .clear-filters-btn {
     padding: 0.25rem 0.75rem;
-    background-color: #e5e7eb;
+    background-color: var(--color-gray-200);
     border: none;
     border-radius: 4px;
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     cursor: pointer;
     transition: background-color 0.2s;
   }
 
   .clear-filters-btn:hover {
-    background-color: #d1d5db;
+    background-color: var(--color-gray-300);
   }
 
   /* Quick navigation on home page */
@@ -468,7 +468,7 @@
     align-items: center;
     padding: 1.5rem 2rem;
     background: white;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--color-gray-200);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
@@ -476,7 +476,7 @@
   }
 
   .quick-nav-btn:hover {
-    border-color: #2563eb;
+    border-color: var(--color-primary-600);
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
     transform: translateY(-2px);
   }
@@ -484,20 +484,20 @@
   .quick-nav-icon {
     font-size: 1.5rem;
     font-weight: 700;
-    color: #2563eb;
+    color: var(--color-primary-600);
     margin-bottom: 0.5rem;
   }
 
   .quick-nav-label {
     font-size: 0.9rem;
     font-weight: 500;
-    color: #374151;
+    color: var(--color-gray-700);
     margin-bottom: 0.25rem;
   }
 
   .quick-nav-shortcut {
     font-size: 0.7rem;
-    color: #9ca3af;
+    color: var(--color-gray-400);
     font-family: monospace;
   }
 </style>
