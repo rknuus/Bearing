@@ -38,9 +38,9 @@ setup: frontend-install test-frontend-e2e-install ## Setup project (install all 
 generate: frontend-install ## Generate Wails bindings (required after cloning or in new worktrees)
 	@if [ ! -d "frontend/src/lib/wails/wailsjs" ]; then \
 		echo "Building frontend first..."; \
-		cd frontend && npm run build; \
+		$(MAKE) --no-print-directory -C frontend build-dist; \
 		echo "Generating Wails bindings..."; \
-		cd .. && ~/go/bin/wails generate module; \
+		~/go/bin/wails generate module; \
 		echo "Bindings generated at frontend/src/lib/wails/"; \
 	else \
 		echo "Wails bindings already exist, skipping generation."; \
@@ -55,9 +55,7 @@ dev: generate frontend-lint ## Run Wails app in development mode with hot reload
 
 .PHONY: frontend-dev
 frontend-dev: ## Run Vite dev server only (for browser testing with mock bindings)
-	@echo "Starting Vite dev server for browser testing..."
-	@echo "Server: http://localhost:5173 (with mock Wails bindings)"
-	@cd frontend && npm run dev
+	@$(MAKE) --no-print-directory -C frontend dev
 
 .PHONY: stop-dev
 stop-dev: ## Stop any running dev servers
@@ -70,8 +68,7 @@ stop-dev: ## Stop any running dev servers
 .PHONY: build
 build: generate frontend-lint ## Build Wails desktop application
 	@echo "Building $(APP_NAME)..."
-	@echo "Running TypeScript type checking..."
-	@cd frontend && npm run check
+	@$(MAKE) --no-print-directory -C frontend check
 	@echo "Building Wails application..."
 	~/go/bin/wails build
 	@echo "Build complete: $(OUTPUT)"
@@ -142,53 +139,37 @@ endif
 
 .PHONY: test-frontend
 test-frontend: ## Run frontend TypeScript checks and Vitest unit tests
-	@echo "Running TypeScript type checking..."
-	@cd frontend && npm run check
-	@echo "Running Vitest unit tests..."
-	@cd frontend && npm test -- --run
+	@$(MAKE) --no-print-directory -C frontend test
 
 .PHONY: test-frontend-e2e-install
 test-frontend-e2e-install: ## Install Playwright test dependencies
-	@echo "Installing Playwright test dependencies..."
-	@cd tests/ui-component && npm install
-	@echo "Installing Playwright browsers..."
-	@cd tests/ui-component && npx playwright install chromium
+	@$(MAKE) --no-print-directory -C frontend e2e-install
 
 .PHONY: test-frontend-e2e
 test-frontend-e2e: ## Run Playwright E2E tests (requires frontend-dev running)
-	@echo "Running Playwright E2E tests against Vite dev server..."
-	@echo "Note: Ensure 'make frontend-dev' is running in another terminal first"
-	@echo "      Vite server: http://localhost:5173 (with mock Wails bindings)"
-	@cd tests/ui-component && npm test
+	@$(MAKE) --no-print-directory -C frontend e2e
 
 .PHONY: test-frontend-e2e-headless
 test-frontend-e2e-headless: ## Run Playwright E2E tests in headless mode
-	@echo "Running Playwright UI component tests in headless mode..."
-	@cd tests/ui-component && HEADLESS=true npm test
+	@$(MAKE) --no-print-directory -C frontend e2e-headless
 
 ##@ Frontend
 
 .PHONY: frontend-install
 frontend-install: ## Install frontend dependencies
-	@echo "Installing frontend dependencies..."
-	@cd frontend && npm install
+	@$(MAKE) --no-print-directory -C frontend install
 
 .PHONY: frontend-build
-frontend-build: frontend-lint ## Build frontend for production
-	@echo "Running TypeScript type checking..."
-	@cd frontend && npm run check
-	@echo "Building frontend..."
-	@cd frontend && npm run build
+frontend-build: ## Build frontend for production
+	@$(MAKE) --no-print-directory -C frontend build
 
 .PHONY: frontend-check
 frontend-check: ## Run TypeScript type checking
-	@echo "Running TypeScript type checking..."
-	@cd frontend && npm run check
+	@$(MAKE) --no-print-directory -C frontend check
 
 .PHONY: frontend-lint
 frontend-lint: ## Run frontend linter (ESLint + Svelte)
-	@echo "Running frontend linter..."
-	@cd frontend && npm run lint
+	@$(MAKE) --no-print-directory -C frontend lint
 
 ##@ Utilities
 
