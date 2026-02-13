@@ -12,6 +12,8 @@
   interface Props {
     /** Dialog title displayed in the header */
     title: string;
+    /** Explicit ID for the dialog title element (used for aria-labelledby) */
+    id?: string;
     /** Maximum width of the dialog container */
     maxWidth?: string;
     /** Called when the dialog should close (overlay click or Escape) */
@@ -22,9 +24,9 @@
     actions?: Snippet;
   }
 
-  let { title, maxWidth = '400px', onclose, children, actions }: Props = $props();
+  let { title, id, maxWidth = '400px', onclose, children, actions }: Props = $props();
 
-  const titleId = $derived(`dialog-title-${title.replace(/\s+/g, '-').toLowerCase()}`);
+  const titleId = $derived(id ?? `dialog-title-${title.replace(/\s+/g, '-').toLowerCase()}`);
 
   function handleKeydown(event: KeyboardEvent) {
     if (event.key === 'Escape') {

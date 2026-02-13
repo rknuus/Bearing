@@ -374,7 +374,7 @@
 
   <!-- Day Editor Dialog -->
   {#if editingDay}
-    <Dialog title={displayDate(editingDay.month, editingDay.day)} onclose={cancelEdit}>
+    <Dialog title={displayDate(editingDay.month, editingDay.day)} id="dialog-title" onclose={cancelEdit}>
       <div class="form-group">
         <label for="theme-select">Theme</label>
         <select id="theme-select" bind:value={editThemeId}>

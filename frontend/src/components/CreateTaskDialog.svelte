@@ -155,7 +155,7 @@
 </script>
 
 {#if open}
-  <Dialog title="Create Tasks" maxWidth="700px" onclose={handleCancel}>
+  <Dialog title="Create Tasks" id="create-dialog-title" maxWidth="700px" onclose={handleCancel}>
     {#if error}
       <ErrorBanner message={error} ondismiss={() => error = null} />
     {/if}

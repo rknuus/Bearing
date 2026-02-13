@@ -137,7 +137,7 @@ export async function runTests() {
       }
 
       // Verify create button
-      const createBtn = await page.$('.create-btn')
+      const createBtn = await page.$('#create-task-btn')
       if (!createBtn) {
         throw new Error('Create task button not found')
       }

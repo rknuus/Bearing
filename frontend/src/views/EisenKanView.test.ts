@@ -306,7 +306,7 @@ describe('EisenKanView', () => {
     firstCard.click();
     await tick();
 
-    const dialog = container.querySelector('#dialog-title-edit-task');
+    const dialog = container.querySelector('#edit-dialog-title');
     expect(dialog).toBeTruthy();
     expect(dialog?.textContent).toBe('Edit Task');
   });

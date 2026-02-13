@@ -473,7 +473,7 @@
 <div class="eisenkan-container">
   <header class="eisenkan-header">
     <h1>EisenKan Board</h1>
-    <Button variant="primary" onclick={openCreateDialog}>
+    <Button variant="primary" id="create-task-btn" onclick={openCreateDialog}>
       + New Task
     </Button>
   </header>

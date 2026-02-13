@@ -208,7 +208,7 @@ describe('CreateTaskDialog', () => {
   it('displays dialog title', async () => {
     await renderDialog();
 
-    const title = container.querySelector('#dialog-title-create-tasks');
+    const title = container.querySelector('#create-dialog-title');
     expect(title?.textContent).toBe('Create Tasks');
   });
 
