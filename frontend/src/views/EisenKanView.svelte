@@ -46,15 +46,15 @@
   // Priority display labels
   const priorityLabels: Record<string, string> = {
     'important-urgent': 'Q1',
-    'important-not-urgent': 'Q2',
-    'not-important-urgent': 'Q3'
+    'not-important-urgent': 'Q2',
+    'important-not-urgent': 'Q3'
   };
 
   // Priority colors for badges
   const priorityColors: Record<string, string> = {
     'important-urgent': '#dc2626',      // Red
-    'important-not-urgent': '#2563eb',  // Blue
-    'not-important-urgent': '#f59e0b'   // Amber
+    'not-important-urgent': '#f59e0b',  // Amber
+    'important-not-urgent': '#2563eb'   // Blue
   };
 
   // State
