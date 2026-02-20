@@ -783,6 +783,7 @@
   <CreateTaskDialog
     open={showCreateDialog}
     {themes}
+    {availableTags}
     onDone={handleCreateDone}
     onCancel={handleCreateCancel}
     createTask={apiCreateTask}
@@ -792,6 +793,7 @@
   <EditTaskDialog
     task={selectedTask}
     {themes}
+    {availableTags}
     onSave={handleEditSave}
     onCancel={handleEditCancel}
   />
