@@ -17,6 +17,7 @@
   let currentView = $state<ViewType>('home');
   let currentItemId = $state<string>('');
   let filterThemeIds = $state<string[]>([]);
+  let filterTagIds = $state<string[]>([]);
   let filterDate = $state<string | undefined>(undefined);
 
   // Build breadcrumb path including view context
@@ -41,6 +42,9 @@
       parts.push({ id: `FILTER:theme:${filterThemeIds[0]}`, label: `Theme: ${filterThemeIds[0]}` });
     } else if (filterThemeIds.length > 1) {
       parts.push({ id: 'FILTER:themes', label: `Themes: ${filterThemeIds.join(', ')}` });
+    }
+    if (filterTagIds.length > 0) {
+      parts.push({ id: 'FILTER:tags', label: `Tags: ${filterTagIds.join(', ')}` });
     }
     if (filterDate) {
       parts.push({ id: `FILTER:date:${filterDate}`, label: filterDate });
@@ -126,6 +130,21 @@
     saveNavigationContext();
   }
 
+  // Tag filter handlers for TagFilterBar
+  function handleFilterTagToggle(tag: string) {
+    if (filterTagIds.includes(tag)) {
+      filterTagIds = filterTagIds.filter(t => t !== tag);
+    } else {
+      filterTagIds = [...filterTagIds, tag];
+    }
+    saveNavigationContext();
+  }
+
+  function handleFilterTagClear() {
+    filterTagIds = [];
+    saveNavigationContext();
+  }
+
   function handleNavigateToDay(date?: string, themeId?: string) {
     navigateToCalendar({ date, themeId });
   }
@@ -143,6 +162,11 @@
     }
     if (filterThemeIds.length > 0) {
       filterThemeIds = [];
+      saveNavigationContext();
+      return;
+    }
+    if (filterTagIds.length > 0) {
+      filterTagIds = [];
       saveNavigationContext();
       return;
     }
@@ -200,6 +224,7 @@
           currentItem: currentItemId,
           filterThemeId: filterThemeIds.length === 1 ? filterThemeIds[0] : '',
           filterThemeIds: filterThemeIds.length > 0 ? filterThemeIds : undefined,
+          filterTagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
           filterDate: filterDate ?? '',
           lastAccessed: new Date().toISOString()
         });
@@ -228,6 +253,10 @@
           } else {
             // Smart default: use today's DayFocus theme if available
             filterThemeIds = await getSmartDefaultThemeIds(bindings);
+          }
+
+          if (ctx.filterTagIds && ctx.filterTagIds.length > 0) {
+            filterTagIds = ctx.filterTagIds;
           }
         }
       }
@@ -340,7 +369,7 @@
         itemId={currentItemId || ''}
         onNavigate={handleBreadcrumbNavigate}
       />
-      {#if filterThemeIds.length > 0 || filterDate || currentItemId}
+      {#if filterThemeIds.length > 0 || filterTagIds.length > 0 || filterDate || currentItemId}
         <button class="clear-filters-btn" onclick={navigateUp} title="Clear filters (Backspace)">
           Clear
         </button>
@@ -394,6 +423,9 @@
         {filterDate}
         onFilterThemeToggle={handleFilterThemeToggle}
         onFilterThemeClear={handleFilterThemeClear}
+        {filterTagIds}
+        onFilterTagToggle={handleFilterTagToggle}
+        onFilterTagClear={handleFilterTagClear}
       />
     {:else if currentView === 'components'}
       <div class="scrollable-view">

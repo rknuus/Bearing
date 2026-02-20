@@ -30,6 +30,7 @@ type NavigationContext struct {
 	ShowCompleted  bool     `json:"showCompleted,omitempty"`
 	ShowArchived   bool     `json:"showArchived,omitempty"`
 	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -1156,6 +1157,7 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		ShowCompleted:  ctx.ShowCompleted,
 		ShowArchived:   ctx.ShowArchived,
 		ExpandedOkrIds: ctx.ExpandedOkrIds,
+		FilterTagIDs:   ctx.FilterTagIDs,
 	}, nil
 }
 
@@ -1170,6 +1172,7 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		ShowCompleted:  ctx.ShowCompleted,
 		ShowArchived:   ctx.ShowArchived,
 		ExpandedOkrIds: ctx.ExpandedOkrIds,
+		FilterTagIDs:   ctx.FilterTagIDs,
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {

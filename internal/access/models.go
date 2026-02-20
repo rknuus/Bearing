@@ -263,4 +263,5 @@ type NavigationContext struct {
 	ShowCompleted  bool     `json:"showCompleted,omitempty"`
 	ShowArchived   bool     `json:"showArchived,omitempty"`
 	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
 }
