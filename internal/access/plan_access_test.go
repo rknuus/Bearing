@@ -1386,6 +1386,79 @@ func TestExtractThemeAbbr(t *testing.T) {
 	}
 }
 
+// Task Order Tests
+
+func TestLoadTaskOrder_Missing(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	order, err := pa.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	if len(order) != 0 {
+		t.Errorf("Expected empty map, got %d entries", len(order))
+	}
+}
+
+func TestSaveAndLoadTaskOrder(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	order := map[string][]string{
+		"doing":            {"H-T1", "H-T2"},
+		"important-urgent": {"H-T3", "H-T4", "H-T5"},
+	}
+
+	if err := pa.SaveTaskOrder(order); err != nil {
+		t.Fatalf("SaveTaskOrder failed: %v", err)
+	}
+
+	loaded, err := pa.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+
+	if len(loaded) != 2 {
+		t.Fatalf("Expected 2 zones, got %d", len(loaded))
+	}
+	if len(loaded["doing"]) != 2 {
+		t.Errorf("Expected 2 tasks in doing, got %d", len(loaded["doing"]))
+	}
+	if loaded["doing"][0] != "H-T1" || loaded["doing"][1] != "H-T2" {
+		t.Errorf("Unexpected doing order: %v", loaded["doing"])
+	}
+	if len(loaded["important-urgent"]) != 3 {
+		t.Errorf("Expected 3 tasks in important-urgent, got %d", len(loaded["important-urgent"]))
+	}
+}
+
+func TestSaveTaskOrder_Overwrite(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Save initial order
+	order1 := map[string][]string{"doing": {"H-T1"}}
+	if err := pa.SaveTaskOrder(order1); err != nil {
+		t.Fatalf("SaveTaskOrder failed: %v", err)
+	}
+
+	// Overwrite
+	order2 := map[string][]string{"doing": {"H-T2", "H-T1"}}
+	if err := pa.SaveTaskOrder(order2); err != nil {
+		t.Fatalf("SaveTaskOrder failed: %v", err)
+	}
+
+	loaded, err := pa.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+
+	if loaded["doing"][0] != "H-T2" || loaded["doing"][1] != "H-T1" {
+		t.Errorf("Expected overwritten order, got %v", loaded["doing"])
+	}
+}
+
 func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()

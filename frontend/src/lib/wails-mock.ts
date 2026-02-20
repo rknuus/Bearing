@@ -90,6 +90,12 @@ export interface RuleViolation {
 export interface MoveTaskResult {
   success: boolean;
   violations?: RuleViolation[];
+  positions?: Record<string, string[]>;
+}
+
+export interface ReorderResult {
+  success: boolean;
+  positions: Record<string, string[]>;
 }
 
 export interface PromotedTask {
@@ -370,6 +376,17 @@ let mockNavigationContext: NavigationContext = {
   lastAccessed: ''
 };
 
+// Task ordering state (mirrors Go task_order.json)
+const taskPositions: Record<string, string[]> = {};
+
+/** Get drop zone ID for a task (mirrors Go dropZoneForTask). */
+function dropZoneForTask(task: TaskWithStatus): string {
+  if (task.status === 'todo' && task.priority) {
+    return task.priority;
+  }
+  return task.status;
+}
+
 // Default board configuration matching Go DefaultBoardConfiguration()
 const defaultBoardConfiguration: BoardConfiguration = {
   name: 'Bearing Board',
@@ -639,7 +656,23 @@ export const mockAppBindings = {
 
   // Task operations
   GetTasks: async (): Promise<TaskWithStatus[]> => {
-    return computeSubtaskIds([...mockTasks]);
+    const result = computeSubtaskIds([...mockTasks]);
+    // Sort by persisted order within each drop zone
+    result.sort((a, b) => {
+      const zoneA = dropZoneForTask(a);
+      const zoneB = dropZoneForTask(b);
+      if (zoneA !== zoneB) return zoneA < zoneB ? -1 : 1;
+      const order = taskPositions[zoneA] ?? [];
+      const idxA = order.indexOf(a.id);
+      const idxB = order.indexOf(b.id);
+      if (idxA === -1 && idxB === -1) {
+        return (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
+      }
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+    return result;
   },
 
   CreateTask: async (title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> => {
@@ -660,16 +693,24 @@ export const mockAppBindings = {
     if (dueDate) newTask.dueDate = dueDate;
     if (promotionDate) newTask.promotionDate = promotionDate;
     mockTasks.push(newTask);
+    const zone = dropZoneForTask(newTask);
+    taskPositions[zone] = [...(taskPositions[zone] ?? []), newTask.id];
     return newTask;
   },
 
   MoveTask: async (taskId: string, newStatus: string): Promise<MoveTaskResult> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (task) {
+      const oldZone = dropZoneForTask(task);
       task.status = newStatus;
       task.updatedAt = new Date().toISOString();
+      const newZone = dropZoneForTask(task);
+      if (oldZone !== newZone) {
+        taskPositions[oldZone] = (taskPositions[oldZone] ?? []).filter(id => id !== taskId);
+        taskPositions[newZone] = [...(taskPositions[newZone] ?? []), taskId];
+      }
     }
-    return { success: true };
+    return { success: true, positions: { ...taskPositions } };
   },
 
   UpdateTask: async (task: Task): Promise<void> => {
@@ -680,7 +721,19 @@ export const mockAppBindings = {
   },
 
   DeleteTask: async (taskId: string): Promise<void> => {
+    const task = mockTasks.find(t => t.id === taskId);
+    if (task) {
+      const zone = dropZoneForTask(task);
+      taskPositions[zone] = (taskPositions[zone] ?? []).filter(id => id !== taskId);
+    }
     mockTasks = mockTasks.filter(t => t.id !== taskId);
+  },
+
+  ReorderTasks: async (positions: Record<string, string[]>): Promise<ReorderResult> => {
+    for (const [zone, ids] of Object.entries(positions)) {
+      taskPositions[zone] = [...ids];
+    }
+    return { success: true, positions: { ...taskPositions } };
   },
 
   // Priority promotions

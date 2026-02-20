@@ -34,6 +34,10 @@ type IPlanAccess interface {
 	MoveTask(taskID, newStatus string) error
 	DeleteTask(taskID string) error
 
+	// Task Order
+	LoadTaskOrder() (map[string][]string, error)
+	SaveTaskOrder(order map[string][]string) error
+
 	// Board Configuration
 	GetBoardConfiguration() (*BoardConfiguration, error)
 
@@ -799,6 +803,50 @@ func (pa *PlanAccess) findTaskStatus(taskID, themeID string) (string, error) {
 		return "", err
 	}
 	return status, nil
+}
+
+// taskOrderFilePath returns the path to the task_order.json file.
+func (pa *PlanAccess) taskOrderFilePath() string {
+	return filepath.Join(pa.dataPath, "task_order.json")
+}
+
+// LoadTaskOrder reads task_order.json and returns the order map.
+// Returns an empty map if the file doesn't exist.
+func (pa *PlanAccess) LoadTaskOrder() (map[string][]string, error) {
+	filePath := pa.taskOrderFilePath()
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return make(map[string][]string), nil
+		}
+		return nil, fmt.Errorf("PlanAccess.LoadTaskOrder: failed to read file: %w", err)
+	}
+
+	var order map[string][]string
+	if err := json.Unmarshal(data, &order); err != nil {
+		return nil, fmt.Errorf("PlanAccess.LoadTaskOrder: failed to parse file: %w", err)
+	}
+
+	if order == nil {
+		return make(map[string][]string), nil
+	}
+	return order, nil
+}
+
+// SaveTaskOrder writes the order map to task_order.json and git-commits.
+func (pa *PlanAccess) SaveTaskOrder(order map[string][]string) error {
+	filePath := pa.taskOrderFilePath()
+
+	if err := writeJSON(filePath, order); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTaskOrder: %w", err)
+	}
+
+	if err := pa.commitFiles([]string{filePath}, "Update task order"); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTaskOrder: %w", err)
+	}
+
+	return nil
 }
 
 // navigationContextFilePath returns the path to the navigation context file.
