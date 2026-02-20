@@ -234,11 +234,7 @@
   }
 
   async function apiReorderTasks(positions: Record<string, string[]>): Promise<void> {
-    try {
-      await getBindings().ReorderTasks(positions);
-    } catch (e) {
-      console.error('[EisenKan] Failed to persist task order:', e);
-    }
+    await getBindings().ReorderTasks(positions);
   }
 
   // Load data on mount
@@ -355,7 +351,11 @@
     if (!movedTask) {
       // Within-column reorder: persist new order
       const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
-      apiReorderTasks({ [status]: taskIds });
+      try {
+        await apiReorderTasks({ [status]: taskIds });
+      } catch (e) {
+        error = e instanceof Error ? e.message : 'Failed to save task order';
+      }
       return;
     }
 
@@ -385,7 +385,11 @@
         }
       } else {
         // Persist drop position in target zone
-        apiReorderTasks({ [status]: targetZoneIds });
+        try {
+          await apiReorderTasks({ [status]: targetZoneIds });
+        } catch (reorderErr) {
+          error = reorderErr instanceof Error ? reorderErr.message : 'Failed to save task order';
+        }
       }
     } catch (e) {
       // Network error -- rollback
@@ -414,7 +418,11 @@
     if (!movedTask) {
       // Within-section reorder: persist new order
       const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
-      apiReorderTasks({ [sectionName]: taskIds });
+      try {
+        await apiReorderTasks({ [sectionName]: taskIds });
+      } catch (e) {
+        error = e instanceof Error ? e.message : 'Failed to save task order';
+      }
       return;
     }
 
@@ -442,7 +450,11 @@
           }
         } else {
           // Persist drop position in target section
-          apiReorderTasks({ [sectionName]: targetZoneIds });
+          try {
+            await apiReorderTasks({ [sectionName]: targetZoneIds });
+          } catch (reorderErr) {
+            error = reorderErr instanceof Error ? reorderErr.message : 'Failed to save task order';
+          }
         }
       } catch (e) {
         isRollingBack = true;
@@ -454,14 +466,21 @@
       }
     } else if (movedTask.priority !== sectionName) {
       // Within-column move: priority change -- use UpdateTask
+      const sourceSection = movedTask.priority;
+      const sourceZoneIds = (sectionItems[sourceSection] ?? [])
+        .filter(t => t.id !== taskId && !t.parentTaskId)
+        .map(t => t.id);
       const updatedTask = { ...movedTask, priority: sectionName };
       tasks = repositionTask(tasks, taskId, { priority: sectionName }, targetZoneIds);
 
       isValidating = true;
       try {
         await apiUpdateTask(updatedTask);
-        // Persist drop position in target section
-        apiReorderTasks({ [sectionName]: targetZoneIds });
+        // Persist order in both source (task removed) and target (task at drop position)
+        await apiReorderTasks({
+          [sourceSection]: sourceZoneIds,
+          [sectionName]: targetZoneIds
+        });
       } catch (e) {
         isRollingBack = true;
         tasks = snapshotTasks;
