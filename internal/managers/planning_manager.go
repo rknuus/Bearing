@@ -5,6 +5,7 @@ package managers
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -66,6 +67,7 @@ type IPlanningManager interface {
 	MoveTask(taskId, newStatus string) (*MoveTaskResult, error)
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
+	ReorderTasks(positions map[string][]string) (*ReorderResult, error)
 
 	// Priority Promotions
 	ProcessPriorityPromotions() ([]PromotedTask, error)
@@ -86,6 +88,13 @@ type IPlanningManager interface {
 type MoveTaskResult struct {
 	Success    bool                        `json:"success"`
 	Violations []rule_engine.RuleViolation `json:"violations,omitempty"`
+	Positions  map[string][]string         `json:"positions,omitempty"`
+}
+
+// ReorderResult contains the authoritative task positions after a reorder operation.
+type ReorderResult struct {
+	Success   bool                `json:"success"`
+	Positions map[string][]string `json:"positions"`
 }
 
 // PromotedTask represents a task that was promoted by ProcessPriorityPromotions.
@@ -661,7 +670,17 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 	return nil
 }
 
+// dropZoneForTask returns the drop zone ID for a task based on its status and priority.
+// Todo tasks use their priority section name; doing/done tasks use the column name.
+func dropZoneForTask(status, priority string) string {
+	if status == string(access.TaskStatusTodo) && priority != "" {
+		return priority
+	}
+	return status
+}
+
 // GetTasks returns all tasks with their status across all themes.
+// Tasks are sorted by persisted order from task_order.json within each drop zone.
 // SubtaskIDs are computed at runtime by scanning for tasks with matching ParentTaskID.
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	themes, err := m.planAccess.GetThemes()
@@ -685,6 +704,44 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 				})
 			}
 		}
+	}
+
+	// Sort tasks by persisted order
+	orderMap, err := m.planAccess.LoadTaskOrder()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.GetTasks: failed to load task order: %w", err)
+	}
+
+	if len(orderMap) > 0 {
+		// Build position index: taskID -> position within its drop zone
+		posIndex := make(map[string]int)
+		for _, ids := range orderMap {
+			for i, id := range ids {
+				posIndex[id] = i
+			}
+		}
+
+		sort.SliceStable(allTasks, func(i, j int) bool {
+			a, b := allTasks[i], allTasks[j]
+			zoneA := dropZoneForTask(a.Status, a.Priority)
+			zoneB := dropZoneForTask(b.Status, b.Priority)
+			if zoneA != zoneB {
+				return zoneA < zoneB // Total order across zones for sort correctness
+			}
+			posA, okA := posIndex[a.ID]
+			posB, okB := posIndex[b.ID]
+			if okA && okB {
+				return posA < posB
+			}
+			if okA {
+				return true // Known tasks before unknown
+			}
+			if okB {
+				return false
+			}
+			// Both unknown: sort by CreatedAt
+			return a.CreatedAt < b.CreatedAt
+		})
 	}
 
 	// Compute SubtaskIDs: for each task, find children whose ParentTaskID matches
@@ -801,13 +858,26 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 	}
 
 	// Find the newly created task (last one with matching title)
+	var createdTask *access.Task
 	for i := len(tasks) - 1; i >= 0; i-- {
 		if tasks[i].Title == title && tasks[i].Priority == priority {
-			return &tasks[i], nil
+			createdTask = &tasks[i]
+			break
 		}
 	}
+	if createdTask == nil {
+		createdTask = &task
+	}
 
-	return &task, nil
+	// Append to task order
+	zone := dropZoneForTask(string(access.TaskStatusTodo), createdTask.Priority)
+	orderMap, loadErr := m.planAccess.LoadTaskOrder()
+	if loadErr == nil {
+		orderMap[zone] = append(orderMap[zone], createdTask.ID)
+		_ = m.planAccess.SaveTaskOrder(orderMap)
+	}
+
+	return createdTask, nil
 }
 
 // MoveTask moves a task to a new status (todo, doing, done).
@@ -875,6 +945,19 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string) (*MoveTaskResult, e
 		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to move task: %w", err)
 	}
 
+	// Update task order: remove from source drop zone, append to target
+	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority)
+	targetZone := dropZoneForTask(newStatus, movingTask.Priority)
+	orderMap, err := m.planAccess.LoadTaskOrder()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to load task order: %w", err)
+	}
+	orderMap[sourceZone] = removeFromSlice(orderMap[sourceZone], taskId)
+	orderMap[targetZone] = append(orderMap[targetZone], taskId)
+	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to save task order: %w", err)
+	}
+
 	// Subtask cascade: parent auto-moves to "doing" when first child starts
 	if newStatus == string(access.TaskStatusDoing) && movingTask.ParentTaskID != nil && *movingTask.ParentTaskID != "" {
 		parentID := *movingTask.ParentTaskID
@@ -895,7 +978,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string) (*MoveTaskResult, e
 		}
 	}
 
-	return &MoveTaskResult{Success: true}, nil
+	return &MoveTaskResult{Success: true, Positions: orderMap}, nil
 }
 
 // UpdateTask updates an existing task.
@@ -980,7 +1063,54 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 		return fmt.Errorf("PlanningManager.DeleteTask: failed to delete task: %w", err)
 	}
 
+	// Remove from task order (all zones)
+	orderMap, loadErr := m.planAccess.LoadTaskOrder()
+	if loadErr == nil {
+		changed := false
+		for zone, ids := range orderMap {
+			filtered := removeFromSlice(ids, taskId)
+			if len(filtered) != len(ids) {
+				orderMap[zone] = filtered
+				changed = true
+			}
+		}
+		if changed {
+			_ = m.planAccess.SaveTaskOrder(orderMap)
+		}
+	}
+
 	return nil
+}
+
+// ReorderTasks accepts proposed positions for one or more drop zones,
+// merges them into the full order map, persists, and returns authoritative positions.
+func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
+	orderMap, err := m.planAccess.LoadTaskOrder()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.ReorderTasks: failed to load task order: %w", err)
+	}
+
+	// Merge proposed positions into the full order map
+	for zone, ids := range positions {
+		orderMap[zone] = ids
+	}
+
+	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+		return nil, fmt.Errorf("PlanningManager.ReorderTasks: failed to save task order: %w", err)
+	}
+
+	return &ReorderResult{Success: true, Positions: orderMap}, nil
+}
+
+// removeFromSlice returns a new slice with the first occurrence of val removed.
+func removeFromSlice(s []string, val string) []string {
+	result := make([]string, 0, len(s))
+	for _, v := range s {
+		if v != val {
+			result = append(result, v)
+		}
+	}
+	return result
 }
 
 // GetBoardConfiguration returns the board configuration.

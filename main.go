@@ -616,8 +616,15 @@ type RuleViolation struct {
 
 // MoveTaskResult contains the result of a MoveTask operation (for Wails binding)
 type MoveTaskResult struct {
-	Success    bool            `json:"success"`
-	Violations []RuleViolation `json:"violations,omitempty"`
+	Success    bool                `json:"success"`
+	Violations []RuleViolation     `json:"violations,omitempty"`
+	Positions  map[string][]string `json:"positions,omitempty"`
+}
+
+// ReorderResult contains the authoritative task positions after a reorder (for Wails binding)
+type ReorderResult struct {
+	Success   bool                `json:"success"`
+	Positions map[string][]string `json:"positions"`
 }
 
 // PromotedTask represents a task that was promoted (for Wails binding)
@@ -653,6 +660,7 @@ func (a *App) MoveTask(taskId, newStatus string) (*MoveTaskResult, error) {
 	return &MoveTaskResult{
 		Success:    result.Success,
 		Violations: violations,
+		Positions:  result.Positions,
 	}, nil
 }
 
@@ -686,6 +694,23 @@ func (a *App) DeleteTask(taskId string) error {
 	}
 
 	return a.planningManager.DeleteTask(taskId)
+}
+
+// ReorderTasks accepts proposed positions and returns authoritative order
+func (a *App) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
+	if a.planningManager == nil {
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	result, err := a.planningManager.ReorderTasks(positions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &ReorderResult{
+		Success:   result.Success,
+		Positions: result.Positions,
+	}, nil
 }
 
 // GetBoardConfiguration returns the board structure and column layout

@@ -142,22 +142,6 @@
       }
     }
 
-    // Auto-sort Todo column by priority
-    const todoCol = cols.find(c => c.type === 'todo');
-    if (todoCol && grouped[todoCol.name]) {
-      const priorityOrder: Record<string, number> = {};
-      if (todoCol.sections) {
-        todoCol.sections.forEach((s, i) => {
-          priorityOrder[s.name] = i;
-        });
-      }
-      grouped[todoCol.name].sort((a, b) => {
-        const orderA = priorityOrder[a.priority] ?? 999;
-        const orderB = priorityOrder[b.priority] ?? 999;
-        return orderA - orderB;
-      });
-    }
-
     // Build per-section items for sectioned columns (only top-level tasks)
     const sectionGrouped: Record<string, TaskWithStatus[]> = {};
     for (const col of cols) {
@@ -237,6 +221,14 @@
 
   async function apiProcessPromotions(): Promise<PromotedTask[]> {
     return getBindings().ProcessPriorityPromotions();
+  }
+
+  async function apiReorderTasks(positions: Record<string, string[]>): Promise<void> {
+    try {
+      await getBindings().ReorderTasks(positions);
+    } catch (e) {
+      console.error('[EisenKan] Failed to persist task order:', e);
+    }
   }
 
   // Load data on mount
@@ -326,9 +318,17 @@
 
     // Find the task that was moved into this column (its status differs from column)
     const movedTask = newItems.find(t => t.status !== status);
-    if (!movedTask) return; // Reorder within same column -- no backend call needed
+    if (!movedTask) {
+      // Within-column reorder: persist new order
+      const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      apiReorderTasks({ [status]: taskIds });
+      return;
+    }
 
     const taskId = movedTask.id;
+
+    // Capture desired order from DnD before $effect re-derives columnItems
+    const targetZoneIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
 
     // Snapshot pre-move state for rollback
     const snapshotTasks = [...tasks];
@@ -351,6 +351,9 @@
         } else {
           error = 'Move rejected by rules';
         }
+      } else {
+        // Persist drop position in target zone
+        apiReorderTasks({ [status]: targetZoneIds });
       }
     } catch (e) {
       // Network error -- rollback
@@ -376,10 +379,18 @@
 
     // Find the moved task (its status or priority differs from the target)
     const movedTask = newItems.find(t => t.status !== columnName || t.priority !== sectionName);
-    if (!movedTask) return;
+    if (!movedTask) {
+      // Within-section reorder: persist new order
+      const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      apiReorderTasks({ [sectionName]: taskIds });
+      return;
+    }
 
     const taskId = movedTask.id;
     const snapshotTasks = [...tasks];
+
+    // Capture desired order from DnD before $effect re-derives sectionItems
+    const targetZoneIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
 
     if (movedTask.status !== columnName) {
       // Cross-column move: status change -- use MoveTask
@@ -397,6 +408,9 @@
           } else {
             error = 'Move rejected by rules';
           }
+        } else {
+          // Persist drop position in target section
+          apiReorderTasks({ [sectionName]: targetZoneIds });
         }
       } catch (e) {
         isRollingBack = true;
@@ -414,6 +428,8 @@
       isValidating = true;
       try {
         await apiUpdateTask(updatedTask);
+        // Persist drop position in target section
+        apiReorderTasks({ [sectionName]: targetZoneIds });
       } catch (e) {
         isRollingBack = true;
         tasks = snapshotTasks;
