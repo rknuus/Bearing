@@ -14,6 +14,7 @@
 - In Svelte 5 `$effect` blocks, never read and write the same `$state` variable. Use `untrack()` for state the effect modifies but should not depend on.
 - No business logic in client code.
 - Avoid code duplication.
+- Do not pollute production code with test code, e.g. no testid in frontend code.
 
 ## Code Style
 
