@@ -13,9 +13,9 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeTestTasks(): TaskWithStatus[] {
   return [
-    { id: 'T1', title: 'Exercise', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-    { id: 'T2', title: 'Study', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-not-urgent', status: 'todo' },
-    { id: 'T3', title: 'Emails', themeId: 'CG', dayDate: '2025-01-16', priority: 'not-important-urgent', status: 'doing' },
+    { id: 'T1', title: 'Exercise', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'] },
+    { id: 'T2', title: 'Study', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-not-urgent', status: 'todo', tags: ['backend'] },
+    { id: 'T3', title: 'Emails', themeId: 'CG', dayDate: '2025-01-16', priority: 'not-important-urgent', status: 'doing', tags: ['api'] },
     { id: 'T4', title: 'Done task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
   ];
 }
@@ -356,6 +356,31 @@ describe('EisenKanView', () => {
     const result = await mockMoveTask('T1', 'doing');
     expect(result.success).toBe(false);
     expect(result.violations[0].message).toBe('WIP limit exceeded');
+  });
+
+  // Tag filtering tests
+  it('filters tasks by tag when filterTagIds is set', async () => {
+    await renderView({ filterTagIds: ['backend'] });
+
+    // T1 (tags: ['backend', 'api']) and T2 (tags: ['backend']) should be shown
+    // T3 (tags: ['api']) and T4 (no tags) should be hidden
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(2);
+
+    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+    expect(titles).toContain('Exercise');
+    expect(titles).toContain('Study');
+  });
+
+  it('multi-tag filter uses AND logic', async () => {
+    await renderView({ filterTagIds: ['backend', 'api'] });
+
+    // Only T1 has both 'backend' and 'api' tags
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(1);
+
+    const title = cards[0].querySelector('.task-title')?.textContent;
+    expect(title).toBe('Exercise');
   });
 
   // Subtask nesting tests

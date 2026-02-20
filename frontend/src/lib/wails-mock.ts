@@ -115,6 +115,7 @@ export interface NavigationContext {
   showCompleted?: boolean;
   showArchived?: boolean;
   expandedOkrIds?: string[];
+  filterTagIds?: string[];
 }
 
 // Type declarations for extended Window properties

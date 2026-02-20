@@ -15,6 +15,7 @@
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
+  import TagFilterBar from '../components/TagFilterBar.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
   import ErrorDialog from '../components/ErrorDialog.svelte';
@@ -38,12 +39,15 @@
     onNavigateToTheme?: (themeId: string) => void;
     onNavigateToDay?: (date: string, themeId?: string) => void;
     filterThemeIds?: string[];
+    filterTagIds?: string[];
     filterDate?: string;
     onFilterThemeToggle?: (themeId: string) => void;
     onFilterThemeClear?: () => void;
+    onFilterTagToggle?: (tag: string) => void;
+    onFilterTagClear?: () => void;
   }
 
-  let { onNavigateToTheme, onNavigateToDay, filterThemeIds = [], filterDate, onFilterThemeToggle, onFilterThemeClear }: Props = $props();
+  let { onNavigateToTheme, onNavigateToDay, filterThemeIds = [], filterTagIds = [], filterDate, onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -119,11 +123,17 @@
     if (filterThemeIds.length > 0) {
       result = result.filter(t => filterThemeIds.includes(t.themeId));
     }
+    if (filterTagIds.length > 0) {
+      result = result.filter(t => filterTagIds.every(tag => t.tags?.includes(tag)));
+    }
     if (filterDate) {
       result = result.filter(t => t.dayDate === filterDate);
     }
     return result;
   });
+
+  // Derive available tags from all tasks (not filtered) for the tag filter bar
+  const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
 
   // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
   $effect(() => {
@@ -516,6 +526,14 @@
         activeThemeIds={filterThemeIds}
         onToggle={onFilterThemeToggle}
         onClear={onFilterThemeClear}
+      />
+    {/if}
+    {#if availableTags.length > 0 && onFilterTagToggle && onFilterTagClear}
+      <TagFilterBar
+        {availableTags}
+        activeTagIds={filterTagIds}
+        onToggle={onFilterTagToggle}
+        onClear={onFilterTagClear}
       />
     {/if}
     <div class="kanban-board" style="grid-template-columns: repeat({columns.length}, 1fr);">
