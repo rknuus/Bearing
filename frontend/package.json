@@ -29,5 +29,10 @@
   },
   "dependencies": {
     "svelte-dnd-action": "^0.9.69"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^10.2.1"
+    }
   }
 }
