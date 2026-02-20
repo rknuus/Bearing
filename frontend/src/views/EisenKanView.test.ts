@@ -554,6 +554,90 @@ describe('EisenKanView', () => {
       expect(titles).toEqual(['Urgent One', 'Not Urgent One']);
     });
 
+    it('cross-section move sends both source and target zones to ReorderTasks', async () => {
+      // Set up tasks: two in important-urgent, one in important-not-urgent
+      mockGetTasks.mockResolvedValue([
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+      ]);
+
+      await renderView();
+
+      // Get the important-not-urgent section's DnD zone
+      const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
+
+      // Simulate dropping IU1 into important-not-urgent (before INU1)
+      const dndItems: TaskWithStatus[] = [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+      ];
+
+      dispatchDndFinalize(targetSection, dndItems);
+      await tick();
+      await tick();
+
+      // Verify UpdateTask was called with new priority
+      await vi.waitFor(() => {
+        expect(mockUpdateTask).toHaveBeenCalledWith(expect.objectContaining({
+          id: 'IU1',
+          priority: 'important-not-urgent',
+        }));
+      });
+
+      // Verify ReorderTasks was called with BOTH source (important-urgent) and target (important-not-urgent) zones
+      await vi.waitFor(() => {
+        expect(mockReorderTasks).toHaveBeenCalledWith({
+          'important-urgent': ['IU2'],                // source: IU1 removed
+          'important-not-urgent': ['IU1', 'INU1'],    // target: IU1 at drop position
+        });
+      });
+    });
+
+    it('cross-section ReorderTasks failure triggers rollback and shows error', async () => {
+      mockGetTasks.mockResolvedValue([
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+      ]);
+
+      // UpdateTask succeeds but ReorderTasks fails
+      mockUpdateTask.mockResolvedValue(undefined);
+      mockReorderTasks.mockRejectedValue(new Error('failed to save task order'));
+
+      await renderView();
+
+      const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
+
+      const dndItems: TaskWithStatus[] = [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+      ];
+
+      dispatchDndFinalize(targetSection, dndItems);
+      await tick();
+      await tick();
+
+      // Wait for the async operations and rollback to complete
+      await vi.waitFor(() => {
+        expect(mockReorderTasks).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // Error should be shown to user
+      await vi.waitFor(() => {
+        const errorBanner = container.querySelector('.error-banner');
+        expect(errorBanner).toBeTruthy();
+        expect(errorBanner?.textContent).toContain('failed to save task order');
+      });
+
+      // Task should roll back to original section (important-urgent)
+      const urgentSection = container.querySelector('[data-testid="section-important-urgent"]')!;
+      const urgentCards = urgentSection.querySelectorAll('.task-card');
+      const urgentTitles = Array.from(urgentCards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(urgentTitles).toContain('Urgent One');
+    });
+
     it('within-column reorder works correctly', async () => {
       await renderView();
 
