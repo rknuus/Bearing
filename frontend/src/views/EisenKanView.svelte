@@ -313,6 +313,30 @@
     errorViolations = [];
   }
 
+  // Reposition a task in the master array so $effect re-derivation preserves DnD order
+  function repositionTask(
+    allTasks: TaskWithStatus[],
+    taskId: string,
+    updates: Partial<TaskWithStatus>,
+    dndOrderIds: string[]
+  ): TaskWithStatus[] {
+    const task = allTasks.find(t => t.id === taskId)!;
+    const updated = { ...task, ...updates } as TaskWithStatus;
+    const without = allTasks.filter(t => t.id !== taskId);
+
+    const posInDnd = dndOrderIds.indexOf(taskId);
+    if (posInDnd <= 0) {
+      const firstPeerIdx = without.findIndex(t => t.status === updated.status && !t.parentTaskId);
+      if (firstPeerIdx === -1) return [...without, updated];
+      return [...without.slice(0, firstPeerIdx), updated, ...without.slice(firstPeerIdx)];
+    }
+
+    const prevId = dndOrderIds[posInDnd - 1];
+    const prevIdx = without.findIndex(t => t.id === prevId);
+    if (prevIdx === -1) return [...without, updated];
+    return [...without.slice(0, prevIdx + 1), updated, ...without.slice(prevIdx + 1)];
+  }
+
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
     columnItems = { ...columnItems, [status]: event.detail.items };
@@ -343,10 +367,8 @@
     // Snapshot pre-move state for rollback
     const snapshotTasks = [...tasks];
 
-    // Optimistically update master task list
-    tasks = tasks.map(t =>
-      t.id === taskId ? { ...t, status } : t
-    );
+    // Optimistically update master task list with correct DnD position
+    tasks = repositionTask(tasks, taskId, { status }, targetZoneIds);
 
     isValidating = true;
     try {
@@ -404,7 +426,7 @@
 
     if (movedTask.status !== columnName) {
       // Cross-column move: status change -- use MoveTask
-      tasks = tasks.map(t => t.id === taskId ? { ...t, status: columnName } : t);
+      tasks = repositionTask(tasks, taskId, { status: columnName }, targetZoneIds);
 
       isValidating = true;
       try {
@@ -433,7 +455,7 @@
     } else if (movedTask.priority !== sectionName) {
       // Within-column move: priority change -- use UpdateTask
       const updatedTask = { ...movedTask, priority: sectionName };
-      tasks = tasks.map(t => t.id === taskId ? { ...t, priority: sectionName } : t);
+      tasks = repositionTask(tasks, taskId, { priority: sectionName }, targetZoneIds);
 
       isValidating = true;
       try {

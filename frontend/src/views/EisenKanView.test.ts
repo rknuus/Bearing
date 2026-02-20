@@ -58,6 +58,7 @@ const mockMoveTask = vi.fn();
 const mockDeleteTask = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockProcessPriorityPromotions = vi.fn();
+const mockReorderTasks = vi.fn();
 
 vi.mock('../lib/wails-mock', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../lib/wails-mock')>();
@@ -73,6 +74,7 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
       DeleteTask: (...args: unknown[]) => mockDeleteTask(...args),
       UpdateTask: (...args: unknown[]) => mockUpdateTask(...args),
       ProcessPriorityPromotions: (...args: unknown[]) => mockProcessPriorityPromotions(...args),
+      ReorderTasks: (...args: unknown[]) => mockReorderTasks(...args),
     },
   };
 });
@@ -91,6 +93,7 @@ describe('EisenKanView', () => {
     mockDeleteTask.mockResolvedValue(undefined);
     mockUpdateTask.mockResolvedValue(undefined);
     mockProcessPriorityPromotions.mockResolvedValue([]);
+    mockReorderTasks.mockResolvedValue({ success: true, reordered: [] });
   });
 
   afterEach(() => {
@@ -450,6 +453,127 @@ describe('EisenKanView', () => {
       toggleBtn!.click();
       await tick();
       expect(container.querySelectorAll('.subtask-card').length).toBe(2);
+    });
+  });
+
+  // Cross-column and cross-section DnD position preservation tests
+  describe('DnD position preservation', () => {
+    function makeTasksForDndTest(): TaskWithStatus[] {
+      return [
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+      ];
+    }
+
+    function dispatchDndFinalize(element: Element, items: TaskWithStatus[]) {
+      element.dispatchEvent(new CustomEvent('finalize', {
+        detail: { items, info: { id: 'dnd-test', source: 'pointer', trigger: 'droppedIntoZone' } },
+      }));
+    }
+
+    beforeEach(() => {
+      mockGetTasks.mockResolvedValue(JSON.parse(JSON.stringify(makeTasksForDndTest())));
+    });
+
+    it('cross-column drop to middle preserves DnD position', async () => {
+      await renderView();
+
+      // Get the DOING column's DnD zone (second column, non-sectioned)
+      const columns = container.querySelectorAll('.kanban-column');
+      const doingZone = columns[1].querySelector('.column-content')!;
+
+      // Simulate dropping T1 (from todo) into DOING at position 2 (between D1 and D2)
+      const dndItems: TaskWithStatus[] = [
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+      ];
+
+      dispatchDndFinalize(doingZone, dndItems);
+      await tick();
+      await tick();
+
+      // Verify DOING column has 4 tasks in the correct order
+      const doingCards = columns[1].querySelectorAll('.task-card');
+      const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(titles).toEqual(['Doing First', 'Todo Task', 'Doing Second', 'Doing Third']);
+    });
+
+    it('cross-column drop to first position preserves DnD position', async () => {
+      await renderView();
+
+      const columns = container.querySelectorAll('.kanban-column');
+      const doingZone = columns[1].querySelector('.column-content')!;
+
+      // Simulate dropping T1 at the beginning of DOING
+      const dndItems: TaskWithStatus[] = [
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+      ];
+
+      dispatchDndFinalize(doingZone, dndItems);
+      await tick();
+      await tick();
+
+      const doingCards = columns[1].querySelectorAll('.task-card');
+      const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(titles).toEqual(['Todo Task', 'Doing First', 'Doing Second', 'Doing Third']);
+    });
+
+    it('cross-section drop within TODO preserves DnD position', async () => {
+      // Set up tasks: two in important-urgent, one in important-not-urgent
+      mockGetTasks.mockResolvedValue([
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+      ]);
+
+      await renderView();
+
+      // Get the important-not-urgent section's DnD zone
+      const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
+
+      // Simulate dropping IU1 into important-not-urgent at position 1 (before INU1)
+      const dndItems: TaskWithStatus[] = [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+      ];
+
+      dispatchDndFinalize(targetSection, dndItems);
+      await tick();
+      await tick();
+
+      // Verify important-not-urgent section has tasks in the correct order
+      const sectionCards = container.querySelector('[data-testid="section-important-not-urgent"]')!.querySelectorAll('.task-card');
+      const titles = Array.from(sectionCards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(titles).toEqual(['Urgent One', 'Not Urgent One']);
+    });
+
+    it('within-column reorder works correctly', async () => {
+      await renderView();
+
+      const columns = container.querySelectorAll('.kanban-column');
+      const doingZone = columns[1].querySelector('.column-content')!;
+
+      // Simulate reordering within DOING: D3 moved to first position
+      const dndItems: TaskWithStatus[] = [
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+      ];
+
+      dispatchDndFinalize(doingZone, dndItems);
+      await tick();
+      await tick();
+
+      const doingCards = columns[1].querySelectorAll('.task-card');
+      const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(titles).toEqual(['Doing Third', 'Doing First', 'Doing Second']);
     });
   });
 });
