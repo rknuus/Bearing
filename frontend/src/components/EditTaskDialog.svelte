@@ -13,11 +13,12 @@
   interface Props {
     task: Task | null;
     themes: LifeTheme[];
+    availableTags?: string[];
     onSave: (updatedTask: Task) => Promise<void>;
     onCancel: () => void;
   }
 
-  let { task, themes, onSave, onCancel }: Props = $props();
+  let { task, themes, availableTags = [], onSave, onCancel }: Props = $props();
 
   // Form state
   let editTitle = $state('');
@@ -90,6 +91,7 @@
       bind:dueDate={editDueDate}
       bind:promotionDate={editPromotionDate}
       {themes}
+      {availableTags}
       idPrefix="edit-task"
     />
 

@@ -19,12 +19,13 @@
   interface Props {
     open: boolean;
     themes: LifeTheme[];
+    availableTags?: string[];
     onDone: () => void;
     onCancel: () => void;
     createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
   }
 
-  let { open, themes, onDone, onCancel, createTask }: Props = $props();
+  let { open, themes, availableTags = [], onDone, onCancel, createTask }: Props = $props();
 
   // Quadrant configuration
   const quadrants: { id: QuadrantId; title: string; color: string; priority: string; isStaging: boolean }[] = [
@@ -171,6 +172,7 @@
         bind:dueDate={newTaskDueDate}
         bind:promotionDate={newTaskPromotionDate}
         {themes}
+        {availableTags}
         disabled={isSubmitting}
         idPrefix="new-task"
       />
