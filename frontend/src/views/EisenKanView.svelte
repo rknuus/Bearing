@@ -785,6 +785,7 @@
 
   .kanban-board {
     display: grid;
+    grid-auto-rows: 1fr;
     gap: 1rem;
     flex: 1;
     min-height: 0;
@@ -796,7 +797,8 @@
     background-color: var(--color-gray-200);
     border-radius: 8px;
     padding: 0.75rem;
-    min-height: 200px;
+    min-height: 0;
+    overflow: hidden;
     transition: background-color 0.2s;
   }
 
@@ -832,6 +834,8 @@
     flex-direction: column;
     gap: 0.5rem;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .column-section {
