@@ -361,10 +361,10 @@ const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
-  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
+  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'], createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
   { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
-  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing', createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T10:00:00Z' },
-  { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done', createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
+  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing', tags: ['urgent', 'review'], createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T10:00:00Z' },
+  { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done', tags: ['frontend'], createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
 ];
 
 // Mock navigation context storage

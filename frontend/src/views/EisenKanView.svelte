@@ -12,7 +12,7 @@
   import { onMount, onDestroy, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, type DndEvent } from 'svelte-dnd-action';
-  import { Button, ErrorBanner } from '../lib/components';
+  import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
@@ -576,6 +576,7 @@
                           {/if}
                         </div>
                         <h3 class="task-title">{task.title}</h3>
+                        <TagBadges tags={task.tags} />
                         <div class="task-footer">
                           <button
                             type="button"
@@ -615,6 +616,7 @@
                             aria-label="{subtask.title}"
                           >
                             <h3 class="task-title">{subtask.title}</h3>
+                            <TagBadges tags={subtask.tags} />
                           </div>
                         {/each}
                       {/if}
@@ -661,6 +663,7 @@
                     {/if}
                   </div>
                   <h3 class="task-title">{task.title}</h3>
+                  <TagBadges tags={task.tags} />
                   <div class="task-footer">
                     <button
                       type="button"
@@ -700,6 +703,7 @@
                       aria-label="{subtask.title}"
                     >
                       <h3 class="task-title">{subtask.title}</h3>
+                      <TagBadges tags={subtask.tags} />
                     </div>
                   {/each}
                 {/if}
