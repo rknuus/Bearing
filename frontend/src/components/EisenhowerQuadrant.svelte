@@ -62,7 +62,7 @@
   </div>
   <div
     class="task-list"
-    use:dndzone={{ items: tasks, flipDurationMs: 200 }}
+    use:dndzone={{ items: tasks, flipDurationMs: 200, type: 'eisenhower' }}
     onconsider={handleDndConsider}
     onfinalize={handleDndFinalize}
   >
