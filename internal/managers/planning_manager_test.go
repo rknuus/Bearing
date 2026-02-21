@@ -176,6 +176,21 @@ func (m *mockPlanAccess) SaveTask(task access.Task) error {
 	return nil
 }
 
+func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*access.Task, error) {
+	if err := m.SaveTask(task); err != nil {
+		return nil, err
+	}
+	// Find the saved task to get the generated ID
+	if task.ID == "" {
+		task.ID = "task-001"
+	}
+	if m.taskOrder == nil {
+		m.taskOrder = make(map[string][]string)
+	}
+	m.taskOrder[dropZone] = append(m.taskOrder[dropZone], task.ID)
+	return &task, nil
+}
+
 func (m *mockPlanAccess) MoveTask(taskID, newStatus string) error {
 	for themeID, themeMap := range m.tasks {
 		for status, tasks := range themeMap {
@@ -205,6 +220,25 @@ func (m *mockPlanAccess) DeleteTask(taskID string) error {
 					return nil
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func (m *mockPlanAccess) DeleteTaskWithOrder(taskID string) error {
+	if err := m.DeleteTask(taskID); err != nil {
+		return err
+	}
+	// Remove from task order
+	for zone, ids := range m.taskOrder {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if id != taskID {
+				filtered = append(filtered, id)
+			}
+		}
+		if len(filtered) != len(ids) {
+			m.taskOrder[zone] = filtered
 		}
 	}
 	return nil

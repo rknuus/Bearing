@@ -848,34 +848,11 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 		return nil, fmt.Errorf("PlanningManager.CreateTask: %w", err)
 	}
 
-	if err := m.planAccess.SaveTask(task); err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to save task: %w", err)
-	}
-
-	// Get the saved task with generated ID
-	tasks, err := m.planAccess.GetTasksByTheme(themeId)
+	// Save task and update task order atomically in a single git commit
+	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority)
+	createdTask, err := m.planAccess.SaveTaskWithOrder(task, zone)
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to get created task: %w", err)
-	}
-
-	// Find the newly created task (last one with matching title)
-	var createdTask *access.Task
-	for i := len(tasks) - 1; i >= 0; i-- {
-		if tasks[i].Title == title && tasks[i].Priority == priority {
-			createdTask = &tasks[i]
-			break
-		}
-	}
-	if createdTask == nil {
-		createdTask = &task
-	}
-
-	// Append to task order
-	zone := dropZoneForTask(string(access.TaskStatusTodo), createdTask.Priority)
-	orderMap, loadErr := m.planAccess.LoadTaskOrder()
-	if loadErr == nil {
-		orderMap[zone] = append(orderMap[zone], createdTask.ID)
-		_ = m.planAccess.SaveTaskOrder(orderMap)
+		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to save task: %w", err)
 	}
 
 	return createdTask, nil
@@ -1060,24 +1037,9 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 		return fmt.Errorf("PlanningManager.DeleteTask: task ID cannot be empty")
 	}
 
-	if err := m.planAccess.DeleteTask(taskId); err != nil {
+	// Delete task and update task order atomically in a single git commit
+	if err := m.planAccess.DeleteTaskWithOrder(taskId); err != nil {
 		return fmt.Errorf("PlanningManager.DeleteTask: failed to delete task: %w", err)
-	}
-
-	// Remove from task order (all zones)
-	orderMap, loadErr := m.planAccess.LoadTaskOrder()
-	if loadErr == nil {
-		changed := false
-		for zone, ids := range orderMap {
-			filtered := removeFromSlice(ids, taskId)
-			if len(filtered) != len(ids) {
-				orderMap[zone] = filtered
-				changed = true
-			}
-		}
-		if changed {
-			_ = m.planAccess.SaveTaskOrder(orderMap)
-		}
 	}
 
 	return nil

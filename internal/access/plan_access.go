@@ -31,8 +31,10 @@ type IPlanAccess interface {
 	GetTasksByTheme(themeID string) ([]Task, error)
 	GetTasksByStatus(themeID, status string) ([]Task, error)
 	SaveTask(task Task) error
+	SaveTaskWithOrder(task Task, dropZone string) (*Task, error)
 	MoveTask(taskID, newStatus string) error
 	DeleteTask(taskID string) error
+	DeleteTaskWithOrder(taskID string) error
 
 	// Task Order
 	LoadTaskOrder() (map[string][]string, error)
@@ -453,12 +455,11 @@ func (pa *PlanAccess) GetTasksByStatus(themeID, status string) ([]Task, error) {
 	return tasks, nil
 }
 
-// SaveTask saves or updates a task.
-// If the task ID is empty, a new ID will be generated and CreatedAt is set.
-// UpdatedAt is always set to the current time on every save.
-func (pa *PlanAccess) SaveTask(task Task) error {
+// saveTaskFile writes a task to disk without committing.
+// Returns the file path and whether the task is new.
+func (pa *PlanAccess) saveTaskFile(task *Task) (string, bool, error) {
 	if task.ThemeID == "" {
-		return fmt.Errorf("PlanAccess.SaveTask: themeID cannot be empty")
+		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: themeID cannot be empty")
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -468,7 +469,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	if isNew {
 		existingTasks, err := pa.GetTasksByTheme(task.ThemeID)
 		if err != nil {
-			return fmt.Errorf("PlanAccess.SaveTask: failed to get existing tasks: %w", err)
+			return "", false, fmt.Errorf("PlanAccess.saveTaskFile: failed to get existing tasks: %w", err)
 		}
 		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
 	}
@@ -483,7 +484,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	status := string(TaskStatusTodo)
 	existingStatus, err := pa.findTaskStatus(task.ID, task.ThemeID)
 	if err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to find existing task status: %w", err)
+		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: failed to find existing task status: %w", err)
 	}
 	if existingStatus != "" {
 		status = existingStatus
@@ -492,12 +493,24 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	// Ensure task directory exists
 	dirPath := pa.taskDirPath(task.ThemeID, status)
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
-		return fmt.Errorf("PlanAccess.SaveTask: failed to create task directory: %w", err)
+		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: failed to create task directory: %w", err)
 	}
 
 	// Save task to file
 	filePath := pa.taskFilePath(task.ThemeID, status, task.ID)
-	if err := writeJSON(filePath, task); err != nil {
+	if err := writeJSON(filePath, *task); err != nil {
+		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: %w", err)
+	}
+
+	return filePath, isNew, nil
+}
+
+// SaveTask saves or updates a task.
+// If the task ID is empty, a new ID will be generated and CreatedAt is set.
+// UpdatedAt is always set to the current time on every save.
+func (pa *PlanAccess) SaveTask(task Task) error {
+	filePath, isNew, err := pa.saveTaskFile(&task)
+	if err != nil {
 		return fmt.Errorf("PlanAccess.SaveTask: %w", err)
 	}
 
@@ -508,6 +521,92 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	}
 	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTask: %w", err)
+	}
+
+	return nil
+}
+
+// SaveTaskWithOrder atomically saves a task and appends it to the task order
+// in a single git commit. This prevents race conditions when creating multiple
+// tasks concurrently.
+func (pa *PlanAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, error) {
+	taskFilePath, isNew, err := pa.saveTaskFile(&task)
+	if err != nil {
+		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: %w", err)
+	}
+
+	// Load current order, append task ID, and write order file
+	orderMap, err := pa.LoadTaskOrder()
+	if err != nil {
+		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: failed to load task order: %w", err)
+	}
+	orderMap[dropZone] = append(orderMap[dropZone], task.ID)
+
+	orderFilePath := pa.taskOrderFilePath()
+	if err := writeJSON(orderFilePath, orderMap); err != nil {
+		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: failed to write task order: %w", err)
+	}
+
+	// Commit both files in a single transaction
+	action := "Update"
+	if isNew {
+		action = "Add"
+	}
+	if err := pa.commitFiles([]string{taskFilePath, orderFilePath}, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
+		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: %w", err)
+	}
+
+	return &task, nil
+}
+
+// DeleteTaskWithOrder atomically deletes a task file and removes it from the
+// task order in a single git commit.
+func (pa *PlanAccess) DeleteTaskWithOrder(taskID string) error {
+	// Find the task
+	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	if err != nil {
+		return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: %w", err)
+	}
+	if foundTask == nil {
+		return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: task with ID %s not found", taskID)
+	}
+
+	filePath := pa.taskFilePath(themeID, currentStatus, taskID)
+
+	// Delete the file
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: failed to delete task file: %w", err)
+	}
+
+	// Remove from task order
+	commitPaths := []string{filePath}
+	orderMap, loadErr := pa.LoadTaskOrder()
+	if loadErr == nil {
+		changed := false
+		for zone, ids := range orderMap {
+			filtered := make([]string, 0, len(ids))
+			for _, id := range ids {
+				if id != taskID {
+					filtered = append(filtered, id)
+				}
+			}
+			if len(filtered) != len(ids) {
+				orderMap[zone] = filtered
+				changed = true
+			}
+		}
+		if changed {
+			orderFilePath := pa.taskOrderFilePath()
+			if err := writeJSON(orderFilePath, orderMap); err != nil {
+				return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: failed to write task order: %w", err)
+			}
+			commitPaths = append(commitPaths, orderFilePath)
+		}
+	}
+
+	// Commit with git
+	if err := pa.commitFiles(commitPaths, fmt.Sprintf("Delete task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: %w", err)
 	}
 
 	return nil
