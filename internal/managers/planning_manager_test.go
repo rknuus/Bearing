@@ -2,6 +2,7 @@ package managers
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/rkn/bearing/internal/access"
@@ -10,9 +11,10 @@ import (
 // mockPlanAccess implements access.IPlanAccess for testing.
 // SaveTheme assigns IDs to objectives and key results to simulate ensureThemeIDs.
 type mockPlanAccess struct {
-	themes    []access.LifeTheme
-	tasks     map[string]map[string][]access.Task // themeID -> status -> tasks
-	taskOrder map[string][]string                 // drop zone ID -> ordered task IDs
+	themes      []access.LifeTheme
+	tasks       map[string]map[string][]access.Task // themeID -> status -> tasks
+	taskOrder   map[string][]string                 // drop zone ID -> ordered task IDs
+	nextTaskNum int                                 // counter for unique task ID generation
 }
 
 func newMockPlanAccess() *mockPlanAccess {
@@ -168,9 +170,10 @@ func (m *mockPlanAccess) SaveTask(task access.Task) error {
 		}
 	}
 
-	// Generate ID if not provided
+	// Generate unique ID if not provided
 	if task.ID == "" {
-		task.ID = "task-001"
+		m.nextTaskNum++
+		task.ID = fmt.Sprintf("%s-T%d", task.ThemeID, m.nextTaskNum)
 	}
 	m.tasks[task.ThemeID][status] = append(m.tasks[task.ThemeID][status], task)
 	return nil
@@ -180,15 +183,14 @@ func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 	if err := m.SaveTask(task); err != nil {
 		return nil, err
 	}
-	// Find the saved task to get the generated ID
-	if task.ID == "" {
-		task.ID = "task-001"
-	}
+	// SaveTask generates the ID; find the saved task to get it
+	tasks := m.tasks[task.ThemeID]["todo"]
+	saved := tasks[len(tasks)-1]
 	if m.taskOrder == nil {
 		m.taskOrder = make(map[string][]string)
 	}
-	m.taskOrder[dropZone] = append(m.taskOrder[dropZone], task.ID)
-	return &task, nil
+	m.taskOrder[dropZone] = append(m.taskOrder[dropZone], saved.ID)
+	return &saved, nil
 }
 
 func (m *mockPlanAccess) MoveTask(taskID, newStatus string) error {
@@ -1836,6 +1838,82 @@ func TestGetTasksSubtaskIDs(t *testing.T) {
 		for _, task := range tasks {
 			if task.SubtaskIDs != nil {
 				t.Errorf("expected nil SubtaskIDs for task without subtasks, got %v", task.SubtaskIDs)
+			}
+		}
+	})
+}
+
+// =============================================================================
+// Batch Task Creation Tests
+// =============================================================================
+
+func TestUnit_CreateTask_BatchSequential(t *testing.T) {
+	t.Run("creates 5 tasks sequentially with mixed priorities", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, err := NewPlanningManager(mockAccess)
+		if err != nil {
+			t.Fatalf("expected no error creating manager, got %v", err)
+		}
+
+		type taskSpec struct {
+			title    string
+			priority string
+		}
+		specs := []taskSpec{
+			{"Task A", "important-urgent"},
+			{"Task B", "important-not-urgent"},
+			{"Task C", "not-important-urgent"},
+			{"Task D", "important-urgent"},
+			{"Task E", "important-not-urgent"},
+		}
+
+		createdIDs := make([]string, 0, len(specs))
+		for _, spec := range specs {
+			task, err := manager.CreateTask(spec.title, "T", "2026-01-01", spec.priority, "", "", "", "")
+			if err != nil {
+				t.Fatalf("CreateTask(%q) returned error: %v", spec.title, err)
+			}
+			if task == nil {
+				t.Fatalf("CreateTask(%q) returned nil task", spec.title)
+			}
+			if task.ID == "" {
+				t.Fatalf("CreateTask(%q) returned empty task ID", spec.title)
+			}
+			createdIDs = append(createdIDs, task.ID)
+		}
+
+		// Verify all IDs are unique
+		seen := make(map[string]bool, len(createdIDs))
+		for _, id := range createdIDs {
+			if seen[id] {
+				t.Errorf("duplicate task ID: %s", id)
+			}
+			seen[id] = true
+		}
+
+		// Verify all tasks are in the task order under correct zones
+		order, err := mockAccess.LoadTaskOrder()
+		if err != nil {
+			t.Fatalf("LoadTaskOrder returned error: %v", err)
+		}
+
+		allOrderedIDs := make(map[string]bool)
+		for _, ids := range order {
+			for _, id := range ids {
+				allOrderedIDs[id] = true
+			}
+		}
+		for _, id := range createdIDs {
+			if !allOrderedIDs[id] {
+				t.Errorf("task %s not found in task order", id)
+			}
+		}
+
+		// Verify priority zone assignments
+		for i, spec := range specs {
+			zone := spec.priority // for todo tasks, drop zone = priority
+			if !slices.Contains(order[zone], createdIDs[i]) {
+				t.Errorf("task %s (priority %s) not found in zone %s", createdIDs[i], spec.priority, zone)
 			}
 		}
 	})
