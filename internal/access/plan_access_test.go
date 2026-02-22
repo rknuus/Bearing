@@ -1473,6 +1473,143 @@ func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
 	}
 }
 
+func TestSaveTaskWithOrder(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Create a theme
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	task := Task{
+		Title:    "Morning run",
+		ThemeID:  "H",
+		DayDate:  "2026-01-15",
+		Priority: string(PriorityImportantUrgent),
+	}
+
+	saved, err := pa.SaveTaskWithOrder(task, "important-urgent")
+	if err != nil {
+		t.Fatalf("SaveTaskWithOrder failed: %v", err)
+	}
+
+	if saved.ID != "H-T1" {
+		t.Errorf("Expected ID H-T1, got %s", saved.ID)
+	}
+
+	// Verify task was saved
+	tasks, err := pa.GetTasksByTheme("H")
+	if err != nil {
+		t.Fatalf("GetTasksByTheme failed: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("Expected 1 task, got %d", len(tasks))
+	}
+
+	// Verify task order was updated
+	order, err := pa.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	if len(order["important-urgent"]) != 1 || order["important-urgent"][0] != "H-T1" {
+		t.Errorf("Expected order [H-T1], got %v", order["important-urgent"])
+	}
+}
+
+func TestSaveTaskWithOrder_Multiple(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create multiple tasks sequentially
+	for i := 0; i < 5; i++ {
+		task := Task{
+			Title:    "Task",
+			ThemeID:  "H",
+			DayDate:  "2026-01-15",
+			Priority: string(PriorityImportantUrgent),
+		}
+		_, err := pa.SaveTaskWithOrder(task, "important-urgent")
+		if err != nil {
+			t.Fatalf("SaveTaskWithOrder #%d failed: %v", i+1, err)
+		}
+	}
+
+	// Verify all 5 tasks exist
+	tasks, err := pa.GetTasksByTheme("H")
+	if err != nil {
+		t.Fatalf("GetTasksByTheme failed: %v", err)
+	}
+	if len(tasks) != 5 {
+		t.Fatalf("Expected 5 tasks, got %d", len(tasks))
+	}
+
+	// Verify task order contains all 5
+	order, err := pa.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	if len(order["important-urgent"]) != 5 {
+		t.Errorf("Expected 5 tasks in order, got %d", len(order["important-urgent"]))
+	}
+}
+
+func TestDeleteTaskWithOrder(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Create a theme
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create tasks with order
+	task1 := Task{Title: "Task 1", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
+	saved1, err := pa.SaveTaskWithOrder(task1, "important-urgent")
+	if err != nil {
+		t.Fatalf("SaveTaskWithOrder failed: %v", err)
+	}
+
+	task2 := Task{Title: "Task 2", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
+	_, err = pa.SaveTaskWithOrder(task2, "important-urgent")
+	if err != nil {
+		t.Fatalf("SaveTaskWithOrder failed: %v", err)
+	}
+
+	// Delete first task
+	if err := pa.DeleteTaskWithOrder(saved1.ID); err != nil {
+		t.Fatalf("DeleteTaskWithOrder failed: %v", err)
+	}
+
+	// Verify task was deleted
+	tasks, err := pa.GetTasksByTheme("H")
+	if err != nil {
+		t.Fatalf("GetTasksByTheme failed: %v", err)
+	}
+	if len(tasks) != 1 {
+		t.Fatalf("Expected 1 task after delete, got %d", len(tasks))
+	}
+
+	// Verify task order was updated
+	order, err := pa.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	if len(order["important-urgent"]) != 1 {
+		t.Errorf("Expected 1 task in order after delete, got %d", len(order["important-urgent"]))
+	}
+	if order["important-urgent"][0] != "H-T2" {
+		t.Errorf("Expected remaining task H-T2, got %s", order["important-urgent"][0])
+	}
+}
+
 func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()

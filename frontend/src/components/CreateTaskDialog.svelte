@@ -131,19 +131,34 @@
     isSubmitting = true;
     error = null;
 
+    let created = 0;
+    let total = 0;
+
     try {
-      // Create tasks from Q1, Q2, Q3 sequentially; skip Q4 (staging)
       const today = new Date().toISOString().split('T')[0];
       for (const quadrant of quadrants) {
         if (quadrant.isStaging) continue;
 
         const tasks = tasksByQuadrant[quadrant.id];
+        const remaining: PendingTask[] = [];
         for (const task of tasks) {
-          await createTask(task.title, task.themeId ?? selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
+          total++;
+          try {
+            await createTask(task.title, task.themeId ?? selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
+            created++;
+          } catch {
+            remaining.push(task);
+          }
         }
+        tasksByQuadrant = { ...tasksByQuadrant, [quadrant.id]: remaining };
       }
 
-      onDone();
+      if (created === total) {
+        onDone();
+      } else {
+        error = `${total - created} of ${total} tasks failed to create`;
+        isSubmitting = false;
+      }
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to create tasks';
       isSubmitting = false;

@@ -280,9 +280,9 @@
     showCreateDialog = true;
   }
 
-  function handleCreateDone() {
+  async function handleCreateDone() {
     showCreateDialog = false;
-    refreshTasks();
+    await refreshTasks();
   }
 
   function handleCreateCancel() {
