@@ -819,7 +819,9 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 	var tagSlice []string
 	if tags != "" {
 		for _, tag := range strings.Split(tags, ",") {
-			tagSlice = append(tagSlice, strings.TrimSpace(tag))
+			if t := strings.TrimSpace(tag); t != "" {
+				tagSlice = append(tagSlice, t)
+			}
 		}
 	}
 

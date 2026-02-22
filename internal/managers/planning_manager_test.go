@@ -1378,6 +1378,25 @@ func TestCreateTask(t *testing.T) {
 		}
 	})
 
+	t.Run("ignores trailing comma and whitespace in tags", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		task, err := manager.CreateTask("Task Trailing", "T", "2026-01-31", "important-urgent", "", "frontend, backend, ", "", "")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(task.Tags) != 2 {
+			t.Fatalf("expected 2 tags, got %d: %v", len(task.Tags), task.Tags)
+		}
+		expected := []string{"frontend", "backend"}
+		for i, tag := range task.Tags {
+			if tag != expected[i] {
+				t.Errorf("expected tag %d '%s', got '%s'", i, expected[i], tag)
+			}
+		}
+	})
+
 	t.Run("creates task with dueDate", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
