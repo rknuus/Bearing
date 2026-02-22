@@ -270,4 +270,97 @@ describe('CreateTaskDialog', () => {
     expect(taskTitles.length).toBe(1);
     expect(taskTitles[0].textContent).toBe('Quick task');
   });
+
+  // Helper: simulate moving a task from staging to a priority quadrant via DnD finalize events
+  async function moveTaskToQuadrant(quadrantId: string, task: { id: string; title: string; themeId?: string }) {
+    const targetList = container.querySelector(`[data-testid="quadrant-${quadrantId}"] .task-list`);
+    // Get current tasks in the target quadrant
+    const currentTasks = Array.from(targetList!.querySelectorAll('.pending-task')).map(el => ({
+      id: el.getAttribute('data-testid')?.replace('pending-task-', '') ?? '',
+      title: el.querySelector('.task-title')?.textContent ?? '',
+    }));
+    const newItems = [...currentTasks, task];
+    targetList!.dispatchEvent(new CustomEvent('finalize', { detail: { items: newItems } }));
+    await tick();
+
+    // Remove from staging
+    const stagingList = container.querySelector('[data-testid="quadrant-staging"] .task-list');
+    const stagingTasks = Array.from(stagingList!.querySelectorAll('.pending-task'))
+      .map(el => ({
+        id: el.getAttribute('data-testid')?.replace('pending-task-', '') ?? '',
+        title: el.querySelector('.task-title')?.textContent ?? '',
+      }))
+      .filter(t => t.id !== task.id);
+    stagingList!.dispatchEvent(new CustomEvent('finalize', { detail: { items: stagingTasks } }));
+    await tick();
+  }
+
+  describe('batch creation with partial failure', () => {
+    it('calls onDone when all tasks succeed', async () => {
+      const onDone = vi.fn();
+      const createTask = makeCreateTaskMock();
+      await renderDialog({ onDone, createTask });
+
+      await addTask('Task A');
+      await addTask('Task B');
+      await moveTaskToQuadrant('important-urgent', { id: 'pending-1', title: 'Task A' });
+      await moveTaskToQuadrant('important-not-urgent', { id: 'pending-2', title: 'Task B' });
+
+      const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      await fireEvent.click(doneBtn!);
+      await tick();
+      // Allow async handleDone to complete
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+    });
+
+    it('shows error count on partial failure and does not call onDone', async () => {
+      let callCount = 0;
+      const createTask = vi.fn(async (title: string, themeId: string, dayDate: string, priority: string) => {
+        callCount++;
+        if (callCount === 2) throw new Error('Server error');
+        return { id: `T-${callCount}`, title, themeId, dayDate, priority };
+      });
+      const onDone = vi.fn();
+      await renderDialog({ createTask, onDone });
+
+      await addTask('Task A');
+      await addTask('Task B');
+      await moveTaskToQuadrant('important-urgent', { id: 'pending-1', title: 'Task A' });
+      await moveTaskToQuadrant('important-urgent', { id: 'pending-2', title: 'Task B' });
+
+      const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      await fireEvent.click(doneBtn!);
+      await tick();
+
+      // Wait for error banner to appear
+      await vi.waitFor(() => {
+        const banner = container.querySelector('.error-banner');
+        expect(banner).toBeTruthy();
+        expect(banner!.textContent).toContain('1 of 2 tasks failed to create');
+      });
+
+      expect(onDone).not.toHaveBeenCalled();
+    });
+
+    it('shows error when all tasks fail and does not call onDone', async () => {
+      const createTask = vi.fn().mockRejectedValue(new Error('Server error'));
+      const onDone = vi.fn();
+      await renderDialog({ createTask, onDone });
+
+      await addTask('Task A');
+      await moveTaskToQuadrant('important-urgent', { id: 'pending-1', title: 'Task A' });
+
+      const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      await fireEvent.click(doneBtn!);
+      await tick();
+
+      await vi.waitFor(() => {
+        const banner = container.querySelector('.error-banner');
+        expect(banner).toBeTruthy();
+        expect(banner!.textContent).toContain('1 of 1 tasks failed to create');
+      });
+
+      expect(onDone).not.toHaveBeenCalled();
+    });
+  });
 });
