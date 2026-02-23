@@ -341,26 +341,15 @@
     return [...without.slice(0, prevIdx + 1), updated, ...without.slice(prevIdx + 1)];
   }
 
-  // Deduplicate items by id to prevent each_key_duplicate crashes from dndzone reconciliation
-  function deduplicateById(items: TaskWithStatus[]): TaskWithStatus[] {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- local variable, not reactive state
-    const seen = new Set<string>();
-    return items.filter(t => {
-      if (seen.has(t.id)) return false;
-      seen.add(t.id);
-      return true;
-    });
-  }
-
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
-    columnItems = { ...columnItems, [status]: deduplicateById(event.detail.items) };
+    columnItems = { ...columnItems, [status]: event.detail.items };
   }
 
   async function handleDndFinalize(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
     if (isValidating || isRollingBack) return;
 
-    const newItems = deduplicateById(event.detail.items);
+    const newItems = event.detail.items;
 
     // Update column items optimistically
     columnItems = { ...columnItems, [status]: newItems };
@@ -424,13 +413,13 @@
 
   // Section-aware svelte-dnd-action handlers (for sectioned columns)
   function handleSectionDndConsider(sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
-    sectionItems = { ...sectionItems, [sectionName]: deduplicateById(event.detail.items) };
+    sectionItems = { ...sectionItems, [sectionName]: event.detail.items };
   }
 
   async function handleSectionDndFinalize(columnName: string, sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
     if (isValidating || isRollingBack) return;
 
-    const newItems = deduplicateById(event.detail.items);
+    const newItems = event.detail.items;
     sectionItems = { ...sectionItems, [sectionName]: newItems };
 
     // Find the moved task (its status or priority differs from the target)
@@ -617,7 +606,7 @@
                   </div>
                   <div
                     class="column-content"
-                    use:dndzone={{ items: sectionTaskItems, flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
+                    use:dndzone={{ items: [...sectionTaskItems], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
                     onconsider={(e) => handleSectionDndConsider(section.name, e)}
                     onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
                   >
@@ -704,7 +693,7 @@
             <!-- Regular column: single drop zone -->
             <div
               class="column-content"
-              use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
+              use:dndzone={{ items: [...(columnItems[column.name] ?? [])], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
               onconsider={(e) => handleDndConsider(column.name, e)}
               onfinalize={(e) => handleDndFinalize(column.name, e)}
             >
