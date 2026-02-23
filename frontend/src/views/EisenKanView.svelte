@@ -607,6 +607,7 @@
 
   // Derive archived tasks (filtered by theme/tag/date like other tasks)
   const archivedTasks = $derived(filteredTasks.filter(t => t.status === 'archived'));
+  const rootArchivedTasks = $derived(archivedTasks.filter(t => !t.parentTaskId));
 
   // Column task count (exclude archived)
   function getColumnTaskCount(columnName: string): number {
@@ -620,9 +621,14 @@
       <h1>EisenKan Board</h1>
       <span class="current-day">{today}</span>
     </div>
-    <Button variant="primary" id="create-task-btn" onclick={openCreateDialog}>
-      + New Task
-    </Button>
+    <div class="header-right">
+      <label class="toggle-label">
+        <input type="checkbox" bind:checked={showArchivedTasks} /> Show archived
+      </label>
+      <Button variant="primary" id="create-task-btn" onclick={openCreateDialog}>
+        + New Task
+      </Button>
+    </div>
   </header>
 
   {#if error}
@@ -650,7 +656,7 @@
         onClear={onFilterTagClear}
       />
     {/if}
-    <div class="kanban-board" style="grid-template-columns: repeat({columns.length}, 1fr);">
+    <div class="kanban-board" style="grid-template-columns: repeat({columns.length + (showArchivedTasks ? 1 : 0)}, 1fr);">
       {#each columns as column (column.name)}
         <div
           class="kanban-column"
@@ -873,31 +879,71 @@
           {/if}
         </div>
       {/each}
-    </div>
 
-    <div class="archived-section">
-      <label class="toggle-label">
-        <input type="checkbox" bind:checked={showArchivedTasks} /> Show archived tasks
-      </label>
-      {#if showArchivedTasks && archivedTasks.length > 0}
-        <div class="archived-tasks">
-          {#each archivedTasks.filter(t => !t.parentTaskId) as task (task.id)}
-            <div
-              class="archived-task-card"
-              style="--theme-color: {getThemeColor(themes, task.themeId)};"
-            >
-              <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
-              <span class="archived-task-title">{task.title}</span>
-              <button
-                type="button"
-                class="restore-btn"
-                onclick={() => handleRestoreTask(task.id)}
-                title="Restore to done"
-              >
-                Restore
-              </button>
+      {#if showArchivedTasks}
+        <div
+          class="kanban-column archived-column"
+          role="region"
+          aria-label="Archived column"
+        >
+          <div class="column-header">
+            <h2>Archived</h2>
+            <div class="column-header-right">
+              <span class="task-count">{rootArchivedTasks.length}</span>
             </div>
-          {/each}
+          </div>
+
+          <div class="column-content">
+            {#each rootArchivedTasks as task (task.id)}
+              <div
+                class="task-card"
+                style="--theme-color: {getThemeColor(themes, task.themeId)};"
+                role="article"
+                aria-label="{task.title}"
+              >
+                <div class="task-header">
+                  <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
+                  <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
+                    {priorityLabels[task.priority]}
+                  </span>
+                </div>
+                <h3 class="task-title">{task.title}</h3>
+                <TagBadges tags={task.tags} />
+                <div class="task-footer">
+                  <button
+                    type="button"
+                    class="theme-name-btn"
+                    onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
+                    title="Go to theme"
+                  >
+                    {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
+                  </button>
+                  <button
+                    type="button"
+                    class="task-date"
+                    title="Go to day"
+                    onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
+                  >
+                    {formatDate(task.dayDate)}
+                  </button>
+                  <button
+                    type="button"
+                    class="restore-btn"
+                    onclick={() => handleRestoreTask(task.id)}
+                    title="Restore to done"
+                  >
+                    Restore
+                  </button>
+                </div>
+              </div>
+            {/each}
+
+            {#if rootArchivedTasks.length === 0}
+              <div class="empty-column">
+                <p>No tasks</p>
+              </div>
+            {/if}
+          </div>
         </div>
       {/if}
     </div>
@@ -1256,6 +1302,12 @@
     background-color: var(--color-success-100, #dcfce7);
   }
 
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
   .toggle-label {
     display: flex;
     align-items: center;
@@ -1271,34 +1323,17 @@
     accent-color: var(--color-gray-500);
   }
 
-  .archived-section {
-    margin-top: 0.75rem;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--color-gray-300);
+  .archived-column .task-card {
+    cursor: default;
   }
 
-  .archived-tasks {
-    display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
-    margin-top: 0.5rem;
+  .archived-column .task-card:hover {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   }
 
-  .archived-task-card {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    background-color: var(--color-gray-200);
-    border-radius: 6px;
-    border-left: 4px solid var(--theme-color, var(--color-gray-400));
-    opacity: 0.65;
-  }
-
-  .archived-task-title {
-    flex: 1;
-    font-size: 0.8125rem;
-    color: var(--color-gray-600);
+  .archived-column .task-card:active {
+    cursor: default;
+    transform: none;
   }
 
   .restore-btn {

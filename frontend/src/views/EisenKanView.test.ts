@@ -815,7 +815,7 @@ describe('EisenKanView', () => {
       expect(titles).not.toContain('Archived task');
     });
 
-    it('toggle shows archived tasks section when enabled', async () => {
+    it('toggle shows archived column as 4th board column', async () => {
       currentTasks = [
         ...makeTestTasks(),
         { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
@@ -823,8 +823,9 @@ describe('EisenKanView', () => {
 
       await renderView();
 
-      // Archived section should exist but tasks hidden by default
-      expect(container.querySelector('.archived-tasks')).toBeNull();
+      // No archived column by default
+      expect(container.querySelector('.archived-column')).toBeNull();
+      expect(container.querySelectorAll('.kanban-column').length).toBe(3);
 
       // Toggle on
       const toggle = container.querySelector<HTMLInputElement>('.toggle-label input[type="checkbox"]');
@@ -832,10 +833,47 @@ describe('EisenKanView', () => {
       toggle!.click();
       await tick();
 
-      // Archived tasks should now be visible
-      const archivedCards = container.querySelectorAll('.archived-task-card');
+      // Archived column should appear as 4th column
+      const columns = container.querySelectorAll('.kanban-column');
+      expect(columns.length).toBe(4);
+      const archivedCol = container.querySelector('.archived-column')!;
+      expect(archivedCol).toBeTruthy();
+      expect(archivedCol.querySelector('.column-header h2')?.textContent).toBe('Archived');
+
+      // Archived task renders as standard task card inside the column
+      const archivedCards = archivedCol.querySelectorAll('.task-card');
       expect(archivedCards.length).toBe(1);
-      expect(archivedCards[0].querySelector('.archived-task-title')?.textContent).toBe('Archived task');
+      expect(archivedCards[0].querySelector('.task-title')?.textContent).toBe('Archived task');
+    });
+
+    it('archived column shows task count in header', async () => {
+      currentTasks = [
+        ...makeTestTasks(),
+        { id: 'T5', title: 'Archived 1', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+        { id: 'T6', title: 'Archived 2', themeId: 'HF', dayDate: '2025-01-15', priority: 'not-important-urgent', status: 'archived' },
+      ];
+
+      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
+
+      await renderView();
+
+      const archivedCol = container.querySelector('.archived-column')!;
+      expect(archivedCol.querySelector('.task-count')?.textContent).toBe('2');
+    });
+
+    it('archived column task cards display theme badge and priority badge', async () => {
+      currentTasks = [
+        ...makeTestTasks(),
+        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+      ];
+
+      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
+
+      await renderView();
+
+      const archivedCard = container.querySelector('.archived-column .task-card')!;
+      expect(archivedCard.querySelector('.priority-badge')).toBeTruthy();
+      expect(archivedCard.querySelector('.theme-name-btn')).toBeTruthy();
     });
 
     it('restore button on archived task calls RestoreTask', async () => {
@@ -849,7 +887,7 @@ describe('EisenKanView', () => {
 
       await renderView();
 
-      const restoreBtn = container.querySelector<HTMLButtonElement>('.restore-btn')!;
+      const restoreBtn = container.querySelector<HTMLButtonElement>('.archived-column .restore-btn')!;
       expect(restoreBtn.textContent).toBe('Restore');
       restoreBtn.click();
       await tick();
