@@ -1698,3 +1698,227 @@ func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) 
 		t.Errorf("Expected .gitignore to be preserved, got %q", string(data))
 	}
 }
+
+// --- Archive / Restore tests ---
+
+func TestArchiveTask(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	task := Task{Title: "Morning run", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+
+	// Move to done first, then archive
+	if err := pa.MoveTask("H-T1", "done"); err != nil {
+		t.Fatalf("MoveTask failed: %v", err)
+	}
+
+	if err := pa.ArchiveTask("H-T1"); err != nil {
+		t.Fatalf("ArchiveTask failed: %v", err)
+	}
+
+	// Verify task is in archived
+	archivedTasks, err := pa.GetTasksByStatus("H", "archived")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus failed: %v", err)
+	}
+	if len(archivedTasks) != 1 {
+		t.Errorf("Expected 1 archived task, got %d", len(archivedTasks))
+	}
+
+	// Verify removed from done
+	doneTasks, _ := pa.GetTasksByStatus("H", "done")
+	if len(doneTasks) != 0 {
+		t.Errorf("Expected 0 done tasks, got %d", len(doneTasks))
+	}
+
+	// Verify file location
+	newPath := filepath.Join(tmpDir, "data", "tasks", "H", "archived", "H-T1.json")
+	if _, err := os.Stat(newPath); os.IsNotExist(err) {
+		t.Error("Task file not found in archived location")
+	}
+}
+
+func TestArchiveTask_AlreadyArchived(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	task := Task{Title: "Test", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+	if err := pa.ArchiveTask("H-T1"); err != nil {
+		t.Fatalf("ArchiveTask failed: %v", err)
+	}
+
+	// Archiving again should be a no-op
+	if err := pa.ArchiveTask("H-T1"); err != nil {
+		t.Errorf("ArchiveTask on already archived task should not error, got: %v", err)
+	}
+}
+
+func TestArchiveTask_NotFound(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	err := pa.ArchiveTask("H-T999")
+	if err == nil {
+		t.Error("Expected error for non-existent task")
+	}
+}
+
+func TestRestoreTask(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	task := Task{Title: "Morning run", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+	if err := pa.ArchiveTask("H-T1"); err != nil {
+		t.Fatalf("ArchiveTask failed: %v", err)
+	}
+
+	if err := pa.RestoreTask("H-T1"); err != nil {
+		t.Fatalf("RestoreTask failed: %v", err)
+	}
+
+	// Verify task is in done
+	doneTasks, err := pa.GetTasksByStatus("H", "done")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus failed: %v", err)
+	}
+	if len(doneTasks) != 1 {
+		t.Errorf("Expected 1 done task, got %d", len(doneTasks))
+	}
+
+	// Verify removed from archived
+	archivedTasks, _ := pa.GetTasksByStatus("H", "archived")
+	if len(archivedTasks) != 0 {
+		t.Errorf("Expected 0 archived tasks, got %d", len(archivedTasks))
+	}
+
+	// Verify file location
+	donePath := filepath.Join(tmpDir, "data", "tasks", "H", "done", "H-T1.json")
+	if _, err := os.Stat(donePath); os.IsNotExist(err) {
+		t.Error("Task file not found in done location")
+	}
+}
+
+func TestRestoreTask_NotArchived(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	task := Task{Title: "Test", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+
+	err := pa.RestoreTask("H-T1")
+	if err == nil {
+		t.Error("Expected error when restoring non-archived task")
+	}
+}
+
+func TestRestoreTask_NotFound(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	err := pa.RestoreTask("H-T999")
+	if err == nil {
+		t.Error("Expected error for non-existent task")
+	}
+}
+
+func TestGetTasksByStatus_Archived(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create two tasks, archive one
+	t1 := Task{Title: "Task 1", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	t2 := Task{Title: "Task 2", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(t1); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+	if err := pa.SaveTask(t2); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+	if err := pa.ArchiveTask("H-T1"); err != nil {
+		t.Fatalf("ArchiveTask failed: %v", err)
+	}
+
+	// Should find only the archived task
+	archivedTasks, err := pa.GetTasksByStatus("H", "archived")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus failed: %v", err)
+	}
+	if len(archivedTasks) != 1 {
+		t.Errorf("Expected 1 archived task, got %d", len(archivedTasks))
+	}
+	if archivedTasks[0].ID != "H-T1" {
+		t.Errorf("Expected archived task H-T1, got %s", archivedTasks[0].ID)
+	}
+}
+
+func TestAllTaskStatuses_IncludesArchived(t *testing.T) {
+	statuses := AllTaskStatuses()
+	found := false
+	for _, s := range statuses {
+		if s == TaskStatusArchived {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("AllTaskStatuses should include archived")
+	}
+}
+
+func TestIsAnyTaskStatus(t *testing.T) {
+	if !IsAnyTaskStatus("archived") {
+		t.Error("IsAnyTaskStatus should accept 'archived'")
+	}
+	if !IsAnyTaskStatus("todo") {
+		t.Error("IsAnyTaskStatus should accept 'todo'")
+	}
+	if IsAnyTaskStatus("invalid") {
+		t.Error("IsAnyTaskStatus should reject 'invalid'")
+	}
+}

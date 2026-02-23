@@ -1945,3 +1945,251 @@ func TestUnit_CreateTask_BatchSequential(t *testing.T) {
 		}
 	})
 }
+
+// =============================================================================
+// Archive / Restore Tests
+// =============================================================================
+
+func TestArchiveTask(t *testing.T) {
+	t.Run("archives a done task", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		_, _ = manager.MoveTask(task.ID, "done")
+
+		err := manager.ArchiveTask(task.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Verify archived
+		tasks, _ := manager.GetTasks()
+		for _, tw := range tasks {
+			if tw.ID == task.ID {
+				if tw.Status != "archived" {
+					t.Errorf("expected status 'archived', got '%s'", tw.Status)
+				}
+				return
+			}
+		}
+		t.Error("archived task not found in GetTasks")
+	})
+
+	t.Run("rejects non-done task", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+
+		err := manager.ArchiveTask(task.ID)
+		if err == nil {
+			t.Fatal("expected error for non-done task")
+		}
+	})
+
+	t.Run("cascades to subtasks", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateTask("Parent", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		sub, _ := manager.CreateTask("Subtask", "T", "2026-01-31", "important-urgent", "", "", "", "")
+
+		// Set subtask relationship
+		parentID := parent.ID
+		sub.ParentTaskID = &parentID
+		_ = mockAccess.SaveTask(*sub)
+
+		// Move parent to done
+		_, _ = manager.MoveTask(parent.ID, "done")
+
+		err := manager.ArchiveTask(parent.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Verify both are archived
+		tasks, _ := manager.GetTasks()
+		for _, tw := range tasks {
+			if tw.ID == parent.ID || tw.ID == sub.ID {
+				if tw.Status != "archived" {
+					t.Errorf("task %s expected status 'archived', got '%s'", tw.ID, tw.Status)
+				}
+			}
+		}
+	})
+
+	t.Run("returns error for empty ID", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.ArchiveTask("")
+		if err == nil {
+			t.Fatal("expected error for empty ID")
+		}
+	})
+}
+
+func TestArchiveAllDoneTasks(t *testing.T) {
+	t.Run("archives all done tasks", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		t2, _ := manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Task 3", "T", "2026-01-31", "important-urgent", "", "", "", "")
+
+		_, _ = manager.MoveTask(t1.ID, "done")
+		_, _ = manager.MoveTask(t2.ID, "done")
+		// Task 3 stays in todo
+
+		err := manager.ArchiveAllDoneTasks()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		tasks, _ := manager.GetTasks()
+		archivedCount := 0
+		todoCount := 0
+		for _, tw := range tasks {
+			if tw.Status == "archived" {
+				archivedCount++
+			}
+			if tw.Status == "todo" {
+				todoCount++
+			}
+		}
+		if archivedCount != 2 {
+			t.Errorf("expected 2 archived tasks, got %d", archivedCount)
+		}
+		if todoCount != 1 {
+			t.Errorf("expected 1 todo task, got %d", todoCount)
+		}
+	})
+
+	t.Run("no-op when no done tasks", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, _ = manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
+
+		err := manager.ArchiveAllDoneTasks()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		tasks, _ := manager.GetTasks()
+		if len(tasks) != 1 || tasks[0].Status != "todo" {
+			t.Error("task should remain in todo")
+		}
+	})
+}
+
+func TestRestoreTask(t *testing.T) {
+	t.Run("restores archived task to done", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		_, _ = manager.MoveTask(task.ID, "done")
+		_ = manager.ArchiveTask(task.ID)
+
+		err := manager.RestoreTask(task.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		tasks, _ := manager.GetTasks()
+		for _, tw := range tasks {
+			if tw.ID == task.ID {
+				if tw.Status != "done" {
+					t.Errorf("expected status 'done', got '%s'", tw.Status)
+				}
+				return
+			}
+		}
+		t.Error("restored task not found")
+	})
+
+	t.Run("rejects non-archived task", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+
+		err := manager.RestoreTask(task.ID)
+		if err == nil {
+			t.Fatal("expected error for non-archived task")
+		}
+	})
+
+	t.Run("cascades to archived subtasks", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateTask("Parent", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		sub, _ := manager.CreateTask("Subtask", "T", "2026-01-31", "important-urgent", "", "", "", "")
+
+		parentID := parent.ID
+		sub.ParentTaskID = &parentID
+		_ = mockAccess.SaveTask(*sub)
+
+		_, _ = manager.MoveTask(parent.ID, "done")
+		_ = manager.ArchiveTask(parent.ID)
+
+		err := manager.RestoreTask(parent.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		tasks, _ := manager.GetTasks()
+		for _, tw := range tasks {
+			if tw.ID == parent.ID || tw.ID == sub.ID {
+				if tw.Status != "done" {
+					t.Errorf("task %s expected status 'done', got '%s'", tw.ID, tw.Status)
+				}
+			}
+		}
+	})
+
+	t.Run("returns error for empty ID", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.RestoreTask("")
+		if err == nil {
+			t.Fatal("expected error for empty ID")
+		}
+	})
+}
+
+func TestGetTasks_IncludesArchived(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
+	_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
+
+	_, _ = manager.MoveTask(t1.ID, "done")
+	_ = manager.ArchiveTask(t1.ID)
+
+	tasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if len(tasks) != 2 {
+		t.Fatalf("expected 2 tasks (1 todo + 1 archived), got %d", len(tasks))
+	}
+
+	statusMap := map[string]int{}
+	for _, tw := range tasks {
+		statusMap[tw.Status]++
+	}
+	if statusMap["todo"] != 1 {
+		t.Errorf("expected 1 todo task, got %d", statusMap["todo"])
+	}
+	if statusMap["archived"] != 1 {
+		t.Errorf("expected 1 archived task, got %d", statusMap["archived"])
+	}
+}
