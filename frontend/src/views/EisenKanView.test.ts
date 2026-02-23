@@ -660,4 +660,38 @@ describe('EisenKanView', () => {
       expect(titles).toEqual(['Doing Third', 'Doing First', 'Doing Second']);
     });
   });
+
+  describe('state-check verification', () => {
+    it('emits no [state-check] warnings when backend and frontend agree after edit', async () => {
+      await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
+
+      // Set up mock so post-edit re-fetch returns the updated task
+      const updatedTasks = makeTestTasks().map(t =>
+        t.id === 'T1' ? { ...t, title: 'Updated' } : t
+      );
+      mockGetTasks.mockResolvedValue(updatedTasks);
+
+      // Simulate edit: click task card to open edit dialog, then save
+      const card = container.querySelector('.task-card')!;
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await tick();
+
+      const titleInput = container.querySelector<HTMLInputElement>('#edit-task-title');
+      if (titleInput) {
+        titleInput.value = 'Updated';
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+        await tick();
+
+        const saveBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.trim() === 'Save');
+        saveBtn?.click();
+        await tick();
+        await tick();
+      }
+
+      const stateCheckWarns = warnSpy.mock.calls.filter(c => String(c[0]).includes('[state-check]'));
+      expect(stateCheckWarns).toHaveLength(0);
+      warnSpy.mockRestore();
+    });
+  });
 });

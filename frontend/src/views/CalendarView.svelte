@@ -11,6 +11,7 @@
   import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
   import { Dialog, Button } from '../lib/components';
   import { getBindings } from '../lib/utils/bindings';
+  import { checkFullState } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
   // Props
@@ -207,6 +208,12 @@
     editText = focus?.text ?? '';
   }
 
+  const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text'];
+
+  async function verifyCalendarState() {
+    await checkFullState('dayFocus', [...yearFocus.values()], () => getBindings().GetYearFocus(year), 'date', DAY_FOCUS_FIELDS);
+  }
+
   async function saveDayFocus() {
     if (!editingDay) return;
 
@@ -228,6 +235,7 @@
         yearFocus.set(editingDay.date, dayFocus);
       }
 
+      await verifyCalendarState();
       editingDay = null;
     } catch (e) {
       console.error('CalendarView: Failed to save day focus', e);
