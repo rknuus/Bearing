@@ -81,17 +81,30 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
 
 describe('EisenKanView', () => {
   let container: HTMLDivElement;
+  let currentTasks: TaskWithStatus[];
 
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
-    mockGetTasks.mockResolvedValue(JSON.parse(JSON.stringify(makeTestTasks())));
+    currentTasks = JSON.parse(JSON.stringify(makeTestTasks()));
+    mockGetTasks.mockImplementation(async () => JSON.parse(JSON.stringify(currentTasks)));
     mockGetThemes.mockResolvedValue(JSON.parse(JSON.stringify(makeTestThemes())));
     mockGetBoardConfiguration.mockResolvedValue(JSON.parse(JSON.stringify(makeTestBoardConfig())));
-    mockCreateTask.mockResolvedValue({ id: 'T-NEW', title: '', themeId: '', dayDate: '', priority: 'important-urgent' });
-    mockMoveTask.mockResolvedValue({ success: true });
-    mockDeleteTask.mockResolvedValue(undefined);
-    mockUpdateTask.mockResolvedValue(undefined);
+    mockCreateTask.mockImplementation(async (title: string, themeId: string, dayDate: string, priority: string) => {
+      const task = { id: 'T-NEW', title, themeId, dayDate, priority, status: 'todo' } as TaskWithStatus;
+      currentTasks = [...currentTasks, task];
+      return task;
+    });
+    mockMoveTask.mockImplementation(async (id: string, status: string) => {
+      currentTasks = currentTasks.map(t => t.id === id ? { ...t, status } : t);
+      return { success: true };
+    });
+    mockDeleteTask.mockImplementation(async (id: string) => {
+      currentTasks = currentTasks.filter(t => t.id !== id);
+    });
+    mockUpdateTask.mockImplementation(async (task: TaskWithStatus) => {
+      currentTasks = currentTasks.map(t => t.id === task.id ? { ...t, ...task } : t);
+    });
     mockProcessPriorityPromotions.mockResolvedValue([]);
     mockReorderTasks.mockResolvedValue({ success: true, reordered: [] });
   });
@@ -230,9 +243,10 @@ describe('EisenKanView', () => {
       expect(mockDeleteTask).toHaveBeenCalled();
     });
 
-    // Card should be removed optimistically
-    const newCardCount = container.querySelectorAll('.task-card').length;
-    expect(newCardCount).toBe(3);
+    // Card should be removed after backend confirms
+    await vi.waitFor(() => {
+      expect(container.querySelectorAll('.task-card').length).toBe(3);
+    });
   });
 
   it('filters tasks by filterThemeIds prop', async () => {
@@ -257,9 +271,9 @@ describe('EisenKanView', () => {
 
   it('shows empty column placeholder when column has no tasks', async () => {
     // Provide tasks only for todo column
-    mockGetTasks.mockResolvedValue([
+    currentTasks = [
       { id: 'T1', title: 'Only todo', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-    ]);
+    ];
 
     await renderView();
 
@@ -389,7 +403,7 @@ describe('EisenKanView', () => {
   // Subtask nesting tests
   describe('subtask nesting', () => {
     beforeEach(() => {
-      mockGetTasks.mockResolvedValue(JSON.parse(JSON.stringify(makeTasksWithSubtasks())));
+      currentTasks = JSON.parse(JSON.stringify(makeTasksWithSubtasks()));
     });
 
     it('renders only top-level tasks as primary cards in non-sectioned columns', async () => {
@@ -474,7 +488,7 @@ describe('EisenKanView', () => {
     }
 
     beforeEach(() => {
-      mockGetTasks.mockResolvedValue(JSON.parse(JSON.stringify(makeTasksForDndTest())));
+      currentTasks = JSON.parse(JSON.stringify(makeTasksForDndTest()));
     });
 
     it('cross-column drop to middle preserves DnD position', async () => {
@@ -527,11 +541,11 @@ describe('EisenKanView', () => {
 
     it('cross-section drop within TODO preserves DnD position', async () => {
       // Set up tasks: two in important-urgent, one in important-not-urgent
-      mockGetTasks.mockResolvedValue([
+      currentTasks = [
         { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
         { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
         { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
-      ]);
+      ];
 
       await renderView();
 
@@ -556,11 +570,11 @@ describe('EisenKanView', () => {
 
     it('cross-section move sends both source and target zones to ReorderTasks', async () => {
       // Set up tasks: two in important-urgent, one in important-not-urgent
-      mockGetTasks.mockResolvedValue([
+      currentTasks = [
         { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
         { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
         { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
-      ]);
+      ];
 
       await renderView();
 
@@ -595,10 +609,10 @@ describe('EisenKanView', () => {
     });
 
     it('cross-section ReorderTasks failure triggers rollback and shows error', async () => {
-      mockGetTasks.mockResolvedValue([
+      currentTasks = [
         { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
         { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
-      ]);
+      ];
 
       // UpdateTask succeeds but ReorderTasks fails
       mockUpdateTask.mockResolvedValue(undefined);
@@ -666,11 +680,8 @@ describe('EisenKanView', () => {
       await renderView();
       const warnSpy = vi.spyOn(console, 'warn');
 
-      // Set up mock so post-edit re-fetch returns the updated task
-      const updatedTasks = makeTestTasks().map(t =>
-        t.id === 'T1' ? { ...t, title: 'Updated' } : t
-      );
-      mockGetTasks.mockResolvedValue(updatedTasks);
+      // Stateful mocks: mockUpdateTask automatically applies changes to currentTasks,
+      // so mockGetTasks will return the updated data when checkFullState runs.
 
       // Simulate edit: click task card to open edit dialog, then save
       const card = container.querySelector('.task-card')!;
