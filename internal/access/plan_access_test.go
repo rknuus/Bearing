@@ -1523,6 +1523,46 @@ func TestSaveTaskOrder_Overwrite(t *testing.T) {
 	}
 }
 
+func TestSaveTaskOrder_Idempotent(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	order := map[string][]string{
+		"doing":            {"H-T1", "H-T2"},
+		"important-urgent": {"H-T3"},
+	}
+
+	// First save — should commit
+	if err := pa.SaveTaskOrder(order); err != nil {
+		t.Fatalf("First SaveTaskOrder failed: %v", err)
+	}
+
+	// Second save with identical data — should succeed (no error)
+	if err := pa.SaveTaskOrder(order); err != nil {
+		t.Fatalf("Second SaveTaskOrder with identical data should not fail, got: %v", err)
+	}
+
+	// Verify only one "Update task order" commit exists (not two)
+	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
+	repo, _ := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
+	defer repo.Close()
+
+	history, err := repo.GetHistory(10)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+
+	orderCommits := 0
+	for _, c := range history {
+		if c.Message == "Update task order" {
+			orderCommits++
+		}
+	}
+	if orderCommits != 1 {
+		t.Errorf("Expected exactly 1 'Update task order' commit, got %d", orderCommits)
+	}
+}
+
 func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()

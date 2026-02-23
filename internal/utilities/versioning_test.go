@@ -265,6 +265,68 @@ func TestUnit_VersioningUtility_CommitChanges(t *testing.T) {
 	}
 }
 
+func TestUnit_VersioningUtility_CommitNoChanges(t *testing.T) {
+	tempDir := t.TempDir()
+	repoPath := filepath.Join(tempDir, "empty_commit_test")
+
+	repo, err := InitializeRepositoryWithConfig(repoPath, testAuthorConfig())
+	if err != nil {
+		t.Fatalf("Failed to initialize repository: %v", err)
+	}
+	defer repo.Close()
+
+	// Create, stage, and commit a file
+	testFile := filepath.Join(repoPath, "test.txt")
+	if err := os.WriteFile(testFile, []byte("content"), 0644); err != nil {
+		t.Fatalf("Failed to create test file: %v", err)
+	}
+
+	tx, err := repo.Begin()
+	if err != nil {
+		t.Fatalf("Failed to begin transaction: %v", err)
+	}
+	if err := tx.Stage([]string{"."}); err != nil {
+		_ = tx.Cancel()
+		t.Fatalf("Failed to stage: %v", err)
+	}
+	if _, err := tx.Commit("Initial commit"); err != nil {
+		t.Fatalf("Failed to commit: %v", err)
+	}
+
+	// Get history count after first commit
+	history, err := repo.GetHistory(10)
+	if err != nil {
+		t.Fatalf("Failed to get history: %v", err)
+	}
+	commitCount := len(history)
+
+	// Stage the same file again (no changes) and commit — should succeed with empty hash
+	tx2, err := repo.Begin()
+	if err != nil {
+		t.Fatalf("Failed to begin second transaction: %v", err)
+	}
+	if err := tx2.Stage([]string{"."}); err != nil {
+		_ = tx2.Cancel()
+		t.Fatalf("Failed to stage unchanged file: %v", err)
+	}
+	hash, err := tx2.Commit("No-op commit")
+	if err != nil {
+		t.Fatalf("Expected no error for empty commit, got: %v", err)
+	}
+	if hash != "" {
+		t.Errorf("Expected empty hash for no-op commit, got: %s", hash)
+	}
+
+	// Verify no new commit was created
+	history2, err := repo.GetHistory(10)
+	if err != nil {
+		t.Fatalf("Failed to get history: %v", err)
+	}
+	if len(history2) != commitCount {
+		t.Errorf("Expected %d commits (unchanged), got %d", commitCount, len(history2))
+	}
+}
+
 // TestVersioningUtility_GetRepositoryHistory tests commit history retrieval
 func TestUnit_VersioningUtility_RepositoryHistory(t *testing.T) {
 	tempDir := t.TempDir()
