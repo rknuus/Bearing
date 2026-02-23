@@ -22,15 +22,16 @@ type TaskWithStatus struct {
 
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
-	CurrentView    string   `json:"currentView"`
-	CurrentItem    string   `json:"currentItem"`
-	FilterThemeID  string   `json:"filterThemeId"`
-	FilterDate     string   `json:"filterDate"`
-	LastAccessed   string   `json:"lastAccessed"`
-	ShowCompleted  bool     `json:"showCompleted,omitempty"`
-	ShowArchived   bool     `json:"showArchived,omitempty"`
-	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
-	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
+	CurrentView       string   `json:"currentView"`
+	CurrentItem       string   `json:"currentItem"`
+	FilterThemeID     string   `json:"filterThemeId"`
+	FilterDate        string   `json:"filterDate"`
+	LastAccessed      string   `json:"lastAccessed"`
+	ShowCompleted     bool     `json:"showCompleted,omitempty"`
+	ShowArchived      bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs      []string `json:"filterTagIds,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -1287,30 +1288,32 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 	}
 
 	return &NavigationContext{
-		CurrentView:    ctx.CurrentView,
-		CurrentItem:    ctx.CurrentItem,
-		FilterThemeID:  ctx.FilterThemeID,
-		FilterDate:     ctx.FilterDate,
-		LastAccessed:   ctx.LastAccessed,
-		ShowCompleted:  ctx.ShowCompleted,
-		ShowArchived:   ctx.ShowArchived,
-		ExpandedOkrIds: ctx.ExpandedOkrIds,
-		FilterTagIDs:   ctx.FilterTagIDs,
+		CurrentView:       ctx.CurrentView,
+		CurrentItem:       ctx.CurrentItem,
+		FilterThemeID:     ctx.FilterThemeID,
+		FilterDate:        ctx.FilterDate,
+		LastAccessed:      ctx.LastAccessed,
+		ShowCompleted:     ctx.ShowCompleted,
+		ShowArchived:      ctx.ShowArchived,
+		ShowArchivedTasks: ctx.ShowArchivedTasks,
+		ExpandedOkrIds:    ctx.ExpandedOkrIds,
+		FilterTagIDs:      ctx.FilterTagIDs,
 	}, nil
 }
 
 // SaveNavigationContext persists the current navigation context.
 func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 	accessCtx := access.NavigationContext{
-		CurrentView:    ctx.CurrentView,
-		CurrentItem:    ctx.CurrentItem,
-		FilterThemeID:  ctx.FilterThemeID,
-		FilterDate:     ctx.FilterDate,
-		LastAccessed:   ctx.LastAccessed,
-		ShowCompleted:  ctx.ShowCompleted,
-		ShowArchived:   ctx.ShowArchived,
-		ExpandedOkrIds: ctx.ExpandedOkrIds,
-		FilterTagIDs:   ctx.FilterTagIDs,
+		CurrentView:       ctx.CurrentView,
+		CurrentItem:       ctx.CurrentItem,
+		FilterThemeID:     ctx.FilterThemeID,
+		FilterDate:        ctx.FilterDate,
+		LastAccessed:      ctx.LastAccessed,
+		ShowCompleted:     ctx.ShowCompleted,
+		ShowArchived:      ctx.ShowArchived,
+		ShowArchivedTasks: ctx.ShowArchivedTasks,
+		ExpandedOkrIds:    ctx.ExpandedOkrIds,
+		FilterTagIDs:      ctx.FilterTagIDs,
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {

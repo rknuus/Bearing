@@ -278,7 +278,8 @@ type NavigationContext struct {
 	FilterDate     string   `json:"filterDate"`
 	LastAccessed   string   `json:"lastAccessed"`
 	ShowCompleted  bool     `json:"showCompleted,omitempty"`
-	ShowArchived   bool     `json:"showArchived,omitempty"`
-	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
+	ShowArchived      bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
 	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
 }

@@ -204,14 +204,15 @@ type BoardConfiguration struct {
 
 // NavigationContext represents the user's navigation state (for Wails binding)
 type NavigationContext struct {
-	CurrentView    string   `json:"currentView"`
-	CurrentItem    string   `json:"currentItem"`
-	FilterThemeID  string   `json:"filterThemeId"`
-	FilterDate     string   `json:"filterDate"`
-	LastAccessed   string   `json:"lastAccessed"`
-	ShowCompleted  bool     `json:"showCompleted,omitempty"`
-	ShowArchived   bool     `json:"showArchived,omitempty"`
-	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
+	CurrentView       string   `json:"currentView"`
+	CurrentItem       string   `json:"currentItem"`
+	FilterThemeID     string   `json:"filterThemeId"`
+	FilterDate        string   `json:"filterDate"`
+	LastAccessed      string   `json:"lastAccessed"`
+	ShowCompleted     bool     `json:"showCompleted,omitempty"`
+	ShowArchived      bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
 }
 
 // convertObjective recursively converts an access.Objective to a Wails Objective
@@ -696,6 +697,33 @@ func (a *App) DeleteTask(taskId string) error {
 	return a.planningManager.DeleteTask(taskId)
 }
 
+// ArchiveTask archives a done task and all its subtasks
+func (a *App) ArchiveTask(taskId string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.ArchiveTask(taskId)
+}
+
+// ArchiveAllDoneTasks archives all done tasks and their subtasks
+func (a *App) ArchiveAllDoneTasks() error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.ArchiveAllDoneTasks()
+}
+
+// RestoreTask restores an archived task and its archived subtasks to done
+func (a *App) RestoreTask(taskId string) error {
+	if a.planningManager == nil {
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	return a.planningManager.RestoreTask(taskId)
+}
+
 // ReorderTasks accepts proposed positions and returns authoritative order
 func (a *App) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
 	if a.planningManager == nil {
@@ -761,14 +789,15 @@ func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 	}
 
 	return &NavigationContext{
-		CurrentView:    ctx.CurrentView,
-		CurrentItem:    ctx.CurrentItem,
-		FilterThemeID:  ctx.FilterThemeID,
-		FilterDate:     ctx.FilterDate,
-		LastAccessed:   ctx.LastAccessed,
-		ShowCompleted:  ctx.ShowCompleted,
-		ShowArchived:   ctx.ShowArchived,
-		ExpandedOkrIds: ctx.ExpandedOkrIds,
+		CurrentView:       ctx.CurrentView,
+		CurrentItem:       ctx.CurrentItem,
+		FilterThemeID:     ctx.FilterThemeID,
+		FilterDate:        ctx.FilterDate,
+		LastAccessed:      ctx.LastAccessed,
+		ShowCompleted:     ctx.ShowCompleted,
+		ShowArchived:      ctx.ShowArchived,
+		ShowArchivedTasks: ctx.ShowArchivedTasks,
+		ExpandedOkrIds:    ctx.ExpandedOkrIds,
 	}, nil
 }
 
@@ -779,14 +808,15 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 	}
 
 	return a.planningManager.SaveNavigationContext(managers.NavigationContext{
-		CurrentView:    ctx.CurrentView,
-		CurrentItem:    ctx.CurrentItem,
-		FilterThemeID:  ctx.FilterThemeID,
-		FilterDate:     ctx.FilterDate,
-		LastAccessed:   ctx.LastAccessed,
-		ShowCompleted:  ctx.ShowCompleted,
-		ShowArchived:   ctx.ShowArchived,
-		ExpandedOkrIds: ctx.ExpandedOkrIds,
+		CurrentView:       ctx.CurrentView,
+		CurrentItem:       ctx.CurrentItem,
+		FilterThemeID:     ctx.FilterThemeID,
+		FilterDate:        ctx.FilterDate,
+		LastAccessed:      ctx.LastAccessed,
+		ShowCompleted:     ctx.ShowCompleted,
+		ShowArchived:      ctx.ShowArchived,
+		ShowArchivedTasks: ctx.ShowArchivedTasks,
+		ExpandedOkrIds:    ctx.ExpandedOkrIds,
 	})
 }
 
