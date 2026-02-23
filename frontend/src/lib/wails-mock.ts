@@ -114,6 +114,7 @@ export interface NavigationContext {
   lastAccessed: string;
   showCompleted?: boolean;
   showArchived?: boolean;
+  showArchivedTasks?: boolean;
   expandedOkrIds?: string[];
   filterTagIds?: string[];
 }
@@ -728,6 +729,60 @@ export const mockAppBindings = {
       taskPositions[zone] = (taskPositions[zone] ?? []).filter(id => id !== taskId);
     }
     mockTasks = mockTasks.filter(t => t.id !== taskId);
+  },
+
+  ArchiveTask: async (taskId: string): Promise<void> => {
+    const task = mockTasks.find(t => t.id === taskId);
+    if (!task) return;
+    // Collect task + all descendants
+    const toArchive = [taskId];
+    const collectDescendants = (parentId: string) => {
+      for (const t of mockTasks) {
+        if (t.parentTaskId === parentId) {
+          toArchive.push(t.id);
+          collectDescendants(t.id);
+        }
+      }
+    };
+    collectDescendants(taskId);
+    for (const id of toArchive) {
+      const t = mockTasks.find(t => t.id === id);
+      if (t) {
+        const oldZone = dropZoneForTask(t);
+        taskPositions[oldZone] = (taskPositions[oldZone] ?? []).filter(tid => tid !== id);
+        t.status = 'archived';
+      }
+    }
+  },
+
+  ArchiveAllDoneTasks: async (): Promise<void> => {
+    const doneIds = new Set(mockTasks.filter(t => t.status === 'done').map(t => t.id));
+    const rootDone = mockTasks.filter(t =>
+      t.status === 'done' && (!t.parentTaskId || !doneIds.has(t.parentTaskId))
+    );
+    for (const task of rootDone) {
+      await mockAppBindings.ArchiveTask(task.id);
+    }
+  },
+
+  RestoreTask: async (taskId: string): Promise<void> => {
+    const task = mockTasks.find(t => t.id === taskId);
+    if (!task || task.status !== 'archived') return;
+    // Collect task + all archived descendants
+    const toRestore = [taskId];
+    const collectArchivedDescendants = (parentId: string) => {
+      for (const t of mockTasks) {
+        if (t.parentTaskId === parentId && t.status === 'archived') {
+          toRestore.push(t.id);
+          collectArchivedDescendants(t.id);
+        }
+      }
+    };
+    collectArchivedDescendants(taskId);
+    for (const id of toRestore) {
+      const t = mockTasks.find(t => t.id === id);
+      if (t) t.status = 'done';
+    }
   },
 
   ReorderTasks: async (positions: Record<string, string[]>): Promise<ReorderResult> => {

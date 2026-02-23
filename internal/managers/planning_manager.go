@@ -22,15 +22,16 @@ type TaskWithStatus struct {
 
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
-	CurrentView    string   `json:"currentView"`
-	CurrentItem    string   `json:"currentItem"`
-	FilterThemeID  string   `json:"filterThemeId"`
-	FilterDate     string   `json:"filterDate"`
-	LastAccessed   string   `json:"lastAccessed"`
-	ShowCompleted  bool     `json:"showCompleted,omitempty"`
-	ShowArchived   bool     `json:"showArchived,omitempty"`
-	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
-	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
+	CurrentView       string   `json:"currentView"`
+	CurrentItem       string   `json:"currentItem"`
+	FilterThemeID     string   `json:"filterThemeId"`
+	FilterDate        string   `json:"filterDate"`
+	LastAccessed      string   `json:"lastAccessed"`
+	ShowCompleted     bool     `json:"showCompleted,omitempty"`
+	ShowArchived      bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs      []string `json:"filterTagIds,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -68,6 +69,9 @@ type IPlanningManager interface {
 	MoveTask(taskId, newStatus string) (*MoveTaskResult, error)
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
+	ArchiveTask(taskId string) error
+	ArchiveAllDoneTasks() error
+	RestoreTask(taskId string) error
 	ReorderTasks(positions map[string][]string) (*ReorderResult, error)
 
 	// Priority Promotions
@@ -692,7 +696,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	var allTasks []TaskWithStatus
 
 	for _, theme := range themes {
-		for _, status := range access.ValidTaskStatuses() {
+		for _, status := range access.AllTaskStatuses() {
 			tasks, err := m.planAccess.GetTasksByStatus(theme.ID, string(status))
 			if err != nil {
 				return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get tasks for theme %s status %s: %w", theme.ID, status, err)
@@ -1047,6 +1051,177 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 	return nil
 }
 
+// ArchiveTask archives a done task and all its subtasks.
+func (m *PlanningManager) ArchiveTask(taskId string) error {
+	if taskId == "" {
+		return fmt.Errorf("PlanningManager.ArchiveTask: task ID cannot be empty")
+	}
+
+	allTasks, err := m.GetTasks()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.ArchiveTask: failed to get tasks: %w", err)
+	}
+
+	// Find the target task and verify it's done
+	var targetTask *TaskWithStatus
+	for i := range allTasks {
+		if allTasks[i].ID == taskId {
+			targetTask = &allTasks[i]
+			break
+		}
+	}
+	if targetTask == nil {
+		return fmt.Errorf("PlanningManager.ArchiveTask: task %s not found", taskId)
+	}
+	if targetTask.Status != string(access.TaskStatusDone) {
+		return fmt.Errorf("PlanningManager.ArchiveTask: task %s is not done (status: %s)", taskId, targetTask.Status)
+	}
+
+	// Collect all subtask IDs (any status) recursively, then prepend parent
+	toArchive := append([]string{taskId}, collectDescendantIDs(taskId, allTasks)...)
+
+	for _, id := range toArchive {
+		if err := m.planAccess.ArchiveTask(id); err != nil {
+			return fmt.Errorf("PlanningManager.ArchiveTask: failed to archive task %s: %w", id, err)
+		}
+	}
+
+	// Remove archived task IDs from task order
+	if err := m.removeFromTaskOrder(toArchive); err != nil {
+		return fmt.Errorf("PlanningManager.ArchiveTask: %w", err)
+	}
+
+	return nil
+}
+
+// ArchiveAllDoneTasks archives all root-level done tasks and their subtasks.
+func (m *PlanningManager) ArchiveAllDoneTasks() error {
+	allTasks, err := m.GetTasks()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.ArchiveAllDoneTasks: failed to get tasks: %w", err)
+	}
+
+	// Build set of done task IDs
+	doneSet := make(map[string]bool)
+	for _, t := range allTasks {
+		if t.Status == string(access.TaskStatusDone) {
+			doneSet[t.ID] = true
+		}
+	}
+
+	// Find root-level done tasks (no parent, or parent is not done)
+	for _, t := range allTasks {
+		if t.Status != string(access.TaskStatusDone) {
+			continue
+		}
+		if t.ParentTaskID != nil && *t.ParentTaskID != "" && doneSet[*t.ParentTaskID] {
+			continue // Parent is also done — parent's cascade will handle this
+		}
+		if err := m.ArchiveTask(t.ID); err != nil {
+			return fmt.Errorf("PlanningManager.ArchiveAllDoneTasks: %w", err)
+		}
+	}
+
+	return nil
+}
+
+// RestoreTask restores an archived task and all its archived subtasks to done.
+func (m *PlanningManager) RestoreTask(taskId string) error {
+	if taskId == "" {
+		return fmt.Errorf("PlanningManager.RestoreTask: task ID cannot be empty")
+	}
+
+	allTasks, err := m.GetTasks()
+	if err != nil {
+		return fmt.Errorf("PlanningManager.RestoreTask: failed to get tasks: %w", err)
+	}
+
+	// Find the target task and verify it's archived
+	var targetTask *TaskWithStatus
+	for i := range allTasks {
+		if allTasks[i].ID == taskId {
+			targetTask = &allTasks[i]
+			break
+		}
+	}
+	if targetTask == nil {
+		return fmt.Errorf("PlanningManager.RestoreTask: task %s not found", taskId)
+	}
+	if targetTask.Status != string(access.TaskStatusArchived) {
+		return fmt.Errorf("PlanningManager.RestoreTask: task %s is not archived (status: %s)", taskId, targetTask.Status)
+	}
+
+	// Collect archived subtask IDs recursively, then prepend parent
+	toRestore := append([]string{taskId}, collectArchivedDescendantIDs(taskId, allTasks)...)
+
+	for _, id := range toRestore {
+		if err := m.planAccess.RestoreTask(id); err != nil {
+			return fmt.Errorf("PlanningManager.RestoreTask: failed to restore task %s: %w", id, err)
+		}
+	}
+
+	return nil
+}
+
+// collectDescendantIDs returns all descendant task IDs for a parent, regardless of status.
+func collectDescendantIDs(parentID string, allTasks []TaskWithStatus) []string {
+	var result []string
+	for _, t := range allTasks {
+		if t.ParentTaskID != nil && *t.ParentTaskID == parentID {
+			result = append(result, t.ID)
+			result = append(result, collectDescendantIDs(t.ID, allTasks)...)
+		}
+	}
+	return result
+}
+
+// collectArchivedDescendantIDs returns archived descendant task IDs for a parent.
+func collectArchivedDescendantIDs(parentID string, allTasks []TaskWithStatus) []string {
+	var result []string
+	for _, t := range allTasks {
+		if t.ParentTaskID != nil && *t.ParentTaskID == parentID && t.Status == string(access.TaskStatusArchived) {
+			result = append(result, t.ID)
+			result = append(result, collectArchivedDescendantIDs(t.ID, allTasks)...)
+		}
+	}
+	return result
+}
+
+// removeFromTaskOrder removes the given task IDs from all drop zones in the task order.
+func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
+	orderMap, err := m.planAccess.LoadTaskOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load task order: %w", err)
+	}
+
+	idSet := make(map[string]bool, len(taskIDs))
+	for _, id := range taskIDs {
+		idSet[id] = true
+	}
+
+	changed := false
+	for zone, ids := range orderMap {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if !idSet[id] {
+				filtered = append(filtered, id)
+			}
+		}
+		if len(filtered) != len(ids) {
+			orderMap[zone] = filtered
+			changed = true
+		}
+	}
+
+	if changed {
+		if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+			return fmt.Errorf("failed to save task order: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // ReorderTasks accepts proposed positions for one or more drop zones,
 // merges them into the full order map, persists, and returns authoritative positions.
 func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
@@ -1113,30 +1288,32 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 	}
 
 	return &NavigationContext{
-		CurrentView:    ctx.CurrentView,
-		CurrentItem:    ctx.CurrentItem,
-		FilterThemeID:  ctx.FilterThemeID,
-		FilterDate:     ctx.FilterDate,
-		LastAccessed:   ctx.LastAccessed,
-		ShowCompleted:  ctx.ShowCompleted,
-		ShowArchived:   ctx.ShowArchived,
-		ExpandedOkrIds: ctx.ExpandedOkrIds,
-		FilterTagIDs:   ctx.FilterTagIDs,
+		CurrentView:       ctx.CurrentView,
+		CurrentItem:       ctx.CurrentItem,
+		FilterThemeID:     ctx.FilterThemeID,
+		FilterDate:        ctx.FilterDate,
+		LastAccessed:      ctx.LastAccessed,
+		ShowCompleted:     ctx.ShowCompleted,
+		ShowArchived:      ctx.ShowArchived,
+		ShowArchivedTasks: ctx.ShowArchivedTasks,
+		ExpandedOkrIds:    ctx.ExpandedOkrIds,
+		FilterTagIDs:      ctx.FilterTagIDs,
 	}, nil
 }
 
 // SaveNavigationContext persists the current navigation context.
 func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 	accessCtx := access.NavigationContext{
-		CurrentView:    ctx.CurrentView,
-		CurrentItem:    ctx.CurrentItem,
-		FilterThemeID:  ctx.FilterThemeID,
-		FilterDate:     ctx.FilterDate,
-		LastAccessed:   ctx.LastAccessed,
-		ShowCompleted:  ctx.ShowCompleted,
-		ShowArchived:   ctx.ShowArchived,
-		ExpandedOkrIds: ctx.ExpandedOkrIds,
-		FilterTagIDs:   ctx.FilterTagIDs,
+		CurrentView:       ctx.CurrentView,
+		CurrentItem:       ctx.CurrentItem,
+		FilterThemeID:     ctx.FilterThemeID,
+		FilterDate:        ctx.FilterDate,
+		LastAccessed:      ctx.LastAccessed,
+		ShowCompleted:     ctx.ShowCompleted,
+		ShowArchived:      ctx.ShowArchived,
+		ShowArchivedTasks: ctx.ShowArchivedTasks,
+		ExpandedOkrIds:    ctx.ExpandedOkrIds,
+		FilterTagIDs:      ctx.FilterTagIDs,
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {

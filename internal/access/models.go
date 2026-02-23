@@ -160,6 +160,8 @@ const (
 	TaskStatusDoing TaskStatus = "doing"
 	// TaskStatusDone represents completed tasks
 	TaskStatusDone TaskStatus = "done"
+	// TaskStatusArchived represents archived tasks (hidden from board by default)
+	TaskStatusArchived TaskStatus = "archived"
 )
 
 // ValidTaskStatuses returns all valid task status values
@@ -167,9 +169,24 @@ func ValidTaskStatuses() []TaskStatus {
 	return []TaskStatus{TaskStatusTodo, TaskStatusDoing, TaskStatusDone}
 }
 
-// IsValidTaskStatus checks if a status string is valid
+// IsValidTaskStatus checks if a status string is a valid kanban column status
 func IsValidTaskStatus(status string) bool {
 	for _, valid := range ValidTaskStatuses() {
+		if string(valid) == status {
+			return true
+		}
+	}
+	return false
+}
+
+// AllTaskStatuses returns all task status values including archived
+func AllTaskStatuses() []TaskStatus {
+	return []TaskStatus{TaskStatusTodo, TaskStatusDoing, TaskStatusDone, TaskStatusArchived}
+}
+
+// IsAnyTaskStatus checks if a status string is any valid task status (including archived)
+func IsAnyTaskStatus(status string) bool {
+	for _, valid := range AllTaskStatuses() {
 		if string(valid) == status {
 			return true
 		}
@@ -261,7 +278,8 @@ type NavigationContext struct {
 	FilterDate     string   `json:"filterDate"`
 	LastAccessed   string   `json:"lastAccessed"`
 	ShowCompleted  bool     `json:"showCompleted,omitempty"`
-	ShowArchived   bool     `json:"showArchived,omitempty"`
-	ExpandedOkrIds []string `json:"expandedOkrIds,omitempty"`
+	ShowArchived      bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
 	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
 }

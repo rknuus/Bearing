@@ -33,6 +33,8 @@ type IPlanAccess interface {
 	SaveTask(task Task) error
 	SaveTaskWithOrder(task Task, dropZone string) (*Task, error)
 	MoveTask(taskID, newStatus string) error
+	ArchiveTask(taskID string) error
+	RestoreTask(taskID string) error
 	DeleteTask(taskID string) error
 	DeleteTaskWithOrder(taskID string) error
 
@@ -183,7 +185,7 @@ func (pa *PlanAccess) findTaskInPlan(taskID string) (*Task, string, string, int,
 	}
 
 	for _, theme := range themes {
-		for _, status := range ValidTaskStatuses() {
+		for _, status := range AllTaskStatuses() {
 			tasks, err := pa.GetTasksByStatus(theme.ID, string(status))
 			if err != nil {
 				continue
@@ -418,7 +420,7 @@ func (pa *PlanAccess) GetTasksByTheme(themeID string) ([]Task, error) {
 
 // GetTasksByStatus returns all tasks for a specific theme and status.
 func (pa *PlanAccess) GetTasksByStatus(themeID, status string) ([]Task, error) {
-	if !IsValidTaskStatus(status) {
+	if !IsAnyTaskStatus(status) {
 		return nil, fmt.Errorf("PlanAccess.GetTasksByStatus: invalid status %s", status)
 	}
 
@@ -662,6 +664,70 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 	// Commit with git - stage both the removal of old and addition of new
 	if err := pa.commitFiles([]string{newPath, oldPath}, fmt.Sprintf("Move task %s: %s -> %s", foundTask.Title, currentStatus, newStatus)); err != nil {
 		return fmt.Errorf("PlanAccess.MoveTask: %w", err)
+	}
+
+	return nil
+}
+
+// ArchiveTask moves a task to the archived directory.
+func (pa *PlanAccess) ArchiveTask(taskID string) error {
+	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	if err != nil {
+		return fmt.Errorf("PlanAccess.ArchiveTask: %w", err)
+	}
+	if foundTask == nil {
+		return fmt.Errorf("PlanAccess.ArchiveTask: task with ID %s not found", taskID)
+	}
+	if currentStatus == string(TaskStatusArchived) {
+		return nil // Already archived
+	}
+
+	destDir := pa.taskDirPath(themeID, string(TaskStatusArchived))
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return fmt.Errorf("PlanAccess.ArchiveTask: failed to create archived directory: %w", err)
+	}
+
+	oldPath := pa.taskFilePath(themeID, currentStatus, taskID)
+	newPath := pa.taskFilePath(themeID, string(TaskStatusArchived), taskID)
+
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return fmt.Errorf("PlanAccess.ArchiveTask: failed to move task file: %w", err)
+	}
+
+	if err := pa.commitFiles([]string{newPath, oldPath}, fmt.Sprintf("Archive task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("PlanAccess.ArchiveTask: %w", err)
+	}
+
+	return nil
+}
+
+// RestoreTask moves a task from the archived directory to done.
+func (pa *PlanAccess) RestoreTask(taskID string) error {
+	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	if err != nil {
+		return fmt.Errorf("PlanAccess.RestoreTask: %w", err)
+	}
+	if foundTask == nil {
+		return fmt.Errorf("PlanAccess.RestoreTask: task with ID %s not found", taskID)
+	}
+	if currentStatus != string(TaskStatusArchived) {
+		return fmt.Errorf("PlanAccess.RestoreTask: task %s is not archived (status: %s)", taskID, currentStatus)
+	}
+
+	destDir := pa.taskDirPath(themeID, string(TaskStatusDone))
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return fmt.Errorf("PlanAccess.RestoreTask: failed to create done directory: %w", err)
+	}
+
+	oldPath := pa.taskFilePath(themeID, string(TaskStatusArchived), taskID)
+	newPath := pa.taskFilePath(themeID, string(TaskStatusDone), taskID)
+
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return fmt.Errorf("PlanAccess.RestoreTask: failed to move task file: %w", err)
+	}
+
+	if err := pa.commitFiles([]string{newPath, oldPath}, fmt.Sprintf("Restore task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("PlanAccess.RestoreTask: %w", err)
 	}
 
 	return nil

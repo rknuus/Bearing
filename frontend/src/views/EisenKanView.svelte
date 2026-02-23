@@ -69,6 +69,9 @@
   let loading = $state(true);
   let error = $state<string | null>(null);
 
+  // Archive toggle state (persisted via navigation context)
+  let showArchivedTasks = $state(false);
+
   // Create task dialog state
   let showCreateDialog = $state(false);
 
@@ -238,6 +241,18 @@
     await getBindings().ReorderTasks(positions);
   }
 
+  async function apiArchiveTask(taskId: string): Promise<void> {
+    await getBindings().ArchiveTask(taskId);
+  }
+
+  async function apiArchiveAllDoneTasks(): Promise<void> {
+    await getBindings().ArchiveAllDoneTasks();
+  }
+
+  async function apiRestoreTask(taskId: string): Promise<void> {
+    await getBindings().RestoreTask(taskId);
+  }
+
   const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId'];
 
   async function verifyTaskState() {
@@ -256,6 +271,16 @@
       themes = fetchedThemes;
       boardConfig = fetchedConfig;
 
+      // Load showArchivedTasks from navigation context
+      try {
+        const navCtx = await getBindings().LoadNavigationContext();
+        if (navCtx) {
+          showArchivedTasks = navCtx.showArchivedTasks ?? false;
+        }
+      } catch {
+        // Ignore errors loading nav context
+      }
+
       // Process priority promotions on startup and refresh if any promoted
       try {
         const promoted = await apiProcessPromotions();
@@ -271,6 +296,18 @@
     } finally {
       loading = false;
     }
+  });
+
+  // Persist showArchivedTasks to NavigationContext
+  $effect(() => {
+    const sat = showArchivedTasks;
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, showArchivedTasks: sat });
+        }
+      }).catch(() => { /* ignore */ });
+    });
   });
 
   // Create task dialog handlers
@@ -540,7 +577,38 @@
     closeContextMenu();
   }
 
-  // Column task count
+  // Archive/restore handlers
+  async function handleArchiveTask(taskId: string) {
+    try {
+      await apiArchiveTask(taskId);
+      tasks = await fetchTasks();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to archive task';
+    }
+  }
+
+  async function handleArchiveAllDone() {
+    try {
+      await apiArchiveAllDoneTasks();
+      tasks = await fetchTasks();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to archive tasks';
+    }
+  }
+
+  async function handleRestoreTask(taskId: string) {
+    try {
+      await apiRestoreTask(taskId);
+      tasks = await fetchTasks();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to restore task';
+    }
+  }
+
+  // Derive archived tasks (filtered by theme/tag/date like other tasks)
+  const archivedTasks = $derived(filteredTasks.filter(t => t.status === 'archived'));
+
+  // Column task count (exclude archived)
   function getColumnTaskCount(columnName: string): number {
     return (columnItems[columnName] ?? []).length;
   }
@@ -591,7 +659,19 @@
         >
           <div class="column-header">
             <h2>{column.title}</h2>
-            <span class="task-count">{getColumnTaskCount(column.name)}</span>
+            <div class="column-header-right">
+              {#if column.type === 'done'}
+                <button
+                  type="button"
+                  class="archive-all-btn"
+                  onclick={handleArchiveAllDone}
+                  title="Archive all done tasks"
+                >
+                  Archive all
+                </button>
+              {/if}
+              <span class="task-count">{getColumnTaskCount(column.name)}</span>
+            </div>
           </div>
 
           {#if column.sections && column.sections.length > 0}
@@ -745,6 +825,17 @@
                     >
                       {formatDate(task.dayDate)}
                     </button>
+                    {#if column.type === 'done'}
+                      <button
+                        type="button"
+                        class="archive-btn"
+                        onclick={(e) => { e.stopPropagation(); handleArchiveTask(task.id); }}
+                        aria-label="Archive task"
+                        title="Archive task"
+                      >
+                        &#x2713;
+                      </button>
+                    {/if}
                     <button
                       type="button"
                       class="delete-btn"
@@ -782,6 +873,33 @@
           {/if}
         </div>
       {/each}
+    </div>
+
+    <div class="archived-section">
+      <label class="toggle-label">
+        <input type="checkbox" bind:checked={showArchivedTasks} /> Show archived tasks
+      </label>
+      {#if showArchivedTasks && archivedTasks.length > 0}
+        <div class="archived-tasks">
+          {#each archivedTasks.filter(t => !t.parentTaskId) as task (task.id)}
+            <div
+              class="archived-task-card"
+              style="--theme-color: {getThemeColor(themes, task.themeId)};"
+            >
+              <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
+              <span class="archived-task-title">{task.title}</span>
+              <button
+                type="button"
+                class="restore-btn"
+                onclick={() => handleRestoreTask(task.id)}
+                title="Restore to done"
+              >
+                Restore
+              </button>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -1097,6 +1215,106 @@
   .delete-btn:hover {
     color: var(--color-error-600);
     background-color: var(--color-error-100);
+  }
+
+  .column-header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .archive-all-btn {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    color: var(--color-gray-500);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    transition: color 0.2s, background-color 0.2s;
+  }
+
+  .archive-all-btn:hover {
+    color: var(--color-gray-700);
+    background-color: var(--color-gray-300);
+  }
+
+  .archive-btn {
+    background: none;
+    border: none;
+    color: var(--color-gray-400);
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.2s, background-color 0.2s;
+  }
+
+  .archive-btn:hover {
+    color: var(--color-success-600, #16a34a);
+    background-color: var(--color-success-100, #dcfce7);
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--color-gray-500);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-label input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: var(--color-gray-500);
+  }
+
+  .archived-section {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-gray-300);
+  }
+
+  .archived-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+  }
+
+  .archived-task-card {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-gray-200);
+    border-radius: 6px;
+    border-left: 4px solid var(--theme-color, var(--color-gray-400));
+    opacity: 0.65;
+  }
+
+  .archived-task-title {
+    flex: 1;
+    font-size: 0.8125rem;
+    color: var(--color-gray-600);
+  }
+
+  .restore-btn {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    color: var(--color-gray-500);
+    font-size: 0.6875rem;
+    cursor: pointer;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+    transition: color 0.2s, background-color 0.2s;
+  }
+
+  .restore-btn:hover {
+    color: var(--color-gray-700);
+    background-color: var(--color-gray-300);
   }
 
   .empty-column {

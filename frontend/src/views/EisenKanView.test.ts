@@ -59,6 +59,11 @@ const mockDeleteTask = vi.fn();
 const mockUpdateTask = vi.fn();
 const mockProcessPriorityPromotions = vi.fn();
 const mockReorderTasks = vi.fn();
+const mockArchiveTask = vi.fn();
+const mockArchiveAllDoneTasks = vi.fn();
+const mockRestoreTask = vi.fn();
+const mockLoadNavigationContext = vi.fn();
+const mockSaveNavigationContext = vi.fn();
 
 vi.mock('../lib/wails-mock', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../lib/wails-mock')>();
@@ -75,6 +80,11 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
       UpdateTask: (...args: unknown[]) => mockUpdateTask(...args),
       ProcessPriorityPromotions: (...args: unknown[]) => mockProcessPriorityPromotions(...args),
       ReorderTasks: (...args: unknown[]) => mockReorderTasks(...args),
+      ArchiveTask: (...args: unknown[]) => mockArchiveTask(...args),
+      ArchiveAllDoneTasks: (...args: unknown[]) => mockArchiveAllDoneTasks(...args as []),
+      RestoreTask: (...args: unknown[]) => mockRestoreTask(...args),
+      LoadNavigationContext: (...args: unknown[]) => mockLoadNavigationContext(...args as []),
+      SaveNavigationContext: (...args: unknown[]) => mockSaveNavigationContext(...args),
     },
   };
 });
@@ -107,6 +117,17 @@ describe('EisenKanView', () => {
     });
     mockProcessPriorityPromotions.mockResolvedValue([]);
     mockReorderTasks.mockResolvedValue({ success: true, reordered: [] });
+    mockArchiveTask.mockImplementation(async (id: string) => {
+      currentTasks = currentTasks.map(t => t.id === id ? { ...t, status: 'archived' } : t);
+    });
+    mockArchiveAllDoneTasks.mockImplementation(async () => {
+      currentTasks = currentTasks.map(t => t.status === 'done' ? { ...t, status: 'archived' } : t);
+    });
+    mockRestoreTask.mockImplementation(async (id: string) => {
+      currentTasks = currentTasks.map(t => t.id === id ? { ...t, status: 'done' } : t);
+    });
+    mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '' });
+    mockSaveNavigationContext.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -716,6 +737,145 @@ describe('EisenKanView', () => {
       expect(titles).toContain('Study');
       expect(titles).toContain('Emails');
       expect(titles).toContain('Done task');
+    });
+  });
+
+  describe('archive functionality', () => {
+    it('renders archive button only on done-column task cards', async () => {
+      await renderView();
+
+      const columns = container.querySelectorAll('.kanban-column');
+
+      // Todo column (sectioned) should have no archive buttons
+      const todoArchiveBtns = columns[0].querySelectorAll('.archive-btn');
+      expect(todoArchiveBtns.length).toBe(0);
+
+      // Doing column should have no archive buttons
+      const doingArchiveBtns = columns[1].querySelectorAll('.archive-btn');
+      expect(doingArchiveBtns.length).toBe(0);
+
+      // Done column should have archive button on each task card
+      const doneArchiveBtns = columns[2].querySelectorAll('.archive-btn');
+      expect(doneArchiveBtns.length).toBe(1);
+    });
+
+    it('renders "Archive all" button in done column header', async () => {
+      await renderView();
+
+      const archiveAllBtns = container.querySelectorAll('.archive-all-btn');
+      expect(archiveAllBtns.length).toBe(1);
+      expect(archiveAllBtns[0].textContent).toBe('Archive all');
+    });
+
+    it('archive button calls ArchiveTask and refreshes tasks', async () => {
+      await renderView();
+
+      const columns = container.querySelectorAll('.kanban-column');
+      const archiveBtn = columns[2].querySelector<HTMLButtonElement>('.archive-btn')!;
+      archiveBtn.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockArchiveTask).toHaveBeenCalledWith('T4');
+      });
+
+      // GetTasks should be re-fetched after archive
+      await vi.waitFor(() => {
+        expect(mockGetTasks).toHaveBeenCalledTimes(2); // initial + post-archive
+      });
+    });
+
+    it('"Archive all" button calls ArchiveAllDoneTasks and refreshes tasks', async () => {
+      await renderView();
+
+      const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
+      archiveAllBtn.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockArchiveAllDoneTasks).toHaveBeenCalledOnce();
+      });
+
+      await vi.waitFor(() => {
+        expect(mockGetTasks).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('archived tasks are not shown in kanban columns', async () => {
+      currentTasks = [
+        ...makeTestTasks(),
+        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+      ];
+
+      await renderView();
+
+      // Archived task should not appear in any column
+      const allCards = container.querySelectorAll('.kanban-column .task-card');
+      const titles = Array.from(allCards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(titles).not.toContain('Archived task');
+    });
+
+    it('toggle shows archived tasks section when enabled', async () => {
+      currentTasks = [
+        ...makeTestTasks(),
+        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+      ];
+
+      await renderView();
+
+      // Archived section should exist but tasks hidden by default
+      expect(container.querySelector('.archived-tasks')).toBeNull();
+
+      // Toggle on
+      const toggle = container.querySelector<HTMLInputElement>('.toggle-label input[type="checkbox"]');
+      expect(toggle).toBeTruthy();
+      toggle!.click();
+      await tick();
+
+      // Archived tasks should now be visible
+      const archivedCards = container.querySelectorAll('.archived-task-card');
+      expect(archivedCards.length).toBe(1);
+      expect(archivedCards[0].querySelector('.archived-task-title')?.textContent).toBe('Archived task');
+    });
+
+    it('restore button on archived task calls RestoreTask', async () => {
+      currentTasks = [
+        ...makeTestTasks(),
+        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+      ];
+
+      // Set toggle on via nav context
+      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
+
+      await renderView();
+
+      const restoreBtn = container.querySelector<HTMLButtonElement>('.restore-btn')!;
+      expect(restoreBtn.textContent).toBe('Restore');
+      restoreBtn.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockRestoreTask).toHaveBeenCalledWith('T5');
+      });
+
+      await vi.waitFor(() => {
+        expect(mockGetTasks).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('persists showArchivedTasks toggle to navigation context', async () => {
+      await renderView();
+
+      const toggle = container.querySelector<HTMLInputElement>('.toggle-label input[type="checkbox"]');
+      toggle!.click();
+      await tick();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockSaveNavigationContext).toHaveBeenCalledWith(
+          expect.objectContaining({ showArchivedTasks: true })
+        );
+      });
     });
   });
 
