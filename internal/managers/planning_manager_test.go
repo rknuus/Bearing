@@ -213,6 +213,14 @@ func (m *mockPlanAccess) MoveTask(taskID, newStatus string) error {
 	return nil
 }
 
+func (m *mockPlanAccess) ArchiveTask(taskID string) error {
+	return m.MoveTask(taskID, string(access.TaskStatusArchived))
+}
+
+func (m *mockPlanAccess) RestoreTask(taskID string) error {
+	return m.MoveTask(taskID, string(access.TaskStatusDone))
+}
+
 func (m *mockPlanAccess) DeleteTask(taskID string) error {
 	for themeID, themeMap := range m.tasks {
 		for status, tasks := range themeMap {
