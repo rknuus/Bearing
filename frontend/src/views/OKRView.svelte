@@ -12,6 +12,7 @@
   import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import { getBindings } from '../lib/utils/bindings';
+  import { checkFullState } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
   interface Props {
@@ -162,12 +163,19 @@
     }
   }
 
+  const THEME_FIELDS = ['id', 'name', 'color'];
+
+  async function verifyThemeState() {
+    await checkFullState('theme', themes, () => getBindings().GetThemes(), 'id', THEME_FIELDS);
+  }
+
   async function createTheme() {
     if (!newThemeName.trim()) return;
 
     try {
       await getBindings().CreateTheme(newThemeName.trim(), newThemeColor);
       await loadThemes();
+      await verifyThemeState();
       newThemeName = '';
       newThemeColor = COLOR_PALETTE[0];
       showNewThemeForm = false;
@@ -181,6 +189,7 @@
     try {
       await getBindings().UpdateTheme(theme);
       await loadThemes();
+      await verifyThemeState();
       editingThemeId = null;
     } catch (e) {
       console.error('Failed to update theme:', e);
@@ -194,6 +203,7 @@
     try {
       await getBindings().DeleteTheme(id);
       await loadThemes();
+      await verifyThemeState();
     } catch (e) {
       console.error('Failed to delete theme:', e);
       error = e instanceof Error ? e.message : 'Failed to delete theme';
@@ -207,6 +217,7 @@
     try {
       await getBindings().CreateObjective(parentId, newObjectiveTitle.trim());
       await loadThemes();
+      await verifyThemeState();
       newObjectiveTitle = '';
       addingObjectiveTo = null;
       // Expand the parent to show the new objective
@@ -222,6 +233,7 @@
     try {
       await getBindings().UpdateObjective(objectiveId, newTitle);
       await loadThemes();
+      await verifyThemeState();
       editingObjectiveId = null;
     } catch (e) {
       console.error('Failed to update objective:', e);
@@ -236,6 +248,7 @@
     try {
       await getBindings().DeleteObjective(objectiveId);
       await loadThemes();
+      await verifyThemeState();
     } catch (e) {
       console.error('Failed to delete objective:', e);
       error = e instanceof Error ? e.message : 'Failed to delete objective';
@@ -249,6 +262,7 @@
     try {
       await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue);
       await loadThemes();
+      await verifyThemeState();
       newKeyResultDescription = '';
       newKeyResultStartValue = 0;
       newKeyResultTargetValue = 1;
@@ -266,6 +280,7 @@
     try {
       await getBindings().UpdateKeyResult(keyResultId, newDescription);
       await loadThemes();
+      await verifyThemeState();
       editingKeyResultId = null;
     } catch (e) {
       console.error('Failed to update key result:', e);
@@ -278,6 +293,7 @@
     try {
       await getBindings().UpdateKeyResultProgress(keyResultId, currentValue);
       await loadThemes();
+      await verifyThemeState();
     } catch (e) {
       console.error('Failed to update key result progress:', e);
       error = e instanceof Error ? e.message : 'Failed to update progress';
@@ -291,6 +307,7 @@
     try {
       await getBindings().DeleteKeyResult(keyResultId);
       await loadThemes();
+      await verifyThemeState();
     } catch (e) {
       console.error('Failed to delete key result:', e);
       error = e instanceof Error ? e.message : 'Failed to delete key result';
@@ -314,6 +331,7 @@
     try {
       await getBindings().SetObjectiveStatus(objectiveId, status);
       await loadThemes();
+      await verifyThemeState();
     } catch (e) {
       console.error('Failed to set objective status:', e);
       error = e instanceof Error ? e.message : 'Failed to update status';
@@ -324,6 +342,7 @@
     try {
       await getBindings().SetKeyResultStatus(keyResultId, status);
       await loadThemes();
+      await verifyThemeState();
     } catch (e) {
       console.error('Failed to set key result status:', e);
       error = e instanceof Error ? e.message : 'Failed to update status';

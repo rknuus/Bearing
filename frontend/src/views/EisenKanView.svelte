@@ -33,6 +33,7 @@
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
   import { formatDate, formatDateLong } from '../lib/utils/date-format';
+  import { checkFullState } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
   interface Props {
@@ -237,6 +238,12 @@
     await getBindings().ReorderTasks(positions);
   }
 
+  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId'];
+
+  async function verifyTaskState() {
+    await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS);
+  }
+
   // Load data on mount
   onMount(async () => {
     try {
@@ -283,6 +290,7 @@
   async function handleCreateDone() {
     showCreateDialog = false;
     await refreshTasks();
+    await verifyTaskState();
   }
 
   function handleCreateCancel() {
@@ -298,6 +306,7 @@
     await apiUpdateTask(updatedTask);
     selectedTask = null;
     await refreshTasks();
+    await verifyTaskState();
   }
 
   function handleEditCancel() {
@@ -390,6 +399,7 @@
         } catch (reorderErr) {
           error = reorderErr instanceof Error ? reorderErr.message : 'Failed to save task order';
         }
+        await verifyTaskState();
       }
     } catch (e) {
       // Network error -- rollback
@@ -455,6 +465,7 @@
           } catch (reorderErr) {
             error = reorderErr instanceof Error ? reorderErr.message : 'Failed to save task order';
           }
+          await verifyTaskState();
         }
       } catch (e) {
         isRollingBack = true;
@@ -481,6 +492,7 @@
           [sourceSection]: sourceZoneIds,
           [sectionName]: targetZoneIds
         });
+        await verifyTaskState();
       } catch (e) {
         isRollingBack = true;
         tasks = snapshotTasks;
@@ -502,6 +514,7 @@
 
     try {
       await apiDeleteTask(taskId);
+      await verifyTaskState();
     } catch (e) {
       // Revert on error
       tasks = [...tasks, taskToDelete];
