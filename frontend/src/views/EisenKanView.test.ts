@@ -675,6 +675,50 @@ describe('EisenKanView', () => {
     });
   });
 
+  describe('theme filtering', () => {
+    it('renders only filtered theme tasks', async () => {
+      const onFilterThemeToggle = vi.fn();
+      const onFilterThemeClear = vi.fn();
+
+      await renderView({ filterThemeIds: ['HF'], onFilterThemeToggle, onFilterThemeClear });
+
+      const cards = container.querySelectorAll('.task-card');
+      const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+
+      // HF tasks visible
+      expect(titles).toContain('Exercise');
+      expect(titles).toContain('Done task');
+
+      // CG tasks hidden
+      expect(titles).not.toContain('Study');
+      expect(titles).not.toContain('Emails');
+    });
+
+    it('clears filter and shows all tasks', async () => {
+      const onFilterThemeToggle = vi.fn();
+      const onFilterThemeClear = vi.fn();
+
+      const { unmount } = await renderView({ filterThemeIds: ['HF'], onFilterThemeToggle, onFilterThemeClear });
+
+      // Verify filtered state
+      let cards = container.querySelectorAll('.task-card');
+      expect(cards.length).toBe(2);
+
+      // Re-render without filter
+      unmount();
+      await renderView({ filterThemeIds: [], onFilterThemeToggle, onFilterThemeClear });
+
+      cards = container.querySelectorAll('.task-card');
+      expect(cards.length).toBe(4);
+
+      const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+      expect(titles).toContain('Exercise');
+      expect(titles).toContain('Study');
+      expect(titles).toContain('Emails');
+      expect(titles).toContain('Done task');
+    });
+  });
+
   describe('state-check verification', () => {
     it('emits no [state-check] warnings when backend and frontend agree after edit', async () => {
       await renderView();
