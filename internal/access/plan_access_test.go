@@ -555,6 +555,70 @@ func TestSaveTask_NewTask(t *testing.T) {
 	}
 }
 
+func TestSaveTask_ThemeChange(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Create two themes
+	if err := pa.SaveTheme(LifeTheme{Name: "Work", Color: "#0000FF"}); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+	if err := pa.SaveTheme(LifeTheme{Name: "Learning", Color: "#00FF00"}); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create task under Work theme
+	task := Task{
+		Title:    "Study Go",
+		ThemeID:  "W",
+		DayDate:  "2026-01-15",
+		Priority: string(PriorityImportantUrgent),
+	}
+	if err := pa.SaveTask(task); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+
+	// Verify task exists under Work
+	workTasks, err := pa.GetTasksByTheme("W")
+	if err != nil {
+		t.Fatalf("GetTasksByTheme failed: %v", err)
+	}
+	if len(workTasks) != 1 {
+		t.Fatalf("Expected 1 task under W, got %d", len(workTasks))
+	}
+
+	// Move task to Learning theme by updating themeId
+	movedTask := workTasks[0]
+	movedTask.ThemeID = "L"
+	if err := pa.SaveTask(movedTask); err != nil {
+		t.Fatalf("SaveTask (theme change) failed: %v", err)
+	}
+
+	// Old theme should have no tasks
+	workTasks, err = pa.GetTasksByTheme("W")
+	if err != nil {
+		t.Fatalf("GetTasksByTheme failed: %v", err)
+	}
+	if len(workTasks) != 0 {
+		t.Errorf("Expected 0 tasks under W after theme change, got %d", len(workTasks))
+	}
+
+	// New theme should have the task
+	learnTasks, err := pa.GetTasksByTheme("L")
+	if err != nil {
+		t.Fatalf("GetTasksByTheme failed: %v", err)
+	}
+	if len(learnTasks) != 1 {
+		t.Fatalf("Expected 1 task under L, got %d", len(learnTasks))
+	}
+	if learnTasks[0].ID != movedTask.ID {
+		t.Errorf("Expected task ID %s, got %s", movedTask.ID, learnTasks[0].ID)
+	}
+	if learnTasks[0].ThemeID != "L" {
+		t.Errorf("Expected themeID L, got %s", learnTasks[0].ThemeID)
+	}
+}
+
 func TestSaveTask_EmptyThemeID(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()

@@ -606,7 +606,7 @@
                   </div>
                   <div
                     class="column-content"
-                    use:dndzone={{ items: [...sectionTaskItems], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
+                    use:dndzone={{ items: sectionTaskItems, flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
                     onconsider={(e) => handleSectionDndConsider(section.name, e)}
                     onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
                   >
@@ -693,7 +693,7 @@
             <!-- Regular column: single drop zone -->
             <div
               class="column-content"
-              use:dndzone={{ items: [...(columnItems[column.name] ?? [])], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
+              use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack }}
               onconsider={(e) => handleDndConsider(column.name, e)}
               onfinalize={(e) => handleDndFinalize(column.name, e)}
             >

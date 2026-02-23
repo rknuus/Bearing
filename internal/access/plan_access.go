@@ -457,9 +457,9 @@ func (pa *PlanAccess) GetTasksByStatus(themeID, status string) ([]Task, error) {
 
 // saveTaskFile writes a task to disk without committing.
 // Returns the file path and whether the task is new.
-func (pa *PlanAccess) saveTaskFile(task *Task) (string, bool, error) {
+func (pa *PlanAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 	if task.ThemeID == "" {
-		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: themeID cannot be empty")
+		return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: themeID cannot be empty")
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
@@ -469,7 +469,7 @@ func (pa *PlanAccess) saveTaskFile(task *Task) (string, bool, error) {
 	if isNew {
 		existingTasks, err := pa.GetTasksByTheme(task.ThemeID)
 		if err != nil {
-			return "", false, fmt.Errorf("PlanAccess.saveTaskFile: failed to get existing tasks: %w", err)
+			return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to get existing tasks: %w", err)
 		}
 		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
 	}
@@ -480,36 +480,48 @@ func (pa *PlanAccess) saveTaskFile(task *Task) (string, bool, error) {
 	}
 	task.UpdatedAt = now
 
-	// Determine status - find existing task or default to todo
+	// Determine status and detect theme change
 	status := string(TaskStatusTodo)
-	existingStatus, err := pa.findTaskStatus(task.ID, task.ThemeID)
-	if err != nil {
-		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: failed to find existing task status: %w", err)
-	}
-	if existingStatus != "" {
-		status = existingStatus
+	var affectedPaths []string
+	if !isNew {
+		existing, existingThemeID, existingStatus, _, err := pa.findTaskInPlan(task.ID)
+		if err != nil {
+			return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to find existing task: %w", err)
+		}
+		if existing != nil {
+			status = existingStatus
+			if existingThemeID != task.ThemeID {
+				// Theme changed — remove old file
+				oldPath := pa.taskFilePath(existingThemeID, existingStatus, task.ID)
+				if err := os.Remove(oldPath); err != nil && !os.IsNotExist(err) {
+					return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to remove old task file: %w", err)
+				}
+				affectedPaths = append(affectedPaths, oldPath)
+			}
+		}
 	}
 
 	// Ensure task directory exists
 	dirPath := pa.taskDirPath(task.ThemeID, status)
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
-		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: failed to create task directory: %w", err)
+		return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to create task directory: %w", err)
 	}
 
 	// Save task to file
 	filePath := pa.taskFilePath(task.ThemeID, status, task.ID)
 	if err := writeJSON(filePath, *task); err != nil {
-		return "", false, fmt.Errorf("PlanAccess.saveTaskFile: %w", err)
+		return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: %w", err)
 	}
+	affectedPaths = append(affectedPaths, filePath)
 
-	return filePath, isNew, nil
+	return affectedPaths, isNew, nil
 }
 
 // SaveTask saves or updates a task.
 // If the task ID is empty, a new ID will be generated and CreatedAt is set.
 // UpdatedAt is always set to the current time on every save.
 func (pa *PlanAccess) SaveTask(task Task) error {
-	filePath, isNew, err := pa.saveTaskFile(&task)
+	paths, isNew, err := pa.saveTaskFile(&task)
 	if err != nil {
 		return fmt.Errorf("PlanAccess.SaveTask: %w", err)
 	}
@@ -519,7 +531,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 	if isNew {
 		action = "Add"
 	}
-	if err := pa.commitFiles([]string{filePath}, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
+	if err := pa.commitFiles(paths, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTask: %w", err)
 	}
 
@@ -530,7 +542,7 @@ func (pa *PlanAccess) SaveTask(task Task) error {
 // in a single git commit. This prevents race conditions when creating multiple
 // tasks concurrently.
 func (pa *PlanAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, error) {
-	taskFilePath, isNew, err := pa.saveTaskFile(&task)
+	taskPaths, isNew, err := pa.saveTaskFile(&task)
 	if err != nil {
 		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: %w", err)
 	}
@@ -547,12 +559,13 @@ func (pa *PlanAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, erro
 		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: failed to write task order: %w", err)
 	}
 
-	// Commit both files in a single transaction
+	// Commit all affected files in a single transaction
 	action := "Update"
 	if isNew {
 		action = "Add"
 	}
-	if err := pa.commitFiles([]string{taskFilePath, orderFilePath}, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
+	commitPaths := append(taskPaths, orderFilePath)
+	if err := pa.commitFiles(commitPaths, fmt.Sprintf("%s task: %s", action, task.Title)); err != nil {
 		return nil, fmt.Errorf("PlanAccess.SaveTaskWithOrder: %w", err)
 	}
 
@@ -895,14 +908,6 @@ func (pa *PlanAccess) generateTaskID(themeAbbr string, existingTasks []Task) str
 	return fmt.Sprintf("%s-T%d", themeAbbr, maxNum+1)
 }
 
-// findTaskStatus finds the current status of a task by searching through all themes and statuses.
-func (pa *PlanAccess) findTaskStatus(taskID, themeID string) (string, error) {
-	_, _, status, _, err := pa.findTaskInPlan(taskID)
-	if err != nil {
-		return "", err
-	}
-	return status, nil
-}
 
 // taskOrderFilePath returns the path to the task_order.json file.
 func (pa *PlanAccess) taskOrderFilePath() string {
