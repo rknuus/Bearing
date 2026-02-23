@@ -4,6 +4,7 @@
 package utilities
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -489,6 +490,9 @@ func (r *repository) Commit(message string) (string, error) {
 		},
 	})
 	if err != nil {
+		if errors.Is(err, git.ErrEmptyCommit) {
+			return "", nil
+		}
 		return "", fmt.Errorf("repository.Commit failed to create commit in %s: %w", r.path, err)
 	}
 
