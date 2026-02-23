@@ -273,23 +273,19 @@
     }
   });
 
-  // Refresh tasks from API
-  async function refreshTasks() {
-    try {
-      tasks = await fetchTasks();
-    } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to refresh tasks';
-    }
-  }
-
   // Create task dialog handlers
   function openCreateDialog() {
     showCreateDialog = true;
   }
 
+  async function apiCreateTaskAndInsert(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> {
+    const task = await apiCreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate);
+    tasks = [...tasks, { ...task, status: 'todo' } as TaskWithStatus];
+    return task;
+  }
+
   async function handleCreateDone() {
     showCreateDialog = false;
-    await refreshTasks();
     await verifyTaskState();
   }
 
@@ -304,8 +300,11 @@
 
   async function handleEditSave(updatedTask: Task) {
     await apiUpdateTask(updatedTask);
+    const existing = tasks.find(t => t.id === updatedTask.id);
+    if (existing) {
+      tasks = tasks.map(t => t.id === updatedTask.id ? { ...existing, ...updatedTask } : t);
+    }
     selectedTask = null;
-    await refreshTasks();
     await verifyTaskState();
   }
 
@@ -506,18 +505,11 @@
 
   // Delete task handler
   async function handleDeleteTask(taskId: string) {
-    const taskToDelete = tasks.find(t => t.id === taskId);
-    if (!taskToDelete) return;
-
-    // Optimistic update
-    tasks = tasks.filter(t => t.id !== taskId);
-
     try {
       await apiDeleteTask(taskId);
+      tasks = tasks.filter(t => t.id !== taskId);
       await verifyTaskState();
     } catch (e) {
-      // Revert on error
-      tasks = [...tasks, taskToDelete];
       error = e instanceof Error ? e.message : 'Failed to delete task';
     }
   }
@@ -818,7 +810,7 @@
     {availableTags}
     onDone={handleCreateDone}
     onCancel={handleCreateCancel}
-    createTask={apiCreateTask}
+    createTask={apiCreateTaskAndInsert}
   />
 
   <!-- Edit Task Dialog -->
