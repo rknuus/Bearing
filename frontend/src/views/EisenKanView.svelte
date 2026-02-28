@@ -221,8 +221,8 @@
     return getBindings().CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate);
   }
 
-  async function apiMoveTask(taskId: string, newStatus: string): Promise<MoveTaskResult> {
-    return await getBindings().MoveTask(taskId, newStatus);
+  async function apiMoveTask(taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> {
+    return await getBindings().MoveTask(taskId, newStatus, positions);
   }
 
   async function apiDeleteTask(taskId: string): Promise<void> {
@@ -417,7 +417,7 @@
 
     isValidating = true;
     try {
-      const result = await apiMoveTask(taskId, status);
+      const result = await apiMoveTask(taskId, status, { [status]: targetZoneIds });
       if (!result.success) {
         // Rule violation -- rollback
         isRollingBack = true;
@@ -429,12 +429,6 @@
           error = 'Move rejected by rules';
         }
       } else {
-        // Persist drop position in target zone
-        try {
-          await apiReorderTasks({ [status]: targetZoneIds });
-        } catch (reorderErr) {
-          error = reorderErr instanceof Error ? reorderErr.message : 'Failed to save task order';
-        }
         await verifyTaskState();
       }
     } catch (e) {
@@ -484,7 +478,7 @@
 
       isValidating = true;
       try {
-        const result = await apiMoveTask(taskId, columnName);
+        const result = await apiMoveTask(taskId, columnName, { [sectionName]: targetZoneIds });
         if (!result.success) {
           isRollingBack = true;
           tasks = snapshotTasks;
@@ -495,12 +489,6 @@
             error = 'Move rejected by rules';
           }
         } else {
-          // Persist drop position in target section
-          try {
-            await apiReorderTasks({ [sectionName]: targetZoneIds });
-          } catch (reorderErr) {
-            error = reorderErr instanceof Error ? reorderErr.message : 'Failed to save task order';
-          }
           await verifyTaskState();
         }
       } catch (e) {

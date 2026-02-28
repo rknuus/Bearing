@@ -700,7 +700,7 @@ export const mockAppBindings = {
     return newTask;
   },
 
-  MoveTask: async (taskId: string, newStatus: string): Promise<MoveTaskResult> => {
+  MoveTask: async (taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (task) {
       const oldZone = dropZoneForTask(task);
@@ -709,6 +709,12 @@ export const mockAppBindings = {
       const newZone = dropZoneForTask(task);
       if (oldZone !== newZone) {
         taskPositions[oldZone] = (taskPositions[oldZone] ?? []).filter(id => id !== taskId);
+      }
+      if (positions) {
+        for (const [zone, ids] of Object.entries(positions)) {
+          taskPositions[zone] = ids;
+        }
+      } else if (oldZone !== newZone) {
         taskPositions[newZone] = [...(taskPositions[newZone] ?? []), taskId];
       }
     }
