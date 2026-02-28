@@ -4,6 +4,15 @@ import { tick } from 'svelte';
 import type { LifeTheme, Task } from '../lib/wails-mock';
 import CreateTaskDialog from './CreateTaskDialog.svelte';
 
+// Mock the bindings module so we can control LoadTaskDrafts/SaveTaskDrafts
+let mockDraftsData = '{}';
+vi.mock('../lib/utils/bindings', () => ({
+  getBindings: () => ({
+    LoadTaskDrafts: vi.fn(async () => mockDraftsData),
+    SaveTaskDrafts: vi.fn(async (data: string) => { mockDraftsData = data; }),
+  }),
+}));
+
 function makeTestThemes(): LifeTheme[] {
   return [
     { id: 'HF', name: 'Health & Fitness', color: '#10b981', objectives: [] },
@@ -33,6 +42,7 @@ describe('CreateTaskDialog', () => {
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
+    mockDraftsData = '{}';
   });
 
   afterEach(() => {
@@ -44,7 +54,7 @@ describe('CreateTaskDialog', () => {
     open: boolean;
     themes: LifeTheme[];
     onDone: () => void;
-    onCancel: () => void;
+    onClose: () => void;
     createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
   }> = {}) {
     const result = render(CreateTaskDialog, {
@@ -53,11 +63,14 @@ describe('CreateTaskDialog', () => {
         open: true,
         themes: makeTestThemes(),
         onDone: vi.fn(),
-        onCancel: vi.fn(),
+        onClose: vi.fn(),
         createTask: makeCreateTaskMock(),
         ...props,
       },
     });
+    await tick();
+    // Wait for async draft loading
+    await vi.waitFor(() => {});
     await tick();
     return result;
   }
@@ -149,16 +162,24 @@ describe('CreateTaskDialog', () => {
     expect(doneBtn?.disabled).toBe(true);
   });
 
-  it('Cancel button calls onCancel', async () => {
-    const onCancel = vi.fn();
-    await renderDialog({ onCancel });
+  it('Close button calls onClose and saves drafts', async () => {
+    const onClose = vi.fn();
+    await renderDialog({ onClose });
 
-    const cancelBtn = container.querySelector<HTMLButtonElement>('.btn-secondary');
-    expect(cancelBtn).toBeTruthy();
-    cancelBtn!.click();
+    await addTask('Draft task');
+
+    // Find the Close button (secondary button that's not Clear Staging or Clear Prioritized)
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.btn-secondary');
+    const closeBtn = Array.from(buttons).find(b => b.textContent?.trim() === 'Close');
+    expect(closeBtn).toBeTruthy();
+    closeBtn!.click();
     await tick();
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalledOnce());
 
-    expect(onCancel).toHaveBeenCalledOnce();
+    // Drafts should have been saved
+    const saved = JSON.parse(mockDraftsData);
+    expect(saved.staging).toHaveLength(1);
+    expect(saved.staging[0].title).toBe('Draft task');
   });
 
   it('theme selector shows all themes and defaults to first', async () => {
@@ -295,6 +316,107 @@ describe('CreateTaskDialog', () => {
     await tick();
   }
 
+  describe('draft persistence', () => {
+    it('loads drafts on dialog open', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'Saved urgent' }],
+        'staging': [{ id: 'pending-2', title: 'Saved staging' }],
+      });
+
+      await renderDialog();
+
+      const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
+      expect(q1!.querySelectorAll('.task-title').length).toBe(1);
+      expect(q1!.querySelector('.task-title')!.textContent).toBe('Saved urgent');
+
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      expect(staging!.querySelectorAll('.task-title').length).toBe(1);
+      expect(staging!.querySelector('.task-title')!.textContent).toBe('Saved staging');
+    });
+
+    it('handles corrupted draft data gracefully', async () => {
+      mockDraftsData = 'not valid json';
+
+      await renderDialog();
+
+      // Should start with empty quadrants
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      expect(staging!.querySelectorAll('.task-title').length).toBe(0);
+    });
+
+    it('derives nextId from loaded drafts to avoid collisions', async () => {
+      mockDraftsData = JSON.stringify({
+        'staging': [{ id: 'pending-5', title: 'Existing' }],
+      });
+
+      await renderDialog();
+      await addTask('New task');
+
+      // New task should be pending-6 (one more than the max loaded id)
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      const tasks = staging!.querySelectorAll('.pending-task');
+      const newTaskId = tasks[1]?.getAttribute('data-testid');
+      expect(newTaskId).toBe('pending-task-pending-6');
+    });
+  });
+
+  describe('clear buttons', () => {
+    it('Clear Staging clears only Q4 tasks', async () => {
+      await renderDialog();
+      await addTask('Staging task');
+
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      expect(staging!.querySelectorAll('.task-title').length).toBe(1);
+
+      const clearBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-danger'))
+        .find(b => b.textContent?.trim() === 'Clear Staging');
+      expect(clearBtn).toBeTruthy();
+      await fireEvent.click(clearBtn!);
+      await tick();
+
+      expect(staging!.querySelectorAll('.task-title').length).toBe(0);
+    });
+
+    it('Clear Prioritized clears only Q1-Q3 tasks', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'Q1 task' }],
+        'staging': [{ id: 'pending-2', title: 'Q4 task' }],
+      });
+
+      await renderDialog();
+
+      const clearBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
+        .find(b => b.textContent?.trim() === 'Clear Prioritized');
+      expect(clearBtn).toBeTruthy();
+      await fireEvent.click(clearBtn!);
+      await tick();
+
+      // Q1 should be empty
+      const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
+      expect(q1!.querySelectorAll('.task-title').length).toBe(0);
+
+      // Q4 should still have tasks
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      expect(staging!.querySelectorAll('.task-title').length).toBe(1);
+    });
+
+    it('Clear Staging button is disabled when staging is empty', async () => {
+      await renderDialog();
+
+      const clearBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-danger'))
+        .find(b => b.textContent?.trim() === 'Clear Staging');
+      expect(clearBtn?.disabled).toBe(true);
+    });
+
+    it('Clear Prioritized button is disabled when Q1-Q3 are empty', async () => {
+      await renderDialog();
+
+      const clearBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
+        .find(b => b.textContent?.trim() === 'Clear Prioritized');
+      expect(clearBtn?.disabled).toBe(true);
+    });
+  });
+
   describe('batch creation with partial failure', () => {
     it('calls onDone when all tasks succeed', async () => {
       const onDone = vi.fn();
@@ -361,6 +483,27 @@ describe('CreateTaskDialog', () => {
       });
 
       expect(onDone).not.toHaveBeenCalled();
+    });
+
+    it('Q4 staging tasks remain after successful commit', async () => {
+      const onDone = vi.fn();
+      const createTask = makeCreateTaskMock();
+      await renderDialog({ onDone, createTask });
+
+      // Add tasks to both staging and Q1
+      await addTask('Staged idea');
+      await addTask('Urgent task');
+      await moveTaskToQuadrant('important-urgent', { id: 'pending-2', title: 'Urgent task' });
+
+      const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      await fireEvent.click(doneBtn!);
+      await tick();
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+
+      // After commit, saved drafts should still contain the staging task
+      const saved = JSON.parse(mockDraftsData);
+      expect(saved.staging).toHaveLength(1);
+      expect(saved.staging[0].title).toBe('Staged idea');
     });
   });
 });
