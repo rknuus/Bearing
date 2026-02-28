@@ -182,3 +182,7 @@ lint: frontend-lint ## Run all linters (Go + frontend)
 fmt: ## Format Go code
 	@echo "Formatting Go code..."
 	go fmt ./...
+
+.PHONY: migrate-tasks
+migrate-tasks: ## Migrate task files from theme-scoped to flat structure
+	@bash scripts/migrate-task-structure.sh
