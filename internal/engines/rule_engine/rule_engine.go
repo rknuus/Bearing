@@ -46,9 +46,10 @@ func DefaultRules() []Rule {
 			TriggerType: "task_move",
 			Conditions: map[string]interface{}{
 				"allowed_transitions": map[string]interface{}{
-					"todo":  []interface{}{"doing", "done"},
-					"doing": []interface{}{"todo", "done"},
-					"done":  []interface{}{"todo", "doing"},
+					"todo":     []interface{}{"doing", "done"},
+					"doing":    []interface{}{"todo", "done"},
+					"done":     []interface{}{"todo", "doing"},
+					"archived": []interface{}{"todo"},
 				},
 			},
 			Enabled:  true,

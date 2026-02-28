@@ -2193,3 +2193,31 @@ func TestGetTasks_IncludesArchived(t *testing.T) {
 		t.Errorf("expected 1 archived task, got %d", statusMap["archived"])
 	}
 }
+
+func TestMoveTask_AfterArchiving(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Create a task, move to done, then archive it
+	task1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
+	_, _ = manager.MoveTask(task1.ID, "done")
+	_ = manager.ArchiveTask(task1.ID)
+
+	// Create a new task (ID must not collide with the archived one)
+	task2, err := manager.CreateTask("Task 2", "T", "2026-01-31", "important-urgent", "", "", "", "")
+	if err != nil {
+		t.Fatalf("expected no error creating task after archive, got %v", err)
+	}
+	if task2.ID == task1.ID {
+		t.Fatalf("new task ID %s collides with archived task ID %s", task2.ID, task1.ID)
+	}
+
+	// Move the new task from todo to doing — should succeed without rule violation
+	result, err := manager.MoveTask(task2.ID, "doing")
+	if err != nil {
+		t.Fatalf("expected no error moving task after archive, got %v", err)
+	}
+	if !result.Success {
+		t.Errorf("expected move to succeed, got violations: %v", result.Violations)
+	}
+}

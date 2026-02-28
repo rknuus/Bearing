@@ -407,7 +407,7 @@ func (pa *PlanAccess) GetYearFocus(year int) ([]DayFocus, error) {
 func (pa *PlanAccess) GetTasksByTheme(themeID string) ([]Task, error) {
 	var allTasks []Task
 
-	for _, status := range ValidTaskStatuses() {
+	for _, status := range AllTaskStatuses() {
 		tasks, err := pa.GetTasksByStatus(themeID, string(status))
 		if err != nil {
 			return nil, fmt.Errorf("PlanAccess.GetTasksByTheme: failed to get tasks with status %s: %w", status, err)
