@@ -1951,6 +1951,52 @@ func TestAllTaskStatuses_IncludesArchived(t *testing.T) {
 	}
 }
 
+func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create two tasks: H-T1 and H-T2
+	task1 := Task{Title: "Task one", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task1); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+	task2 := Task{Title: "Task two", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task2); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+
+	// Archive both tasks
+	if err := pa.ArchiveTask("H-T1"); err != nil {
+		t.Fatalf("ArchiveTask H-T1 failed: %v", err)
+	}
+	if err := pa.ArchiveTask("H-T2"); err != nil {
+		t.Fatalf("ArchiveTask H-T2 failed: %v", err)
+	}
+
+	// Create a new task — should get H-T3, not H-T1 (collision with archived)
+	task3 := Task{Title: "Task three", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task3); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+
+	// Verify new task got H-T3
+	todoTasks, err := pa.GetTasksByStatus("H", "todo")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus failed: %v", err)
+	}
+	if len(todoTasks) != 1 {
+		t.Fatalf("Expected 1 todo task, got %d", len(todoTasks))
+	}
+	if todoTasks[0].ID != "H-T3" {
+		t.Errorf("Expected new task ID H-T3, got %s (ID collision with archived task)", todoTasks[0].ID)
+	}
+}
+
 func TestIsAnyTaskStatus(t *testing.T) {
 	if !IsAnyTaskStatus("archived") {
 		t.Error("IsAnyTaskStatus should accept 'archived'")
