@@ -877,15 +877,26 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string) (*MoveTaskResult, e
 		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to get tasks: %w", err)
 	}
 
-	// Find the task being moved
+	// Find the task being moved (prefer active copy over archived when IDs collide)
 	var movingTask *access.Task
 	var oldStatus string
 	for _, t := range allTasks {
-		if t.ID == taskId {
+		if t.ID == taskId && t.Status != string(access.TaskStatusArchived) {
 			taskCopy := t.Task
 			movingTask = &taskCopy
 			oldStatus = t.Status
 			break
+		}
+	}
+	if movingTask == nil {
+		// Fall back to archived if no active copy exists
+		for _, t := range allTasks {
+			if t.ID == taskId {
+				taskCopy := t.Task
+				movingTask = &taskCopy
+				oldStatus = t.Status
+				break
+			}
 		}
 	}
 	if movingTask == nil {
