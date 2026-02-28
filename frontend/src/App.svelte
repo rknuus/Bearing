@@ -153,32 +153,6 @@
     navigateToEisenKan(options);
   }
 
-  // Navigate up one breadcrumb level
-  function navigateUp() {
-    if (filterDate) {
-      filterDate = undefined;
-      saveNavigationContext();
-      return;
-    }
-    if (filterThemeIds.length > 0) {
-      filterThemeIds = [];
-      saveNavigationContext();
-      return;
-    }
-    if (filterTagIds.length > 0) {
-      filterTagIds = [];
-      saveNavigationContext();
-      return;
-    }
-    if (currentItemId) {
-      currentItemId = '';
-      saveNavigationContext();
-      return;
-    }
-    // Navigate to home if at top level
-    navigateToHome();
-  }
-
   // Keyboard shortcuts handler
   function handleKeyDown(event: KeyboardEvent) {
     // Check for Ctrl (Windows/Linux) or Cmd (Mac) modifier
@@ -201,17 +175,6 @@
       }
     }
 
-    // Backspace to navigate up (when not in an input field)
-    if (event.key === 'Backspace') {
-      const target = event.target as HTMLElement;
-      const isInputField = target.tagName === 'INPUT' ||
-                          target.tagName === 'TEXTAREA' ||
-                          target.isContentEditable;
-      if (!isInputField) {
-        event.preventDefault();
-        navigateUp();
-      }
-    }
   }
 
   // Save navigation context to backend
@@ -369,11 +332,6 @@
         itemId={currentItemId || ''}
         onNavigate={handleBreadcrumbNavigate}
       />
-      {#if filterThemeIds.length > 0 || filterTagIds.length > 0 || filterDate || currentItemId}
-        <button class="clear-filters-btn" onclick={navigateUp} title="Clear filters (Backspace)">
-          Clear
-        </button>
-      {/if}
     </div>
   {/if}
 
@@ -528,21 +486,6 @@
     background-color: var(--color-gray-50);
     border-bottom: 1px solid var(--color-gray-200);
     min-height: 36px;
-  }
-
-  .clear-filters-btn {
-    padding: 0.25rem 0.75rem;
-    background-color: var(--color-gray-200);
-    border: none;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .clear-filters-btn:hover {
-    background-color: var(--color-gray-300);
   }
 
   /* Quick navigation on home page */
