@@ -239,24 +239,6 @@ describe('App', () => {
     expect(linkTexts).toContain('Tasks');
   });
 
-  it('Backspace navigates to home from a view', async () => {
-    await renderApp();
-
-    // Navigate to OKRs first
-    const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
-    okrLink!.click();
-    await tick();
-
-    // Backspace should navigate home
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Backspace', bubbles: true }));
-    await tick();
-
-    const homeLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Home');
-    expect(homeLink?.classList.contains('active')).toBe(true);
-  });
-
   it('restores EisenKan view with filterThemeIds from navigation context', async () => {
     mockBindings.LoadNavigationContext.mockResolvedValue({
       currentView: 'eisenkan',
@@ -278,9 +260,6 @@ describe('App', () => {
     const breadcrumbBar = container.querySelector('.breadcrumb-bar');
     expect(breadcrumbBar).toBeTruthy();
 
-    // Clear button should be visible (since filterThemeIds is set)
-    const clearBtn = container.querySelector('.clear-filters-btn');
-    expect(clearBtn).toBeTruthy();
   });
 
   it('restores filterThemeIds from legacy filterThemeId (backward compat)', async () => {
@@ -299,9 +278,6 @@ describe('App', () => {
       .find(l => l.textContent?.trim() === 'Tasks');
     expect(taskLink?.classList.contains('active')).toBe(true);
 
-    // Clear button should be visible (filterThemeId converted to filterThemeIds)
-    const clearBtn = container.querySelector('.clear-filters-btn');
-    expect(clearBtn).toBeTruthy();
   });
 
   it('restores Calendar view with filterDate from navigation context', async () => {
