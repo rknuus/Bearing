@@ -1572,8 +1572,9 @@ func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Expected .gitignore to exist: %v", err)
 	}
-	if string(data) != "navigation_context.json\n" {
-		t.Errorf("Expected .gitignore to contain 'navigation_context.json\\n', got %q", string(data))
+	expected := "navigation_context.json\ntasks/drafts.json\n"
+	if string(data) != expected {
+		t.Errorf("Expected .gitignore to contain %q, got %q", expected, string(data))
 	}
 }
 
@@ -1718,9 +1719,9 @@ func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) 
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	// Overwrite with custom content
+	// Overwrite with custom content that already includes tasks/drafts.json
 	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
-	custom := "custom_file.txt\nnavigation_context.json\n"
+	custom := "custom_file.txt\nnavigation_context.json\ntasks/drafts.json\n"
 	if err := os.WriteFile(gitignorePath, []byte(custom), 0644); err != nil {
 		t.Fatalf("Failed to write custom .gitignore: %v", err)
 	}

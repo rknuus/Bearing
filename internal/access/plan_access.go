@@ -48,6 +48,10 @@ type IPlanAccess interface {
 	// Navigation
 	LoadNavigationContext() (*NavigationContext, error)
 	SaveNavigationContext(ctx NavigationContext) error
+
+	// Task Drafts
+	LoadTaskDrafts() (json.RawMessage, error)
+	SaveTaskDrafts(data json.RawMessage) error
 }
 
 // PlanAccess implements IPlanAccess with file-based storage and git versioning.
@@ -100,8 +104,22 @@ func (pa *PlanAccess) ensureDirectoryStructure() error {
 	// Create .gitignore if it doesn't exist (excludes non-versioned files)
 	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
 	if _, err := os.Stat(gitignorePath); os.IsNotExist(err) {
-		if err := os.WriteFile(gitignorePath, []byte("navigation_context.json\n"), 0644); err != nil {
+		if err := os.WriteFile(gitignorePath, []byte("navigation_context.json\ntasks/drafts.json\n"), 0644); err != nil {
 			return fmt.Errorf("failed to create .gitignore: %w", err)
+		}
+	}
+
+	// Ensure tasks/drafts.json is in .gitignore (may be missing in existing data dirs)
+	if existing, err := os.ReadFile(gitignorePath); err == nil {
+		if !strings.Contains(string(existing), "tasks/drafts.json") {
+			updated := string(existing)
+			if !strings.HasSuffix(updated, "\n") {
+				updated += "\n"
+			}
+			updated += "tasks/drafts.json\n"
+			if err := os.WriteFile(gitignorePath, []byte(updated), 0644); err != nil {
+				return fmt.Errorf("failed to update .gitignore: %w", err)
+			}
 		}
 	}
 
@@ -1029,5 +1047,29 @@ func (pa *PlanAccess) SaveNavigationContext(ctx NavigationContext) error {
 		return fmt.Errorf("PlanAccess.SaveNavigationContext: %w", err)
 	}
 
+	return nil
+}
+
+// taskDraftsFilePath returns the path to the task drafts file.
+func (pa *PlanAccess) taskDraftsFilePath() string {
+	return filepath.Join(pa.dataPath, "tasks", "drafts.json")
+}
+
+// LoadTaskDrafts retrieves saved task drafts.
+// Returns nil if no drafts file exists or if it cannot be read (graceful degradation).
+func (pa *PlanAccess) LoadTaskDrafts() (json.RawMessage, error) {
+	data, err := os.ReadFile(pa.taskDraftsFilePath())
+	if err != nil {
+		return nil, nil
+	}
+	return json.RawMessage(data), nil
+}
+
+// SaveTaskDrafts persists task drafts.
+// Note: This is ephemeral planning data, not versioned with git.
+func (pa *PlanAccess) SaveTaskDrafts(data json.RawMessage) error {
+	if err := os.WriteFile(pa.taskDraftsFilePath(), data, 0644); err != nil {
+		return fmt.Errorf("PlanAccess.SaveTaskDrafts: %w", err)
+	}
 	return nil
 }
