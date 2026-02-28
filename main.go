@@ -636,13 +636,14 @@ type PromotedTask struct {
 	NewPriority string `json:"newPriority"`
 }
 
-// MoveTask moves a task to a new kanban column status
-func (a *App) MoveTask(taskId, newStatus string) (*MoveTaskResult, error) {
+// MoveTask moves a task to a new kanban column status.
+// When positions is non-nil, the provided drop zone ordering is applied atomically.
+func (a *App) MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error) {
 	if a.planningManager == nil {
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	result, err := a.planningManager.MoveTask(taskId, newStatus)
+	result, err := a.planningManager.MoveTask(taskId, newStatus, positions)
 	if err != nil {
 		return nil, err
 	}

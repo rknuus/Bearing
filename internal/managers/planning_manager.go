@@ -858,8 +858,10 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 }
 
 // MoveTask moves a task to a new status (todo, doing, done).
+// When positions is non-nil, the provided drop zone ordering is applied atomically
+// with the move. When nil, the task is appended to the end of the target zone.
 // Returns a MoveTaskResult with violation details on rejection.
-func (m *PlanningManager) MoveTask(taskId, newStatus string) (*MoveTaskResult, error) {
+func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error) {
 	if !access.IsValidTaskStatus(newStatus) {
 		return nil, fmt.Errorf("PlanningManager.MoveTask: invalid status %s", newStatus)
 	}
@@ -933,15 +935,21 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string) (*MoveTaskResult, e
 		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to move task: %w", err)
 	}
 
-	// Update task order: remove from source drop zone, append to target
+	// Update task order: remove from source drop zone, then apply positions or append to target
 	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority)
-	targetZone := dropZoneForTask(newStatus, movingTask.Priority)
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
 		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to load task order: %w", err)
 	}
 	orderMap[sourceZone] = removeFromSlice(orderMap[sourceZone], taskId)
-	orderMap[targetZone] = append(orderMap[targetZone], taskId)
+	if positions != nil {
+		for zone, ids := range positions {
+			orderMap[zone] = ids
+		}
+	} else {
+		targetZone := dropZoneForTask(newStatus, movingTask.Priority)
+		orderMap[targetZone] = append(orderMap[targetZone], taskId)
+	}
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
 		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to save task order: %w", err)
 	}

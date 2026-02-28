@@ -1448,7 +1448,7 @@ func TestMoveTask(t *testing.T) {
 		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
 
 		// Move to doing
-		result, err := manager.MoveTask(task.ID, "doing")
+		result, err := manager.MoveTask(task.ID, "doing", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1461,7 +1461,7 @@ func TestMoveTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.MoveTask("task-001", "invalid-status")
+		_, err := manager.MoveTask("task-001", "invalid-status", nil)
 		if err == nil {
 			t.Fatal("expected error for invalid status")
 		}
@@ -1667,7 +1667,7 @@ func TestMoveTask_UpdatesOrder(t *testing.T) {
 
 		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "", "")
 
-		result, err := manager.MoveTask(task.ID, "doing")
+		result, err := manager.MoveTask(task.ID, "doing", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1941,7 +1941,7 @@ func TestArchiveTask(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		_, _ = manager.MoveTask(task.ID, "done")
+		_, _ = manager.MoveTask(task.ID, "done", nil)
 
 		err := manager.ArchiveTask(task.ID)
 		if err != nil {
@@ -1986,7 +1986,7 @@ func TestArchiveTask(t *testing.T) {
 		_ = mockAccess.SaveTask(*sub)
 
 		// Move parent to done
-		_, _ = manager.MoveTask(parent.ID, "done")
+		_, _ = manager.MoveTask(parent.ID, "done", nil)
 
 		err := manager.ArchiveTask(parent.ID)
 		if err != nil {
@@ -2024,8 +2024,8 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 		t2, _ := manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
 		_, _ = manager.CreateTask("Task 3", "T", "2026-01-31", "important-urgent", "", "", "", "")
 
-		_, _ = manager.MoveTask(t1.ID, "done")
-		_, _ = manager.MoveTask(t2.ID, "done")
+		_, _ = manager.MoveTask(t1.ID, "done", nil)
+		_, _ = manager.MoveTask(t2.ID, "done", nil)
 		// Task 3 stays in todo
 
 		err := manager.ArchiveAllDoneTasks()
@@ -2076,7 +2076,7 @@ func TestRestoreTask(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		_, _ = manager.MoveTask(task.ID, "done")
+		_, _ = manager.MoveTask(task.ID, "done", nil)
 		_ = manager.ArchiveTask(task.ID)
 
 		err := manager.RestoreTask(task.ID)
@@ -2119,7 +2119,7 @@ func TestRestoreTask(t *testing.T) {
 		sub.ParentTaskID = &parentID
 		_ = mockAccess.SaveTask(*sub)
 
-		_, _ = manager.MoveTask(parent.ID, "done")
+		_, _ = manager.MoveTask(parent.ID, "done", nil)
 		_ = manager.ArchiveTask(parent.ID)
 
 		err := manager.RestoreTask(parent.ID)
@@ -2155,7 +2155,7 @@ func TestGetTasks_IncludesArchived(t *testing.T) {
 	t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
 	_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
 
-	_, _ = manager.MoveTask(t1.ID, "done")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
 	_ = manager.ArchiveTask(t1.ID)
 
 	tasks, err := manager.GetTasks()
@@ -2185,7 +2185,7 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 
 	// Create a task, move to done, then archive it
 	task1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
-	_, _ = manager.MoveTask(task1.ID, "done")
+	_, _ = manager.MoveTask(task1.ID, "done", nil)
 	_ = manager.ArchiveTask(task1.ID)
 
 	// Create a new task (ID must not collide with the archived one)
@@ -2198,7 +2198,7 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 	}
 
 	// Move the new task from todo to doing — should succeed without rule violation
-	result, err := manager.MoveTask(task2.ID, "doing")
+	result, err := manager.MoveTask(task2.ID, "doing", nil)
 	if err != nil {
 		t.Fatalf("expected no error moving task after archive, got %v", err)
 	}

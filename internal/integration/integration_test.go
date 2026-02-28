@@ -301,7 +301,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	commitCountBefore := len(historyBefore)
 
 	// Move task to "doing"
-	moveResult, err := manager.MoveTask(task.ID, "doing")
+	moveResult, err := manager.MoveTask(task.ID, "doing", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task: %v", err)
 	}
@@ -375,7 +375,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 	// Move through all statuses
 	statuses := []string{"doing", "done", "todo", "doing"}
 	for _, status := range statuses {
-		moveResult, err := manager.MoveTask(task.ID, status)
+		moveResult, err := manager.MoveTask(task.ID, status, nil)
 		if err != nil {
 			t.Fatalf("Failed to move task to %s: %v", status, err)
 		}
@@ -434,7 +434,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent", "", "", "", "")
 
 	// Move one task to doing
-	_, _ = manager1.MoveTask(task2.ID, "doing")
+	_, _ = manager1.MoveTask(task2.ID, "doing", nil)
 
 	// Save navigation context
 	navCtx := managers.NavigationContext{
@@ -699,7 +699,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	task, _ := manager.CreateTask("Test task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
 
 	// Move task
-	_, _ = manager.MoveTask(task.ID, "doing")
+	_, _ = manager.MoveTask(task.ID, "doing", nil)
 
 	// Update theme
 	theme.Color = "#00ff00"
@@ -814,7 +814,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to doing
-	_, _ = manager.MoveTask(task.ID, "doing")
+	_, _ = manager.MoveTask(task.ID, "doing", nil)
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {
@@ -826,7 +826,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to done
-	_, _ = manager.MoveTask(task.ID, "done")
+	_, _ = manager.MoveTask(task.ID, "done", nil)
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {
