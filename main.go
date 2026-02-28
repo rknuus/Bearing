@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"log"
@@ -819,6 +820,29 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 		ShowArchivedTasks: ctx.ShowArchivedTasks,
 		ExpandedOkrIds:    ctx.ExpandedOkrIds,
 	})
+}
+
+// LoadTaskDrafts retrieves saved task drafts as a JSON string
+func (a *App) LoadTaskDrafts() string {
+	if a.planningManager == nil {
+		return "{}"
+	}
+
+	data, err := a.planningManager.LoadTaskDrafts()
+	if err != nil || data == nil {
+		return "{}"
+	}
+
+	return string(data)
+}
+
+// SaveTaskDrafts persists task drafts from a JSON string
+func (a *App) SaveTaskDrafts(data string) error {
+	if a.planningManager == nil {
+		return nil
+	}
+
+	return a.planningManager.SaveTaskDrafts(json.RawMessage(data))
 }
 
 func main() {

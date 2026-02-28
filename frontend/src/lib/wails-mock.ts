@@ -369,6 +369,9 @@ let mockTasks: TaskWithStatus[] = [
   { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done', tags: ['frontend'], createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
 ];
 
+// Mock task drafts storage
+let mockTaskDrafts = '{}';
+
 // Mock navigation context storage
 let mockNavigationContext: NavigationContext = {
   currentView: 'home',
@@ -845,6 +848,25 @@ export const mockAppBindings = {
     // Persist to localStorage for browser sessions
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('bearing_nav_context', JSON.stringify(ctx));
+    }
+  },
+
+  // Task drafts operations
+  LoadTaskDrafts: async (): Promise<string> => {
+    if (typeof localStorage !== 'undefined') {
+      const saved = localStorage.getItem('bearing_task_drafts');
+      if (saved) {
+        mockTaskDrafts = saved;
+        return saved;
+      }
+    }
+    return mockTaskDrafts;
+  },
+
+  SaveTaskDrafts: async (data: string): Promise<void> => {
+    mockTaskDrafts = data;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('bearing_task_drafts', data);
     }
   },
 

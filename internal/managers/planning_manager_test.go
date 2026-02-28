@@ -1,6 +1,7 @@
 package managers
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"testing"
@@ -270,6 +271,14 @@ func (m *mockPlanAccess) LoadNavigationContext() (*access.NavigationContext, err
 }
 
 func (m *mockPlanAccess) SaveNavigationContext(ctx access.NavigationContext) error {
+	return nil
+}
+
+func (m *mockPlanAccess) LoadTaskDrafts() (json.RawMessage, error) {
+	return nil, nil
+}
+
+func (m *mockPlanAccess) SaveTaskDrafts(data json.RawMessage) error {
 	return nil
 }
 

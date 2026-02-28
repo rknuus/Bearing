@@ -4,6 +4,7 @@
 package managers
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -86,6 +87,10 @@ type IPlanningManager interface {
 	// Navigation
 	LoadNavigationContext() (*NavigationContext, error)
 	SaveNavigationContext(ctx NavigationContext) error
+
+	// Task Drafts
+	LoadTaskDrafts() (json.RawMessage, error)
+	SaveTaskDrafts(data json.RawMessage) error
 }
 
 // MoveTaskResult contains the result of a MoveTask operation,
@@ -1334,4 +1339,14 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 
 	m.navigationContext = &ctx
 	return nil
+}
+
+// LoadTaskDrafts retrieves saved task drafts.
+func (m *PlanningManager) LoadTaskDrafts() (json.RawMessage, error) {
+	return m.planAccess.LoadTaskDrafts()
+}
+
+// SaveTaskDrafts persists task drafts.
+func (m *PlanningManager) SaveTaskDrafts(data json.RawMessage) error {
+	return m.planAccess.SaveTaskDrafts(data)
 }
