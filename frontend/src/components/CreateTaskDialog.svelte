@@ -205,6 +205,23 @@
     await saveDrafts();
     onClose();
   }
+
+  async function handleClearStaging() {
+    tasksByQuadrant = { ...tasksByQuadrant, staging: [] };
+    await saveDrafts();
+  }
+
+  async function handleClearPrioritized() {
+    tasksByQuadrant = {
+      ...tasksByQuadrant,
+      'important-urgent': [],
+      'important-not-urgent': [],
+      'not-important-urgent': [],
+    };
+    await saveDrafts();
+  }
+
+  const stagingCount = $derived(tasksByQuadrant.staging.length);
 </script>
 
 {#if open}
@@ -273,6 +290,14 @@
     {/if}
 
     {#snippet actions()}
+      <div class="actions-left">
+        <Button variant="danger" onclick={handleClearStaging} disabled={isSubmitting || stagingCount === 0}>
+          Clear Staging
+        </Button>
+        <Button variant="secondary" onclick={handleClearPrioritized} disabled={isSubmitting || creatableTaskCount === 0}>
+          Clear Prioritized
+        </Button>
+      </div>
       <Button variant="secondary" onclick={handleClose} disabled={isSubmitting}>
         Close
       </Button>
@@ -346,4 +371,9 @@
     border-radius: 4px;
   }
 
+  .actions-left {
+    display: flex;
+    gap: var(--space-3);
+    margin-right: auto;
+  }
 </style>
