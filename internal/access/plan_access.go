@@ -474,6 +474,13 @@ func (pa *PlanAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 			return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to get existing tasks: %w", err)
 		}
 		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
+
+		// Guard: verify generated ID doesn't already exist on disk
+		for _, s := range AllTaskStatuses() {
+			if _, err := os.Stat(pa.taskFilePath(task.ThemeID, string(s), task.ID)); err == nil {
+				return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: duplicate task ID: %s already exists in %s", task.ID, s)
+			}
+		}
 	}
 
 	// Set timestamps
