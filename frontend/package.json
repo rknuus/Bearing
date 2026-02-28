@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint --max-warnings 0 src",
-    "test": "vitest"
+    "test": "NODE_OPTIONS='--no-webstorage' vitest"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
