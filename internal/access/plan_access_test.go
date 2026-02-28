@@ -654,7 +654,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	}
 
 	// Get tasks by status
-	todoTasks, err := pa.GetTasksByStatus("H", "todo")
+	todoTasks, err := pa.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -664,7 +664,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	}
 
 	// No doing tasks
-	doingTasks, err := pa.GetTasksByStatus("H", "doing")
+	doingTasks, err := pa.GetTasksByStatus("doing")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -678,7 +678,7 @@ func TestGetTasksByStatus_InvalidStatus(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	_, err := pa.GetTasksByStatus("H", "invalid")
+	_, err := pa.GetTasksByStatus("invalid")
 	if err == nil {
 		t.Error("Expected error for invalid status")
 	}
@@ -711,8 +711,8 @@ func TestMoveTask(t *testing.T) {
 	}
 
 	// Verify task moved
-	todoTasks, _ := pa.GetTasksByStatus("H", "todo")
-	doingTasks, _ := pa.GetTasksByStatus("H", "doing")
+	todoTasks, _ := pa.GetTasksByStatus("todo")
+	doingTasks, _ := pa.GetTasksByStatus("doing")
 
 	if len(todoTasks) != 0 {
 		t.Errorf("Expected 0 todo tasks, got %d", len(todoTasks))
@@ -722,13 +722,13 @@ func TestMoveTask(t *testing.T) {
 	}
 
 	// Verify file exists in new location
-	newPath := filepath.Join(tmpDir, "data", "tasks", "H", "doing", "H-T1.json")
+	newPath := filepath.Join(tmpDir, "data", "tasks", "doing", "H-T1.json")
 	if _, err := os.Stat(newPath); os.IsNotExist(err) {
 		t.Error("Task file not found in new location")
 	}
 
 	// Verify file removed from old location
-	oldPath := filepath.Join(tmpDir, "data", "tasks", "H", "todo", "H-T1.json")
+	oldPath := filepath.Join(tmpDir, "data", "tasks", "todo", "H-T1.json")
 	if _, err := os.Stat(oldPath); !os.IsNotExist(err) {
 		t.Error("Task file should not exist in old location")
 	}
@@ -797,7 +797,7 @@ func TestDeleteTask(t *testing.T) {
 	}
 
 	// Verify file removed
-	taskPath := filepath.Join(tmpDir, "data", "tasks", "H", "todo", "H-T1.json")
+	taskPath := filepath.Join(tmpDir, "data", "tasks", "todo", "H-T1.json")
 	if _, err := os.Stat(taskPath); !os.IsNotExist(err) {
 		t.Error("Task file should not exist after deletion")
 	}
@@ -1006,7 +1006,7 @@ func TestFileStructure(t *testing.T) {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
-	taskPath := filepath.Join(dataDir, "tasks", "H", "todo", "H-T1.json")
+	taskPath := filepath.Join(dataDir, "tasks", "todo", "H-T1.json")
 	if _, err := os.Stat(taskPath); os.IsNotExist(err) {
 		t.Error("H-T1.json should exist in todo directory")
 	}
@@ -1765,7 +1765,7 @@ func TestArchiveTask(t *testing.T) {
 	}
 
 	// Verify task is in archived
-	archivedTasks, err := pa.GetTasksByStatus("H", "archived")
+	archivedTasks, err := pa.GetTasksByStatus("archived")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -1774,13 +1774,13 @@ func TestArchiveTask(t *testing.T) {
 	}
 
 	// Verify removed from done
-	doneTasks, _ := pa.GetTasksByStatus("H", "done")
+	doneTasks, _ := pa.GetTasksByStatus("done")
 	if len(doneTasks) != 0 {
 		t.Errorf("Expected 0 done tasks, got %d", len(doneTasks))
 	}
 
 	// Verify file location
-	newPath := filepath.Join(tmpDir, "data", "tasks", "H", "archived", "H-T1.json")
+	newPath := filepath.Join(tmpDir, "data", "tasks", "archived", "H-T1.json")
 	if _, err := os.Stat(newPath); os.IsNotExist(err) {
 		t.Error("Task file not found in archived location")
 	}
@@ -1846,7 +1846,7 @@ func TestRestoreTask(t *testing.T) {
 	}
 
 	// Verify task is in done
-	doneTasks, err := pa.GetTasksByStatus("H", "done")
+	doneTasks, err := pa.GetTasksByStatus("done")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -1855,13 +1855,13 @@ func TestRestoreTask(t *testing.T) {
 	}
 
 	// Verify removed from archived
-	archivedTasks, _ := pa.GetTasksByStatus("H", "archived")
+	archivedTasks, _ := pa.GetTasksByStatus("archived")
 	if len(archivedTasks) != 0 {
 		t.Errorf("Expected 0 archived tasks, got %d", len(archivedTasks))
 	}
 
 	// Verify file location
-	donePath := filepath.Join(tmpDir, "data", "tasks", "H", "done", "H-T1.json")
+	donePath := filepath.Join(tmpDir, "data", "tasks", "done", "H-T1.json")
 	if _, err := os.Stat(donePath); os.IsNotExist(err) {
 		t.Error("Task file not found in done location")
 	}
@@ -1925,7 +1925,7 @@ func TestGetTasksByStatus_Archived(t *testing.T) {
 	}
 
 	// Should find only the archived task
-	archivedTasks, err := pa.GetTasksByStatus("H", "archived")
+	archivedTasks, err := pa.GetTasksByStatus("archived")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -1985,7 +1985,7 @@ func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
 	}
 
 	// Verify new task got H-T3
-	todoTasks, err := pa.GetTasksByStatus("H", "todo")
+	todoTasks, err := pa.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -2014,13 +2014,13 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	}
 
 	// Manually place a rogue file at H-T2 in archived (simulating corruption)
-	archivedDir := pa.taskDirPath("H", "archived")
+	archivedDir := pa.taskDirPath("archived")
 	if err := os.MkdirAll(archivedDir, 0755); err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
 	rogueTask := Task{ID: "H-T2", Title: "Rogue", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
 	rogueData, _ := json.Marshal(rogueTask)
-	roguePath := pa.taskFilePath("H", "archived", "H-T2")
+	roguePath := pa.taskFilePath("archived", "H-T2")
 	if err := os.WriteFile(roguePath, rogueData, 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
@@ -2043,7 +2043,7 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	}
 
 	// Verify H-T3 was created (H-T2 was seen in archived, so max=2, next=3)
-	todoTasks, err := pa.GetTasksByStatus("H", "todo")
+	todoTasks, err := pa.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
