@@ -131,13 +131,13 @@ bearing/
 
 ## Data Storage
 
-Data is stored in `~/.bearing/data/` as JSON files with git versioning:
+Data is stored in `~/.bearing/` as JSON files with git versioning:
 
 ```
-~/.bearing/data/
+~/.bearing/
 ├── themes/themes.json         # Life themes with OKRs
 ├── calendar/2026.json         # Day focus entries
-└── tasks/THEME-XX/            # Tasks organized by theme
+└── tasks/            # Tasks organized by theme
     ├── todo/
     ├── doing/
     └── done/
