@@ -12,7 +12,7 @@ import (
 // SaveTheme assigns IDs to objectives and key results to simulate ensureThemeIDs.
 type mockPlanAccess struct {
 	themes      []access.LifeTheme
-	tasks       map[string]map[string][]access.Task // themeID -> status -> tasks
+	tasks       map[string][]access.Task // status -> tasks
 	taskOrder   map[string][]string                 // drop zone ID -> ordered task IDs
 	nextTaskNum int                                 // counter for unique task ID generation
 }
@@ -22,7 +22,7 @@ func newMockPlanAccess() *mockPlanAccess {
 		themes: []access.LifeTheme{
 			{ID: "T", Name: "Test Theme", Color: "#3b82f6"},
 		},
-		tasks: make(map[string]map[string][]access.Task),
+		tasks: make(map[string][]access.Task),
 	}
 }
 
@@ -133,38 +133,32 @@ func (m *mockPlanAccess) GetYearFocus(year int) ([]access.DayFocus, error) {
 
 func (m *mockPlanAccess) GetTasksByTheme(themeID string) ([]access.Task, error) {
 	var result []access.Task
-	if themeMap, ok := m.tasks[themeID]; ok {
-		for _, tasks := range themeMap {
-			result = append(result, tasks...)
+	for _, tasks := range m.tasks {
+		for _, t := range tasks {
+			if t.ThemeID == themeID {
+				result = append(result, t)
+			}
 		}
 	}
 	return result, nil
 }
 
-func (m *mockPlanAccess) GetTasksByStatus(themeID, status string) ([]access.Task, error) {
-	if themeMap, ok := m.tasks[themeID]; ok {
-		if tasks, ok := themeMap[status]; ok {
-			return tasks, nil
-		}
+func (m *mockPlanAccess) GetTasksByStatus(status string) ([]access.Task, error) {
+	if tasks, ok := m.tasks[status]; ok {
+		return tasks, nil
 	}
 	return []access.Task{}, nil
 }
 
 func (m *mockPlanAccess) SaveTask(task access.Task) error {
-	if m.tasks[task.ThemeID] == nil {
-		m.tasks[task.ThemeID] = make(map[string][]access.Task)
-	}
 	// Default to todo status for new tasks
 	status := "todo"
-	if m.tasks[task.ThemeID][status] == nil {
-		m.tasks[task.ThemeID][status] = []access.Task{}
-	}
 
 	// Check if task already exists and update
-	for s, tasks := range m.tasks[task.ThemeID] {
+	for s, tasks := range m.tasks {
 		for i, t := range tasks {
 			if t.ID == task.ID {
-				m.tasks[task.ThemeID][s][i] = task
+				m.tasks[s][i] = task
 				return nil
 			}
 		}
@@ -175,7 +169,7 @@ func (m *mockPlanAccess) SaveTask(task access.Task) error {
 		m.nextTaskNum++
 		task.ID = fmt.Sprintf("%s-T%d", task.ThemeID, m.nextTaskNum)
 	}
-	m.tasks[task.ThemeID][status] = append(m.tasks[task.ThemeID][status], task)
+	m.tasks[status] = append(m.tasks[status], task)
 	return nil
 }
 
@@ -184,7 +178,7 @@ func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 		return nil, err
 	}
 	// SaveTask generates the ID; find the saved task to get it
-	tasks := m.tasks[task.ThemeID]["todo"]
+	tasks := m.tasks["todo"]
 	saved := tasks[len(tasks)-1]
 	if m.taskOrder == nil {
 		m.taskOrder = make(map[string][]string)
@@ -194,19 +188,14 @@ func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 }
 
 func (m *mockPlanAccess) MoveTask(taskID, newStatus string) error {
-	for themeID, themeMap := range m.tasks {
-		for status, tasks := range themeMap {
-			for i, task := range tasks {
-				if task.ID == taskID {
-					// Remove from old status
-					m.tasks[themeID][status] = append(tasks[:i], tasks[i+1:]...)
-					// Add to new status
-					if m.tasks[themeID][newStatus] == nil {
-						m.tasks[themeID][newStatus] = []access.Task{}
-					}
-					m.tasks[themeID][newStatus] = append(m.tasks[themeID][newStatus], task)
-					return nil
-				}
+	for status, tasks := range m.tasks {
+		for i, task := range tasks {
+			if task.ID == taskID {
+				// Remove from old status
+				m.tasks[status] = append(tasks[:i], tasks[i+1:]...)
+				// Add to new status
+				m.tasks[newStatus] = append(m.tasks[newStatus], task)
+				return nil
 			}
 		}
 	}
@@ -222,13 +211,11 @@ func (m *mockPlanAccess) RestoreTask(taskID string) error {
 }
 
 func (m *mockPlanAccess) DeleteTask(taskID string) error {
-	for themeID, themeMap := range m.tasks {
-		for status, tasks := range themeMap {
-			for i, task := range tasks {
-				if task.ID == taskID {
-					m.tasks[themeID][status] = append(tasks[:i], tasks[i+1:]...)
-					return nil
-				}
+	for status, tasks := range m.tasks {
+		for i, task := range tasks {
+			if task.ID == taskID {
+				m.tasks[status] = append(tasks[:i], tasks[i+1:]...)
+				return nil
 			}
 		}
 	}
@@ -1640,13 +1627,11 @@ func TestGetTasks_OrderWithInterleavedZones(t *testing.T) {
 		// within the same "todo" status. The merge sort will split [A,B,C,D] into
 		// two halves and may never directly compare A(iu) with D(iu) if cross-zone
 		// comparisons return "equal".
-		mockAccess.tasks["T"] = map[string][]access.Task{
-			"todo": {
-				{ID: "T-A", Title: "A", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
-				{ID: "T-B", Title: "B", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
-				{ID: "T-C", Title: "C", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: "2026-01-03T00:00:00Z"},
-				{ID: "T-D", Title: "D", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-04T00:00:00Z"},
-			},
+		mockAccess.tasks["todo"] = []access.Task{
+			{ID: "T-A", Title: "A", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
+			{ID: "T-B", Title: "B", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
+			{ID: "T-C", Title: "C", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: "2026-01-03T00:00:00Z"},
+			{ID: "T-D", Title: "D", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-04T00:00:00Z"},
 		}
 
 		// Persisted order says T-D should come before T-A
@@ -1818,7 +1803,7 @@ func TestGetTasksSubtaskIDs(t *testing.T) {
 			Priority:     "important-not-urgent",
 			ParentTaskID: &parentID,
 		}
-		mockAccess.tasks["T"]["todo"] = append(mockAccess.tasks["T"]["todo"], subtask1, subtask2)
+		mockAccess.tasks["todo"] = append(mockAccess.tasks["todo"], subtask1, subtask2)
 
 		tasks, err := manager.GetTasks()
 		if err != nil {

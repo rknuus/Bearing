@@ -688,26 +688,19 @@ func dropZoneForTask(status, priority string) string {
 // Tasks are sorted by persisted order from task_order.json within each drop zone.
 // SubtaskIDs are computed at runtime by scanning for tasks with matching ParentTaskID.
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
-	themes, err := m.planAccess.GetThemes()
-	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get themes: %w", err)
-	}
-
 	var allTasks []TaskWithStatus
 
-	for _, theme := range themes {
-		for _, status := range access.AllTaskStatuses() {
-			tasks, err := m.planAccess.GetTasksByStatus(theme.ID, string(status))
-			if err != nil {
-				return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get tasks for theme %s status %s: %w", theme.ID, status, err)
-			}
+	for _, status := range access.AllTaskStatuses() {
+		tasks, err := m.planAccess.GetTasksByStatus(string(status))
+		if err != nil {
+			return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get tasks for status %s: %w", status, err)
+		}
 
-			for _, task := range tasks {
-				allTasks = append(allTasks, TaskWithStatus{
-					Task:   task,
-					Status: string(status),
-				})
-			}
+		for _, task := range tasks {
+			allTasks = append(allTasks, TaskWithStatus{
+				Task:   task,
+				Status: string(status),
+			})
 		}
 	}
 

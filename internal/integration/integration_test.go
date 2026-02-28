@@ -164,7 +164,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 
 	// Verify task is stored in the correct location
-	taskPath := filepath.Join(tmpDir, "data", "tasks", theme.ID, "todo", task.ID+".json")
+	taskPath := filepath.Join(tmpDir, "data", "tasks", "todo", task.ID+".json")
 	if _, err := os.Stat(taskPath); os.IsNotExist(err) {
 		t.Errorf("Task file not found at expected location: %s", taskPath)
 	}
@@ -282,7 +282,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	}
 
 	// Verify task starts in "todo" directory
-	todoPath := filepath.Join(tmpDir, "data", "tasks", theme.ID, "todo", task.ID+".json")
+	todoPath := filepath.Join(tmpDir, "data", "tasks", "todo", task.ID+".json")
 	if _, err := os.Stat(todoPath); os.IsNotExist(err) {
 		t.Fatalf("Task should exist in todo directory: %s", todoPath)
 	}
@@ -310,7 +310,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	}
 
 	// Verify task file moved to new location
-	doingPath := filepath.Join(tmpDir, "data", "tasks", theme.ID, "doing", task.ID+".json")
+	doingPath := filepath.Join(tmpDir, "data", "tasks", "doing", task.ID+".json")
 	if _, err := os.Stat(doingPath); os.IsNotExist(err) {
 		t.Error("Task file should exist in doing directory")
 	}
@@ -363,7 +363,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 	task, _ := manager.CreateTask("Complex task", theme.ID, "2026-01-20", "important-not-urgent", "", "", "", "")
 
 	// Get original task details
-	originalTasks, _ := planAccess.GetTasksByStatus(theme.ID, "todo")
+	originalTasks, _ := planAccess.GetTasksByStatus("todo")
 	var originalTask access.Task
 	for _, t := range originalTasks {
 		if t.ID == task.ID {
@@ -384,7 +384,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 		}
 
 		// Verify task content after each move
-		tasks, _ := planAccess.GetTasksByStatus(theme.ID, status)
+		tasks, _ := planAccess.GetTasksByStatus(status)
 		var movedTask access.Task
 		for _, t := range tasks {
 			if t.ID == task.ID {

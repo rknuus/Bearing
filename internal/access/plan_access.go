@@ -29,7 +29,7 @@ type IPlanAccess interface {
 
 	// Tasks
 	GetTasksByTheme(themeID string) ([]Task, error)
-	GetTasksByStatus(themeID, status string) ([]Task, error)
+	GetTasksByStatus(status string) ([]Task, error)
 	SaveTask(task Task) error
 	SaveTaskWithOrder(task Task, dropZone string) (*Task, error)
 	MoveTask(taskID, newStatus string) error
@@ -85,7 +85,10 @@ func (pa *PlanAccess) ensureDirectoryStructure() error {
 	dirs := []string{
 		filepath.Join(pa.dataPath, "themes"),
 		filepath.Join(pa.dataPath, "calendar"),
-		filepath.Join(pa.dataPath, "tasks"),
+		filepath.Join(pa.dataPath, "tasks", "todo"),
+		filepath.Join(pa.dataPath, "tasks", "doing"),
+		filepath.Join(pa.dataPath, "tasks", "done"),
+		filepath.Join(pa.dataPath, "tasks", "archived"),
 	}
 
 	for _, dir := range dirs {
@@ -115,14 +118,14 @@ func (pa *PlanAccess) yearFocusFilePath(year int) string {
 	return filepath.Join(pa.dataPath, "calendar", fmt.Sprintf("%d.json", year))
 }
 
-// taskFilePath returns the path to a task file based on theme and status.
-func (pa *PlanAccess) taskFilePath(themeID, status, taskID string) string {
-	return filepath.Join(pa.dataPath, "tasks", themeID, status, taskID+".json")
+// taskFilePath returns the path to a task file based on status.
+func (pa *PlanAccess) taskFilePath(status, taskID string) string {
+	return filepath.Join(pa.dataPath, "tasks", status, taskID+".json")
 }
 
-// taskDirPath returns the path to a task status directory for a theme.
-func (pa *PlanAccess) taskDirPath(themeID, status string) string {
-	return filepath.Join(pa.dataPath, "tasks", themeID, status)
+// taskDirPath returns the path to a task status directory.
+func (pa *PlanAccess) taskDirPath(status string) string {
+	return filepath.Join(pa.dataPath, "tasks", status)
 }
 
 // relativePathFromData returns the path relative to the repository root for git operations.
@@ -176,29 +179,22 @@ func (pa *PlanAccess) commitFiles(paths []string, message string) error {
 	return nil
 }
 
-// findTaskInPlan searches all themes and statuses for a task by ID.
-// Returns the task, theme ID, status name, and task index within the status list.
-func (pa *PlanAccess) findTaskInPlan(taskID string) (*Task, string, string, int, error) {
-	themes, err := pa.GetThemes()
-	if err != nil {
-		return nil, "", "", -1, fmt.Errorf("failed to get themes: %w", err)
-	}
-
-	for _, theme := range themes {
-		for _, status := range AllTaskStatuses() {
-			tasks, err := pa.GetTasksByStatus(theme.ID, string(status))
-			if err != nil {
-				continue
-			}
-			for i, task := range tasks {
-				if task.ID == taskID {
-					return &task, theme.ID, string(status), i, nil
-				}
+// findTaskInPlan searches all statuses for a task by ID.
+// Returns the task, status name, and task index within the status list.
+func (pa *PlanAccess) findTaskInPlan(taskID string) (*Task, string, int, error) {
+	for _, status := range AllTaskStatuses() {
+		tasks, err := pa.GetTasksByStatus(string(status))
+		if err != nil {
+			continue
+		}
+		for i, task := range tasks {
+			if task.ID == taskID {
+				return &task, string(status), i, nil
 			}
 		}
 	}
 
-	return nil, "", "", -1, nil
+	return nil, "", -1, nil
 }
 
 // GetThemes returns all life themes.
@@ -403,28 +399,32 @@ func (pa *PlanAccess) GetYearFocus(year int) ([]DayFocus, error) {
 	return yearFile.Entries, nil
 }
 
-// GetTasksByTheme returns all tasks for a specific theme.
+// GetTasksByTheme returns all tasks for a specific theme by filtering across all statuses.
 func (pa *PlanAccess) GetTasksByTheme(themeID string) ([]Task, error) {
 	var allTasks []Task
 
 	for _, status := range AllTaskStatuses() {
-		tasks, err := pa.GetTasksByStatus(themeID, string(status))
+		tasks, err := pa.GetTasksByStatus(string(status))
 		if err != nil {
 			return nil, fmt.Errorf("PlanAccess.GetTasksByTheme: failed to get tasks with status %s: %w", status, err)
 		}
-		allTasks = append(allTasks, tasks...)
+		for _, t := range tasks {
+			if t.ThemeID == themeID {
+				allTasks = append(allTasks, t)
+			}
+		}
 	}
 
 	return allTasks, nil
 }
 
-// GetTasksByStatus returns all tasks for a specific theme and status.
-func (pa *PlanAccess) GetTasksByStatus(themeID, status string) ([]Task, error) {
+// GetTasksByStatus returns all tasks for a specific status.
+func (pa *PlanAccess) GetTasksByStatus(status string) ([]Task, error) {
 	if !IsAnyTaskStatus(status) {
 		return nil, fmt.Errorf("PlanAccess.GetTasksByStatus: invalid status %s", status)
 	}
 
-	dirPath := pa.taskDirPath(themeID, status)
+	dirPath := pa.taskDirPath(status)
 
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
@@ -477,7 +477,7 @@ func (pa *PlanAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 
 		// Guard: verify generated ID doesn't already exist on disk
 		for _, s := range AllTaskStatuses() {
-			if _, err := os.Stat(pa.taskFilePath(task.ThemeID, string(s), task.ID)); err == nil {
+			if _, err := os.Stat(pa.taskFilePath(string(s), task.ID)); err == nil {
 				return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: duplicate task ID: %s already exists in %s", task.ID, s)
 			}
 		}
@@ -489,35 +489,21 @@ func (pa *PlanAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 	}
 	task.UpdatedAt = now
 
-	// Determine status and detect theme change
+	// Determine status
 	status := string(TaskStatusTodo)
 	var affectedPaths []string
 	if !isNew {
-		existing, existingThemeID, existingStatus, _, err := pa.findTaskInPlan(task.ID)
+		existing, existingStatus, _, err := pa.findTaskInPlan(task.ID)
 		if err != nil {
 			return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to find existing task: %w", err)
 		}
 		if existing != nil {
 			status = existingStatus
-			if existingThemeID != task.ThemeID {
-				// Theme changed — remove old file
-				oldPath := pa.taskFilePath(existingThemeID, existingStatus, task.ID)
-				if err := os.Remove(oldPath); err != nil && !os.IsNotExist(err) {
-					return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to remove old task file: %w", err)
-				}
-				affectedPaths = append(affectedPaths, oldPath)
-			}
 		}
 	}
 
-	// Ensure task directory exists
-	dirPath := pa.taskDirPath(task.ThemeID, status)
-	if err := os.MkdirAll(dirPath, 0755); err != nil {
-		return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to create task directory: %w", err)
-	}
-
 	// Save task to file
-	filePath := pa.taskFilePath(task.ThemeID, status, task.ID)
+	filePath := pa.taskFilePath(status, task.ID)
 	if err := writeJSON(filePath, *task); err != nil {
 		return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: %w", err)
 	}
@@ -585,7 +571,7 @@ func (pa *PlanAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, erro
 // task order in a single git commit.
 func (pa *PlanAccess) DeleteTaskWithOrder(taskID string) error {
 	// Find the task
-	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	foundTask, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
 		return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: %w", err)
 	}
@@ -593,7 +579,7 @@ func (pa *PlanAccess) DeleteTaskWithOrder(taskID string) error {
 		return fmt.Errorf("PlanAccess.DeleteTaskWithOrder: task with ID %s not found", taskID)
 	}
 
-	filePath := pa.taskFilePath(themeID, currentStatus, taskID)
+	filePath := pa.taskFilePath(currentStatus, taskID)
 
 	// Delete the file
 	if err := os.Remove(filePath); err != nil {
@@ -641,7 +627,7 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 	}
 
 	// Find the task and its current status
-	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	foundTask, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
 		return fmt.Errorf("PlanAccess.MoveTask: %w", err)
 	}
@@ -653,15 +639,9 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 		return nil // Already in the desired status
 	}
 
-	// Ensure destination directory exists
-	destDir := pa.taskDirPath(themeID, newStatus)
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("PlanAccess.MoveTask: failed to create destination directory: %w", err)
-	}
-
 	// Calculate paths
-	oldPath := pa.taskFilePath(themeID, currentStatus, taskID)
-	newPath := pa.taskFilePath(themeID, newStatus, taskID)
+	oldPath := pa.taskFilePath(currentStatus, taskID)
+	newPath := pa.taskFilePath(newStatus, taskID)
 
 	// Perform git mv by renaming and staging both old and new paths
 	if err := os.Rename(oldPath, newPath); err != nil {
@@ -678,7 +658,7 @@ func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
 
 // ArchiveTask moves a task to the archived directory.
 func (pa *PlanAccess) ArchiveTask(taskID string) error {
-	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	foundTask, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
 		return fmt.Errorf("PlanAccess.ArchiveTask: %w", err)
 	}
@@ -689,13 +669,8 @@ func (pa *PlanAccess) ArchiveTask(taskID string) error {
 		return nil // Already archived
 	}
 
-	destDir := pa.taskDirPath(themeID, string(TaskStatusArchived))
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("PlanAccess.ArchiveTask: failed to create archived directory: %w", err)
-	}
-
-	oldPath := pa.taskFilePath(themeID, currentStatus, taskID)
-	newPath := pa.taskFilePath(themeID, string(TaskStatusArchived), taskID)
+	oldPath := pa.taskFilePath(currentStatus, taskID)
+	newPath := pa.taskFilePath(string(TaskStatusArchived), taskID)
 
 	if err := os.Rename(oldPath, newPath); err != nil {
 		return fmt.Errorf("PlanAccess.ArchiveTask: failed to move task file: %w", err)
@@ -710,7 +685,7 @@ func (pa *PlanAccess) ArchiveTask(taskID string) error {
 
 // RestoreTask moves a task from the archived directory to done.
 func (pa *PlanAccess) RestoreTask(taskID string) error {
-	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	foundTask, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
 		return fmt.Errorf("PlanAccess.RestoreTask: %w", err)
 	}
@@ -721,13 +696,8 @@ func (pa *PlanAccess) RestoreTask(taskID string) error {
 		return fmt.Errorf("PlanAccess.RestoreTask: task %s is not archived (status: %s)", taskID, currentStatus)
 	}
 
-	destDir := pa.taskDirPath(themeID, string(TaskStatusDone))
-	if err := os.MkdirAll(destDir, 0755); err != nil {
-		return fmt.Errorf("PlanAccess.RestoreTask: failed to create done directory: %w", err)
-	}
-
-	oldPath := pa.taskFilePath(themeID, string(TaskStatusArchived), taskID)
-	newPath := pa.taskFilePath(themeID, string(TaskStatusDone), taskID)
+	oldPath := pa.taskFilePath(string(TaskStatusArchived), taskID)
+	newPath := pa.taskFilePath(string(TaskStatusDone), taskID)
 
 	if err := os.Rename(oldPath, newPath); err != nil {
 		return fmt.Errorf("PlanAccess.RestoreTask: failed to move task file: %w", err)
@@ -743,7 +713,7 @@ func (pa *PlanAccess) RestoreTask(taskID string) error {
 // DeleteTask deletes a task.
 func (pa *PlanAccess) DeleteTask(taskID string) error {
 	// Find the task
-	foundTask, themeID, currentStatus, _, err := pa.findTaskInPlan(taskID)
+	foundTask, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
 		return fmt.Errorf("PlanAccess.DeleteTask: %w", err)
 	}
@@ -751,7 +721,7 @@ func (pa *PlanAccess) DeleteTask(taskID string) error {
 		return fmt.Errorf("PlanAccess.DeleteTask: task with ID %s not found", taskID)
 	}
 
-	filePath := pa.taskFilePath(themeID, currentStatus, taskID)
+	filePath := pa.taskFilePath(currentStatus, taskID)
 
 	// Delete the file
 	if err := os.Remove(filePath); err != nil {
