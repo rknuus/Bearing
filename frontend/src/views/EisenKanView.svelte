@@ -326,7 +326,7 @@
     await verifyTaskState();
   }
 
-  function handleCreateCancel() {
+  function handleCreateClose() {
     showCreateDialog = false;
   }
 
@@ -961,7 +961,7 @@
     {themes}
     {availableTags}
     onDone={handleCreateDone}
-    onCancel={handleCreateCancel}
+    onClose={handleCreateClose}
     createTask={apiCreateTaskAndInsert}
   />
 

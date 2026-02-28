@@ -5,13 +5,14 @@
    * A dialog for batch-creating tasks using an Eisenhower matrix.
    * Tasks are entered into a staging quadrant (Q4) and dragged to priority
    * quadrants before committing. Only Q1/Q2/Q3 tasks are created via the API;
-   * Q4 (staging) tasks are discarded on Done.
+   * Q4 (staging) tasks persist as drafts across dialog close and app restart.
    */
 
   import { untrack } from 'svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
+  import { getBindings } from '../lib/utils/bindings';
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
   type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent' | 'staging';
@@ -21,11 +22,11 @@
     themes: LifeTheme[];
     availableTags?: string[];
     onDone: () => void;
-    onCancel: () => void;
+    onClose: () => void;
     createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
   }
 
-  let { open, themes, availableTags = [], onDone, onCancel, createTask }: Props = $props();
+  let { open, themes, availableTags = [], onDone, onClose, createTask }: Props = $props();
 
   // Quadrant configuration
   const quadrants: { id: QuadrantId; title: string; color: string; priority: string; isStaging: boolean }[] = [
@@ -52,6 +53,33 @@
   let error = $state<string | null>(null);
   let nextId = $state(1);
 
+  const emptyQuadrants: Record<QuadrantId, PendingTask[]> = {
+    'important-urgent': [],
+    'important-not-urgent': [],
+    'not-important-urgent': [],
+    'staging': [],
+  };
+
+  // Derive nextId from the highest pending-N id across all quadrants
+  function deriveNextId(quadrants: Record<QuadrantId, PendingTask[]>): number {
+    let max = 0;
+    for (const tasks of Object.values(quadrants)) {
+      for (const task of tasks) {
+        const match = task.id.match(/^pending-(\d+)$/);
+        if (match) max = Math.max(max, parseInt(match[1], 10));
+      }
+    }
+    return max + 1;
+  }
+
+  async function saveDrafts() {
+    try {
+      await getBindings().SaveTaskDrafts(JSON.stringify(tasksByQuadrant));
+    } catch {
+      // Drafts are ephemeral — silently ignore save errors
+    }
+  }
+
   // Set default theme when themes change
   $effect(() => {
     if (themes.length > 0) {
@@ -63,16 +91,10 @@
     }
   });
 
-  // Reset state when dialog opens
+  // Load drafts when dialog opens, reset form fields
   $effect(() => {
     if (open) {
       untrack(() => {
-        tasksByQuadrant = {
-          'important-urgent': [],
-          'important-not-urgent': [],
-          'not-important-urgent': [],
-          'staging': [],
-        };
         newTaskTitle = '';
         newTaskDescription = '';
         newTaskTags = '';
@@ -80,10 +102,22 @@
         newTaskPromotionDate = '';
         isSubmitting = false;
         error = null;
-        nextId = 1;
         if (themes.length > 0) {
           selectedThemeId = themes[0].id;
         }
+        // Load drafts asynchronously
+        getBindings().LoadTaskDrafts().then((data: string) => {
+          try {
+            const parsed = JSON.parse(data);
+            tasksByQuadrant = { ...emptyQuadrants, ...parsed };
+          } catch {
+            tasksByQuadrant = { ...emptyQuadrants };
+          }
+          nextId = deriveNextId(tasksByQuadrant);
+        }).catch(() => {
+          tasksByQuadrant = { ...emptyQuadrants };
+          nextId = 1;
+        });
       });
     }
   });
@@ -153,6 +187,8 @@
         tasksByQuadrant = { ...tasksByQuadrant, [quadrant.id]: remaining };
       }
 
+      await saveDrafts();
+
       if (created === total) {
         onDone();
       } else {
@@ -165,13 +201,14 @@
     }
   }
 
-  function handleCancel() {
-    onCancel();
+  async function handleClose() {
+    await saveDrafts();
+    onClose();
   }
 </script>
 
 {#if open}
-  <Dialog title="Create Tasks" id="create-dialog-title" maxWidth="700px" onclose={handleCancel}>
+  <Dialog title="Create Tasks" id="create-dialog-title" maxWidth="700px" onclose={handleClose}>
     {#if error}
       <ErrorBanner message={error} ondismiss={() => error = null} />
     {/if}
@@ -231,13 +268,13 @@
 
     {#if tasksByQuadrant.staging.length > 0}
       <p class="staging-hint">
-        Tasks in staging (Q4) will be discarded. Drag them to a priority quadrant to save them.
+        Tasks in staging (Q4) are saved as drafts but won't be committed. Drag them to a priority quadrant to include them.
       </p>
     {/if}
 
     {#snippet actions()}
-      <Button variant="secondary" onclick={handleCancel} disabled={isSubmitting}>
-        Cancel
+      <Button variant="secondary" onclick={handleClose} disabled={isSubmitting}>
+        Close
       </Button>
       <Button
         variant="primary"
