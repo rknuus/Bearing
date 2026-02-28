@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-20T14:57:09Z
-version: 1.0
+last_updated: 2026-02-28T15:17:06Z
+version: 1.1
 author: Claude Code PM System
 ---
 
@@ -27,6 +27,13 @@ Frontend (Svelte) → Wails IPC → main.go bindings → PlanningManager → Pla
 - All business rules live in the manager (WIP limits, task validation, priority promotion)
 - Access layer is rule-agnostic (pure CRUD + versioning)
 - No business logic whatsoever in the frontend/clients
+
+### Task Storage: Flat by Status
+- Tasks stored in `tasks/{status}/{taskID}.json` (no theme directory)
+- `GetTasksByStatus(status)` reads a single directory
+- `GetTasksByTheme(themeID)` filters across all statuses by `task.ThemeID`
+- `findTaskInPlan(taskID)` iterates 4 status dirs (not themes × statuses)
+- `saveTaskFile` includes a uniqueness guard to prevent duplicate task IDs
 
 ## Frontend Patterns
 

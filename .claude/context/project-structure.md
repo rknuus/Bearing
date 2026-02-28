@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-20T14:57:09Z
-version: 1.0
+last_updated: 2026-02-28T15:17:06Z
+version: 1.1
 author: Claude Code PM System
 ---
 
@@ -19,6 +19,7 @@ bearing/
 ├── frontend/                   # Svelte 5 frontend
 ├── internal/                   # Go backend packages
 ├── build/                      # Build output
+├── scripts/                    # Utility scripts (e.g., migration)
 ├── tests/                      # E2E test support
 └── .pm/                        # Project management (gitignored)
 ```
@@ -81,14 +82,16 @@ frontend/src/
 
 ## Data Storage
 ```
-~/.bearing/data/                # Git-versioned data directory
+~/.bearing/                     # Git-versioned data directory
 ├── themes/themes.json          # Life themes with nested OKRs
 ├── calendar/YYYY.json          # Day focus entries per year
-├── tasks/THEME-XX/             # Tasks organized by theme
+├── tasks/                      # Tasks organized by status (flat)
 │   ├── todo/                   # Pending tasks
 │   ├── doing/                  # In-progress tasks
-│   └── done/                   # Completed tasks
-├── navigation_context.json     # Persisted UI state
+│   ├── done/                   # Completed tasks
+│   └── archived/               # Archived tasks
+├── task_order.json             # Persisted task ordering per drop zone
+├── navigation_context.json     # Persisted UI state (not git-versioned)
 └── .git/                       # Auto-managed git repo
 ```
 
