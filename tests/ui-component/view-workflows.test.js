@@ -151,8 +151,8 @@ export async function runTests() {
         throw new Error(`Expected dialog title "Create Tasks", got "${dialogTitle}"`)
       }
 
-      // Cancel the dialog
-      await page.click('.btn-secondary')
+      // Close the dialog
+      await page.click('.btn-secondary:has-text("Close")')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
       reporter.pass('Task board loads with correct columns and create dialog')
@@ -162,7 +162,7 @@ export async function runTests() {
       try {
         const dialog = await page.$('.dialog')
         if (dialog) {
-          await page.click('.btn-secondary')
+          await page.click('.btn-secondary:has-text("Close")')
           await page.waitForSelector('.dialog', { state: 'detached', timeout: 3000 })
         }
       } catch { /* best effort */ }
