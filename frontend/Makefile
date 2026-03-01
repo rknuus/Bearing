@@ -52,22 +52,3 @@ test: ## Run TypeScript checks and Vitest unit tests
 	@npm run check
 	@echo "Running Vitest unit tests..."
 	@npm test -- --run
-
-.PHONY: ui-component-install
-ui-component-install: ## Install Playwright UI component test dependencies
-	@echo "Installing Playwright UI component test dependencies..."
-	@cd ../tests/ui-component && npm install
-	@echo "Installing Playwright browsers..."
-	@cd ../tests/ui-component && npx playwright install chromium
-
-.PHONY: ui-component
-ui-component: ## Run Playwright UI component tests (requires dev server running)
-	@echo "Running Playwright UI component tests against Vite dev server..."
-	@echo "Note: Ensure 'make dev' is running in another terminal first"
-	@echo "      Vite server: http://localhost:5173 (with mock Wails bindings)"
-	@cd ../tests/ui-component && npm test
-
-.PHONY: ui-component-headless
-ui-component-headless: ## Run Playwright UI component tests in headless mode
-	@echo "Running Playwright UI component tests in headless mode..."
-	@cd ../tests/ui-component && HEADLESS=true npm test

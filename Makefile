@@ -26,7 +26,7 @@ help: ## Show this help message
 ##@ Development
 
 .PHONY: setup
-setup: frontend-install test-ui-component-install test-e2e-install ## Setup project (install all dependencies)
+setup: frontend-install test-e2e-install ## Setup project (install all dependencies)
 	@echo "Project setup complete!"
 	@echo ""
 	@echo "To run the application:"
@@ -141,17 +141,13 @@ endif
 test-frontend: ## Run frontend TypeScript checks and Vitest unit tests
 	@$(MAKE) --no-print-directory -C frontend test
 
-.PHONY: test-ui-component-install
-test-ui-component-install: ## Install Playwright UI component test dependencies
-	@$(MAKE) --no-print-directory -C frontend ui-component-install
-
 .PHONY: test-ui-component
-test-ui-component: ## Run Playwright UI component tests (requires frontend-dev running)
-	@$(MAKE) --no-print-directory -C frontend ui-component
+test-ui-component: ## Run Playwright UI component tests (starts Vite, runs tests, cleans up)
+	@bash scripts/run-ui-component-tests.sh
 
 .PHONY: test-ui-component-headless
 test-ui-component-headless: ## Run Playwright UI component tests in headless mode
-	@$(MAKE) --no-print-directory -C frontend ui-component-headless
+	@HEADLESS=true bash scripts/run-ui-component-tests.sh
 
 .PHONY: test-e2e-install
 test-e2e-install: ## Install E2E test dependencies
