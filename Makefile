@@ -161,15 +161,12 @@ test-e2e-install: ## Install E2E test dependencies
 	@cd tests/e2e && npx playwright install chromium
 
 .PHONY: test-e2e
-test-e2e: ## Run true E2E tests (requires wails dev with BEARING_DATA_DIR)
-	@echo "Running E2E tests against Wails dev server..."
-	@echo "Note: Ensure 'BEARING_DATA_DIR=/tmp/bearing-e2e wails dev' is running"
-	@cd tests/e2e && npm test
+test-e2e: ## Run true E2E tests (starts wails dev, runs tests, cleans up)
+	@bash scripts/run-e2e-tests.sh
 
 .PHONY: test-e2e-headless
 test-e2e-headless: ## Run true E2E tests in headless mode
-	@echo "Running E2E tests in headless mode..."
-	@cd tests/e2e && HEADLESS=true npm test
+	@HEADLESS=true bash scripts/run-e2e-tests.sh
 
 ##@ Frontend
 
