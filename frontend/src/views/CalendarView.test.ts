@@ -44,8 +44,10 @@ describe('CalendarView', () => {
         else currentYearFocus.push(day);
       }),
       ClearDayFocus: vi.fn().mockImplementation(async (date: string) => {
-        currentYearFocus = currentYearFocus.filter(e => e.date !== date);
+        const idx = currentYearFocus.findIndex(e => e.date === date);
+        if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeId: '' };
       }),
+      LogFrontend: vi.fn(),
       LoadNavigationContext: vi.fn().mockResolvedValue({
         currentView: 'calendar',
         currentItem: '',
@@ -214,7 +216,9 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.ClearDayFocus).toHaveBeenCalledWith('2025-01-01');
+      expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+        expect.objectContaining({ date: '2025-01-01', themeId: '', text: '' })
+      );
     });
   });
 
@@ -281,7 +285,7 @@ describe('CalendarView', () => {
     expect(loadingEl?.textContent).toContain('Loading');
   });
 
-  it('shows error state with retry button on fetch failure', async () => {
+  it('shows error banner on fetch failure', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockBindings.GetThemes.mockRejectedValue(new Error('Network error'));
 
@@ -295,14 +299,17 @@ describe('CalendarView', () => {
     });
     await tick();
 
-    const errorEl = container.querySelector('.error');
-    expect(errorEl).toBeTruthy();
-    expect(errorEl?.textContent).toContain('Network error');
+    const errorBanner = container.querySelector('.error-banner');
+    expect(errorBanner).toBeTruthy();
+    expect(errorBanner?.textContent).toContain('Network error');
 
-    // Retry button should be present
-    const retryButton = errorEl?.querySelector('button');
-    expect(retryButton).toBeTruthy();
-    expect(retryButton?.textContent).toContain('Retry');
+    // Dismiss button
+    const dismissBtn = errorBanner!.querySelector('button');
+    expect(dismissBtn?.textContent).toContain('Dismiss');
+    dismissBtn!.click();
+    await tick();
+
+    expect(container.querySelector('.error-banner')).toBeNull();
 
     spy.mockRestore();
   });
@@ -315,5 +322,68 @@ describe('CalendarView', () => {
     const textsContent = Array.from(dayTexts).map(el => el.textContent);
     expect(textsContent).toContain('Gym day');
     expect(textsContent).toContain('Interview prep');
+  });
+
+  describe('state-check verification', () => {
+    it('detects state mismatch when backend diverges after save', async () => {
+      await renderView();
+      // Opt out of global error detection: this test deliberately triggers state-check errors
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Click Jan 15 day cell (has existing focus data with themeId 'HF')
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      let targetCell: HTMLButtonElement | null = null;
+      for (const cell of dayCells) {
+        if (cell.title?.includes(formatDateLocale('2025-01-15'))) {
+          targetCell = cell;
+          break;
+        }
+      }
+      expect(targetCell).toBeTruthy();
+      targetCell!.click();
+      await tick();
+
+      // Set theme to CG
+      const themeSelect = container.querySelector<HTMLSelectElement>('#theme-select');
+      await fireEvent.change(themeSelect!, { target: { value: 'CG' } });
+      await tick();
+
+      // Before saving, make GetYearFocus return divergent data for the verify call:
+      // the saved date will have themeId 'CG' locally, but backend returns 'HF'
+      mockBindings.GetYearFocus.mockResolvedValueOnce([
+        { date: '2025-01-15', themeId: 'HF', notes: '', text: 'Gym day' },
+        { date: '2025-03-10', themeId: 'CG', notes: '', text: 'Interview prep' },
+      ]);
+
+      // Click save
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // ErrorBanner should appear with the mismatch message
+      await vi.waitFor(() => {
+        const alert = container.querySelector('[role="alert"]');
+        expect(alert).toBeTruthy();
+        expect(alert!.textContent).toContain('Internal state mismatch detected');
+      });
+
+      // LogFrontend should have been called with the mismatch details
+      expect(mockBindings.LogFrontend).toHaveBeenCalledWith(
+        'error',
+        expect.stringContaining('themeId'),
+        'state-check'
+      );
+
+      // Verify console.warn was called with [state-check] prefix
+      const warnings = warnSpy.mock.calls.filter((c: unknown[]) => String(c[0]).includes('[state-check]'));
+      expect(warnings.length).toBeGreaterThan(0);
+    });
   });
 });

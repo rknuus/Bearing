@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { checkEntity, checkFullState } from './state-check';
+import { checkEntity, checkFullState, checkStateFromData } from './state-check';
 
 describe('checkEntity', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -98,5 +98,52 @@ describe('checkFullState', () => {
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(warnSpy.mock.calls[0][0]).toContain('[state-check]');
     expect(warnSpy.mock.calls[0][0]).toContain('order mismatch');
+  });
+});
+
+describe('checkStateFromData', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('emits nothing when lists match', () => {
+    const list = [{ id: '1', title: 'A' }, { id: '2', title: 'B' }];
+    const result = checkStateFromData('task', list, [...list], 'id', ['title']);
+    expect(result).toEqual([]);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('warns on differing field', () => {
+    const frontend = [{ id: '1', title: 'A' }];
+    const backend = [{ id: '1', title: 'B' }];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('title');
+  });
+
+  it('warns on entity missing from backend', () => {
+    const frontend = [{ id: '1', title: 'A' }];
+    const result = checkStateFromData('task', frontend, [], 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('exists in frontend but not backend');
+  });
+
+  it('warns on entity missing from frontend', () => {
+    const backend = [{ id: '1', title: 'A' }];
+    const result = checkStateFromData('task', [], backend, 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('exists in backend but not frontend');
+  });
+
+  it('warns when same entities are in different order', () => {
+    const frontend = [{ id: '1', title: 'A' }, { id: '2', title: 'B' }];
+    const backend = [{ id: '2', title: 'B' }, { id: '1', title: 'A' }];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('order mismatch');
   });
 });

@@ -18,10 +18,9 @@ export function checkEntity(type: string, id: string, frontend: Entity, backend:
   return mismatches;
 }
 
-/** Re-fetch the full list and compare against frontend state. */
-export async function checkFullState(type: string, frontendList: Entity[], fetchFn: () => Promise<Entity[]>, idKey: string, fields: string[]): Promise<string[]> {
+/** Compare frontend and backend entity lists without fetching. */
+export function checkStateFromData(type: string, frontendList: Entity[], backendList: Entity[], idKey: string, fields: string[]): string[] {
   const mismatches: string[] = [];
-  const backendList = await fetchFn();
   const backendMap = new Map(backendList.map(e => [String(e[idKey]), e]));
   const frontendMap = new Map(frontendList.map(e => [String(e[idKey]), e]));
   for (const [id, fe] of frontendMap) {
@@ -50,4 +49,10 @@ export async function checkFullState(type: string, frontendList: Entity[], fetch
     mismatches.push(msg);
   }
   return mismatches;
+}
+
+/** Re-fetch the full list and compare against frontend state. */
+export async function checkFullState(type: string, frontendList: Entity[], fetchFn: () => Promise<Entity[]>, idKey: string, fields: string[]): Promise<string[]> {
+  const backendList = await fetchFn();
+  return checkStateFromData(type, frontendList, backendList, idKey, fields);
 }

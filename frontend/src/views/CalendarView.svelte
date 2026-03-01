@@ -9,9 +9,9 @@
 
   import { SvelteMap } from 'svelte/reactivity';
   import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
-  import { Dialog, Button } from '../lib/components';
+  import { Dialog, Button, ErrorBanner } from '../lib/components';
   import { getBindings } from '../lib/utils/bindings';
-  import { checkFullState } from '../lib/utils/state-check';
+  import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
   // Props
@@ -211,7 +211,14 @@
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text'];
 
   async function verifyCalendarState() {
-    await checkFullState('dayFocus', [...yearFocus.values()], () => getBindings().GetYearFocus(year), 'date', DAY_FOCUS_FIELDS);
+    const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
+    const frontend = [...yearFocus.values()].sort(byDate);
+    const backend = (await getBindings().GetYearFocus(year)).sort(byDate);
+    const mismatches = checkStateFromData('dayFocus', frontend, backend, 'date', DAY_FOCUS_FIELDS);
+    if (mismatches.length > 0) {
+      error = 'Internal state mismatch detected, please reload';
+      getBindings().LogFrontend('error', mismatches.join('; '), 'state-check');
+    }
   }
 
   async function saveDayFocus() {
@@ -220,20 +227,15 @@
     try {
       const bindings = getBindings();
 
-      if (!editThemeId && !editText) {
-        await bindings.ClearDayFocus(editingDay.date);
-        yearFocus.delete(editingDay.date);
-      } else {
-        const existing = yearFocus.get(editingDay.date);
-        const dayFocus: DayFocus = {
-          date: editingDay.date,
-          themeId: editThemeId,
-          notes: existing?.notes ?? '',
-          text: editText
-        };
-        await bindings.SaveDayFocus(dayFocus);
-        yearFocus.set(editingDay.date, dayFocus);
-      }
+      const existing = yearFocus.get(editingDay.date);
+      const dayFocus: DayFocus = {
+        date: editingDay.date,
+        themeId: editThemeId,
+        notes: existing?.notes ?? '',
+        text: editText
+      };
+      await bindings.SaveDayFocus(dayFocus);
+      yearFocus.set(editingDay.date, dayFocus);
 
       await verifyCalendarState();
       editingDay = null;
@@ -275,13 +277,12 @@
     </button>
   </div>
 
+  {#if error}
+    <ErrorBanner message={error} ondismiss={() => error = null} />
+  {/if}
+
   {#if loading}
     <div class="loading">Loading calendar...</div>
-  {:else if error}
-    <div class="error">
-      <p>{error}</p>
-      <button onclick={loadData}>Retry</button>
-    </div>
   {:else}
     <!-- Calendar Grid -->
     <div class="calendar-container">
@@ -455,29 +456,14 @@
     background: var(--color-primary-700);
   }
 
-  /* Loading / Error states */
-  .loading,
-  .error {
+  /* Loading state */
+  .loading {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     color: var(--color-gray-500);
-  }
-
-  .error {
-    color: var(--color-error-600);
-  }
-
-  .error button {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-primary-600);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
   }
 
   /* Calendar Container */
