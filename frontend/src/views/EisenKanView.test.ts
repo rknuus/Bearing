@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { TaskWithStatus, LifeTheme, BoardConfiguration } from '../lib/wails-mock';
 import EisenKanView from './EisenKanView.svelte';
@@ -92,6 +92,14 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
 describe('EisenKanView', () => {
   let container: HTMLDivElement;
   let currentTasks: TaskWithStatus[];
+
+  // Assert that no [state-check] warnings were emitted, then restore the spy.
+  async function assertNoStateCheckWarnings(warnSpy: ReturnType<typeof vi.spyOn>) {
+    await tick();
+    const warnings = warnSpy.mock.calls.filter((c: unknown[]) => String(c[0]).includes('[state-check]'));
+    expect(warnings).toHaveLength(0);
+    warnSpy.mockRestore();
+  }
 
   // Reorder currentTasks to match the given positions (mirrors backend behavior)
   function applyPositions(positions: Record<string, string[]>) {
@@ -272,6 +280,7 @@ describe('EisenKanView', () => {
 
   it('delete button calls DeleteTask and removes card', async () => {
     await renderView();
+    const warnSpy = vi.spyOn(console, 'warn');
 
     const deleteButtons = container.querySelectorAll<HTMLButtonElement>('.delete-btn');
     const initialCardCount = container.querySelectorAll('.task-card').length;
@@ -289,6 +298,8 @@ describe('EisenKanView', () => {
     await vi.waitFor(() => {
       expect(container.querySelectorAll('.task-card').length).toBe(3);
     });
+
+    await assertNoStateCheckWarnings(warnSpy);
   });
 
   it('filters tasks by filterThemeIds prop', async () => {
@@ -535,6 +546,7 @@ describe('EisenKanView', () => {
 
     it('cross-column drop to middle preserves DnD position', async () => {
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       // Get the DOING column's DnD zone (second column, non-sectioned)
       const columns = container.querySelectorAll('.kanban-column');
@@ -556,10 +568,13 @@ describe('EisenKanView', () => {
       const doingCards = columns[1].querySelectorAll('.task-card');
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Doing First', 'Todo Task', 'Doing Second', 'Doing Third']);
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-column drop to first position preserves DnD position', async () => {
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
@@ -579,6 +594,8 @@ describe('EisenKanView', () => {
       const doingCards = columns[1].querySelectorAll('.task-card');
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Todo Task', 'Doing First', 'Doing Second', 'Doing Third']);
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-section drop within TODO preserves DnD position', async () => {
@@ -590,6 +607,7 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       // Get the important-not-urgent section's DnD zone
       const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
@@ -608,6 +626,8 @@ describe('EisenKanView', () => {
       const sectionCards = container.querySelector('[data-testid="section-important-not-urgent"]')!.querySelectorAll('.task-card');
       const titles = Array.from(sectionCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Urgent One', 'Not Urgent One']);
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-section move sends both source and target zones to ReorderTasks', async () => {
@@ -619,6 +639,7 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       // Get the important-not-urgent section's DnD zone
       const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
@@ -648,6 +669,8 @@ describe('EisenKanView', () => {
           'important-not-urgent': ['IU1', 'INU1'],    // target: IU1 at drop position
         });
       });
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-section ReorderTasks failure triggers rollback and shows error', async () => {
@@ -696,6 +719,7 @@ describe('EisenKanView', () => {
 
     it('within-column reorder works correctly', async () => {
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
@@ -714,6 +738,8 @@ describe('EisenKanView', () => {
       const doingCards = columns[1].querySelectorAll('.task-card');
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Doing Third', 'Doing First', 'Doing Second']);
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
   });
 
@@ -790,6 +816,7 @@ describe('EisenKanView', () => {
 
     it('archive button calls ArchiveTask and refreshes tasks', async () => {
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const columns = container.querySelectorAll('.kanban-column');
       const archiveBtn = columns[2].querySelector<HTMLButtonElement>('.archive-btn')!;
@@ -804,10 +831,13 @@ describe('EisenKanView', () => {
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
       });
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('"Archive all" button calls ArchiveAllDoneTasks and refreshes tasks', async () => {
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
       archiveAllBtn.click();
@@ -820,6 +850,8 @@ describe('EisenKanView', () => {
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
       });
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('archived tasks are not shown in kanban columns', async () => {
@@ -907,6 +939,7 @@ describe('EisenKanView', () => {
       mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
 
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const restoreBtn = container.querySelector<HTMLButtonElement>('.archived-column .restore-btn')!;
       expect(restoreBtn.textContent).toBe('Restore');
@@ -920,6 +953,8 @@ describe('EisenKanView', () => {
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-restore + state-check
       });
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('persists showArchivedTasks toggle to navigation context', async () => {
@@ -939,12 +974,9 @@ describe('EisenKanView', () => {
   });
 
   describe('state-check verification', () => {
-    it('emits no [state-check] warnings when backend and frontend agree after edit', async () => {
+    it('emits no [state-check] warnings after edit', async () => {
       await renderView();
       const warnSpy = vi.spyOn(console, 'warn');
-
-      // Stateful mocks: mockUpdateTask automatically applies changes to currentTasks,
-      // so mockGetTasks will return the updated data when checkFullState runs.
 
       // Simulate edit: click task card to open edit dialog, then save
       const card = container.querySelector('.task-card')!;
@@ -963,8 +995,79 @@ describe('EisenKanView', () => {
         await tick();
       }
 
-      const stateCheckWarns = warnSpy.mock.calls.filter(c => String(c[0]).includes('[state-check]'));
-      expect(stateCheckWarns).toHaveLength(0);
+      await assertNoStateCheckWarnings(warnSpy);
+    });
+
+    it('emits no [state-check] warnings after create', async () => {
+      await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
+
+      // Open create dialog
+      const createBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      createBtn!.click();
+      await tick();
+      await tick(); // Wait for LoadTaskDrafts async resolution
+
+      // Type task title and click Add to stage the task to Q4
+      const titleInput = container.querySelector<HTMLInputElement>('#new-task-title');
+      expect(titleInput).toBeTruthy();
+      await fireEvent.input(titleInput!, { target: { value: 'New task' } });
+      await tick();
+
+      const addBtn = container.querySelector<HTMLButtonElement>('.btn-add');
+      expect(addBtn).toBeTruthy();
+      await fireEvent.click(addBtn!);
+      await tick();
+
+      // Simulate DnD: move staged task from Q4 (staging) to Q1 (important-urgent)
+      const stagingZone = container.querySelector('[data-quadrant-id="staging"] .task-list');
+      const q1Zone = container.querySelector('[data-quadrant-id="important-urgent"] .task-list');
+      expect(stagingZone).toBeTruthy();
+      expect(q1Zone).toBeTruthy();
+
+      const pendingTask = { id: 'pending-1', title: 'New task', themeId: 'HF' };
+      stagingZone!.dispatchEvent(new CustomEvent('finalize', {
+        detail: { items: [], info: { id: 'dnd-test', source: 'pointer', trigger: 'droppedIntoZone' } },
+      }));
+      q1Zone!.dispatchEvent(new CustomEvent('finalize', {
+        detail: { items: [pendingTask], info: { id: 'dnd-test', source: 'pointer', trigger: 'droppedIntoZone' } },
+      }));
+      await tick();
+
+      // Click "Commit to Todo" to create the task (triggers handleDone → createTask → handleCreateDone → verifyTaskState)
+      const commitBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('Commit to Todo'));
+      expect(commitBtn).toBeTruthy();
+      await fireEvent.click(commitBtn!);
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockCreateTask).toHaveBeenCalled();
+      });
+
+      await tick();
+      await assertNoStateCheckWarnings(warnSpy);
+    });
+
+    it('detects state mismatch when mock is intentionally broken', async () => {
+      await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
+
+      // Temporarily break mockDeleteTask so it does NOT update currentTasks
+      mockDeleteTask.mockResolvedValue(undefined);
+
+      const deleteButtons = container.querySelectorAll<HTMLButtonElement>('.delete-btn');
+      deleteButtons[0].click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockDeleteTask).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // State-check should detect mismatch: frontend removed the task but backend still has it
+      const warnings = warnSpy.mock.calls.filter((c: unknown[]) => String(c[0]).includes('[state-check]'));
+      expect(warnings.length).toBeGreaterThan(0);
       warnSpy.mockRestore();
     });
   });
