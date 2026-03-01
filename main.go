@@ -103,6 +103,14 @@ func (a *App) startup(ctx context.Context) {
 	slog.Info("Bearing initialized", "dataDir", repoPath)
 }
 
+// shutdown is called when the app is closing
+func (a *App) shutdown(ctx context.Context) {
+	slog.Info("Bearing shutting down")
+	if a.logFile != nil {
+		a.logFile.Close()
+	}
+}
+
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, Welcome to Bearing!", name)
@@ -1019,7 +1027,8 @@ func main() {
 		Debug: options.Debug{
 			OpenInspectorOnStartup: true,
 		},
-		OnStartup: app.startup,
+		OnStartup:  app.startup,
+		OnShutdown: app.shutdown,
 		Bind: []interface{}{
 			app,
 		},
