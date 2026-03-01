@@ -253,7 +253,7 @@
     await getBindings().RestoreTask(taskId);
   }
 
-  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId'];
+  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId', 'status'];
 
   async function verifyTaskState() {
     const mismatches = await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS);
@@ -382,6 +382,22 @@
     return [...without.slice(0, prevIdx + 1), updated, ...without.slice(prevIdx + 1)];
   }
 
+  // Reorder entries in allTasks to match the DnD result order
+  function applyReorder(allTasks: TaskWithStatus[], reorderedItems: TaskWithStatus[]): TaskWithStatus[] {
+    const idOrder = reorderedItems.map(t => t.id);
+    const idSet = new Set(idOrder);
+    const byId = new Map(allTasks.map(t => [t.id, t]));
+    const slots: number[] = [];
+    for (let i = 0; i < allTasks.length; i++) {
+      if (idSet.has(allTasks[i].id)) slots.push(i);
+    }
+    const result = [...allTasks];
+    for (let j = 0; j < slots.length; j++) {
+      result[slots[j]] = byId.get(idOrder[j])!;
+    }
+    return result;
+  }
+
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
     columnItems = { ...columnItems, [status]: event.detail.items };
@@ -402,6 +418,7 @@
       const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
       try {
         await apiReorderTasks({ [status]: taskIds });
+        tasks = applyReorder(tasks, newItems);
         await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
@@ -465,6 +482,7 @@
       const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
       try {
         await apiReorderTasks({ [sectionName]: taskIds });
+        tasks = applyReorder(tasks, newItems);
         await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';

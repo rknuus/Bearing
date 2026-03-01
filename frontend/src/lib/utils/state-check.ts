@@ -41,5 +41,13 @@ export async function checkFullState(type: string, frontendList: Entity[], fetch
       mismatches.push(msg);
     }
   }
+  // Compare ID order
+  const frontendIds = frontendList.map(e => String(e[idKey]));
+  const backendIds = backendList.map(e => String(e[idKey]));
+  if (frontendIds.length === backendIds.length && frontendIds.some((id, i) => id !== backendIds[i])) {
+    const msg = `${type} order mismatch: frontend [${frontendIds.join(',')}] vs backend [${backendIds.join(',')}]`;
+    console.warn(`${PREFIX} ${msg}`);
+    mismatches.push(msg);
+  }
   return mismatches;
 }
