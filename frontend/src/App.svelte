@@ -255,12 +255,27 @@
     }
   }
 
+  // Install global error handlers to forward uncaught errors to the backend log
+  function installGlobalErrorHandlers() {
+    window.onerror = (message, source, lineno, colno) => {
+      const bindings = getBindings();
+      bindings.LogFrontend('error', String(message), `${source}:${lineno}:${colno}`);
+    };
+    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+      const bindings = getBindings();
+      bindings.LogFrontend('error', String(event.reason), 'unhandledrejection');
+    };
+  }
+
   // Initialize mock bindings for browser-based testing
   onMount(() => {
     if (!isWailsRuntime()) {
       initMockBindings();
       console.log('[App] Running in browser mode with mock Wails bindings');
     }
+
+    // Install global error handlers (fire-and-forget, no await)
+    installGlobalErrorHandlers();
 
     // Initialize locale before views render
     initializeLocale();

@@ -111,6 +111,19 @@ func (a *App) shutdown(ctx context.Context) {
 	}
 }
 
+// LogFrontend receives a log entry from the frontend and writes it via slog
+func (a *App) LogFrontend(level, message, source string) {
+	attrs := []any{"source", source, "origin", "frontend"}
+	switch level {
+	case "error":
+		slog.Error(message, attrs...)
+	case "warn":
+		slog.Warn(message, attrs...)
+	default:
+		slog.Info(message, attrs...)
+	}
+}
+
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, Welcome to Bearing!", name)
