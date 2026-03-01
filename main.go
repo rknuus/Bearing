@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +20,9 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
 
+// version is set at build time via -ldflags; defaults to "dev"
+var version = "dev"
+
 //go:embed all:frontend/dist
 var assets embed.FS
 
@@ -27,6 +30,7 @@ var assets embed.FS
 type App struct {
 	ctx             context.Context
 	planningManager *managers.PlanningManager
+	logFile         *os.File
 }
 
 // NewApp creates a new App application struct
@@ -42,15 +46,32 @@ func (a *App) startup(ctx context.Context) {
 	// Initialize data directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Printf("Warning: Failed to get home directory: %v", err)
+		slog.Warn("Failed to get home directory", "error", err)
 		return
 	}
 
-	repoPath := filepath.Join(homeDir, ".bearing")
-	if err := os.MkdirAll(repoPath, 0755); err != nil {
-		log.Printf("Warning: Failed to create data directory: %v", err)
+	bearingDir := filepath.Join(homeDir, ".bearing")
+	if err := os.MkdirAll(bearingDir, 0755); err != nil {
+		slog.Warn("Failed to create data directory", "error", err)
 		return
 	}
+
+	// Initialize file-backed slog logger
+	logPath := filepath.Join(bearingDir, "bearing.log")
+	logFile, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo, AddSource: true})
+		slog.SetDefault(slog.New(handler))
+		slog.Warn("Failed to open log file, falling back to stderr", "path", logPath, "error", err)
+	} else {
+		handler := slog.NewTextHandler(logFile, &slog.HandlerOptions{Level: slog.LevelInfo, AddSource: true})
+		slog.SetDefault(slog.New(handler))
+		a.logFile = logFile
+	}
+
+	slog.Info("Bearing starting up", "dataDir", bearingDir, "mode", version)
+
+	repoPath := bearingDir
 
 	// Initialize git repository for versioning
 	gitConfig := &utilities.AuthorConfiguration{
@@ -60,26 +81,26 @@ func (a *App) startup(ctx context.Context) {
 
 	repo, err := utilities.InitializeRepositoryWithConfig(repoPath, gitConfig)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize repository: %v", err)
+		slog.Warn("Failed to initialize repository", "error", err)
 		return
 	}
 
 	// Initialize PlanAccess
 	planAccess, err := access.NewPlanAccess(repoPath, repo)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize PlanAccess: %v", err)
+		slog.Warn("Failed to initialize PlanAccess", "error", err)
 		return
 	}
 
 	// Initialize PlanningManager
 	planningManager, err := managers.NewPlanningManager(planAccess)
 	if err != nil {
-		log.Printf("Warning: Failed to initialize PlanningManager: %v", err)
+		slog.Warn("Failed to initialize PlanningManager", "error", err)
 		return
 	}
 
 	a.planningManager = planningManager
-	log.Printf("Bearing initialized with data path: %s", repoPath)
+	slog.Info("Bearing initialized", "dataDir", repoPath)
 }
 
 // Greet returns a greeting for the given name
