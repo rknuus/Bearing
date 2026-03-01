@@ -522,7 +522,7 @@ describe('CreateTaskDialog', () => {
       }));
     }
 
-    it('Escape during quadrant drag re-loads drafts from backend', async () => {
+    it('Escape during quadrant drag restores pre-drag state', async () => {
       // Set up initial saved drafts
       mockDraftsData = JSON.stringify({
         'staging': [{ id: 'pending-1', title: 'Saved draft' }],
@@ -534,8 +534,6 @@ describe('CreateTaskDialog', () => {
       const staging = container.querySelector('[data-testid="quadrant-staging"]');
       expect(staging!.querySelectorAll('.task-title').length).toBe(1);
       expect(staging!.querySelector('.task-title')!.textContent).toBe('Saved draft');
-
-      const loadCallsBefore = mockLoadTaskDrafts.mock.calls.length;
 
       // Get the staging quadrant's task-list for DnD events
       const taskList = staging!.querySelector('.task-list')!;
@@ -557,10 +555,9 @@ describe('CreateTaskDialog', () => {
       await tick();
       await tick();
 
-      // LoadTaskDrafts should have been called again to re-load drafts
-      await vi.waitFor(() => {
-        expect(mockLoadTaskDrafts.mock.calls.length).toBeGreaterThan(loadCallsBefore);
-      });
+      // Staging should still have the original draft after cancel
+      expect(staging!.querySelectorAll('.task-title').length).toBe(1);
+      expect(staging!.querySelector('.task-title')!.textContent).toBe('Saved draft');
     });
 
     it('Escape when no drag is active does not re-load drafts', async () => {

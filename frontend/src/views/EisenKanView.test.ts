@@ -1001,8 +1001,6 @@ describe('EisenKanView', () => {
     it('Escape during column drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
       await renderView();
 
-      const getTasksCallsBefore = mockGetTasks.mock.calls.length;
-
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
 
@@ -1025,11 +1023,6 @@ describe('EisenKanView', () => {
       await tick();
       await tick();
 
-      // GetTasks should have been called again to re-fetch after cancel
-      await vi.waitFor(() => {
-        expect(mockGetTasks.mock.calls.length).toBeGreaterThan(getTasksCallsBefore);
-      });
-
       // MoveTask and ReorderTasks should NOT have been called
       expect(mockMoveTask).not.toHaveBeenCalled();
       expect(mockReorderTasks).not.toHaveBeenCalled();
@@ -1042,8 +1035,6 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
-
-      const getTasksCallsBefore = mockGetTasks.mock.calls.length;
 
       const sectionZone = container.querySelector('[data-testid="section-important-urgent"] .column-content')!;
 
@@ -1065,11 +1056,6 @@ describe('EisenKanView', () => {
       ]);
       await tick();
       await tick();
-
-      // GetTasks should have been called again
-      await vi.waitFor(() => {
-        expect(mockGetTasks.mock.calls.length).toBeGreaterThan(getTasksCallsBefore);
-      });
 
       // MoveTask, UpdateTask, and ReorderTasks should NOT have been called
       expect(mockMoveTask).not.toHaveBeenCalled();

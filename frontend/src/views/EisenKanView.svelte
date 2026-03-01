@@ -151,8 +151,9 @@
   // Derive available tags from all tasks (not filtered) for the tag filter bar
   const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
 
-  // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
-  $effect(() => {
+  // Re-derive columnItems and sectionItems from the current filteredTasks.
+  // Called by the $effect (reactive sync) and by the drag-cancel path (synchronous reset).
+  function regroupItems() {
     const cols = columns;
     const ft = filteredTasks;
     const grouped: Record<string, TaskWithStatus[]> = {};
@@ -180,9 +181,16 @@
       }
     }
 
+    columnItems = grouped;
+    sectionItems = sectionGrouped;
+  }
+
+  // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
+  $effect(() => {
+    const _cols = columns;
+    const _ft = filteredTasks;
     untrack(() => {
-      columnItems = grouped;
-      sectionItems = sectionGrouped;
+      regroupItems();
     });
   });
 
@@ -431,7 +439,7 @@
 
     if (dragCancelled) {
       dragCancelled = false;
-      tasks = await fetchTasks();
+      regroupItems();
       return;
     }
 
@@ -509,7 +517,7 @@
 
     if (dragCancelled) {
       dragCancelled = false;
-      tasks = await fetchTasks();
+      regroupItems();
       return;
     }
 

@@ -75,6 +75,7 @@
   // Drag-and-drop cancel state
   let isDragging = $state(false);
   let dragCancelled = $state(false);
+  let preDragSnapshot: Record<QuadrantId, PendingTask[]> | null = null;
 
   // Escape key handler: cancel active pointer drag inside the dialog
   function handleEscapeDuringDrag(event: KeyboardEvent) {
@@ -95,21 +96,26 @@
 
   function handleDragStart() {
     isDragging = true;
+    // Snapshot current state so we can restore synchronously on cancel.
+    // tasksByQuadrant is modified during drag by consider/finalize events,
+    // so we need a copy of the pre-drag state.
+    preDragSnapshot = {
+      'important-urgent': [...tasksByQuadrant['important-urgent']],
+      'important-not-urgent': [...tasksByQuadrant['important-not-urgent']],
+      'not-important-urgent': [...tasksByQuadrant['not-important-urgent']],
+      'staging': [...tasksByQuadrant.staging],
+    };
   }
 
-  async function handleDragEnd() {
+  function handleDragEnd() {
     isDragging = false;
     if (dragCancelled) {
       dragCancelled = false;
-      try {
-        const data = await getBindings().LoadTaskDrafts();
-        const parsed = JSON.parse(data);
-        tasksByQuadrant = { ...emptyQuadrants, ...parsed };
-      } catch {
-        tasksByQuadrant = { ...emptyQuadrants };
+      if (preDragSnapshot) {
+        tasksByQuadrant = preDragSnapshot;
       }
-      nextId = deriveNextId(tasksByQuadrant);
     }
+    preDragSnapshot = null;
   }
 
   async function saveDrafts() {
