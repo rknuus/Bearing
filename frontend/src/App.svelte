@@ -258,12 +258,13 @@
   // Install global error handlers to forward uncaught errors to the backend log
   function installGlobalErrorHandlers() {
     window.onerror = (message, source, lineno, colno) => {
-      const bindings = getBindings();
-      bindings.LogFrontend('error', String(message), `${source}:${lineno}:${colno}`);
+      const loc = `${source}:${lineno}:${colno}`;
+      console.error(`[error] ${String(message)} (${loc})`);
+      getBindings().LogFrontend('error', String(message), loc);
     };
     window.onunhandledrejection = (event: PromiseRejectionEvent) => {
-      const bindings = getBindings();
-      bindings.LogFrontend('error', String(event.reason), 'unhandledrejection');
+      console.error(`[error] ${String(event.reason)} (unhandledrejection)`);
+      getBindings().LogFrontend('error', String(event.reason), 'unhandledrejection');
     };
   }
 
