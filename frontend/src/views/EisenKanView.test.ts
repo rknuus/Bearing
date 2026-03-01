@@ -93,6 +93,23 @@ describe('EisenKanView', () => {
   let container: HTMLDivElement;
   let currentTasks: TaskWithStatus[];
 
+  // Reorder currentTasks to match the given positions (mirrors backend behavior)
+  function applyPositions(positions: Record<string, string[]>) {
+    for (const ids of Object.values(positions)) {
+      const idSet = new Set(ids);
+      const reordered = ids.map(id => currentTasks.find(t => t.id === id)).filter(Boolean) as TaskWithStatus[];
+      const slots: number[] = [];
+      for (let i = 0; i < currentTasks.length; i++) {
+        if (idSet.has(currentTasks[i].id)) slots.push(i);
+      }
+      const result = [...currentTasks];
+      for (let j = 0; j < slots.length && j < reordered.length; j++) {
+        result[slots[j]] = reordered[j];
+      }
+      currentTasks = result;
+    }
+  }
+
   beforeEach(() => {
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -105,8 +122,9 @@ describe('EisenKanView', () => {
       currentTasks = [...currentTasks, task];
       return task;
     });
-    mockMoveTask.mockImplementation(async (id: string, status: string) => {
+    mockMoveTask.mockImplementation(async (id: string, status: string, positions?: Record<string, string[]>) => {
       currentTasks = currentTasks.map(t => t.id === id ? { ...t, status } : t);
+      if (positions) applyPositions(positions);
       return { success: true };
     });
     mockDeleteTask.mockImplementation(async (id: string) => {
@@ -116,7 +134,10 @@ describe('EisenKanView', () => {
       currentTasks = currentTasks.map(t => t.id === task.id ? { ...t, ...task } : t);
     });
     mockProcessPriorityPromotions.mockResolvedValue([]);
-    mockReorderTasks.mockResolvedValue({ success: true, reordered: [] });
+    mockReorderTasks.mockImplementation(async (positions: Record<string, string[]>) => {
+      applyPositions(positions);
+      return { success: true, reordered: [] };
+    });
     mockArchiveTask.mockImplementation(async (id: string) => {
       currentTasks = currentTasks.map(t => t.id === id ? { ...t, status: 'archived' } : t);
     });

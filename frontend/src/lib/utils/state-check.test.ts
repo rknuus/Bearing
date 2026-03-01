@@ -81,4 +81,22 @@ describe('checkFullState', () => {
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(warnSpy.mock.calls[0][0]).toContain('exists in backend but not frontend');
   });
+
+  it('emits nothing when lists match in order', async () => {
+    const list = [{ id: '1', title: 'A' }, { id: '2', title: 'B' }];
+    const result = await checkFullState('task', list, async () => [...list], 'id', ['title']);
+    expect(result).toEqual([]);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('warns when same entities are in different order', async () => {
+    const frontend = [{ id: '1', title: 'A' }, { id: '2', title: 'B' }];
+    const backend = [{ id: '2', title: 'B' }, { id: '1', title: 'A' }];
+    const result = await checkFullState('task', frontend, async () => backend, 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('order mismatch');
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(warnSpy.mock.calls[0][0]).toContain('[state-check]');
+    expect(warnSpy.mock.calls[0][0]).toContain('order mismatch');
+  });
 });
