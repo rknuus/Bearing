@@ -1000,6 +1000,7 @@ describe('EisenKanView', () => {
 
     it('Escape during column drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
@@ -1026,6 +1027,8 @@ describe('EisenKanView', () => {
       // MoveTask and ReorderTasks should NOT have been called
       expect(mockMoveTask).not.toHaveBeenCalled();
       expect(mockReorderTasks).not.toHaveBeenCalled();
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('Escape during section drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
@@ -1035,6 +1038,7 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
+      const warnSpy = vi.spyOn(console, 'warn');
 
       const sectionZone = container.querySelector('[data-testid="section-important-urgent"] .column-content')!;
 
@@ -1061,6 +1065,8 @@ describe('EisenKanView', () => {
       expect(mockMoveTask).not.toHaveBeenCalled();
       expect(mockUpdateTask).not.toHaveBeenCalled();
       expect(mockReorderTasks).not.toHaveBeenCalled();
+
+      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('Escape when no drag is active does not re-fetch tasks', async () => {

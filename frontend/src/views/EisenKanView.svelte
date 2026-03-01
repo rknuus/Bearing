@@ -440,6 +440,7 @@
     if (dragCancelled) {
       regroupItems();
       queueMicrotask(() => { dragCancelled = false; });
+      await verifyTaskState();
       return;
     }
 
@@ -518,6 +519,7 @@
     if (dragCancelled) {
       regroupItems();
       queueMicrotask(() => { dragCancelled = false; });
+      await verifyTaskState();
       return;
     }
 
