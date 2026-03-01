@@ -93,14 +93,6 @@ describe('EisenKanView', () => {
   let container: HTMLDivElement;
   let currentTasks: TaskWithStatus[];
 
-  // Assert that no [state-check] warnings were emitted, then restore the spy.
-  async function assertNoStateCheckWarnings(warnSpy: ReturnType<typeof vi.spyOn>) {
-    await tick();
-    const warnings = warnSpy.mock.calls.filter((c: unknown[]) => String(c[0]).includes('[state-check]'));
-    expect(warnings).toHaveLength(0);
-    warnSpy.mockRestore();
-  }
-
   // Reorder currentTasks to match the given positions (mirrors backend behavior)
   function applyPositions(positions: Record<string, string[]>) {
     for (const ids of Object.values(positions)) {
@@ -280,7 +272,7 @@ describe('EisenKanView', () => {
 
   it('delete button calls DeleteTask and removes card', async () => {
     await renderView();
-    const warnSpy = vi.spyOn(console, 'warn');
+
 
     const deleteButtons = container.querySelectorAll<HTMLButtonElement>('.delete-btn');
     const initialCardCount = container.querySelectorAll('.task-card').length;
@@ -298,8 +290,6 @@ describe('EisenKanView', () => {
     await vi.waitFor(() => {
       expect(container.querySelectorAll('.task-card').length).toBe(3);
     });
-
-    await assertNoStateCheckWarnings(warnSpy);
   });
 
   it('filters tasks by filterThemeIds prop', async () => {
@@ -546,7 +536,7 @@ describe('EisenKanView', () => {
 
     it('cross-column drop to middle preserves DnD position', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       // Get the DOING column's DnD zone (second column, non-sectioned)
       const columns = container.querySelectorAll('.kanban-column');
@@ -568,13 +558,11 @@ describe('EisenKanView', () => {
       const doingCards = columns[1].querySelectorAll('.task-card');
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Doing First', 'Todo Task', 'Doing Second', 'Doing Third']);
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-column drop to first position preserves DnD position', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
@@ -594,8 +582,6 @@ describe('EisenKanView', () => {
       const doingCards = columns[1].querySelectorAll('.task-card');
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Todo Task', 'Doing First', 'Doing Second', 'Doing Third']);
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-section drop within TODO preserves DnD position', async () => {
@@ -607,7 +593,7 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       // Get the important-not-urgent section's DnD zone
       const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
@@ -626,8 +612,6 @@ describe('EisenKanView', () => {
       const sectionCards = container.querySelector('[data-testid="section-important-not-urgent"]')!.querySelectorAll('.task-card');
       const titles = Array.from(sectionCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Urgent One', 'Not Urgent One']);
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-section move sends both source and target zones to ReorderTasks', async () => {
@@ -639,7 +623,7 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       // Get the important-not-urgent section's DnD zone
       const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
@@ -669,8 +653,6 @@ describe('EisenKanView', () => {
           'important-not-urgent': ['IU1', 'INU1'],    // target: IU1 at drop position
         });
       });
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('cross-section ReorderTasks failure triggers rollback and shows error', async () => {
@@ -719,7 +701,7 @@ describe('EisenKanView', () => {
 
     it('within-column reorder works correctly', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
@@ -738,8 +720,6 @@ describe('EisenKanView', () => {
       const doingCards = columns[1].querySelectorAll('.task-card');
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Doing Third', 'Doing First', 'Doing Second']);
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
   });
 
@@ -816,7 +796,7 @@ describe('EisenKanView', () => {
 
     it('archive button calls ArchiveTask and refreshes tasks', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const columns = container.querySelectorAll('.kanban-column');
       const archiveBtn = columns[2].querySelector<HTMLButtonElement>('.archive-btn')!;
@@ -831,13 +811,11 @@ describe('EisenKanView', () => {
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
       });
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('"Archive all" button calls ArchiveAllDoneTasks and refreshes tasks', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
       archiveAllBtn.click();
@@ -850,8 +828,6 @@ describe('EisenKanView', () => {
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
       });
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('archived tasks are not shown in kanban columns', async () => {
@@ -939,7 +915,7 @@ describe('EisenKanView', () => {
       mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
 
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const restoreBtn = container.querySelector<HTMLButtonElement>('.archived-column .restore-btn')!;
       expect(restoreBtn.textContent).toBe('Restore');
@@ -953,8 +929,6 @@ describe('EisenKanView', () => {
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-restore + state-check
       });
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('persists showArchivedTasks toggle to navigation context', async () => {
@@ -1000,7 +974,7 @@ describe('EisenKanView', () => {
 
     it('Escape during column drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const columns = container.querySelectorAll('.kanban-column');
       const doingZone = columns[1].querySelector('.column-content')!;
@@ -1027,8 +1001,6 @@ describe('EisenKanView', () => {
       // MoveTask and ReorderTasks should NOT have been called
       expect(mockMoveTask).not.toHaveBeenCalled();
       expect(mockReorderTasks).not.toHaveBeenCalled();
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('Escape during section drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
@@ -1038,7 +1010,7 @@ describe('EisenKanView', () => {
       ];
 
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       const sectionZone = container.querySelector('[data-testid="section-important-urgent"] .column-content')!;
 
@@ -1065,8 +1037,6 @@ describe('EisenKanView', () => {
       expect(mockMoveTask).not.toHaveBeenCalled();
       expect(mockUpdateTask).not.toHaveBeenCalled();
       expect(mockReorderTasks).not.toHaveBeenCalled();
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('Escape when no drag is active does not re-fetch tasks', async () => {
@@ -1087,7 +1057,7 @@ describe('EisenKanView', () => {
   describe('state-check verification', () => {
     it('emits no [state-check] warnings after edit', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       // Simulate edit: click task card to open edit dialog, then save
       const card = container.querySelector('.task-card')!;
@@ -1105,13 +1075,11 @@ describe('EisenKanView', () => {
         await tick();
         await tick();
       }
-
-      await assertNoStateCheckWarnings(warnSpy);
     });
 
     it('emits no [state-check] warnings after create', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+
 
       // Open create dialog
       const createBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
@@ -1155,15 +1123,13 @@ describe('EisenKanView', () => {
         expect(mockCreateTask).toHaveBeenCalled();
       });
 
-      await tick();
-      await assertNoStateCheckWarnings(warnSpy);
-    });
+      await tick();    });
 
     it('detects state mismatch when mock is intentionally broken', async () => {
       await renderView();
       // Opt out of global error detection: this test deliberately triggers state-check errors
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Temporarily break mockDeleteTask so it does NOT update currentTasks
       mockDeleteTask.mockResolvedValue(undefined);
