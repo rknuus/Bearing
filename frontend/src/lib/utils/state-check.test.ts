@@ -147,3 +147,85 @@ describe('checkStateFromData', () => {
     expect(result[0]).toContain('order mismatch');
   });
 });
+
+describe('checkStateFromData with groupByFn (per-zone order)', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+  const zone = (e: Record<string, unknown>) => String(e.zone);
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('emits nothing when within-zone order matches despite different global order', () => {
+    // Frontend: todo tasks first, then doing. Backend: doing first, then todo.
+    const frontend = [
+      { id: '1', title: 'A', zone: 'todo' },
+      { id: '2', title: 'B', zone: 'todo' },
+      { id: '3', title: 'C', zone: 'doing' },
+    ];
+    const backend = [
+      { id: '3', title: 'C', zone: 'doing' },
+      { id: '1', title: 'A', zone: 'todo' },
+      { id: '2', title: 'B', zone: 'todo' },
+    ];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title'], zone);
+    expect(result).toEqual([]);
+    expect(warnSpy).not.toHaveBeenCalled();
+  });
+
+  it('warns when within-zone order differs', () => {
+    const frontend = [
+      { id: '1', title: 'A', zone: 'todo' },
+      { id: '2', title: 'B', zone: 'todo' },
+    ];
+    const backend = [
+      { id: '2', title: 'B', zone: 'todo' },
+      { id: '1', title: 'A', zone: 'todo' },
+    ];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title'], zone);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('order mismatch in zone todo');
+  });
+
+  it('emits nothing when all zones have matching order', () => {
+    const frontend = [
+      { id: '1', title: 'A', zone: 'a' },
+      { id: '2', title: 'B', zone: 'b' },
+      { id: '3', title: 'C', zone: 'b' },
+    ];
+    const backend = [
+      { id: '2', title: 'B', zone: 'b' },
+      { id: '3', title: 'C', zone: 'b' },
+      { id: '1', title: 'A', zone: 'a' },
+    ];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title'], zone);
+    expect(result).toEqual([]);
+  });
+
+  it('detects mismatch in one zone while other zones match', () => {
+    const frontend = [
+      { id: '1', title: 'A', zone: 'a' },
+      { id: '2', title: 'B', zone: 'b' },
+      { id: '3', title: 'C', zone: 'b' },
+    ];
+    const backend = [
+      { id: '3', title: 'C', zone: 'b' },
+      { id: '2', title: 'B', zone: 'b' },
+      { id: '1', title: 'A', zone: 'a' },
+    ];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title'], zone);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('zone b');
+    expect(result[0]).not.toContain('zone a');
+  });
+
+  it('still detects field mismatches alongside zone order check', () => {
+    const frontend = [{ id: '1', title: 'A', zone: 'a' }];
+    const backend = [{ id: '1', title: 'B', zone: 'a' }];
+    const result = checkStateFromData('task', frontend, backend, 'id', ['title'], zone);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('title');
+  });
+});
