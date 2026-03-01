@@ -9,7 +9,7 @@
 
   import { SvelteMap } from 'svelte/reactivity';
   import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
-  import { Dialog, Button } from '../lib/components';
+  import { Dialog, Button, ErrorBanner } from '../lib/components';
   import { getBindings } from '../lib/utils/bindings';
   import { checkFullState } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
@@ -211,7 +211,11 @@
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text'];
 
   async function verifyCalendarState() {
-    await checkFullState('dayFocus', [...yearFocus.values()], () => getBindings().GetYearFocus(year), 'date', DAY_FOCUS_FIELDS);
+    const mismatches = await checkFullState('dayFocus', [...yearFocus.values()], () => getBindings().GetYearFocus(year), 'date', DAY_FOCUS_FIELDS);
+    if (mismatches.length > 0) {
+      error = 'Internal state mismatch detected, please reload';
+      getBindings().LogFrontend('error', mismatches.join('; '), 'state-check');
+    }
   }
 
   async function saveDayFocus() {
@@ -275,13 +279,12 @@
     </button>
   </div>
 
+  {#if error}
+    <ErrorBanner message={error} ondismiss={() => error = null} />
+  {/if}
+
   {#if loading}
     <div class="loading">Loading calendar...</div>
-  {:else if error}
-    <div class="error">
-      <p>{error}</p>
-      <button onclick={loadData}>Retry</button>
-    </div>
   {:else}
     <!-- Calendar Grid -->
     <div class="calendar-container">
@@ -455,29 +458,14 @@
     background: var(--color-primary-700);
   }
 
-  /* Loading / Error states */
-  .loading,
-  .error {
+  /* Loading state */
+  .loading {
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     color: var(--color-gray-500);
-  }
-
-  .error {
-    color: var(--color-error-600);
-  }
-
-  .error button {
-    margin-top: 1rem;
-    padding: 0.5rem 1rem;
-    background: var(--color-primary-600);
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
   }
 
   /* Calendar Container */
