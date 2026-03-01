@@ -10,6 +10,7 @@
 - Always lint code before committing and only disable rules for genuine false positives, not for non-idiomatic code.
 - Always run tests before committing.
 - For Svelte 5 questions, fetch and use: https://svelte.dev/llms-full.txt
+- For svelte-dnd-actions, refer to the local README snapshot at `tmp/docs/svelte-dnd-action/README.md`
 - For Wails v2, refer to the local docs snapshot at `tmp/docs/wails/`
 - Apply frontend changes to both the browser-based testing variant based on mock bindings and the native application variant based on Wails runtime.
 - When changing frontend code, carefully avoid uncaught exceptions and infinite loops in the native application.
@@ -17,6 +18,7 @@
 - No business logic in client code.
 - Avoid code duplication.
 - Do not pollute production code with test code, e.g. no testid in frontend code.
+- avoid `$()` in common operations like `git commit` (OK for rare, specific exceptions)
 
 ## Code Style
 
