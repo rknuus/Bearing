@@ -8,7 +8,7 @@
    * Q4 (staging) tasks persist as drafts across dialog close and app restart.
    */
 
-  import { untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
@@ -70,6 +70,54 @@
       }
     }
     return max + 1;
+  }
+
+  // Drag-and-drop cancel state
+  let isDragging = $state(false);
+  let dragCancelled = $state(false);
+  let preDragSnapshot: Record<QuadrantId, PendingTask[]> | null = null;
+
+  // Escape key handler: cancel active pointer drag inside the dialog
+  function handleEscapeDuringDrag(event: KeyboardEvent) {
+    if (event.key === 'Escape' && isDragging) {
+      dragCancelled = true;
+      event.stopPropagation();
+      event.preventDefault();
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+  onDestroy(() => {
+    window.removeEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+
+  function handleDragStart() {
+    isDragging = true;
+    // Snapshot current state so we can restore synchronously on cancel.
+    // tasksByQuadrant is modified during drag by consider/finalize events,
+    // so we need a copy of the pre-drag state.
+    preDragSnapshot = {
+      'important-urgent': [...tasksByQuadrant['important-urgent']],
+      'important-not-urgent': [...tasksByQuadrant['important-not-urgent']],
+      'not-important-urgent': [...tasksByQuadrant['not-important-urgent']],
+      'staging': [...tasksByQuadrant.staging],
+    };
+  }
+
+  function handleDragEnd() {
+    isDragging = false;
+    if (dragCancelled) {
+      if (preDragSnapshot) {
+        tasksByQuadrant = preDragSnapshot;
+        preDragSnapshot = null;
+      }
+      queueMicrotask(() => { dragCancelled = false; });
+      return;
+    }
+    preDragSnapshot = null;
   }
 
   async function saveDrafts() {
@@ -155,6 +203,7 @@
   }
 
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
+    if (dragCancelled) return;
     tasksByQuadrant = {
       ...tasksByQuadrant,
       [quadrantId]: tasks,
@@ -264,6 +313,8 @@
             tasks={tasksByQuadrant[q.id]}
             {themes}
             onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
             isStaging={q.isStaging}
           />
         {/each}
@@ -277,6 +328,8 @@
             tasks={tasksByQuadrant[q.id]}
             {themes}
             onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
             isStaging={q.isStaging}
           />
         {/each}

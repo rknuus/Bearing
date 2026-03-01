@@ -6,10 +6,12 @@ import CreateTaskDialog from './CreateTaskDialog.svelte';
 
 // Mock the bindings module so we can control LoadTaskDrafts/SaveTaskDrafts
 let mockDraftsData = '{}';
+const mockLoadTaskDrafts = vi.fn(async () => mockDraftsData);
+const mockSaveTaskDrafts = vi.fn(async (data: string) => { mockDraftsData = data; });
 vi.mock('../lib/utils/bindings', () => ({
   getBindings: () => ({
-    LoadTaskDrafts: vi.fn(async () => mockDraftsData),
-    SaveTaskDrafts: vi.fn(async (data: string) => { mockDraftsData = data; }),
+    LoadTaskDrafts: (...args: unknown[]) => mockLoadTaskDrafts(...args as []),
+    SaveTaskDrafts: (...args: unknown[]) => mockSaveTaskDrafts(...args as [string]),
   }),
 }));
 
@@ -504,6 +506,72 @@ describe('CreateTaskDialog', () => {
       const saved = JSON.parse(mockDraftsData);
       expect(saved.staging).toHaveLength(1);
       expect(saved.staging[0].title).toBe('Staged idea');
+    });
+  });
+
+  describe('Escape-to-cancel DnD', () => {
+    function dispatchDndConsider(element: Element, items: { id: string; title: string }[]) {
+      element.dispatchEvent(new CustomEvent('consider', {
+        detail: { items, info: { id: 'dnd-test', source: 'pointer', trigger: 'dragStarted' } },
+      }));
+    }
+
+    function dispatchDndFinalize(element: Element, items: { id: string; title: string }[]) {
+      element.dispatchEvent(new CustomEvent('finalize', {
+        detail: { items },
+      }));
+    }
+
+    it('Escape during quadrant drag restores pre-drag state', async () => {
+      // Set up initial saved drafts
+      mockDraftsData = JSON.stringify({
+        'staging': [{ id: 'pending-1', title: 'Saved draft' }],
+      });
+
+      await renderDialog();
+
+      // Verify initial state: staging has the saved draft
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      expect(staging!.querySelectorAll('.task-title').length).toBe(1);
+      expect(staging!.querySelector('.task-title')!.textContent).toBe('Saved draft');
+
+      // Get the staging quadrant's task-list for DnD events
+      const taskList = staging!.querySelector('.task-list')!;
+
+      // Simulate pointer drag start via consider event
+      dispatchDndConsider(taskList, [
+        { id: 'pending-1', title: 'Saved draft' },
+      ]);
+      await tick();
+
+      // Dispatch Escape on window to cancel the drag
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+
+      // Simulate finalize (triggered by synthetic mouseup from Escape handler)
+      dispatchDndFinalize(taskList, [
+        { id: 'pending-1', title: 'Saved draft' },
+      ]);
+      await tick();
+      await tick();
+
+      // Staging should still have the original draft after cancel
+      expect(staging!.querySelectorAll('.task-title').length).toBe(1);
+      expect(staging!.querySelector('.task-title')!.textContent).toBe('Saved draft');
+    });
+
+    it('Escape when no drag is active does not re-load drafts', async () => {
+      await renderDialog();
+
+      const loadCallsBefore = mockLoadTaskDrafts.mock.calls.length;
+
+      // Dispatch Escape without any drag active
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+      await tick();
+
+      // LoadTaskDrafts should NOT have been called again
+      expect(mockLoadTaskDrafts.mock.calls.length).toBe(loadCallsBefore);
     });
   });
 });

@@ -11,7 +11,7 @@
 
   import { onMount, onDestroy, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
@@ -87,6 +87,18 @@
   // Drag-and-drop state (svelte-dnd-action)
   let isValidating = $state(false);
   let isRollingBack = $state(false);
+  let isDragging = $state(false);
+  let dragCancelled = $state(false);
+
+  // Escape key handler: cancel active pointer drag
+  function handleEscapeDuringDrag(event: KeyboardEvent) {
+    if (event.key === 'Escape' && isDragging) {
+      dragCancelled = true;
+      event.stopPropagation();
+      event.preventDefault();
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    }
+  }
 
   // Per-column items managed by svelte-dnd-action
   let columnItems = $state<Record<string, TaskWithStatus[]>>({});
@@ -139,8 +151,9 @@
   // Derive available tags from all tasks (not filtered) for the tag filter bar
   const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
 
-  // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
-  $effect(() => {
+  // Re-derive columnItems and sectionItems from the current filteredTasks.
+  // Called by the $effect (reactive sync) and by the drag-cancel path (synchronous reset).
+  function regroupItems() {
     const cols = columns;
     const ft = filteredTasks;
     const grouped: Record<string, TaskWithStatus[]> = {};
@@ -168,9 +181,16 @@
       }
     }
 
+    columnItems = grouped;
+    sectionItems = sectionGrouped;
+  }
+
+  // Sync filteredTasks into columnItems; never read columnItems here (avoid loop)
+  $effect(() => {
+    const _cols = columns;
+    const _ft = filteredTasks;
     untrack(() => {
-      columnItems = grouped;
-      sectionItems = sectionGrouped;
+      regroupItems();
     });
   });
 
@@ -264,6 +284,13 @@
   }
 
   // Load data on mount
+  onMount(() => {
+    window.addEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+  onDestroy(() => {
+    window.removeEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+
   onMount(async () => {
     try {
       const [fetchedTasks, fetchedThemes, fetchedConfig] = await Promise.all([
@@ -400,10 +427,23 @@
 
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    const { trigger, source } = event.detail.info;
+    if (trigger === TRIGGERS.DRAG_STARTED && source === SOURCES.POINTER) {
+      isDragging = true;
+    }
     columnItems = { ...columnItems, [status]: event.detail.items };
   }
 
   async function handleDndFinalize(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    isDragging = false;
+
+    if (dragCancelled) {
+      regroupItems();
+      queueMicrotask(() => { dragCancelled = false; });
+      await verifyTaskState();
+      return;
+    }
+
     if (isValidating || isRollingBack) return;
 
     const newItems = event.detail.items;
@@ -466,10 +506,23 @@
 
   // Section-aware svelte-dnd-action handlers (for sectioned columns)
   function handleSectionDndConsider(sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    const { trigger, source } = event.detail.info;
+    if (trigger === TRIGGERS.DRAG_STARTED && source === SOURCES.POINTER) {
+      isDragging = true;
+    }
     sectionItems = { ...sectionItems, [sectionName]: event.detail.items };
   }
 
   async function handleSectionDndFinalize(columnName: string, sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    isDragging = false;
+
+    if (dragCancelled) {
+      regroupItems();
+      queueMicrotask(() => { dragCancelled = false; });
+      await verifyTaskState();
+      return;
+    }
+
     if (isValidating || isRollingBack) return;
 
     const newItems = event.detail.items;
