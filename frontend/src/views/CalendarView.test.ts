@@ -44,7 +44,8 @@ describe('CalendarView', () => {
         else currentYearFocus.push(day);
       }),
       ClearDayFocus: vi.fn().mockImplementation(async (date: string) => {
-        currentYearFocus = currentYearFocus.filter(e => e.date !== date);
+        const idx = currentYearFocus.findIndex(e => e.date === date);
+        if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeId: '' };
       }),
       LogFrontend: vi.fn(),
       LoadNavigationContext: vi.fn().mockResolvedValue({
