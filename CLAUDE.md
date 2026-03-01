@@ -9,6 +9,8 @@
 - Cover new/changed code by tests, unless coverage is not possible: in this case confirm with the user.
 - Always lint code before committing and only disable rules for genuine false positives, not for non-idiomatic code.
 - Always run tests before committing.
+- For Svelte 5 questions, fetch and use: https://svelte.dev/llms-full.txt
+- For Wails v2, refer to the local docs snapshot at `tmp/docs/wails/`
 - Apply frontend changes to both the browser-based testing variant based on mock bindings and the native application variant based on Wails runtime.
 - When changing frontend code, carefully avoid uncaught exceptions and infinite loops in the native application.
 - In Svelte 5 `$effect` blocks, never read and write the same `$state` variable. Use `untrack()` for state the effect modifies but should not depend on.
