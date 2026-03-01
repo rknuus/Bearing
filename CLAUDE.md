@@ -15,6 +15,7 @@
 - Apply frontend changes to both the browser-based testing variant based on mock bindings and the native application variant based on Wails runtime.
 - When changing frontend code, carefully avoid uncaught exceptions and infinite loops in the native application.
 - In Svelte 5 `$effect` blocks, never read and write the same `$state` variable. Use `untrack()` for state the effect modifies but should not depend on.
+- Task state modifications in the frontend must verify state consistency with backends at the end.
 - No business logic in client code.
 - Avoid code duplication.
 - Do not pollute production code with test code, e.g. no testid in frontend code.
