@@ -255,12 +255,28 @@
     }
   }
 
+  // Install global error handlers to forward uncaught errors to the backend log
+  function installGlobalErrorHandlers() {
+    window.onerror = (message, source, lineno, colno) => {
+      const loc = `${source}:${lineno}:${colno}`;
+      console.error(`[error] ${String(message)} (${loc})`);
+      getBindings().LogFrontend('error', String(message), loc);
+    };
+    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+      console.error(`[error] ${String(event.reason)} (unhandledrejection)`);
+      getBindings().LogFrontend('error', String(event.reason), 'unhandledrejection');
+    };
+  }
+
   // Initialize mock bindings for browser-based testing
   onMount(() => {
     if (!isWailsRuntime()) {
       initMockBindings();
       console.log('[App] Running in browser mode with mock Wails bindings');
     }
+
+    // Install global error handlers (fire-and-forget, no await)
+    installGlobalErrorHandlers();
 
     // Initialize locale before views render
     initializeLocale();

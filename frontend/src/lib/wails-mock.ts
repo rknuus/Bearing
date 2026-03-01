@@ -887,6 +887,12 @@ export const mockAppBindings = {
     const yearFocus = mockYearFocus.get(year) || [];
     return yearFocus.filter(d => d.themeId === themeId);
   },
+
+  // Frontend logging
+  LogFrontend(level: string, message: string, source: string) {
+    const fn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
+    fn(`[${level}] ${message} (${source})`);
+  },
 };
 
 // Mock runtime bindings
