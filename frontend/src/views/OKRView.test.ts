@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { LifeTheme } from '../lib/wails-mock';
 import OKRView from './OKRView.svelte';
@@ -234,5 +234,58 @@ describe('OKRView', () => {
     await tick();
 
     expect(mockBindings.UpdateKeyResultProgress).toHaveBeenCalledWith('TST-KR1', 1);
+  });
+
+  describe('state-check verification', () => {
+    it('detects state mismatch when backend diverges after mutation', async () => {
+      await renderView();
+      // Opt out of global error detection: this test deliberately triggers state-check errors
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      const normalData = makeTestThemes();
+      const divergentData = makeTestThemes();
+      // Introduce a mismatch: change currentValue on a key result
+      divergentData[0].objectives[0].keyResults[1].currentValue = 999;
+
+      // After createTheme: loadThemes (call 1) gets normal data, verifyThemeState (call 2) gets divergent
+      mockBindings.GetThemes
+        .mockResolvedValueOnce(JSON.parse(JSON.stringify(normalData)))
+        .mockResolvedValueOnce(JSON.parse(JSON.stringify(divergentData)));
+
+      // Click "+ Add Theme" button and submit the form
+      const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      addThemeBtn!.click();
+      await tick();
+
+      const nameInput = container.querySelector<HTMLInputElement>('.theme-form input[type="text"]');
+      await fireEvent.input(nameInput!, { target: { value: 'New Theme' } });
+      await tick();
+
+      const createBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.theme-form .btn-primary'))
+        .find(b => b.textContent?.trim() === 'Create');
+      createBtn!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.CreateTheme).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // ErrorBanner should appear with the mismatch message
+      await vi.waitFor(() => {
+        const alert = container.querySelector('[role="alert"]');
+        expect(alert).toBeTruthy();
+        expect(alert!.textContent).toContain('Internal state mismatch detected');
+      });
+
+      // LogFrontend should have been called with the mismatch details
+      expect(mockBindings.LogFrontend).toHaveBeenCalledWith(
+        'error',
+        expect.stringContaining('currentValue'),
+        'state-check'
+      );
+    });
   });
 });
