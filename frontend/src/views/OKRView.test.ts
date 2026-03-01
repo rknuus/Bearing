@@ -42,6 +42,9 @@ function makeMockBindings(themes: LifeTheme[]) {
     UpdateKeyResult: vi.fn().mockResolvedValue(undefined),
     UpdateKeyResultProgress: vi.fn().mockResolvedValue(undefined),
     DeleteKeyResult: vi.fn().mockResolvedValue(undefined),
+    SetObjectiveStatus: vi.fn().mockResolvedValue(undefined),
+    SetKeyResultStatus: vi.fn().mockResolvedValue(undefined),
+    LogFrontend: vi.fn(),
     LoadNavigationContext: vi.fn().mockResolvedValue({ currentView: 'okr', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '' }),
     SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
   };

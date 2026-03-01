@@ -12,7 +12,7 @@
   import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import { getBindings } from '../lib/utils/bindings';
-  import { checkFullState } from '../lib/utils/state-check';
+  import { checkStateFromData } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
   interface Props {
@@ -164,9 +164,46 @@
   }
 
   const THEME_FIELDS = ['id', 'name', 'color'];
+  const OBJECTIVE_FIELDS = ['id', 'parentId', 'title', 'status'];
+  const KEY_RESULT_FIELDS = ['id', 'parentId', 'description', 'status', 'startValue', 'currentValue', 'targetValue'];
+
+  /** Recursively collect all objectives from a theme tree. */
+  function flattenObjectives(themeList: LifeTheme[]): Objective[] {
+    const result: Objective[] = [];
+    function walk(objectives: Objective[]) {
+      for (const obj of objectives) {
+        result.push(obj);
+        walk(obj.objectives ?? []);
+      }
+    }
+    for (const theme of themeList) walk(theme.objectives);
+    return result;
+  }
+
+  /** Recursively collect all key results from a theme tree. */
+  function flattenKeyResults(themeList: LifeTheme[]): KeyResult[] {
+    const result: KeyResult[] = [];
+    function walk(objectives: Objective[]) {
+      for (const obj of objectives) {
+        result.push(...obj.keyResults);
+        walk(obj.objectives ?? []);
+      }
+    }
+    for (const theme of themeList) walk(theme.objectives);
+    return result;
+  }
 
   async function verifyThemeState() {
-    await checkFullState('theme', themes, () => getBindings().GetThemes(), 'id', THEME_FIELDS);
+    const backendThemes = await getBindings().GetThemes();
+    const mismatches = [
+      ...checkStateFromData('theme', themes, backendThemes, 'id', THEME_FIELDS),
+      ...checkStateFromData('objective', flattenObjectives(themes), flattenObjectives(backendThemes), 'id', OBJECTIVE_FIELDS),
+      ...checkStateFromData('key-result', flattenKeyResults(themes), flattenKeyResults(backendThemes), 'id', KEY_RESULT_FIELDS),
+    ];
+    if (mismatches.length > 0) {
+      error = 'Internal state mismatch detected, please reload';
+      getBindings().LogFrontend('error', mismatches.join('; '), 'state-check');
+    }
   }
 
   async function createTheme() {
