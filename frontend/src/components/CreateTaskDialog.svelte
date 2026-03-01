@@ -110,10 +110,12 @@
   function handleDragEnd() {
     isDragging = false;
     if (dragCancelled) {
-      dragCancelled = false;
       if (preDragSnapshot) {
         tasksByQuadrant = preDragSnapshot;
+        preDragSnapshot = null;
       }
+      queueMicrotask(() => { dragCancelled = false; });
+      return;
     }
     preDragSnapshot = null;
   }
@@ -201,6 +203,7 @@
   }
 
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
+    if (dragCancelled) return;
     tasksByQuadrant = {
       ...tasksByQuadrant,
       [quadrantId]: tasks,

@@ -438,8 +438,8 @@
     isDragging = false;
 
     if (dragCancelled) {
-      dragCancelled = false;
       regroupItems();
+      queueMicrotask(() => { dragCancelled = false; });
       return;
     }
 
@@ -516,8 +516,8 @@
     isDragging = false;
 
     if (dragCancelled) {
-      dragCancelled = false;
       regroupItems();
+      queueMicrotask(() => { dragCancelled = false; });
       return;
     }
 
