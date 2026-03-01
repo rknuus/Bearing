@@ -779,9 +779,9 @@ describe('EisenKanView', () => {
         expect(mockArchiveTask).toHaveBeenCalledWith('T4');
       });
 
-      // GetTasks should be re-fetched after archive
+      // GetTasks should be re-fetched after archive + state-check
       await vi.waitFor(() => {
-        expect(mockGetTasks).toHaveBeenCalledTimes(2); // initial + post-archive
+        expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
       });
     });
 
@@ -797,7 +797,7 @@ describe('EisenKanView', () => {
       });
 
       await vi.waitFor(() => {
-        expect(mockGetTasks).toHaveBeenCalledTimes(2);
+        expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
       });
     });
 
@@ -897,7 +897,7 @@ describe('EisenKanView', () => {
       });
 
       await vi.waitFor(() => {
-        expect(mockGetTasks).toHaveBeenCalledTimes(2);
+        expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-restore + state-check
       });
     });
 

@@ -256,7 +256,11 @@
   const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId'];
 
   async function verifyTaskState() {
-    await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS);
+    const mismatches = await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS);
+    if (mismatches.length > 0) {
+      error = 'Internal state mismatch detected, please reload';
+      getBindings().LogFrontend('error', mismatches.join('; '), 'state-check');
+    }
   }
 
   // Load data on mount
@@ -398,6 +402,7 @@
       const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
       try {
         await apiReorderTasks({ [status]: taskIds });
+        await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
       }
@@ -460,6 +465,7 @@
       const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
       try {
         await apiReorderTasks({ [sectionName]: taskIds });
+        await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
       }
@@ -570,6 +576,7 @@
     try {
       await apiArchiveTask(taskId);
       tasks = await fetchTasks();
+      await verifyTaskState();
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to archive task';
     }
@@ -579,6 +586,7 @@
     try {
       await apiArchiveAllDoneTasks();
       tasks = await fetchTasks();
+      await verifyTaskState();
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to archive tasks';
     }
@@ -588,6 +596,7 @@
     try {
       await apiRestoreTask(taskId);
       tasks = await fetchTasks();
+      await verifyTaskState();
     } catch (e) {
       error = e instanceof Error ? e.message : 'Failed to restore task';
     }
