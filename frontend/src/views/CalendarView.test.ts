@@ -281,7 +281,7 @@ describe('CalendarView', () => {
     expect(loadingEl?.textContent).toContain('Loading');
   });
 
-  it('shows error state with retry button on fetch failure', async () => {
+  it('shows error banner on fetch failure', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     mockBindings.GetThemes.mockRejectedValue(new Error('Network error'));
 
@@ -295,14 +295,17 @@ describe('CalendarView', () => {
     });
     await tick();
 
-    const errorEl = container.querySelector('.error');
-    expect(errorEl).toBeTruthy();
-    expect(errorEl?.textContent).toContain('Network error');
+    const errorBanner = container.querySelector('.error-banner');
+    expect(errorBanner).toBeTruthy();
+    expect(errorBanner?.textContent).toContain('Network error');
 
-    // Retry button should be present
-    const retryButton = errorEl?.querySelector('button');
-    expect(retryButton).toBeTruthy();
-    expect(retryButton?.textContent).toContain('Retry');
+    // Dismiss button
+    const dismissBtn = errorBanner!.querySelector('button');
+    expect(dismissBtn?.textContent).toContain('Dismiss');
+    dismissBtn!.click();
+    await tick();
+
+    expect(container.querySelector('.error-banner')).toBeNull();
 
     spy.mockRestore();
   });
