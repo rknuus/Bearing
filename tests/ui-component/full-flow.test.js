@@ -358,7 +358,175 @@ export async function runTests() {
       reporter.fail(err)
     }
 
-    // ---- Sub-test 7: Final error check ----
+    // ---- Sub-test 7: Task field clearing via edit dialog ----
+    reporter.startTest('Tasks: clear optional fields via edit dialog')
+    try {
+      // Add optional fields to Task A via mock API
+      await page.evaluate(async () => {
+        const app = window.go.main.App
+        const tasks = await app.GetTasks()
+        const taskA = tasks.find(t => t.title === 'Task A')
+        if (!taskA) throw new Error('Task A not found')
+        await app.UpdateTask({
+          ...taskA,
+          description: 'E2E description to clear',
+          tags: ['e2e-tag'],
+          dueDate: '2026-12-31',
+          promotionDate: '2026-06-15',
+        })
+      })
+
+      // Navigate away and back to refresh state
+      await page.click('.nav-link:has-text("Home")')
+      await page.waitForSelector('.placeholder-view', { timeout: 5000 })
+      await page.keyboard.press('Control+3')
+      await page.waitForSelector('.kanban-board', { timeout: 5000 })
+
+      // Click Task A to open edit dialog
+      await page.click('.task-card:has(.task-title:has-text("Task A"))')
+      await page.waitForSelector('[role="dialog"]', { timeout: 5000 })
+
+      // Verify fields are populated
+      const desc = await page.$eval('#edit-task-description', el => el.value)
+      if (desc !== 'E2E description to clear') {
+        throw new Error(`Expected description "E2E description to clear", got "${desc}"`)
+      }
+      const tags = await page.$eval('#edit-task-tags', el => el.value)
+      if (!tags.includes('e2e-tag')) {
+        throw new Error(`Expected tags to contain "e2e-tag", got "${tags}"`)
+      }
+      const due = await page.$eval('#edit-task-due-date', el => el.value)
+      if (due !== '2026-12-31') {
+        throw new Error(`Expected due date "2026-12-31", got "${due}"`)
+      }
+      const promo = await page.$eval('#edit-task-promotion-date', el => el.value)
+      if (promo !== '2026-06-15') {
+        throw new Error(`Expected promotion date "2026-06-15", got "${promo}"`)
+      }
+
+      // Clear all optional fields
+      await page.fill('#edit-task-description', '')
+      await page.fill('#edit-task-tags', '')
+      await page.fill('#edit-task-due-date', '')
+      await page.fill('#edit-task-promotion-date', '')
+
+      // Save
+      await page.click('[role="dialog"] .btn-primary')
+      await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 5000 })
+
+      // Verify tag badges are gone from Task A card
+      const taskACard = await page.$('.task-card:has(.task-title:has-text("Task A"))')
+      const badgeCount = await taskACard.$$eval('.tag-badge', els => els.length)
+      if (badgeCount > 0) {
+        throw new Error(`Expected no tag badges after clearing, found ${badgeCount}`)
+      }
+
+      reporter.pass('Task optional fields cleared via edit dialog')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 8: Calendar day clearing ----
+    reporter.startTest('Calendar: clear day focus assignment')
+    try {
+      // Navigate to Calendar
+      await page.keyboard.press('Control+2')
+      await page.waitForSelector('.calendar-view', { timeout: 5000 })
+
+      // Find and click the themed day cell (has emerald color)
+      await page.waitForFunction(() => {
+        const cells = document.querySelectorAll('.day-num')
+        return Array.from(cells).some(c => {
+          const attr = c.getAttribute('style') || ''
+          const bg = window.getComputedStyle(c).backgroundColor || ''
+          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+        })
+      }, { timeout: 5000 })
+      await page.evaluate(() => {
+        const cells = document.querySelectorAll('.day-num')
+        const themed = Array.from(cells).find(c => {
+          const attr = c.getAttribute('style') || ''
+          const bg = window.getComputedStyle(c).backgroundColor || ''
+          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+        })
+        if (themed) themed.click()
+      })
+      await page.waitForSelector('.dialog', { timeout: 5000 })
+
+      // Clear theme and text
+      await page.selectOption('#theme-select', '')
+      await page.fill('#text-input', '')
+      await page.click('.dialog .btn-primary')
+      await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
+
+      // Wait for calendar to re-render without emerald theme color
+      await page.waitForFunction(() => {
+        const cells = document.querySelectorAll('.day-num')
+        return !Array.from(cells).some(c => {
+          const attr = c.getAttribute('style') || ''
+          const bg = window.getComputedStyle(c).backgroundColor || ''
+          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+        })
+      }, { timeout: 5000 })
+
+      reporter.pass('Calendar day focus cleared')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 9: OKR deletion (bottom-up: KR → objective → theme) ----
+    reporter.startTest('OKR: delete key result, objective, and theme')
+    try {
+      // Navigate to OKRs
+      await page.keyboard.press('Control+1')
+      await page.waitForSelector('.okr-header', { timeout: 5000 })
+
+      // Auto-accept window.confirm() dialogs
+      const acceptDialog = (dialog) => dialog.accept()
+      page.on('dialog', acceptDialog)
+
+      // Expand theme if collapsed
+      const themeExpanded = await page.$('.theme-item:last-child .objective-item')
+      if (!themeExpanded) {
+        await page.click('.theme-item:last-child .expand-button')
+        await page.waitForSelector('.theme-item:last-child .objective-item', { timeout: 5000 })
+      }
+
+      // Expand objective if collapsed (to reveal KR)
+      const krVisible = await page.$('.theme-item:last-child .kr-item')
+      if (!krVisible) {
+        await page.click('.theme-item:last-child .objective-item .expand-button')
+        await page.waitForSelector('.theme-item:last-child .kr-item', { timeout: 5000 })
+      }
+
+      // Delete key result
+      await page.hover('.theme-item:last-child .kr-item .kr-header')
+      await page.click('.theme-item:last-child .kr-item button[title="Delete"]')
+      await page.waitForSelector('.theme-item:last-child .kr-item', { state: 'detached', timeout: 5000 })
+
+      // Delete objective
+      await page.hover('.theme-item:last-child .objective-item .objective-header')
+      await page.click('.theme-item:last-child .objective-item button[title="Delete"]')
+      await page.waitForSelector('.theme-item:last-child .objective-item', { state: 'detached', timeout: 5000 })
+
+      // Delete theme
+      await page.hover('.theme-item:last-child > .item-header')
+      await page.click('.theme-item:last-child > .item-header button[title="Delete"]')
+
+      // Verify "E2E Flow" theme is gone
+      await page.waitForFunction(() => {
+        const names = document.querySelectorAll('.item-name')
+        return !Array.from(names).some(n => n.textContent.trim() === 'E2E Flow')
+      }, { timeout: 5000 })
+
+      page.off('dialog', acceptDialog)
+
+      reporter.pass('OKR hierarchy deleted bottom-up')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 10: Final error check ----
     reporter.startTest('Final: no page or console errors throughout flow')
     try {
       if (pageErrors.length > 0) {
