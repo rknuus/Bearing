@@ -228,25 +228,14 @@
       const bindings = getBindings();
 
       const existing = yearFocus.get(editingDay.date);
-      if (!editThemeId && !editText) {
-        await bindings.ClearDayFocus(editingDay.date);
-        // Backend preserves the entry with themeId cleared; mirror that locally
-        yearFocus.set(editingDay.date, {
-          date: editingDay.date,
-          themeId: '',
-          notes: existing?.notes ?? '',
-          text: existing?.text ?? ''
-        });
-      } else {
-        const dayFocus: DayFocus = {
-          date: editingDay.date,
-          themeId: editThemeId,
-          notes: existing?.notes ?? '',
-          text: editText
-        };
-        await bindings.SaveDayFocus(dayFocus);
-        yearFocus.set(editingDay.date, dayFocus);
-      }
+      const dayFocus: DayFocus = {
+        date: editingDay.date,
+        themeId: editThemeId,
+        notes: existing?.notes ?? '',
+        text: editText
+      };
+      await bindings.SaveDayFocus(dayFocus);
+      yearFocus.set(editingDay.date, dayFocus);
 
       await verifyCalendarState();
       editingDay = null;

@@ -216,7 +216,9 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.ClearDayFocus).toHaveBeenCalledWith('2025-01-01');
+      expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+        expect.objectContaining({ date: '2025-01-01', themeId: '', text: '' })
+      );
     });
   });
 
