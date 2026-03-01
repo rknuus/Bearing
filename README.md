@@ -54,7 +54,10 @@ Testing:
   make test-backend-performance   Run Go performance tests
   make test-backend-bench         Run Go benchmarks
   make test-frontend              Run frontend TypeScript checks and Vitest tests
-  make test-frontend-e2e          Run Playwright E2E tests
+  make test-ui-component          Run Playwright UI component tests
+  make test-ui-component-headless Run Playwright UI component tests (headless)
+  make test-e2e                   Run true E2E tests (starts Wails dev, runs tests)
+  make test-e2e-headless          Run true E2E tests (headless)
 
 Frontend:
   make frontend-install   Install frontend dependencies
@@ -97,7 +100,8 @@ make test-backend-integration   # Go integration tests
 make test-backend-performance   # Go performance tests
 make test-backend-bench         # Go benchmarks
 make test-frontend              # Frontend type checks + Vitest
-make test-frontend-e2e          # Playwright E2E tests
+make test-ui-component-headless # Playwright UI component tests
+make test-e2e-headless          # True E2E tests (with file verification)
 ```
 
 ### Test Structure
@@ -105,7 +109,9 @@ make test-frontend-e2e          # Playwright E2E tests
 - `internal/access/*_test.go` - Data access layer tests
 - `internal/managers/*_test.go` - Business logic tests
 - `internal/utilities/*_test.go` - Utility tests
-- `internal/integration/*_test.go` - End-to-end integration tests
+- `internal/integration/*_test.go` - Go integration tests
+- `tests/ui-component/` - Playwright UI component tests (against Vite mock bindings)
+- `tests/e2e/` - Playwright E2E tests (against Wails dev server with file verification)
 
 ## Project Structure
 
@@ -125,7 +131,11 @@ bearing/
 │   ├── access/                # Data access layer (PlanAccess)
 │   ├── managers/              # Business logic (PlanningManager)
 │   ├── utilities/             # Git versioning utility
-│   └── integration/           # Integration tests
+│   └── integration/           # Go integration tests
+├── tests/
+│   ├── ui-component/          # Playwright UI component tests
+│   └── e2e/                   # Playwright E2E tests
+├── scripts/                   # Test runner scripts
 └── Makefile
 ```
 
