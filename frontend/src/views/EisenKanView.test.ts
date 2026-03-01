@@ -1161,7 +1161,9 @@ describe('EisenKanView', () => {
 
     it('detects state mismatch when mock is intentionally broken', async () => {
       await renderView();
-      const warnSpy = vi.spyOn(console, 'warn');
+      // Opt out of global error detection: this test deliberately triggers state-check errors
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // Temporarily break mockDeleteTask so it does NOT update currentTasks
       mockDeleteTask.mockResolvedValue(undefined);
@@ -1179,7 +1181,8 @@ describe('EisenKanView', () => {
       // State-check should detect mismatch: frontend removed the task but backend still has it
       const warnings = warnSpy.mock.calls.filter((c: unknown[]) => String(c[0]).includes('[state-check]'));
       expect(warnings.length).toBeGreaterThan(0);
-      warnSpy.mockRestore();
+      // Don't call mockRestore — let the global afterEach handle cleanup.
+      // Restoring early would re-expose our wrapper to late async console.error calls.
     });
   });
 });
