@@ -43,14 +43,16 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	// Initialize data directory
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		slog.Warn("Failed to get home directory", "error", err)
-		return
+	// Initialize data directory (BEARING_DATA_DIR overrides default ~/.bearing/)
+	bearingDir := os.Getenv("BEARING_DATA_DIR")
+	if bearingDir == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			slog.Warn("Failed to get home directory", "error", err)
+			return
+		}
+		bearingDir = filepath.Join(homeDir, ".bearing")
 	}
-
-	bearingDir := filepath.Join(homeDir, ".bearing")
 	if err := os.MkdirAll(bearingDir, 0755); err != nil {
 		slog.Warn("Failed to create data directory", "error", err)
 		return

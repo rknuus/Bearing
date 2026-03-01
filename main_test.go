@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -95,6 +96,40 @@ func TestGetLocale_IgnoresCAndPOSIX(t *testing.T) {
 		if locale == val {
 			t.Errorf("GetLocale() should ignore LC_ALL=%s, but returned %q", val, locale)
 		}
+	}
+}
+
+func TestUnit_BearingDataDirOverride(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	old := os.Getenv("BEARING_DATA_DIR")
+	defer os.Setenv("BEARING_DATA_DIR", old)
+
+	os.Setenv("BEARING_DATA_DIR", tmpDir)
+
+	app := NewApp()
+	ctx := context.TODO()
+	app.startup(ctx)
+	defer app.shutdown(ctx)
+
+	// Verify directory structure was created in the temp dir
+	for _, subdir := range []string{"themes", "tasks/todo", "tasks/doing", "tasks/done", "tasks/archived", "calendar"} {
+		path := filepath.Join(tmpDir, subdir)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			t.Errorf("Expected directory %s to exist", subdir)
+		}
+	}
+
+	// Verify git repo was initialized
+	gitDir := filepath.Join(tmpDir, ".git")
+	if _, err := os.Stat(gitDir); os.IsNotExist(err) {
+		t.Error("Expected .git directory to exist in temp data dir")
+	}
+
+	// Verify log file was created in temp dir
+	logPath := filepath.Join(tmpDir, "bearing.log")
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		t.Error("Expected bearing.log to exist in temp data dir")
 	}
 }
 
