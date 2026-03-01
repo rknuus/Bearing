@@ -11,12 +11,16 @@ describe('checkEntity', () => {
   afterEach(() => { vi.restoreAllMocks(); });
 
   it('emits nothing when fields match', () => {
-    checkEntity('task', 'T-1', { title: 'A', priority: 'high' }, { title: 'A', priority: 'high' }, ['title', 'priority']);
+    const result = checkEntity('task', 'T-1', { title: 'A', priority: 'high' }, { title: 'A', priority: 'high' }, ['title', 'priority']);
+    expect(result).toEqual([]);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('warns per differing field with [state-check] prefix', () => {
-    checkEntity('task', 'T-1', { title: 'A', priority: 'high' }, { title: 'B', priority: 'high' }, ['title', 'priority']);
+    const result = checkEntity('task', 'T-1', { title: 'A', priority: 'high' }, { title: 'B', priority: 'high' }, ['title', 'priority']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('task T-1');
+    expect(result[0]).toContain('title');
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(warnSpy.mock.calls[0][0]).toContain('[state-check]');
     expect(warnSpy.mock.calls[0][0]).toContain('task T-1');
@@ -24,10 +28,12 @@ describe('checkEntity', () => {
   });
 
   it('handles deep equality via JSON.stringify', () => {
-    checkEntity('task', 'T-2', { tags: ['a', 'b'] }, { tags: ['a', 'b'] }, ['tags']);
+    const match = checkEntity('task', 'T-2', { tags: ['a', 'b'] }, { tags: ['a', 'b'] }, ['tags']);
+    expect(match).toEqual([]);
     expect(warnSpy).not.toHaveBeenCalled();
 
-    checkEntity('task', 'T-2', { tags: ['a', 'b'] }, { tags: ['a', 'c'] }, ['tags']);
+    const mismatch = checkEntity('task', 'T-2', { tags: ['a', 'b'] }, { tags: ['a', 'c'] }, ['tags']);
+    expect(mismatch).toHaveLength(1);
     expect(warnSpy).toHaveBeenCalledOnce();
   });
 });
@@ -43,28 +49,35 @@ describe('checkFullState', () => {
 
   it('emits nothing when lists match', async () => {
     const list = [{ id: '1', title: 'A' }, { id: '2', title: 'B' }];
-    await checkFullState('task', list, async () => [...list], 'id', ['title']);
+    const result = await checkFullState('task', list, async () => [...list], 'id', ['title']);
+    expect(result).toEqual([]);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('warns on differing field', async () => {
     const frontend = [{ id: '1', title: 'A' }];
     const backend = [{ id: '1', title: 'B' }];
-    await checkFullState('task', frontend, async () => backend, 'id', ['title']);
+    const result = await checkFullState('task', frontend, async () => backend, 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('title');
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(warnSpy.mock.calls[0][0]).toContain('[state-check]');
   });
 
   it('warns on entity missing from backend', async () => {
     const frontend = [{ id: '1', title: 'A' }];
-    await checkFullState('task', frontend, async () => [], 'id', ['title']);
+    const result = await checkFullState('task', frontend, async () => [], 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('exists in frontend but not backend');
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(warnSpy.mock.calls[0][0]).toContain('exists in frontend but not backend');
   });
 
   it('warns on entity missing from frontend', async () => {
     const backend = [{ id: '1', title: 'A' }];
-    await checkFullState('task', [], async () => backend, 'id', ['title']);
+    const result = await checkFullState('task', [], async () => backend, 'id', ['title']);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toContain('exists in backend but not frontend');
     expect(warnSpy).toHaveBeenCalledOnce();
     expect(warnSpy.mock.calls[0][0]).toContain('exists in backend but not frontend');
   });
