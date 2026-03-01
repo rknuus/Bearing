@@ -26,7 +26,7 @@ help: ## Show this help message
 ##@ Development
 
 .PHONY: setup
-setup: frontend-install test-ui-component-install ## Setup project (install all dependencies)
+setup: frontend-install test-ui-component-install test-e2e-install ## Setup project (install all dependencies)
 	@echo "Project setup complete!"
 	@echo ""
 	@echo "To run the application:"
@@ -152,6 +152,24 @@ test-ui-component: ## Run Playwright UI component tests (requires frontend-dev r
 .PHONY: test-ui-component-headless
 test-ui-component-headless: ## Run Playwright UI component tests in headless mode
 	@$(MAKE) --no-print-directory -C frontend ui-component-headless
+
+.PHONY: test-e2e-install
+test-e2e-install: ## Install E2E test dependencies
+	@echo "Installing E2E test dependencies..."
+	@cd tests/e2e && npm install
+	@echo "Installing Playwright browsers..."
+	@cd tests/e2e && npx playwright install chromium
+
+.PHONY: test-e2e
+test-e2e: ## Run true E2E tests (requires wails dev with BEARING_DATA_DIR)
+	@echo "Running E2E tests against Wails dev server..."
+	@echo "Note: Ensure 'BEARING_DATA_DIR=/tmp/bearing-e2e wails dev' is running"
+	@cd tests/e2e && npm test
+
+.PHONY: test-e2e-headless
+test-e2e-headless: ## Run true E2E tests in headless mode
+	@echo "Running E2E tests in headless mode..."
+	@cd tests/e2e && HEADLESS=true npm test
 
 ##@ Frontend
 
