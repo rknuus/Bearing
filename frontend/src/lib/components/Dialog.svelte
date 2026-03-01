@@ -3,7 +3,7 @@
    * Dialog Component
    *
    * A reusable modal dialog with overlay, title, body content, and optional
-   * action buttons. Closes on overlay click or Escape key.
+   * action buttons. Closes on Escape key.
    */
 
   import type { Snippet } from 'svelte';
@@ -16,7 +16,7 @@
     id?: string;
     /** Maximum width of the dialog container */
     maxWidth?: string;
-    /** Called when the dialog should close (overlay click or Escape) */
+    /** Called when the dialog should close (Escape key or cancel action) */
     onclose: () => void;
     /** Main body content */
     children: Snippet;
@@ -43,13 +43,10 @@
   });
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="dialog-overlay" onclick={onclose} role="presentation">
-  <!-- svelte-ignore a11y_interactive_supports_focus -->
+<div class="dialog-overlay" role="presentation">
   <div
     class="dialog"
     style:max-width={maxWidth}
-    onclick={(e) => e.stopPropagation()}
     role="dialog"
     aria-labelledby={titleId}
   >
