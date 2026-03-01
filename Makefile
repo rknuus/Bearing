@@ -26,7 +26,7 @@ help: ## Show this help message
 ##@ Development
 
 .PHONY: setup
-setup: frontend-install test-frontend-e2e-install ## Setup project (install all dependencies)
+setup: frontend-install test-ui-component-install ## Setup project (install all dependencies)
 	@echo "Project setup complete!"
 	@echo ""
 	@echo "To run the application:"
@@ -141,17 +141,17 @@ endif
 test-frontend: ## Run frontend TypeScript checks and Vitest unit tests
 	@$(MAKE) --no-print-directory -C frontend test
 
-.PHONY: test-frontend-e2e-install
-test-frontend-e2e-install: ## Install Playwright test dependencies
-	@$(MAKE) --no-print-directory -C frontend e2e-install
+.PHONY: test-ui-component-install
+test-ui-component-install: ## Install Playwright UI component test dependencies
+	@$(MAKE) --no-print-directory -C frontend ui-component-install
 
-.PHONY: test-frontend-e2e
-test-frontend-e2e: ## Run Playwright E2E tests (requires frontend-dev running)
-	@$(MAKE) --no-print-directory -C frontend e2e
+.PHONY: test-ui-component
+test-ui-component: ## Run Playwright UI component tests (requires frontend-dev running)
+	@$(MAKE) --no-print-directory -C frontend ui-component
 
-.PHONY: test-frontend-e2e-headless
-test-frontend-e2e-headless: ## Run Playwright E2E tests in headless mode
-	@$(MAKE) --no-print-directory -C frontend e2e-headless
+.PHONY: test-ui-component-headless
+test-ui-component-headless: ## Run Playwright UI component tests in headless mode
+	@$(MAKE) --no-print-directory -C frontend ui-component-headless
 
 ##@ Frontend
 

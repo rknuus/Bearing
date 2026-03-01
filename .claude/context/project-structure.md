@@ -20,7 +20,7 @@ bearing/
 ├── internal/                   # Go backend packages
 ├── build/                      # Build output
 ├── scripts/                    # Utility scripts (e.g., migration)
-├── tests/                      # E2E test support
+├── tests/                      # UI component and E2E test suites
 └── .pm/                        # Project management (gitignored)
 ```
 

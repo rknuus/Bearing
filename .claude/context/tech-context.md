@@ -43,7 +43,7 @@ author: Claude Code PM System
 - **ESLint** — Frontend linting with svelte plugin, zero warnings policy
 - **golangci-lint** — Go linting with comprehensive rule set
 - **Vitest** — 139 frontend unit tests
-- **Playwright** — E2E testing support
+- **Playwright** — UI component testing and E2E testing
 
 ## Development Environments
 | Mode | URL | IPC | Use Case |
