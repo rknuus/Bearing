@@ -973,6 +973,125 @@ describe('EisenKanView', () => {
     });
   });
 
+  describe('Escape-to-cancel DnD', () => {
+    function makeTasksForDndTest(): TaskWithStatus[] {
+      return [
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+      ];
+    }
+
+    function dispatchDndConsider(element: Element, items: TaskWithStatus[]) {
+      element.dispatchEvent(new CustomEvent('consider', {
+        detail: { items, info: { id: 'dnd-test', source: 'pointer', trigger: 'dragStarted' } },
+      }));
+    }
+
+    function dispatchDndFinalize(element: Element, items: TaskWithStatus[]) {
+      element.dispatchEvent(new CustomEvent('finalize', {
+        detail: { items, info: { id: 'dnd-test', source: 'pointer', trigger: 'droppedIntoZone' } },
+      }));
+    }
+
+    beforeEach(() => {
+      currentTasks = JSON.parse(JSON.stringify(makeTasksForDndTest()));
+    });
+
+    it('Escape during column drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
+      await renderView();
+
+      const getTasksCallsBefore = mockGetTasks.mock.calls.length;
+
+      const columns = container.querySelectorAll('.kanban-column');
+      const doingZone = columns[1].querySelector('.column-content')!;
+
+      // Simulate drag start via consider event
+      dispatchDndConsider(doingZone, [
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+      ]);
+      await tick();
+
+      // Dispatch Escape keydown on window (capture phase, as the handler uses capture)
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+
+      // Simulate finalize (triggered by the synthetic mouseup the Escape handler dispatches)
+      dispatchDndFinalize(doingZone, [
+        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+      ]);
+      await tick();
+      await tick();
+
+      // GetTasks should have been called again to re-fetch after cancel
+      await vi.waitFor(() => {
+        expect(mockGetTasks.mock.calls.length).toBeGreaterThan(getTasksCallsBefore);
+      });
+
+      // MoveTask and ReorderTasks should NOT have been called
+      expect(mockMoveTask).not.toHaveBeenCalled();
+      expect(mockReorderTasks).not.toHaveBeenCalled();
+    });
+
+    it('Escape during section drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
+      currentTasks = [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+      ];
+
+      await renderView();
+
+      const getTasksCallsBefore = mockGetTasks.mock.calls.length;
+
+      const sectionZone = container.querySelector('[data-testid="section-important-urgent"] .column-content')!;
+
+      // Simulate drag start via consider event on section zone
+      dispatchDndConsider(sectionZone, [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+      ]);
+      await tick();
+
+      // Dispatch Escape
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+
+      // Simulate finalize on section zone
+      dispatchDndFinalize(sectionZone, [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+      ]);
+      await tick();
+      await tick();
+
+      // GetTasks should have been called again
+      await vi.waitFor(() => {
+        expect(mockGetTasks.mock.calls.length).toBeGreaterThan(getTasksCallsBefore);
+      });
+
+      // MoveTask, UpdateTask, and ReorderTasks should NOT have been called
+      expect(mockMoveTask).not.toHaveBeenCalled();
+      expect(mockUpdateTask).not.toHaveBeenCalled();
+      expect(mockReorderTasks).not.toHaveBeenCalled();
+    });
+
+    it('Escape when no drag is active does not re-fetch tasks', async () => {
+      await renderView();
+
+      const getTasksCallsBefore = mockGetTasks.mock.calls.length;
+
+      // Dispatch Escape without any drag active
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+      await tick();
+
+      // GetTasks should NOT have been called again
+      expect(mockGetTasks.mock.calls.length).toBe(getTasksCallsBefore);
+    });
+  });
+
   describe('state-check verification', () => {
     it('emits no [state-check] warnings after edit', async () => {
       await renderView();
