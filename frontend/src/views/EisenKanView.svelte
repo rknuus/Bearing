@@ -275,8 +275,11 @@
 
   const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId', 'status'];
 
+  const taskDropZone = (t: Record<string, unknown>) =>
+    t.status === 'todo' ? (String(t.priority) || 'todo') : String(t.status);
+
   async function verifyTaskState() {
-    const mismatches = await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS);
+    const mismatches = await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS, taskDropZone);
     if (mismatches.length > 0) {
       error = 'Internal state mismatch detected, please reload';
       getBindings().LogFrontend('error', mismatches.join('; '), 'state-check');
