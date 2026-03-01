@@ -29,25 +29,34 @@ function makeTestYearFocus(): DayFocus[] {
   ];
 }
 
-function makeMockBindings(themes = makeTestThemes(), yearFocus = makeTestYearFocus()) {
-  return {
-    GetThemes: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(themes))),
-    GetYearFocus: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(yearFocus))),
-    SaveDayFocus: vi.fn().mockResolvedValue(undefined),
-    ClearDayFocus: vi.fn().mockResolvedValue(undefined),
-    LoadNavigationContext: vi.fn().mockResolvedValue({
-      currentView: 'calendar',
-      currentItem: '',
-      filterThemeId: '',
-      filterDate: '',
-      lastAccessed: '',
-    }),
-    SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
-  };
-}
-
 describe('CalendarView', () => {
   let container: HTMLDivElement;
+  let currentYearFocus: DayFocus[];
+
+  function makeMockBindings(themes = makeTestThemes(), yearFocus = makeTestYearFocus()) {
+    currentYearFocus = JSON.parse(JSON.stringify(yearFocus));
+    return {
+      GetThemes: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(themes))),
+      GetYearFocus: vi.fn().mockImplementation(async () => JSON.parse(JSON.stringify(currentYearFocus))),
+      SaveDayFocus: vi.fn().mockImplementation(async (day: DayFocus) => {
+        const idx = currentYearFocus.findIndex(e => e.date === day.date);
+        if (idx >= 0) currentYearFocus[idx] = day;
+        else currentYearFocus.push(day);
+      }),
+      ClearDayFocus: vi.fn().mockImplementation(async (date: string) => {
+        currentYearFocus = currentYearFocus.filter(e => e.date !== date);
+      }),
+      LoadNavigationContext: vi.fn().mockResolvedValue({
+        currentView: 'calendar',
+        currentItem: '',
+        filterThemeId: '',
+        filterDate: '',
+        lastAccessed: '',
+      }),
+      SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
+    };
+  }
+
   let mockBindings: ReturnType<typeof makeMockBindings>;
 
   beforeEach(() => {
