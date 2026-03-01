@@ -6,7 +6,7 @@
    * Supports drag-and-drop via svelte-dnd-action.
    */
 
-  import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import type { LifeTheme } from '../lib/wails-mock';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
@@ -31,20 +31,27 @@
     tasks: PendingTask[];
     themes: LifeTheme[];
     onTasksChange: (tasks: PendingTask[]) => void;
+    onDragStart?: () => void;
+    onDragEnd?: () => void;
     isStaging?: boolean;
   }
 
-  let { quadrantId, title, color, tasks, themes, onTasksChange, isStaging = false }: Props = $props();
+  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, isStaging = false }: Props = $props();
 
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
   const today = new Date().toISOString().split('T')[0];
   const todayDisplay = formatDate(today);
 
   function handleDndConsider(event: CustomEvent<DndEvent<PendingTask>>) {
+    const { trigger, source } = event.detail.info;
+    if (trigger === TRIGGERS.DRAG_STARTED && source === SOURCES.POINTER) {
+      onDragStart?.();
+    }
     onTasksChange(event.detail.items);
   }
 
   function handleDndFinalize(event: CustomEvent<DndEvent<PendingTask>>) {
+    onDragEnd?.();
     onTasksChange(event.detail.items);
   }
 </script>

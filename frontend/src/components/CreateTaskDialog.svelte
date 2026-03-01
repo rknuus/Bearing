@@ -8,7 +8,7 @@
    * Q4 (staging) tasks persist as drafts across dialog close and app restart.
    */
 
-  import { untrack } from 'svelte';
+  import { onMount, onDestroy, untrack } from 'svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
@@ -70,6 +70,46 @@
       }
     }
     return max + 1;
+  }
+
+  // Drag-and-drop cancel state
+  let isDragging = $state(false);
+  let dragCancelled = $state(false);
+
+  // Escape key handler: cancel active pointer drag inside the dialog
+  function handleEscapeDuringDrag(event: KeyboardEvent) {
+    if (event.key === 'Escape' && isDragging) {
+      dragCancelled = true;
+      event.stopPropagation();
+      event.preventDefault();
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+  onDestroy(() => {
+    window.removeEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+
+  function handleDragStart() {
+    isDragging = true;
+  }
+
+  async function handleDragEnd() {
+    isDragging = false;
+    if (dragCancelled) {
+      dragCancelled = false;
+      try {
+        const data = await getBindings().LoadTaskDrafts();
+        const parsed = JSON.parse(data);
+        tasksByQuadrant = { ...emptyQuadrants, ...parsed };
+      } catch {
+        tasksByQuadrant = { ...emptyQuadrants };
+      }
+      nextId = deriveNextId(tasksByQuadrant);
+    }
   }
 
   async function saveDrafts() {
@@ -264,6 +304,8 @@
             tasks={tasksByQuadrant[q.id]}
             {themes}
             onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
             isStaging={q.isStaging}
           />
         {/each}
@@ -277,6 +319,8 @@
             tasks={tasksByQuadrant[q.id]}
             {themes}
             onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
             isStaging={q.isStaging}
           />
         {/each}

@@ -11,7 +11,7 @@
 
   import { onMount, onDestroy, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { dndzone, type DndEvent } from 'svelte-dnd-action';
+  import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
@@ -87,6 +87,18 @@
   // Drag-and-drop state (svelte-dnd-action)
   let isValidating = $state(false);
   let isRollingBack = $state(false);
+  let isDragging = $state(false);
+  let dragCancelled = $state(false);
+
+  // Escape key handler: cancel active pointer drag
+  function handleEscapeDuringDrag(event: KeyboardEvent) {
+    if (event.key === 'Escape' && isDragging) {
+      dragCancelled = true;
+      event.stopPropagation();
+      event.preventDefault();
+      window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    }
+  }
 
   // Per-column items managed by svelte-dnd-action
   let columnItems = $state<Record<string, TaskWithStatus[]>>({});
@@ -264,6 +276,13 @@
   }
 
   // Load data on mount
+  onMount(() => {
+    window.addEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+  onDestroy(() => {
+    window.removeEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+  });
+
   onMount(async () => {
     try {
       const [fetchedTasks, fetchedThemes, fetchedConfig] = await Promise.all([
@@ -400,10 +419,22 @@
 
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    const { trigger, source } = event.detail.info;
+    if (trigger === TRIGGERS.DRAG_STARTED && source === SOURCES.POINTER) {
+      isDragging = true;
+    }
     columnItems = { ...columnItems, [status]: event.detail.items };
   }
 
   async function handleDndFinalize(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    isDragging = false;
+
+    if (dragCancelled) {
+      dragCancelled = false;
+      tasks = await fetchTasks();
+      return;
+    }
+
     if (isValidating || isRollingBack) return;
 
     const newItems = event.detail.items;
@@ -466,10 +497,22 @@
 
   // Section-aware svelte-dnd-action handlers (for sectioned columns)
   function handleSectionDndConsider(sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    const { trigger, source } = event.detail.info;
+    if (trigger === TRIGGERS.DRAG_STARTED && source === SOURCES.POINTER) {
+      isDragging = true;
+    }
     sectionItems = { ...sectionItems, [sectionName]: event.detail.items };
   }
 
   async function handleSectionDndFinalize(columnName: string, sectionName: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
+    isDragging = false;
+
+    if (dragCancelled) {
+      dragCancelled = false;
+      tasks = await fetchTasks();
+      return;
+    }
+
     if (isValidating || isRollingBack) return;
 
     const newItems = event.detail.items;
