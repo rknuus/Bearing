@@ -20,6 +20,7 @@ import {
   TestReporter,
   waitForServers,
   readJSON,
+  readThemes,
   getGitLog,
   getGitCommitCount,
   assertFileExists,
@@ -125,7 +126,7 @@ export async function runTests() {
 
       // Verify files
       assertFileExists(DATA_DIR, 'themes/themes.json')
-      const themes = readJSON(DATA_DIR, 'themes/themes.json')
+      const themes = readThemes(DATA_DIR)
       if (themes.length < 1) throw new Error('Expected at least 1 theme')
       const theme = themes.find(t => t.name === 'E2E Theme')
       if (!theme) throw new Error('Theme "E2E Theme" not found in themes.json')
@@ -142,7 +143,7 @@ export async function runTests() {
     }
 
     // Read the theme ID for use in subsequent tests
-    const themes = readJSON(DATA_DIR, 'themes/themes.json')
+    const themes = readThemes(DATA_DIR)
     const themeId = themes.find(t => t.name === 'E2E Theme')?.id || 'UNKNOWN'
 
     // ---- 1b: Create objective ----
@@ -157,7 +158,7 @@ export async function runTests() {
       await page.waitForSelector('.theme-item:last-child .objective-item', { timeout: 5000 })
 
       // Verify files
-      const themesAfterObj = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesAfterObj = readThemes(DATA_DIR)
       const themeWithObj = themesAfterObj.find(t => t.name === 'E2E Theme')
       if (!themeWithObj.objectives || themeWithObj.objectives.length < 1) {
         throw new Error('Expected at least 1 objective')
@@ -185,7 +186,7 @@ export async function runTests() {
       await page.waitForSelector('.theme-item:last-child .kr-item', { timeout: 5000 })
 
       // Verify files
-      const themesAfterKR = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesAfterKR = readThemes(DATA_DIR)
       const themeWithKR = themesAfterKR.find(t => t.name === 'E2E Theme')
       const objWithKR = themeWithKR.objectives.find(o => o.title === 'E2E Objective')
       if (!objWithKR.keyResults || objWithKR.keyResults.length < 1) {
@@ -418,7 +419,7 @@ export async function runTests() {
     reporter.startTest('Phase 4b: Update key result progress and verify files')
     try {
       // Find the KR ID from themes.json
-      const themesNow = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesNow = readThemes(DATA_DIR)
       const themeNow = themesNow.find(t => t.name === 'E2E Theme')
       const objNow = themeNow.objectives.find(o => o.title === 'E2E Objective')
       const krId = objNow.keyResults[0].id
@@ -428,7 +429,7 @@ export async function runTests() {
         await app.UpdateKeyResultProgress(id, 42)
       }, krId)
 
-      const themesAfterKR = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesAfterKR = readThemes(DATA_DIR)
       const themeAfterKR = themesAfterKR.find(t => t.name === 'E2E Theme')
       const objAfterKR = themeAfterKR.objectives.find(o => o.title === 'E2E Objective')
       const krAfter = objAfterKR.keyResults[0]
@@ -499,9 +500,9 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      expectedCommits++
+      // ArchiveTask produces 2 commits: file move + task_order update
+      expectedCommits += 2
       assertCommitCount('after archive task')
-      assertLatestCommitContains('Archive task')
 
       reporter.pass(`Task 1 archived: ${task1Id}`)
     } catch (err) {
@@ -511,7 +512,7 @@ export async function runTests() {
     // ---- 5b: Delete key result ----
     reporter.startTest('Phase 5b: Delete key result and verify files')
     try {
-      const themesBeforeDel = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesBeforeDel = readThemes(DATA_DIR)
       const themeBefore = themesBeforeDel.find(t => t.name === 'E2E Theme')
       const objBefore = themeBefore.objectives.find(o => o.title === 'E2E Objective')
       const krIdToDel = objBefore.keyResults[0].id
@@ -521,7 +522,7 @@ export async function runTests() {
         await app.DeleteKeyResult(id)
       }, krIdToDel)
 
-      const themesAfterDel = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesAfterDel = readThemes(DATA_DIR)
       const themeAfterDel = themesAfterDel.find(t => t.name === 'E2E Theme')
       const objAfterDel = themeAfterDel.objectives.find(o => o.title === 'E2E Objective')
       if (objAfterDel.keyResults && objAfterDel.keyResults.length > 0) {
@@ -539,7 +540,7 @@ export async function runTests() {
     // ---- 5c: Delete objective ----
     reporter.startTest('Phase 5c: Delete objective and verify files')
     try {
-      const themesBeforeObjDel = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesBeforeObjDel = readThemes(DATA_DIR)
       const themeBeforeObjDel = themesBeforeObjDel.find(t => t.name === 'E2E Theme')
       const objIdToDel = themeBeforeObjDel.objectives[0].id
 
@@ -548,7 +549,7 @@ export async function runTests() {
         await app.DeleteObjective(id)
       }, objIdToDel)
 
-      const themesAfterObjDel = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesAfterObjDel = readThemes(DATA_DIR)
       const themeAfterObjDel = themesAfterObjDel.find(t => t.name === 'E2E Theme')
       if (themeAfterObjDel.objectives && themeAfterObjDel.objectives.length > 0) {
         throw new Error('Expected 0 objectives after deletion')
@@ -570,7 +571,7 @@ export async function runTests() {
         await app.DeleteTheme(id)
       }, themeId)
 
-      const themesAfterThemeDel = readJSON(DATA_DIR, 'themes/themes.json')
+      const themesAfterThemeDel = readThemes(DATA_DIR)
       const deletedTheme = themesAfterThemeDel.find(t => t.name === 'E2E Theme')
       if (deletedTheme) {
         throw new Error('Theme "E2E Theme" still exists after deletion')

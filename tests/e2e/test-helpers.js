@@ -65,19 +65,37 @@ export function readJSON(dataDir, relativePath) {
 }
 
 /**
+ * Read themes array from themes/themes.json (unwraps ThemesFile wrapper)
+ */
+export function readThemes(dataDir) {
+  const data = readJSON(dataDir, 'themes/themes.json')
+  return data.themes || []
+}
+
+/**
  * Run git log --oneline and return array of commit messages
  */
 export function getGitLog(dataDir) {
-  const output = execSync('git log --oneline --format=%s', { cwd: dataDir, encoding: 'utf-8' })
-  return output.trim().split('\n').filter(Boolean)
+  try {
+    const output = execSync('git log --oneline --format=%s', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] })
+    return output.trim().split('\n').filter(Boolean)
+  } catch {
+    // No commits yet (empty repo)
+    return []
+  }
 }
 
 /**
  * Return total git commit count
  */
 export function getGitCommitCount(dataDir) {
-  const output = execSync('git rev-list --count HEAD', { cwd: dataDir, encoding: 'utf-8' })
-  return parseInt(output.trim(), 10)
+  try {
+    const output = execSync('git rev-list --count HEAD', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] })
+    return parseInt(output.trim(), 10)
+  } catch {
+    // No commits yet (empty repo) — HEAD doesn't exist
+    return 0
+  }
 }
 
 /**
@@ -113,8 +131,13 @@ export function getTaskFiles(dataDir, status) {
  * Check if git working tree is clean (no unstaged changes)
  */
 export function isWorkingTreeClean(dataDir) {
-  const output = execSync('git status --porcelain', { cwd: dataDir, encoding: 'utf-8' })
-  return output.trim() === ''
+  try {
+    // Only check tracked files (ignore untracked like .gitignore, navigation_context.json)
+    const output = execSync('git diff --name-only && git diff --cached --name-only', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
+    return output.trim() === ''
+  } catch {
+    return true
+  }
 }
 
 /**

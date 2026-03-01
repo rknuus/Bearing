@@ -50,8 +50,12 @@ done
 
 echo ""
 
-# Run tests
+# Ensure dependencies are installed
 cd tests/e2e
+npm install --silent
+npx playwright install chromium --with-deps 2>/dev/null || npx playwright install chromium
+
+# Run tests
 BEARING_DATA_DIR="$BEARING_E2E_DIR" HEADLESS="${HEADLESS:-false}" npm test
 TEST_EXIT=$?
 
