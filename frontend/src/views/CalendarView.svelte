@@ -11,7 +11,7 @@
   import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
   import { getBindings } from '../lib/utils/bindings';
-  import { checkFullState } from '../lib/utils/state-check';
+  import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
   // Props
@@ -211,7 +211,10 @@
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text'];
 
   async function verifyCalendarState() {
-    const mismatches = await checkFullState('dayFocus', [...yearFocus.values()], () => getBindings().GetYearFocus(year), 'date', DAY_FOCUS_FIELDS);
+    const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
+    const frontend = [...yearFocus.values()].sort(byDate);
+    const backend = (await getBindings().GetYearFocus(year)).sort(byDate);
+    const mismatches = checkStateFromData('dayFocus', frontend, backend, 'date', DAY_FOCUS_FIELDS);
     if (mismatches.length > 0) {
       error = 'Internal state mismatch detected, please reload';
       getBindings().LogFrontend('error', mismatches.join('; '), 'state-check');
