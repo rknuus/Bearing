@@ -1542,7 +1542,7 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfigura
 	}
 
 	if len(slugs) != len(config.ColumnDefinitions) {
-		return nil, fmt.Errorf("expected %d slugs, got %d", len(config.ColumnDefinitions), len(slugs))
+		return nil, fmt.Errorf("expected %d columns, got %d", len(config.ColumnDefinitions), len(slugs))
 	}
 
 	// Build lookup
@@ -1556,22 +1556,22 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfigura
 	reordered := make([]access.ColumnDefinition, 0, len(slugs))
 	for _, slug := range slugs {
 		if seen[slug] {
-			return nil, fmt.Errorf("duplicate slug %q", slug)
+			return nil, fmt.Errorf("duplicate column %q", slug)
 		}
 		seen[slug] = true
 		col, ok := colMap[slug]
 		if !ok {
-			return nil, fmt.Errorf("unknown column %q", slug)
+			return nil, fmt.Errorf("column %q not found", slug)
 		}
 		reordered = append(reordered, col)
 	}
 
 	// Validate bookends: first must be todo, last must be done
 	if reordered[0].Type != access.ColumnTypeTodo {
-		return nil, fmt.Errorf("first column must be todo-type")
+		return nil, fmt.Errorf("first column cannot be moved")
 	}
 	if reordered[len(reordered)-1].Type != access.ColumnTypeDone {
-		return nil, fmt.Errorf("last column must be done-type")
+		return nil, fmt.Errorf("last column cannot be moved")
 	}
 
 	config.ColumnDefinitions = reordered
