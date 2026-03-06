@@ -509,18 +509,17 @@
     return result;
   }
 
-  // Reorder entries in allTasks to match the DnD result order
-  function applyReorder(allTasks: TaskWithStatus[], reorderedItems: TaskWithStatus[]): TaskWithStatus[] {
-    const idOrder = reorderedItems.map(t => t.id);
-    const idSet = new Set(idOrder);
+  // Reorder tasks in allTasks whose IDs appear in zoneIds to match zoneIds order
+  function reorderZone(allTasks: TaskWithStatus[], zoneIds: string[]): TaskWithStatus[] {
+    const idSet = new Set(zoneIds);
     const byId = new Map(allTasks.map(t => [t.id, t]));
     const slots: number[] = [];
     for (let i = 0; i < allTasks.length; i++) {
       if (idSet.has(allTasks[i].id)) slots.push(i);
     }
     const result = [...allTasks];
-    for (let j = 0; j < slots.length; j++) {
-      result[slots[j]] = byId.get(idOrder[j])!;
+    for (let j = 0; j < slots.length && j < zoneIds.length; j++) {
+      result[slots[j]] = byId.get(zoneIds[j])!;
     }
     return result;
   }
@@ -559,7 +558,7 @@
       const taskIds = fullZoneOrder(visibleIds, status);
       try {
         await apiReorderTasks({ [status]: taskIds });
-        tasks = applyReorder(tasks, newItems);
+        tasks = reorderZone(tasks, taskIds);
         await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
@@ -576,8 +575,9 @@
     // Snapshot pre-move state for rollback
     const snapshotTasks = [...tasks];
 
-    // Optimistically update master task list with correct DnD position
+    // Optimistically update master task list: insert moved task then reorder zone to match
     tasks = repositionTask(tasks, taskId, { status }, targetZoneIds);
+    tasks = reorderZone(tasks, targetZoneIds);
 
     isValidating = true;
     try {
@@ -638,7 +638,7 @@
       const taskIds = fullZoneOrder(visibleIds, sectionName);
       try {
         await apiReorderTasks({ [sectionName]: taskIds });
-        tasks = applyReorder(tasks, newItems);
+        tasks = reorderZone(tasks, taskIds);
         await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
@@ -656,6 +656,7 @@
     if (movedTask.status !== columnName) {
       // Cross-column move: status change -- use MoveTask
       tasks = repositionTask(tasks, taskId, { status: columnName }, targetZoneIds);
+      tasks = reorderZone(tasks, targetZoneIds);
 
       isValidating = true;
       try {
@@ -689,6 +690,8 @@
       const sourceZoneIds = fullZoneOrder(visibleSourceIds, sourceSection, new Set([taskId]));
       const updatedTask = { ...movedTask, priority: sectionName };
       tasks = repositionTask(tasks, taskId, { priority: sectionName }, targetZoneIds);
+      tasks = reorderZone(tasks, sourceZoneIds);
+      tasks = reorderZone(tasks, targetZoneIds);
 
       isValidating = true;
       try {
