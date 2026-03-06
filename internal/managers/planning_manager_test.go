@@ -13,9 +13,10 @@ import (
 // SaveTheme assigns IDs to objectives and key results to simulate ensureThemeIDs.
 type mockPlanAccess struct {
 	themes      []access.LifeTheme
-	tasks       map[string][]access.Task // status -> tasks
+	tasks       map[string][]access.Task            // status -> tasks
 	taskOrder   map[string][]string                 // drop zone ID -> ordered task IDs
 	nextTaskNum int                                 // counter for unique task ID generation
+	boardConfig *access.BoardConfiguration          // custom board config (nil = default)
 }
 
 func newMockPlanAccess() *mockPlanAccess {
@@ -263,6 +264,9 @@ func (m *mockPlanAccess) SaveTaskOrder(order map[string][]string) error {
 }
 
 func (m *mockPlanAccess) GetBoardConfiguration() (*access.BoardConfiguration, error) {
+	if m.boardConfig != nil {
+		return m.boardConfig, nil
+	}
 	return access.DefaultBoardConfiguration(), nil
 }
 
@@ -279,6 +283,52 @@ func (m *mockPlanAccess) LoadTaskDrafts() (json.RawMessage, error) {
 }
 
 func (m *mockPlanAccess) SaveTaskDrafts(data json.RawMessage) error {
+	return nil
+}
+
+func (m *mockPlanAccess) SaveBoardConfiguration(config *access.BoardConfiguration) error {
+	m.boardConfig = config
+	return nil
+}
+
+func (m *mockPlanAccess) EnsureStatusDirectory(slug string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) RemoveStatusDirectory(slug string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) RenameStatusDirectory(oldSlug, newSlug string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) UpdateTaskStatusField(dirSlug, newStatus string) ([]string, error) {
+	return nil, nil
+}
+
+func (m *mockPlanAccess) WriteTaskOrder(order map[string][]string) error {
+	m.taskOrder = order
+	return nil
+}
+
+func (m *mockPlanAccess) BoardConfigFilePath() string {
+	return "board_config.json"
+}
+
+func (m *mockPlanAccess) TaskOrderFilePath() string {
+	return "task_order.json"
+}
+
+func (m *mockPlanAccess) TaskDirPath(status string) string {
+	return status
+}
+
+func (m *mockPlanAccess) CommitFiles(paths []string, message string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) CommitAll(message string) error {
 	return nil
 }
 
@@ -2213,5 +2263,245 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 	}
 	if !result.Success {
 		t.Errorf("expected move to succeed, got violations: %v", result.Violations)
+	}
+}
+
+// =============================================================================
+// Column CRUD Tests
+// =============================================================================
+
+func TestUnit_AddColumn(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	config, err := manager.AddColumn("In Review", "doing")
+	if err != nil {
+		t.Fatalf("AddColumn failed: %v", err)
+	}
+	if len(config.ColumnDefinitions) != 4 {
+		t.Errorf("Expected 4 columns, got %d", len(config.ColumnDefinitions))
+	}
+	if config.ColumnDefinitions[2].Name != "in-review" {
+		t.Errorf("Expected 'in-review' at index 2, got %q", config.ColumnDefinitions[2].Name)
+	}
+	if config.ColumnDefinitions[2].Title != "In Review" {
+		t.Errorf("Expected title 'In Review', got %q", config.ColumnDefinitions[2].Title)
+	}
+	if config.ColumnDefinitions[2].Type != access.ColumnTypeDoing {
+		t.Errorf("Expected doing type, got %q", config.ColumnDefinitions[2].Type)
+	}
+}
+
+func TestUnit_AddColumn_DuplicateSlug(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.AddColumn("Doing", "todo")
+	if err == nil {
+		t.Error("Expected error for duplicate slug")
+	}
+}
+
+func TestUnit_AddColumn_ReservedSlug(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.AddColumn("Archived", "doing")
+	if err == nil {
+		t.Error("Expected error for reserved slug 'archived'")
+	}
+}
+
+func TestUnit_AddColumn_AfterDone(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.AddColumn("After Done", "done")
+	if err == nil {
+		t.Error("Expected error for inserting after done column")
+	}
+}
+
+func TestUnit_RemoveColumn(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// First add a column
+	_, err := manager.AddColumn("Review", "doing")
+	if err != nil {
+		t.Fatalf("AddColumn failed: %v", err)
+	}
+
+	// Remove it
+	config, err := manager.RemoveColumn("review")
+	if err != nil {
+		t.Fatalf("RemoveColumn failed: %v", err)
+	}
+	if len(config.ColumnDefinitions) != 3 {
+		t.Errorf("Expected 3 columns after removal, got %d", len(config.ColumnDefinitions))
+	}
+}
+
+func TestUnit_RemoveColumn_NonEmpty(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Add a column and put a task in it
+	_, err := manager.AddColumn("Review", "doing")
+	if err != nil {
+		t.Fatalf("AddColumn failed: %v", err)
+	}
+	mockAccess.tasks["review"] = []access.Task{{ID: "T-T1", ThemeID: "T", Title: "Test"}}
+
+	_, err = manager.RemoveColumn("review")
+	if err == nil {
+		t.Error("Expected error for non-empty column removal")
+	}
+}
+
+func TestUnit_RemoveColumn_TodoType(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.RemoveColumn("todo")
+	if err == nil {
+		t.Error("Expected error for removing todo-type column")
+	}
+}
+
+func TestUnit_RemoveColumn_DoneType(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.RemoveColumn("done")
+	if err == nil {
+		t.Error("Expected error for removing done-type column")
+	}
+}
+
+func TestUnit_RenameColumn(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	config, err := manager.RenameColumn("doing", "In Progress")
+	if err != nil {
+		t.Fatalf("RenameColumn failed: %v", err)
+	}
+
+	found := false
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == "in-progress" && col.Title == "In Progress" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("Expected column with slug 'in-progress' and title 'In Progress'")
+	}
+}
+
+func TestUnit_RenameColumn_TitleOnlyChange(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Rename "DOING" to "Doing" (same slug, different title)
+	config, err := manager.RenameColumn("doing", "Doing")
+	if err != nil {
+		t.Fatalf("RenameColumn failed: %v", err)
+	}
+
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == "doing" {
+			if col.Title != "Doing" {
+				t.Errorf("Expected title 'Doing', got %q", col.Title)
+			}
+			return
+		}
+	}
+	t.Error("Expected column 'doing' to still exist")
+}
+
+func TestUnit_RenameColumn_DuplicateSlug(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.RenameColumn("doing", "Todo")
+	if err == nil {
+		t.Error("Expected error for duplicate slug on rename")
+	}
+}
+
+func TestUnit_ReorderColumns(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Add two doing columns
+	_, _ = manager.AddColumn("Review", "doing")
+	_, _ = manager.AddColumn("Testing", "review")
+
+	// Reorder: todo, testing, review, doing, done
+	config, err := manager.ReorderColumns([]string{"todo", "testing", "review", "doing", "done"})
+	if err != nil {
+		t.Fatalf("ReorderColumns failed: %v", err)
+	}
+
+	expected := []string{"todo", "testing", "review", "doing", "done"}
+	for i, col := range config.ColumnDefinitions {
+		if col.Name != expected[i] {
+			t.Errorf("Expected column %d to be %q, got %q", i, expected[i], col.Name)
+		}
+	}
+}
+
+func TestUnit_ReorderColumns_TodoNotFirst(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.ReorderColumns([]string{"doing", "todo", "done"})
+	if err == nil {
+		t.Error("Expected error when todo is not first")
+	}
+}
+
+func TestUnit_ReorderColumns_DoneNotLast(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.ReorderColumns([]string{"todo", "done", "doing"})
+	if err == nil {
+		t.Error("Expected error when done is not last")
+	}
+}
+
+func TestUnit_MoveTask_CustomColumn(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Add custom column
+	_, _ = manager.AddColumn("Review", "doing")
+
+	// Create a task
+	task, err := manager.CreateTask("Test task", "T", "2026-01-01", "important-urgent", "", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+
+	// Move to custom column
+	result, err := manager.MoveTask(task.ID, "review", nil)
+	if err != nil {
+		t.Fatalf("MoveTask to custom column failed: %v", err)
+	}
+	if !result.Success {
+		t.Errorf("Expected move to succeed, got violations: %v", result.Violations)
+	}
+}
+
+func TestUnit_MoveTask_InvalidColumn(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	_, err := manager.MoveTask("T-T1", "nonexistent", nil)
+	if err == nil {
+		t.Error("Expected error for invalid target column")
 	}
 }

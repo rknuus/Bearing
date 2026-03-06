@@ -684,6 +684,99 @@
   function getColumnTaskCount(columnName: string): number {
     return (columnItems[columnName] ?? []).length;
   }
+
+  // Column menu state
+  let columnMenuSlug = $state<string | null>(null);
+
+  // Prompt dialog state (replaces window.prompt which doesn't work in WebView)
+  let promptOpen = $state(false);
+  let promptLabel = $state('');
+  let promptValue = $state('');
+  let promptResolve: ((value: string | null) => void) | null = null;
+
+  function showPrompt(label: string, defaultValue = ''): Promise<string | null> {
+    promptLabel = label;
+    promptValue = defaultValue;
+    promptOpen = true;
+    return new Promise((resolve) => { promptResolve = resolve; });
+  }
+
+  function handlePromptConfirm() {
+    const value = promptValue.trim();
+    promptOpen = false;
+    promptResolve?.(value || null);
+    promptResolve = null;
+  }
+
+  function handlePromptCancel() {
+    promptOpen = false;
+    promptResolve?.(null);
+    promptResolve = null;
+  }
+
+  function toggleColumnMenu(slug: string) {
+    columnMenuSlug = columnMenuSlug === slug ? null : slug;
+  }
+
+  function closeColumnMenu() {
+    columnMenuSlug = null;
+  }
+
+  async function refreshBoard() {
+    boardConfig = await fetchBoardConfig();
+    tasks = await fetchTasks();
+  }
+
+  async function handleRenameColumn(slug: string) {
+    closeColumnMenu();
+    const col = columns.find(c => c.name === slug);
+    if (!col) return;
+    const newTitle = await showPrompt('Rename column:', col.title);
+    if (!newTitle || newTitle === col.title) return;
+    try {
+      await getBindings().RenameColumn(slug, newTitle);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to rename column';
+    }
+  }
+
+  async function handleDeleteColumn(slug: string) {
+    closeColumnMenu();
+    try {
+      await getBindings().RemoveColumn(slug);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to delete column';
+    }
+  }
+
+  async function handleInsertColumn(afterSlug: string) {
+    closeColumnMenu();
+    const title = await showPrompt('New column title:');
+    if (!title) return;
+    try {
+      await getBindings().AddColumn(title, afterSlug);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to add column';
+    }
+  }
+
+  /** Insert a column before the given slug by finding the preceding column. */
+  async function handleInsertColumnBefore(slug: string) {
+    closeColumnMenu();
+    const idx = columns.findIndex(c => c.name === slug);
+    if (idx <= 0) return; // Can't insert before the first column (todo)
+    const title = await showPrompt('New column title:');
+    if (!title) return;
+    try {
+      await getBindings().AddColumn(title, columns[idx - 1].name);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to add column';
+    }
+  }
 </script>
 
 <div class="eisenkan-container">
@@ -748,6 +841,39 @@
                 </button>
               {/if}
               <span class="task-count">{getColumnTaskCount(column.name)}</span>
+              <div class="column-menu-wrapper">
+                <button
+                  type="button"
+                  class="column-menu-btn"
+                  onclick={(e) => { e.stopPropagation(); toggleColumnMenu(column.name); }}
+                  aria-label="Column options for {column.title}"
+                >
+                  &#x22EF;
+                </button>
+                {#if columnMenuSlug === column.name}
+                  <div class="column-menu-overlay" onclick={closeColumnMenu} role="presentation"></div>
+                  <div class="column-menu" role="menu">
+                    <button type="button" class="column-menu-item" onclick={() => handleRenameColumn(column.name)}>
+                      Rename
+                    </button>
+                    {#if column.type === 'doing'}
+                      <button type="button" class="column-menu-item" onclick={() => handleDeleteColumn(column.name)}>
+                        Delete
+                      </button>
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumnBefore(column.name)}>
+                        Insert left
+                      </button>
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumn(column.name)}>
+                        Insert right
+                      </button>
+                    {:else if column.type === 'todo'}
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumn(column.name)}>
+                        Insert right
+                      </button>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
             </div>
           </div>
 
@@ -1060,6 +1186,30 @@
   <!-- Error Dialog (rule violations) -->
   {#if errorViolations.length > 0}
     <ErrorDialog violations={errorViolations} onClose={handleErrorClose} />
+  {/if}
+
+  <!-- Prompt Dialog (replaces window.prompt for WebView compatibility) -->
+  {#if promptOpen}
+    <div class="prompt-overlay" role="presentation" onclick={handlePromptCancel}>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div class="prompt-dialog" role="dialog" tabindex="-1" aria-label={promptLabel} onclick={(e) => e.stopPropagation()}>
+        <label class="prompt-label">
+          {promptLabel}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            autofocus
+            class="prompt-input"
+            type="text"
+            bind:value={promptValue}
+            onkeydown={(e) => { if (e.key === 'Enter') handlePromptConfirm(); if (e.key === 'Escape') handlePromptCancel(); }}
+          />
+        </label>
+        <div class="prompt-actions">
+          <button type="button" class="prompt-cancel" onclick={handlePromptCancel}>Cancel</button>
+          <button type="button" class="prompt-ok" onclick={handlePromptConfirm}>OK</button>
+        </div>
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -1482,5 +1632,149 @@
   .context-menu-item:last-child {
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
+  }
+
+  /* Column menu styles */
+  .column-menu-wrapper {
+    position: relative;
+  }
+
+  .column-menu-btn {
+    background: none;
+    border: none;
+    color: var(--color-gray-400);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
+  }
+
+  .column-menu-btn:hover {
+    color: var(--color-gray-700);
+    background-color: var(--color-gray-300);
+  }
+
+  .column-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+  }
+
+  .column-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 140px;
+    z-index: 1000;
+    overflow: hidden;
+  }
+
+  .column-menu-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .column-menu-item:hover {
+    background-color: var(--color-gray-100);
+  }
+
+  /* Prompt dialog styles */
+  .prompt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .prompt-dialog {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    padding: 1.25rem;
+    min-width: 300px;
+    max-width: 400px;
+  }
+
+  .prompt-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 0.5rem;
+  }
+
+  .prompt-input {
+    display: block;
+    width: 100%;
+    margin-top: 0.375rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .prompt-input:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  }
+
+  .prompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .prompt-cancel,
+  .prompt-ok {
+    padding: 0.375rem 0.875rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+
+  .prompt-cancel {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    color: var(--color-gray-600);
+  }
+
+  .prompt-cancel:hover {
+    background-color: var(--color-gray-100);
+  }
+
+  .prompt-ok {
+    background-color: var(--color-primary-500);
+    border: none;
+    color: white;
+  }
+
+  .prompt-ok:hover {
+    background-color: var(--color-primary-600);
   }
 </style>

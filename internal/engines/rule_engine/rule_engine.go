@@ -45,12 +45,7 @@ func DefaultRules() []Rule {
 			Category:    "workflow",
 			TriggerType: "task_move",
 			Conditions: map[string]interface{}{
-				"allowed_transitions": map[string]interface{}{
-					"todo":     []interface{}{"doing", "done"},
-					"doing":    []interface{}{"todo", "done"},
-					"done":     []interface{}{"todo", "doing"},
-					"archived": []interface{}{"todo"},
-				},
+				"allow_all": true,
 			},
 			Enabled:  true,
 			Priority: 90,
@@ -175,6 +170,10 @@ func (re *RuleEngine) evaluateValidationRule(rule Rule, event TaskEvent) []RuleV
 
 // evaluateWorkflowRule evaluates workflow rules (allowed transitions).
 func (re *RuleEngine) evaluateWorkflowRule(rule Rule, event TaskEvent) []RuleViolation {
+	// allow_all permits any transition (used for dynamic columns)
+	if allowAll, ok := rule.Conditions["allow_all"].(bool); ok && allowAll {
+		return nil
+	}
 	if transitions, ok := rule.Conditions["allowed_transitions"]; ok {
 		if v := re.checkAllowedTransition(rule, event, transitions); v != nil {
 			return []RuleViolation{*v}

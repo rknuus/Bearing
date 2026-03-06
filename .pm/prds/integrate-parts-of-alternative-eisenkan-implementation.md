@@ -1,7 +1,8 @@
 ---
 name: integrate-parts-of-alternative-eisenkan-implementation
 description: Integrate EisenKan reference features (rule engine, task editing, priority promotion, subtasks, optimistic drag-drop) into Bearing while preserving multi-view navigation and OKR/calendar interop
-status: backlog
+status: superseded
+superseded_by: support-eisenkan-column-customization
 created: 2026-02-08T14:41:36Z
 ---
 

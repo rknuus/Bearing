@@ -386,10 +386,16 @@ const taskPositions: Record<string, string[]> = {};
 
 /** Get drop zone ID for a task (mirrors Go dropZoneForTask). */
 function dropZoneForTask(task: TaskWithStatus): string {
-  if (task.status === 'todo' && task.priority) {
+  const todoSlug = mockBoardConfig.columnDefinitions.find(c => c.type === 'todo')?.name ?? 'todo';
+  if (task.status === todoSlug && task.priority) {
     return task.priority;
   }
   return task.status;
+}
+
+/** Slugify a title (mirrors Go Slugify). */
+function slugify(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
 // Default board configuration matching Go DefaultBoardConfiguration()
@@ -418,6 +424,9 @@ const defaultBoardConfiguration: BoardConfiguration = {
     },
   ],
 };
+
+// Mutable board config state (initialized from default, mutated by column CRUD)
+const mockBoardConfig: BoardConfiguration = JSON.parse(JSON.stringify(defaultBoardConfiguration));
 
 // Check if we're running in Wails (has window.go)
 export const isWailsRuntime = (): boolean => {
@@ -824,7 +833,78 @@ export const mockAppBindings = {
 
   // Board configuration
   GetBoardConfiguration: async (): Promise<BoardConfiguration> => {
-    return JSON.parse(JSON.stringify(defaultBoardConfiguration)); // Deep copy
+    return JSON.parse(JSON.stringify(mockBoardConfig)); // Deep copy
+  },
+
+  AddColumn: async (title: string, insertAfterSlug: string): Promise<BoardConfiguration> => {
+    const slug = slugify(title);
+    if (!slug) throw new Error('column title is required');
+    if (mockBoardConfig.columnDefinitions.some(c => c.name === slug)) {
+      throw new Error(`column slug "${slug}" already exists`);
+    }
+    if (slug === 'archived') throw new Error(`slug "archived" is reserved`);
+    const afterIdx = mockBoardConfig.columnDefinitions.findIndex(c => c.name === insertAfterSlug);
+    if (afterIdx === -1) throw new Error(`column "${insertAfterSlug}" not found`);
+    const afterCol = mockBoardConfig.columnDefinitions[afterIdx];
+    if (afterCol.type === 'done') throw new Error('cannot insert after the done column');
+    const newCol: ColumnDefinition = { name: slug, title, type: 'doing' };
+    mockBoardConfig.columnDefinitions.splice(afterIdx + 1, 0, newCol);
+    return JSON.parse(JSON.stringify(mockBoardConfig));
+  },
+
+  RemoveColumn: async (slug: string): Promise<BoardConfiguration> => {
+    const col = mockBoardConfig.columnDefinitions.find(c => c.name === slug);
+    if (!col) throw new Error(`column "${slug}" not found`);
+    if (col.type !== 'doing') throw new Error('can only remove doing-type columns');
+    if (mockTasks.some(t => t.status === slug)) {
+      throw new Error(`column "${slug}" is not empty`);
+    }
+    mockBoardConfig.columnDefinitions = mockBoardConfig.columnDefinitions.filter(c => c.name !== slug);
+    delete taskPositions[slug];
+    return JSON.parse(JSON.stringify(mockBoardConfig));
+  },
+
+  RenameColumn: async (oldSlug: string, newTitle: string): Promise<BoardConfiguration> => {
+    const col = mockBoardConfig.columnDefinitions.find(c => c.name === oldSlug);
+    if (!col) throw new Error(`column "${oldSlug}" not found`);
+    const newSlug = slugify(newTitle);
+    if (!newSlug) throw new Error('column title is required');
+    if (newSlug !== oldSlug && mockBoardConfig.columnDefinitions.some(c => c.name === newSlug)) {
+      throw new Error(`column slug "${newSlug}" already exists`);
+    }
+    if (newSlug !== oldSlug && newSlug === 'archived') throw new Error(`slug "archived" is reserved`);
+    col.title = newTitle;
+    if (newSlug !== oldSlug) {
+      col.name = newSlug;
+      // Update task statuses
+      for (const t of mockTasks) {
+        if (t.status === oldSlug) t.status = newSlug;
+      }
+      // Migrate task positions
+      if (taskPositions[oldSlug]) {
+        taskPositions[newSlug] = taskPositions[oldSlug];
+        delete taskPositions[oldSlug];
+      }
+    }
+    return JSON.parse(JSON.stringify(mockBoardConfig));
+  },
+
+  ReorderColumns: async (slugs: string[]): Promise<BoardConfiguration> => {
+    const cols = mockBoardConfig.columnDefinitions;
+    if (slugs.length !== cols.length) throw new Error('slug count mismatch');
+    const first = cols.find(c => c.type === 'todo');
+    const last = cols.find(c => c.type === 'done');
+    if (first && slugs[0] !== first.name) throw new Error('todo column must be first');
+    if (last && slugs[slugs.length - 1] !== last.name) throw new Error('done column must be last');
+    const byName = new Map(cols.map(c => [c.name, c]));
+    const reordered: ColumnDefinition[] = [];
+    for (const s of slugs) {
+      const c = byName.get(s);
+      if (!c) throw new Error(`column "${s}" not found`);
+      reordered.push(c);
+    }
+    mockBoardConfig.columnDefinitions = reordered;
+    return JSON.parse(JSON.stringify(mockBoardConfig));
   },
 
   // Navigation context operations
