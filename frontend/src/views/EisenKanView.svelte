@@ -484,18 +484,42 @@
     return [...without.slice(0, prevIdx + 1), updated, ...without.slice(prevIdx + 1)];
   }
 
-  // Reorder entries in allTasks to match the DnD result order
-  function applyReorder(allTasks: TaskWithStatus[], reorderedItems: TaskWithStatus[]): TaskWithStatus[] {
-    const idOrder = reorderedItems.map(t => t.id);
-    const idSet = new Set(idOrder);
+  // Build the full zone order by merging visible (filtered) DnD IDs with hidden (filtered-out) tasks.
+  // Hidden tasks keep their original positions relative to visible tasks.
+  function fullZoneOrder(visibleIds: string[], zone: string, excludeIds?: Set<string>): string[] {
+    const visibleSet = new Set(visibleIds);
+    const originalZoneIds = tasks
+      .filter(t => !t.parentTaskId && (t.status === 'todo' ? (t.priority || 'todo') : t.status) === zone)
+      .filter(t => !excludeIds || !excludeIds.has(t.id))
+      .map(t => t.id);
+    const hiddenIds = originalZoneIds.filter(id => !visibleSet.has(id));
+    if (hiddenIds.length === 0) return visibleIds;
+    // Walk original order: replace visible slots with DnD order, keep hidden in place
+    const result: string[] = [];
+    let vi = 0;
+    for (const id of originalZoneIds) {
+      if (visibleSet.has(id)) {
+        if (vi < visibleIds.length) result.push(visibleIds[vi++]);
+      } else {
+        result.push(id);
+      }
+    }
+    // Append any remaining visible IDs (newly moved into this zone)
+    while (vi < visibleIds.length) result.push(visibleIds[vi++]);
+    return result;
+  }
+
+  // Reorder tasks in allTasks whose IDs appear in zoneIds to match zoneIds order
+  function reorderZone(allTasks: TaskWithStatus[], zoneIds: string[]): TaskWithStatus[] {
+    const idSet = new Set(zoneIds);
     const byId = new Map(allTasks.map(t => [t.id, t]));
     const slots: number[] = [];
     for (let i = 0; i < allTasks.length; i++) {
       if (idSet.has(allTasks[i].id)) slots.push(i);
     }
     const result = [...allTasks];
-    for (let j = 0; j < slots.length; j++) {
-      result[slots[j]] = byId.get(idOrder[j])!;
+    for (let j = 0; j < slots.length && j < zoneIds.length; j++) {
+      result[slots[j]] = byId.get(zoneIds[j])!;
     }
     return result;
   }
@@ -530,10 +554,11 @@
     const movedTask = newItems.find(t => t.status !== status);
     if (!movedTask) {
       // Within-column reorder: persist new order
-      const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const visibleIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const taskIds = fullZoneOrder(visibleIds, status);
       try {
         await apiReorderTasks({ [status]: taskIds });
-        tasks = applyReorder(tasks, newItems);
+        tasks = reorderZone(tasks, taskIds);
         await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
@@ -544,13 +569,15 @@
     const taskId = movedTask.id;
 
     // Capture desired order from DnD before $effect re-derives columnItems
-    const targetZoneIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const visibleTargetIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const targetZoneIds = fullZoneOrder(visibleTargetIds, status);
 
     // Snapshot pre-move state for rollback
     const snapshotTasks = [...tasks];
 
-    // Optimistically update master task list with correct DnD position
+    // Optimistically update master task list: insert moved task then reorder zone to match
     tasks = repositionTask(tasks, taskId, { status }, targetZoneIds);
+    tasks = reorderZone(tasks, targetZoneIds);
 
     isValidating = true;
     try {
@@ -607,10 +634,11 @@
     const movedTask = newItems.find(t => t.status !== columnName || t.priority !== sectionName);
     if (!movedTask) {
       // Within-section reorder: persist new order
-      const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const visibleIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const taskIds = fullZoneOrder(visibleIds, sectionName);
       try {
         await apiReorderTasks({ [sectionName]: taskIds });
-        tasks = applyReorder(tasks, newItems);
+        tasks = reorderZone(tasks, taskIds);
         await verifyTaskState();
       } catch (e) {
         error = e instanceof Error ? e.message : 'Failed to save task order';
@@ -622,11 +650,13 @@
     const snapshotTasks = [...tasks];
 
     // Capture desired order from DnD before $effect re-derives sectionItems
-    const targetZoneIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const visibleTargetIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const targetZoneIds = fullZoneOrder(visibleTargetIds, sectionName);
 
     if (movedTask.status !== columnName) {
       // Cross-column move: status change -- use MoveTask
       tasks = repositionTask(tasks, taskId, { status: columnName }, targetZoneIds);
+      tasks = reorderZone(tasks, targetZoneIds);
 
       isValidating = true;
       try {
@@ -654,11 +684,14 @@
     } else if (movedTask.priority !== sectionName) {
       // Within-column move: priority change -- use UpdateTask
       const sourceSection = movedTask.priority;
-      const sourceZoneIds = (sectionItems[sourceSection] ?? [])
+      const visibleSourceIds = (sectionItems[sourceSection] ?? [])
         .filter(t => t.id !== taskId && !t.parentTaskId)
         .map(t => t.id);
+      const sourceZoneIds = fullZoneOrder(visibleSourceIds, sourceSection, new Set([taskId]));
       const updatedTask = { ...movedTask, priority: sectionName };
       tasks = repositionTask(tasks, taskId, { priority: sectionName }, targetZoneIds);
+      tasks = reorderZone(tasks, sourceZoneIds);
+      tasks = reorderZone(tasks, targetZoneIds);
 
       isValidating = true;
       try {
