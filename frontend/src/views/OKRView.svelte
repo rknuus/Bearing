@@ -466,6 +466,11 @@
     editingKeyResultId = null;
   }
 
+  function getColorConflicts(color: string, excludeThemeId?: string): string[] {
+    return themes
+      .filter(t => t.color.toLowerCase() === color.toLowerCase() && t.id !== excludeThemeId)
+      .map(t => t.name);
+  }
 
   onMount(async () => {
     try {
@@ -747,6 +752,9 @@
           {/each}
           <input type="color" class="color-input" bind:value={newThemeColor} aria-label="Custom color" />
         </div>
+        {#if getColorConflicts(newThemeColor).length > 0}
+          <div class="color-warning">Already used by: {getColorConflicts(newThemeColor).join(', ')}</div>
+        {/if}
         <div class="form-actions">
           <Button variant="primary" onclick={createTheme}>Create</Button>
           <Button variant="secondary" onclick={() => { showNewThemeForm = false; newThemeName = ''; }}>Cancel</Button>
@@ -788,6 +796,10 @@
                 {/each}
                 <input type="color" class="color-input small" bind:value={editThemeColor} aria-label="Custom color" />
               </div>
+              {@const editConflicts = getColorConflicts(editThemeColor, theme.id)}
+              {#if editConflicts.length > 0}
+                <div class="color-warning">Already used by: {editConflicts.join(', ')}</div>
+              {/if}
               <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save">&#10003;</Button>
               <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">&#10005;</Button>
             {:else}
@@ -1116,6 +1128,12 @@
   .color-input.small {
     height: 18px;
     width: 18px;
+  }
+
+  .color-warning {
+    font-size: 0.75rem;
+    color: #d97706;
+    width: 100%;
   }
 
   .form-actions {
