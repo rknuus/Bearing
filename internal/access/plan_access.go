@@ -41,6 +41,7 @@ type IPlanAccess interface {
 	// Task Order
 	LoadTaskOrder() (map[string][]string, error)
 	SaveTaskOrder(order map[string][]string) error
+	WriteTaskOrder(order map[string][]string) error
 
 	// Board Configuration
 	GetBoardConfiguration() (*BoardConfiguration, error)
@@ -49,6 +50,13 @@ type IPlanAccess interface {
 	RemoveStatusDirectory(slug string) error
 	RenameStatusDirectory(oldSlug, newSlug string) error
 	UpdateTaskStatusField(dirSlug, newStatus string) ([]string, error)
+	BoardConfigFilePath() string
+	TaskOrderFilePath() string
+	TaskDirPath(status string) string
+
+	// Version Control
+	CommitFiles(paths []string, message string) error
+	CommitAll(message string) error
 
 	// Navigation
 	LoadNavigationContext() (*NavigationContext, error)
@@ -771,6 +779,42 @@ func (pa *PlanAccess) boardConfigFilePath() string {
 	return filepath.Join(pa.dataPath, "board_config.json")
 }
 
+// BoardConfigFilePath returns the path to the board configuration file (public).
+func (pa *PlanAccess) BoardConfigFilePath() string {
+	return pa.boardConfigFilePath()
+}
+
+// CommitFiles stages and commits the given file paths with a message.
+func (pa *PlanAccess) CommitFiles(paths []string, message string) error {
+	return pa.commitFiles(paths, message)
+}
+
+// CommitAll stages all changes in the repository and commits with the given message.
+func (pa *PlanAccess) CommitAll(message string) error {
+	tx, err := pa.repo.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	if err := tx.Stage([]string{"."}); err != nil {
+		_ = tx.Cancel()
+		return fmt.Errorf("failed to stage: %w", err)
+	}
+	if _, err := tx.Commit(message); err != nil {
+		return fmt.Errorf("failed to commit: %w", err)
+	}
+	return nil
+}
+
+// TaskOrderFilePath returns the path to the task_order.json file (public).
+func (pa *PlanAccess) TaskOrderFilePath() string {
+	return pa.taskOrderFilePath()
+}
+
+// TaskDirPath returns the directory path for a given status (public).
+func (pa *PlanAccess) TaskDirPath(status string) string {
+	return pa.taskDirPath(status)
+}
+
 // GetBoardConfiguration returns the board configuration.
 // Reads from board_config.json if it exists, falls back to DefaultBoardConfiguration().
 func (pa *PlanAccess) GetBoardConfiguration() (*BoardConfiguration, error) {
@@ -1093,18 +1137,23 @@ func (pa *PlanAccess) LoadTaskOrder() (map[string][]string, error) {
 	return order, nil
 }
 
+// WriteTaskOrder writes the order map to task_order.json without committing.
+func (pa *PlanAccess) WriteTaskOrder(order map[string][]string) error {
+	filePath := pa.taskOrderFilePath()
+	if err := writeJSON(filePath, order); err != nil {
+		return fmt.Errorf("PlanAccess.WriteTaskOrder: %w", err)
+	}
+	return nil
+}
+
 // SaveTaskOrder writes the order map to task_order.json and git-commits.
 func (pa *PlanAccess) SaveTaskOrder(order map[string][]string) error {
-	filePath := pa.taskOrderFilePath()
-
-	if err := writeJSON(filePath, order); err != nil {
+	if err := pa.WriteTaskOrder(order); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTaskOrder: %w", err)
 	}
-
-	if err := pa.commitFiles([]string{filePath}, "Update task order"); err != nil {
+	if err := pa.commitFiles([]string{pa.taskOrderFilePath()}, "Update task order"); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTaskOrder: %w", err)
 	}
-
 	return nil
 }
 

@@ -1381,8 +1381,12 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.Boar
 		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
 	}
 
-	// Save config and commit
+	// Save config
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+	}
+
+	if err := m.planAccess.CommitAll(fmt.Sprintf("Add column: %s", strings.TrimSpace(title))); err != nil {
 		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
 	}
 
@@ -1430,13 +1434,17 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 	if loadErr == nil {
 		if _, exists := orderMap[slug]; exists {
 			delete(orderMap, slug)
-			_ = m.planAccess.SaveTaskOrder(orderMap)
+			_ = m.planAccess.WriteTaskOrder(orderMap)
 		}
 	}
 
 	// Update config
 	config.ColumnDefinitions = append(config.ColumnDefinitions[:colIdx], config.ColumnDefinitions[colIdx+1:]...)
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+	}
+
+	if err := m.planAccess.CommitAll(fmt.Sprintf("Remove column: %s", slug)); err != nil {
 		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
 	}
 
@@ -1472,6 +1480,9 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 		if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
 			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
 		}
+		if err := m.planAccess.CommitAll(fmt.Sprintf("Rename column title: %s", strings.TrimSpace(newTitle))); err != nil {
+			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		}
 		return config, nil
 	}
 
@@ -1505,7 +1516,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 		if ids, exists := orderMap[oldSlug]; exists {
 			orderMap[newSlug] = ids
 			delete(orderMap, oldSlug)
-			_ = m.planAccess.SaveTaskOrder(orderMap)
+			_ = m.planAccess.WriteTaskOrder(orderMap)
 		}
 	}
 
@@ -1513,6 +1524,10 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 	config.ColumnDefinitions[colIdx].Name = newSlug
 	config.ColumnDefinitions[colIdx].Title = strings.TrimSpace(newTitle)
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+	}
+
+	if err := m.planAccess.CommitAll(fmt.Sprintf("Rename column: %s -> %s", oldSlug, strings.TrimSpace(newTitle))); err != nil {
 		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
 	}
 
@@ -1561,6 +1576,10 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfigura
 
 	config.ColumnDefinitions = reordered
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
+	}
+
+	if err := m.planAccess.CommitAll("Reorder columns"); err != nil {
 		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
 	}
 

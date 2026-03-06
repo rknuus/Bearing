@@ -307,6 +307,31 @@ func (m *mockPlanAccess) UpdateTaskStatusField(dirSlug, newStatus string) ([]str
 	return nil, nil
 }
 
+func (m *mockPlanAccess) WriteTaskOrder(order map[string][]string) error {
+	m.taskOrder = order
+	return nil
+}
+
+func (m *mockPlanAccess) BoardConfigFilePath() string {
+	return "board_config.json"
+}
+
+func (m *mockPlanAccess) TaskOrderFilePath() string {
+	return "task_order.json"
+}
+
+func (m *mockPlanAccess) TaskDirPath(status string) string {
+	return status
+}
+
+func (m *mockPlanAccess) CommitFiles(paths []string, message string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) CommitAll(message string) error {
+	return nil
+}
+
 func TestNewPlanningManager(t *testing.T) {
 	t.Run("creates manager with valid access", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
