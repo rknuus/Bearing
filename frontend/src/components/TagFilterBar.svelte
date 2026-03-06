@@ -5,21 +5,27 @@
    * Renders a horizontal row of gray tag pills for filtering tasks.
    * "All" pill is active when no tags are selected.
    * Multiple tag pills can be active simultaneously.
+   * Includes an "Untagged" pill for filtering tasks with no tags.
    */
+
+  import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
 
   interface Props {
     availableTags: string[];
     activeTagIds: string[];
     onToggle: (tag: string) => void;
     onClear: () => void;
+    counts?: Record<string, number>;
+    untaggedActive?: boolean;
   }
 
-  let { availableTags, activeTagIds, onToggle, onClear }: Props = $props();
+  let { availableTags, activeTagIds, onToggle, onClear, counts, untaggedActive = false }: Props = $props();
 
   const allActive = $derived(activeTagIds.length === 0);
+  const hasUntagged = $derived((counts?.[UNTAGGED_SENTINEL] ?? 0) > 0);
 </script>
 
-{#if availableTags.length > 0}
+{#if availableTags.length > 0 || hasUntagged}
   <div class="tag-filter-bar">
     <span class="filter-label">Filter by tag:</span>
     <button
@@ -28,7 +34,7 @@
       onclick={onClear}
       type="button"
     >
-      All
+      All{#if counts} ({counts['__all__'] ?? 0}){/if}
     </button>
     {#each availableTags as tag (tag)}
       {@const isActive = activeTagIds.includes(tag)}
@@ -39,9 +45,20 @@
         type="button"
         title={tag}
       >
-        #{tag}
+        #{tag}{#if counts} ({counts[tag] ?? 0}){/if}
       </button>
     {/each}
+    {#if hasUntagged || untaggedActive}
+      <button
+        class="filter-pill tag-pill untagged-pill"
+        class:active={untaggedActive}
+        onclick={() => onToggle(UNTAGGED_SENTINEL)}
+        type="button"
+        title="Tasks with no tags"
+      >
+        Untagged{#if counts} ({counts[UNTAGGED_SENTINEL] ?? 0}){/if}
+      </button>
+    {/if}
   </div>
 {/if}
 
@@ -102,5 +119,9 @@
     background-color: var(--color-gray-600);
     color: white;
     border-color: var(--color-gray-600);
+  }
+
+  .untagged-pill {
+    font-style: italic;
   }
 </style>

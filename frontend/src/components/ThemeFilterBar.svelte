@@ -14,9 +14,10 @@
     activeThemeIds: string[];
     onToggle: (themeId: string) => void;
     onClear: () => void;
+    counts?: Record<string, number>;
   }
 
-  let { themes, activeThemeIds, onToggle, onClear }: Props = $props();
+  let { themes, activeThemeIds, onToggle, onClear, counts }: Props = $props();
 
   const allActive = $derived(activeThemeIds.length === 0);
 </script>
@@ -29,7 +30,7 @@
     onclick={onClear}
     type="button"
   >
-    All
+    All{#if counts} ({counts['__all__'] ?? 0}){/if}
   </button>
   {#each themes as theme (theme.id)}
     {@const isActive = activeThemeIds.includes(theme.id)}
@@ -46,7 +47,7 @@
       type="button"
       title={theme.name}
     >
-      {theme.name}
+      {theme.name}{#if counts} ({counts[theme.id] ?? 0}){/if}
     </button>
   {/each}
 </div>

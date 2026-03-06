@@ -443,6 +443,92 @@ describe('EisenKanView', () => {
     expect(title).toBe('Exercise');
   });
 
+  it('__untagged__ sentinel filters to tasks with no tags', async () => {
+    await renderView({ filterTagIds: ['__untagged__'] });
+
+    // T4 has no tags
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(1);
+    expect(cards[0].querySelector('.task-title')?.textContent).toBe('Done task');
+  });
+
+  it('__untagged__ combined with real tags uses union', async () => {
+    await renderView({ filterTagIds: ['__untagged__', 'api'] });
+
+    // T1 (tags: ['backend', 'api']), T3 (tags: ['api']), T4 (no tags)
+    // Union: tasks with 'api' tag OR no tags
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(3);
+    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+    expect(titles).toContain('Exercise');
+    expect(titles).toContain('Emails');
+    expect(titles).toContain('Done task');
+  });
+
+  it('shows theme counts on filter pills', async () => {
+    const onFilterThemeToggle = vi.fn();
+    const onFilterThemeClear = vi.fn();
+    await renderView({ onFilterThemeToggle, onFilterThemeClear });
+
+    const themePills = container.querySelectorAll('.theme-filter-bar .filter-pill');
+    // "All" pill should show total count
+    const allPill = container.querySelector('.theme-filter-bar .all-pill');
+    expect(allPill?.textContent).toContain('(4)');
+
+    // Theme pills should show per-theme counts
+    const pillTexts = Array.from(themePills).map(p => p.textContent?.trim());
+    expect(pillTexts.some(t => t?.includes('Health & Fitness') && t?.includes('(2)'))).toBe(true);
+    expect(pillTexts.some(t => t?.includes('Career Growth') && t?.includes('(2)'))).toBe(true);
+  });
+
+  it('shows tag counts on filter pills', async () => {
+    const onFilterTagToggle = vi.fn();
+    const onFilterTagClear = vi.fn();
+    await renderView({ onFilterTagToggle, onFilterTagClear });
+
+    const allPill = container.querySelector('.tag-filter-bar .all-pill');
+    expect(allPill?.textContent).toContain('(4)');
+
+    // Check untagged pill exists with count
+    const untaggedPill = container.querySelector('.untagged-pill');
+    expect(untaggedPill).not.toBeNull();
+    expect(untaggedPill?.textContent).toContain('Untagged');
+    expect(untaggedPill?.textContent).toContain('(1)');
+  });
+
+  it('theme counts update when tag filter is active', async () => {
+    const onFilterThemeToggle = vi.fn();
+    const onFilterThemeClear = vi.fn();
+    // Filter to 'backend' tag: T1 (HF) and T2 (CG) match
+    await renderView({ filterTagIds: ['backend'], onFilterThemeToggle, onFilterThemeClear });
+
+    const allPill = container.querySelector('.theme-filter-bar .all-pill');
+    expect(allPill?.textContent).toContain('(2)');
+  });
+
+  it('tag counts update when theme filter is active', async () => {
+    const onFilterTagToggle = vi.fn();
+    const onFilterTagClear = vi.fn();
+    // Filter to HF theme: T1 (tags: backend, api) and T4 (no tags)
+    await renderView({ filterThemeIds: ['HF'], onFilterTagToggle, onFilterTagClear });
+
+    const untaggedPill = container.querySelector('.untagged-pill');
+    expect(untaggedPill?.textContent).toContain('(1)');
+  });
+
+  it('counts exclude archived tasks by default', async () => {
+    // Add an archived task
+    currentTasks.push({ id: 'T5', title: 'Archived', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'archived' });
+    const onFilterThemeToggle = vi.fn();
+    const onFilterThemeClear = vi.fn();
+    await renderView({ onFilterThemeToggle, onFilterThemeClear });
+
+    // HF count should be 2 (T1 + T4), not 3 (T1 + T4 + T5 archived)
+    const themePills = container.querySelectorAll('.theme-filter-bar .theme-pill');
+    const hfPill = Array.from(themePills).find(p => p.textContent?.includes('Health'));
+    expect(hfPill?.textContent).toContain('(2)');
+  });
+
   // Subtask nesting tests
   describe('subtask nesting', () => {
     beforeEach(() => {
