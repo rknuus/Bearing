@@ -990,6 +990,21 @@ export const mockRuntimeBindings = {
       window.close();
     }
   },
+
+  // Window management stubs for browser dev mode
+  WindowSetSize: (_width: number, _height: number): void => {},
+  WindowSetPosition: (_x: number, _y: number): void => {},
+  WindowCenter: (): void => {},
+  WindowMaximise: (): void => {},
+  WindowUnmaximise: (): void => {},
+  WindowToggleMaximise: (): void => {},
+  WindowFullscreen: (): void => {},
+  WindowUnfullscreen: (): void => {},
+  WindowIsFullscreen: async (): Promise<boolean> => false,
+  WindowIsMaximised: async (): Promise<boolean> => false,
+  ScreenGetAll: async (): Promise<{ isCurrent: boolean; isPrimary: boolean; width: number; height: number }[]> => [
+    { isCurrent: true, isPrimary: true, width: 1920, height: 1080 },
+  ],
 };
 
 /**
