@@ -913,3 +913,210 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 		}
 	}
 }
+
+// =============================================================================
+// Scenario 6: Column CRUD Lifecycle
+// =============================================================================
+
+func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
+	manager, _, repo, tmpDir, cleanup := setupIntegrationTest(t)
+	defer cleanup()
+
+	dataDir := filepath.Join(tmpDir, "data")
+
+	theme, err := manager.CreateTheme("Work", "#3b82f6")
+	if err != nil {
+		t.Fatalf("Failed to create theme: %v", err)
+	}
+
+	// Step 1: AddColumn — insert "Review" after "doing"
+	_, err = manager.AddColumn("Review", "doing")
+	if err != nil {
+		t.Fatalf("Failed to add column: %v", err)
+	}
+
+	configData, err := os.ReadFile(filepath.Join(dataDir, "board_config.json"))
+	if err != nil {
+		t.Fatalf("Failed to read board_config.json: %v", err)
+	}
+	var config access.BoardConfiguration
+	if err := json.Unmarshal(configData, &config); err != nil {
+		t.Fatalf("Failed to parse board_config.json: %v", err)
+	}
+
+	reviewFound := false
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == "review" {
+			reviewFound = true
+			if col.Type != access.ColumnTypeDoing {
+				t.Errorf("Expected review column type %s, got %s", access.ColumnTypeDoing, col.Type)
+			}
+		}
+	}
+	if !reviewFound {
+		t.Error("Review column not found in board_config.json")
+	}
+
+	reviewDir := filepath.Join(dataDir, "tasks", "review")
+	if _, err := os.Stat(reviewDir); os.IsNotExist(err) {
+		t.Error("Review status directory does not exist")
+	}
+
+	// Step 2: Create tasks and move them to the custom column
+	task1, err := manager.CreateTask("Review PR", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
+	if err != nil {
+		t.Fatalf("Failed to create task1: %v", err)
+	}
+	task2, err := manager.CreateTask("Review docs", theme.ID, "2026-01-15", "important-not-urgent", "", "", "", "")
+	if err != nil {
+		t.Fatalf("Failed to create task2: %v", err)
+	}
+
+	_, err = manager.MoveTask(task1.ID, "review", nil)
+	if err != nil {
+		t.Fatalf("Failed to move task1 to review: %v", err)
+	}
+	_, err = manager.MoveTask(task2.ID, "review", nil)
+	if err != nil {
+		t.Fatalf("Failed to move task2 to review: %v", err)
+	}
+
+	task1Path := filepath.Join(reviewDir, task1.ID+".json")
+	if _, err := os.Stat(task1Path); os.IsNotExist(err) {
+		t.Errorf("Task1 not found in review directory: %s", task1Path)
+	}
+	task2Path := filepath.Join(reviewDir, task2.ID+".json")
+	if _, err := os.Stat(task2Path); os.IsNotExist(err) {
+		t.Errorf("Task2 not found in review directory: %s", task2Path)
+	}
+
+	// Step 3: RenameColumn — rename "review" to "QA Check"
+	_, err = manager.RenameColumn("review", "QA Check")
+	if err != nil {
+		t.Fatalf("Failed to rename column: %v", err)
+	}
+
+	qaDir := filepath.Join(dataDir, "tasks", "qa-check")
+	if _, err := os.Stat(qaDir); os.IsNotExist(err) {
+		t.Error("QA check directory does not exist after rename")
+	}
+	if _, err := os.Stat(reviewDir); !os.IsNotExist(err) {
+		t.Error("Old review directory should not exist after rename")
+	}
+
+	task1Migrated := filepath.Join(qaDir, task1.ID+".json")
+	if _, err := os.Stat(task1Migrated); os.IsNotExist(err) {
+		t.Error("Task1 not migrated to qa-check directory")
+	}
+	task2Migrated := filepath.Join(qaDir, task2.ID+".json")
+	if _, err := os.Stat(task2Migrated); os.IsNotExist(err) {
+		t.Error("Task2 not migrated to qa-check directory")
+	}
+
+	orderData, err := os.ReadFile(filepath.Join(dataDir, "task_order.json"))
+	if err == nil {
+		var orderMap map[string][]string
+		if err := json.Unmarshal(orderData, &orderMap); err != nil {
+			t.Fatalf("Failed to parse task_order.json: %v", err)
+		}
+		if _, exists := orderMap["review"]; exists {
+			t.Error("Old key 'review' should not exist in task_order.json after rename")
+		}
+	}
+
+	configData, err = os.ReadFile(filepath.Join(dataDir, "board_config.json"))
+	if err != nil {
+		t.Fatalf("Failed to read board_config.json after rename: %v", err)
+	}
+	if err := json.Unmarshal(configData, &config); err != nil {
+		t.Fatalf("Failed to parse board_config.json after rename: %v", err)
+	}
+	qaFound := false
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == "qa-check" && col.Title == "QA Check" {
+			qaFound = true
+		}
+		if col.Name == "review" {
+			t.Error("Old column name 'review' should not exist in board_config.json")
+		}
+	}
+	if !qaFound {
+		t.Error("Column 'qa-check' not found in board_config.json after rename")
+	}
+
+	// Step 4: ReorderColumns — move qa-check before doing
+	_, err = manager.ReorderColumns([]string{"todo", "qa-check", "doing", "done"})
+	if err != nil {
+		t.Fatalf("Failed to reorder columns: %v", err)
+	}
+
+	configData, err = os.ReadFile(filepath.Join(dataDir, "board_config.json"))
+	if err != nil {
+		t.Fatalf("Failed to read board_config.json after reorder: %v", err)
+	}
+	if err := json.Unmarshal(configData, &config); err != nil {
+		t.Fatalf("Failed to parse board_config.json after reorder: %v", err)
+	}
+	expectedOrder := []string{"todo", "qa-check", "doing", "done"}
+	for i, col := range config.ColumnDefinitions {
+		if col.Name != expectedOrder[i] {
+			t.Errorf("Column %d: expected %s, got %s", i, expectedOrder[i], col.Name)
+		}
+	}
+
+	if _, err := os.Stat(task1Migrated); os.IsNotExist(err) {
+		t.Error("Task1 should still exist after reorder")
+	}
+
+	// Step 5: Move tasks out, then RemoveColumn
+	_, err = manager.MoveTask(task1.ID, "doing", nil)
+	if err != nil {
+		t.Fatalf("Failed to move task1 to doing: %v", err)
+	}
+	_, err = manager.MoveTask(task2.ID, "doing", nil)
+	if err != nil {
+		t.Fatalf("Failed to move task2 to doing: %v", err)
+	}
+
+	_, err = manager.RemoveColumn("qa-check")
+	if err != nil {
+		t.Fatalf("Failed to remove column: %v", err)
+	}
+
+	if _, err := os.Stat(qaDir); !os.IsNotExist(err) {
+		t.Error("QA check directory should not exist after removal")
+	}
+
+	configData, err = os.ReadFile(filepath.Join(dataDir, "board_config.json"))
+	if err != nil {
+		t.Fatalf("Failed to read board_config.json after removal: %v", err)
+	}
+	if err := json.Unmarshal(configData, &config); err != nil {
+		t.Fatalf("Failed to parse board_config.json after removal: %v", err)
+	}
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == "qa-check" {
+			t.Error("Column 'qa-check' should not exist in board_config.json after removal")
+		}
+	}
+	if len(config.ColumnDefinitions) != 3 {
+		t.Errorf("Expected 3 columns after removal, got %d", len(config.ColumnDefinitions))
+	}
+
+	// Step 6: Verify total git commit count
+	// Operations: CreateTheme(1) + AddColumn(1) + CreateTask*2(2) +
+	//             MoveTask*2(move+order each=4) + RenameColumn(1) + ReorderColumns(1) +
+	//             MoveTask*2(move+order each=4) + RemoveColumn(1) = 15
+	history, err := repo.GetHistory(0)
+	if err != nil {
+		t.Fatalf("Failed to get git history: %v", err)
+	}
+	expectedCommits := 15
+	if len(history) != expectedCommits {
+		t.Errorf("Expected %d commits, got %d", expectedCommits, len(history))
+		for i, c := range history {
+			t.Logf("  commit %d: %s", i+1, c.Message)
+		}
+	}
+
+}
