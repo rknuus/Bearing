@@ -465,58 +465,59 @@ describe('EisenKanView', () => {
     expect(titles).toContain('Done task');
   });
 
-  it('shows theme counts on filter pills', async () => {
+  it('shows theme count badges on filter pills', async () => {
     const onFilterThemeToggle = vi.fn();
     const onFilterThemeClear = vi.fn();
     await renderView({ onFilterThemeToggle, onFilterThemeClear });
 
-    const themePills = container.querySelectorAll('.theme-filter-bar .filter-pill');
-    // "All" pill should show total count
-    const allPill = container.querySelector('.theme-filter-bar .all-pill');
-    expect(allPill?.textContent).toContain('(4)');
+    // "All" pill badge should show total count
+    const allBadge = container.querySelector('.theme-filter-bar .all-pill .count-badge');
+    expect(allBadge?.textContent).toBe('4');
 
-    // Theme pills should show per-theme counts
-    const pillTexts = Array.from(themePills).map(p => p.textContent?.trim());
-    expect(pillTexts.some(t => t?.includes('Health & Fitness') && t?.includes('(2)'))).toBe(true);
-    expect(pillTexts.some(t => t?.includes('Career Growth') && t?.includes('(2)'))).toBe(true);
+    // Theme pill badges should show per-theme counts
+    const themePills = container.querySelectorAll('.theme-filter-bar .theme-pill');
+    const hfBadge = Array.from(themePills).find(p => p.textContent?.includes('Health'))?.querySelector('.count-badge');
+    const cgBadge = Array.from(themePills).find(p => p.textContent?.includes('Career'))?.querySelector('.count-badge');
+    expect(hfBadge?.textContent).toBe('2');
+    expect(cgBadge?.textContent).toBe('2');
   });
 
-  it('shows tag counts on filter pills', async () => {
+  it('shows tag count badges on filter pills', async () => {
     const onFilterTagToggle = vi.fn();
     const onFilterTagClear = vi.fn();
     await renderView({ onFilterTagToggle, onFilterTagClear });
 
-    const allPill = container.querySelector('.tag-filter-bar .all-pill');
-    expect(allPill?.textContent).toContain('(4)');
+    const allBadge = container.querySelector('.tag-filter-bar .all-pill .count-badge');
+    expect(allBadge?.textContent).toBe('4');
 
-    // Check untagged pill exists with count
+    // Check untagged pill exists with badge
     const untaggedPill = container.querySelector('.untagged-pill');
     expect(untaggedPill).not.toBeNull();
     expect(untaggedPill?.textContent).toContain('Untagged');
-    expect(untaggedPill?.textContent).toContain('(1)');
+    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('1');
   });
 
-  it('theme counts update when tag filter is active', async () => {
+  it('theme count badges update when tag filter is active', async () => {
     const onFilterThemeToggle = vi.fn();
     const onFilterThemeClear = vi.fn();
     // Filter to 'backend' tag: T1 (HF) and T2 (CG) match
     await renderView({ filterTagIds: ['backend'], onFilterThemeToggle, onFilterThemeClear });
 
-    const allPill = container.querySelector('.theme-filter-bar .all-pill');
-    expect(allPill?.textContent).toContain('(2)');
+    const allBadge = container.querySelector('.theme-filter-bar .all-pill .count-badge');
+    expect(allBadge?.textContent).toBe('2');
   });
 
-  it('tag counts update when theme filter is active', async () => {
+  it('tag count badges update when theme filter is active', async () => {
     const onFilterTagToggle = vi.fn();
     const onFilterTagClear = vi.fn();
     // Filter to HF theme: T1 (tags: backend, api) and T4 (no tags)
     await renderView({ filterThemeIds: ['HF'], onFilterTagToggle, onFilterTagClear });
 
-    const untaggedPill = container.querySelector('.untagged-pill');
-    expect(untaggedPill?.textContent).toContain('(1)');
+    const untaggedBadge = container.querySelector('.untagged-pill .count-badge');
+    expect(untaggedBadge?.textContent).toBe('1');
   });
 
-  it('counts exclude archived tasks by default', async () => {
+  it('count badges exclude archived tasks by default', async () => {
     // Add an archived task
     currentTasks.push({ id: 'T5', title: 'Archived', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'archived' });
     const onFilterThemeToggle = vi.fn();
@@ -525,8 +526,8 @@ describe('EisenKanView', () => {
 
     // HF count should be 2 (T1 + T4), not 3 (T1 + T4 + T5 archived)
     const themePills = container.querySelectorAll('.theme-filter-bar .theme-pill');
-    const hfPill = Array.from(themePills).find(p => p.textContent?.includes('Health'));
-    expect(hfPill?.textContent).toContain('(2)');
+    const hfBadge = Array.from(themePills).find(p => p.textContent?.includes('Health'))?.querySelector('.count-badge');
+    expect(hfBadge?.textContent).toBe('2');
   });
 
   // Subtask nesting tests

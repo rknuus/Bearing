@@ -87,19 +87,19 @@ describe('TagFilterBar', () => {
     expect(tagPills[1].classList.contains('active')).toBe(false);
   });
 
-  it('shows counts on pills when counts prop is provided', async () => {
+  it('shows count badges on pills when counts prop is provided', async () => {
     await renderBar({
       availableTags: ['backend', 'api'],
       activeTagIds: [],
       counts: { '__all__': 10, 'backend': 5, 'api': 3, '__untagged__': 2 },
     });
 
-    const allPill = container.querySelector('.all-pill');
-    expect(allPill?.textContent).toContain('(10)');
+    const allBadge = container.querySelector('.all-pill .count-badge');
+    expect(allBadge?.textContent).toBe('10');
 
     const tagPills = container.querySelectorAll('.tag-pill:not(.untagged-pill)');
-    expect(tagPills[0].textContent).toContain('(5)');
-    expect(tagPills[1].textContent).toContain('(3)');
+    expect(tagPills[0].querySelector('.count-badge')?.textContent).toBe('5');
+    expect(tagPills[1].querySelector('.count-badge')?.textContent).toBe('3');
   });
 
   it('renders Untagged pill when untagged count > 0', async () => {
@@ -112,7 +112,7 @@ describe('TagFilterBar', () => {
     const untaggedPill = container.querySelector('.untagged-pill');
     expect(untaggedPill).not.toBeNull();
     expect(untaggedPill?.textContent).toContain('Untagged');
-    expect(untaggedPill?.textContent).toContain('(2)');
+    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('2');
   });
 
   it('clicking Untagged pill calls onToggle with sentinel', async () => {

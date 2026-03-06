@@ -30,7 +30,8 @@
     onclick={onClear}
     type="button"
   >
-    All{#if counts} ({counts['__all__'] ?? 0}){/if}
+    All
+    {#if counts}<span class="count-badge">{counts['__all__'] ?? 0}</span>{/if}
   </button>
   {#each themes as theme (theme.id)}
     {@const isActive = activeThemeIds.includes(theme.id)}
@@ -47,7 +48,8 @@
       type="button"
       title={theme.name}
     >
-      {theme.name}{#if counts} ({counts[theme.id] ?? 0}){/if}
+      {theme.name}
+      {#if counts}<span class="count-badge" style={isActive ? `background-color: white; color: ${theme.color};` : `background-color: ${theme.color};`}>{counts[theme.id] ?? 0}</span>{/if}
     </button>
   {/each}
 </div>
@@ -58,7 +60,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-2) 0;
+    padding: 8px 0 var(--space-2) 0;
   }
 
   .filter-label {
@@ -69,6 +71,7 @@
   }
 
   .filter-pill {
+    position: relative;
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-full);
     font-size: 0.8125rem;
@@ -77,6 +80,32 @@
     border: 1.5px solid var(--color-gray-300);
     transition: background-color 0.15s, color 0.15s, border-color 0.15s;
     white-space: nowrap;
+  }
+
+  .count-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    font-size: 0.625rem;
+    font-weight: 600;
+    line-height: 16px;
+    text-align: center;
+    color: white;
+    background-color: var(--color-gray-500);
+    pointer-events: none;
+  }
+
+  .all-pill .count-badge {
+    background-color: var(--color-gray-500);
+  }
+
+  .all-pill.active .count-badge {
+    background-color: white;
+    color: var(--color-gray-700);
   }
 
   .all-pill {
