@@ -8,6 +8,7 @@
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
   import { initLocale } from './lib/utils/date-format';
+  import { handleWindowShortcut } from './lib/utils/window-commands';
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
 
   // View types
@@ -148,6 +149,9 @@
 
   // Keyboard shortcuts handler
   function handleKeyDown(event: KeyboardEvent) {
+    // Window management shortcuts (snap, maximize, fullscreen, center)
+    if (handleWindowShortcut(event)) return;
+
     // Check for Ctrl (Windows/Linux) or Cmd (Mac) modifier
     const modKey = event.ctrlKey || event.metaKey;
 
