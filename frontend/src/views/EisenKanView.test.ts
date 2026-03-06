@@ -808,6 +808,43 @@ describe('EisenKanView', () => {
       const titles = Array.from(doingCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Doing Third', 'Doing First', 'Doing Second']);
     });
+
+    it('cross-column drop with active filter includes hidden tasks in zone order', async () => {
+      // Setup: two done tasks from different themes
+      currentTasks = [
+        { id: 'D1', title: 'Doing One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'DONE-CG', title: 'Done CG', themeId: 'CG', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
+        { id: 'DONE-HF', title: 'Done HF', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
+      ];
+
+      // Render with theme filter: only HF tasks visible
+      await renderView({ filterThemeIds: ['HF'] });
+
+      const columns = container.querySelectorAll('.kanban-column');
+      const doneZone = columns[2].querySelector('.column-content')!;
+
+      // DnD shows only filtered tasks; drop D1 into done (before DONE-HF)
+      const dndItems: TaskWithStatus[] = [
+        { id: 'D1', title: 'Doing One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
+        { id: 'DONE-HF', title: 'Done HF', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
+      ];
+
+      dispatchDndFinalize(doneZone, dndItems);
+      await tick();
+      await tick();
+
+      // MoveTask should include DONE-CG (hidden by filter) in the zone order
+      await vi.waitFor(() => {
+        expect(mockMoveTask).toHaveBeenCalledWith(
+          'D1', 'done',
+          { done: expect.arrayContaining(['DONE-CG', 'D1', 'DONE-HF']) }
+        );
+      });
+      // Verify exact order: DONE-CG (hidden) keeps its original position before visible tasks,
+      // D1 takes the first visible slot, DONE-HF follows
+      const callArgs = mockMoveTask.mock.calls[0];
+      expect(callArgs[2]).toEqual({ done: ['DONE-CG', 'D1', 'DONE-HF'] });
+    });
   });
 
   describe('theme filtering', () => {

@@ -484,6 +484,31 @@
     return [...without.slice(0, prevIdx + 1), updated, ...without.slice(prevIdx + 1)];
   }
 
+  // Build the full zone order by merging visible (filtered) DnD IDs with hidden (filtered-out) tasks.
+  // Hidden tasks keep their original positions relative to visible tasks.
+  function fullZoneOrder(visibleIds: string[], zone: string, excludeIds?: Set<string>): string[] {
+    const visibleSet = new Set(visibleIds);
+    const originalZoneIds = tasks
+      .filter(t => !t.parentTaskId && (t.status === 'todo' ? (t.priority || 'todo') : t.status) === zone)
+      .filter(t => !excludeIds || !excludeIds.has(t.id))
+      .map(t => t.id);
+    const hiddenIds = originalZoneIds.filter(id => !visibleSet.has(id));
+    if (hiddenIds.length === 0) return visibleIds;
+    // Walk original order: replace visible slots with DnD order, keep hidden in place
+    const result: string[] = [];
+    let vi = 0;
+    for (const id of originalZoneIds) {
+      if (visibleSet.has(id)) {
+        if (vi < visibleIds.length) result.push(visibleIds[vi++]);
+      } else {
+        result.push(id);
+      }
+    }
+    // Append any remaining visible IDs (newly moved into this zone)
+    while (vi < visibleIds.length) result.push(visibleIds[vi++]);
+    return result;
+  }
+
   // Reorder entries in allTasks to match the DnD result order
   function applyReorder(allTasks: TaskWithStatus[], reorderedItems: TaskWithStatus[]): TaskWithStatus[] {
     const idOrder = reorderedItems.map(t => t.id);
@@ -530,7 +555,8 @@
     const movedTask = newItems.find(t => t.status !== status);
     if (!movedTask) {
       // Within-column reorder: persist new order
-      const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const visibleIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const taskIds = fullZoneOrder(visibleIds, status);
       try {
         await apiReorderTasks({ [status]: taskIds });
         tasks = applyReorder(tasks, newItems);
@@ -544,7 +570,8 @@
     const taskId = movedTask.id;
 
     // Capture desired order from DnD before $effect re-derives columnItems
-    const targetZoneIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const visibleTargetIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const targetZoneIds = fullZoneOrder(visibleTargetIds, status);
 
     // Snapshot pre-move state for rollback
     const snapshotTasks = [...tasks];
@@ -607,7 +634,8 @@
     const movedTask = newItems.find(t => t.status !== columnName || t.priority !== sectionName);
     if (!movedTask) {
       // Within-section reorder: persist new order
-      const taskIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const visibleIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const taskIds = fullZoneOrder(visibleIds, sectionName);
       try {
         await apiReorderTasks({ [sectionName]: taskIds });
         tasks = applyReorder(tasks, newItems);
@@ -622,7 +650,8 @@
     const snapshotTasks = [...tasks];
 
     // Capture desired order from DnD before $effect re-derives sectionItems
-    const targetZoneIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const visibleTargetIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const targetZoneIds = fullZoneOrder(visibleTargetIds, sectionName);
 
     if (movedTask.status !== columnName) {
       // Cross-column move: status change -- use MoveTask
@@ -654,9 +683,10 @@
     } else if (movedTask.priority !== sectionName) {
       // Within-column move: priority change -- use UpdateTask
       const sourceSection = movedTask.priority;
-      const sourceZoneIds = (sectionItems[sourceSection] ?? [])
+      const visibleSourceIds = (sectionItems[sourceSection] ?? [])
         .filter(t => t.id !== taskId && !t.parentTaskId)
         .map(t => t.id);
+      const sourceZoneIds = fullZoneOrder(visibleSourceIds, sourceSection, new Set([taskId]));
       const updatedTask = { ...movedTask, priority: sectionName };
       tasks = repositionTask(tasks, taskId, { priority: sectionName }, targetZoneIds);
 
