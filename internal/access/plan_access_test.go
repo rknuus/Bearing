@@ -2029,18 +2029,9 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
-	// Now create a new task — generateTaskID sees H-T1 (todo) but NOT the rogue
-	// file (it's not valid JSON loaded by GetTasksByTheme since archived dir has it).
-	// Actually GetTasksByTheme includes archived, so it will see H-T1 + H-T2 and
-	// generate H-T3. But if generateTaskID had a bug and returned H-T2, the guard
-	// would catch it. Let's test the guard directly by removing H-T2 from the
-	// archived dir scan but leaving the file.
-
-	// For a true guard test: archive H-T1, then manually write H-T2 to archived
-	// without it being parseable, so generateTaskID only sees H-T1 and generates H-T2.
-	// Write an invalid JSON file at H-T2 path to make GetTasksByStatus skip it.
-	// Actually, GetTasksByStatus will error on bad JSON. Let's use a different approach:
-	// Just verify the guard path works by confirming no error on normal creation.
+	// generateTaskID scans filenames on disk, so it sees H-T1 in todo and
+	// H-T2 in archived — even if H-T2's internal themeId doesn't match.
+	// It generates H-T3 (max=2, next=3).
 	task2 := Task{Title: "Task two", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task2); err != nil {
 		t.Fatalf("SaveTask should succeed (generateTaskID returns H-T3, no conflict): %v", err)
@@ -2059,6 +2050,54 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	}
 	if !found {
 		t.Error("Expected H-T3 in todo tasks")
+	}
+}
+
+func TestGenerateTaskIDMismatchedThemeInFile(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Create two themes
+	if err := pa.SaveTheme(LifeTheme{Name: "Work", Color: "#FF0000"}); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+	if err := pa.SaveTheme(LifeTheme{Name: "Life", Color: "#00FF00"}); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Place a file named W-T1.json in archived with themeId "L" (data inconsistency)
+	archivedDir := pa.taskDirPath("archived")
+	if err := os.MkdirAll(archivedDir, 0755); err != nil {
+		t.Fatalf("MkdirAll failed: %v", err)
+	}
+	rogueTask := Task{ID: "W-T1", Title: "Mismatched", ThemeID: "L", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	rogueData, _ := json.Marshal(rogueTask)
+	if err := os.WriteFile(pa.taskFilePath("archived", "W-T1"), rogueData, 0644); err != nil {
+		t.Fatalf("WriteFile failed: %v", err)
+	}
+
+	// Creating a new W task should skip W-T1 and produce W-T2
+	newTask := Task{Title: "New work task", ThemeID: "W", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(newTask); err != nil {
+		t.Fatalf("SaveTask should succeed but got: %v", err)
+	}
+
+	todoTasks, err := pa.GetTasksByStatus("todo")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus failed: %v", err)
+	}
+	found := false
+	for _, task := range todoTasks {
+		if task.ID == "W-T2" {
+			found = true
+		}
+	}
+	if !found {
+		ids := make([]string, len(todoTasks))
+		for i, task := range todoTasks {
+			ids[i] = task.ID
+		}
+		t.Errorf("Expected W-T2 in todo tasks, got: %v", ids)
 	}
 }
 

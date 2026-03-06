@@ -510,18 +510,7 @@ func (pa *PlanAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 
 	// Generate ID if not provided
 	if isNew {
-		existingTasks, err := pa.GetTasksByTheme(task.ThemeID)
-		if err != nil {
-			return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: failed to get existing tasks: %w", err)
-		}
-		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
-
-		// Guard: verify generated ID doesn't already exist on disk
-		for _, s := range pa.allStatusSlugs() {
-			if _, err := os.Stat(pa.taskFilePath(s, task.ID)); err == nil {
-				return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: duplicate task ID: %s already exists in %s", task.ID, s)
-			}
-		}
+		task.ID = pa.generateTaskID(task.ThemeID)
 	}
 
 	// Set timestamps
@@ -1089,17 +1078,25 @@ func (pa *PlanAccess) ensureObjectiveIDs(abbr, parentID string, objectives []Obj
 	return objectives, maxOBJ, maxKR
 }
 
-// generateTaskID generates a new theme-scoped task ID based on existing tasks.
-func (pa *PlanAccess) generateTaskID(themeAbbr string, existingTasks []Task) string {
+// generateTaskID generates a new theme-scoped task ID by scanning filenames
+// across all status directories (including archived). This is resilient to
+// data inconsistencies where a file's name doesn't match its internal themeId.
+func (pa *PlanAccess) generateTaskID(themeAbbr string) string {
 	maxNum := 0
-	re := regexp.MustCompile(`^` + regexp.QuoteMeta(themeAbbr) + `-T(\d+)$`)
+	re := regexp.MustCompile(`^` + regexp.QuoteMeta(themeAbbr) + `-T(\d+)\.json$`)
 
-	for _, task := range existingTasks {
-		matches := re.FindStringSubmatch(task.ID)
-		if len(matches) == 2 {
-			num, err := strconv.Atoi(matches[1])
-			if err == nil && num > maxNum {
-				maxNum = num
+	for _, status := range pa.allStatusSlugs() {
+		entries, err := os.ReadDir(pa.taskDirPath(status))
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			matches := re.FindStringSubmatch(entry.Name())
+			if len(matches) == 2 {
+				num, err := strconv.Atoi(matches[1])
+				if err == nil && num > maxNum {
+					maxNum = num
+				}
 			}
 		}
 	}
