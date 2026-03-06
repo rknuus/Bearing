@@ -125,7 +125,7 @@ type PlanningManager struct {
 // NewPlanningManager creates a new PlanningManager instance.
 func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error) {
 	if planAccess == nil {
-		return nil, fmt.Errorf("PlanningManager.New: planAccess cannot be nil")
+		return nil, fmt.Errorf("planAccess cannot be nil")
 	}
 
 	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
@@ -140,7 +140,7 @@ func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error)
 func (m *PlanningManager) GetThemes() ([]access.LifeTheme, error) {
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.GetThemes: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 	return themes, nil
 }
@@ -148,7 +148,7 @@ func (m *PlanningManager) GetThemes() ([]access.LifeTheme, error) {
 // SaveTheme saves or updates a life theme.
 func (m *PlanningManager) SaveTheme(theme access.LifeTheme) error {
 	if err := m.planAccess.SaveTheme(theme); err != nil {
-		return fmt.Errorf("PlanningManager.SaveTheme: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }
@@ -156,10 +156,10 @@ func (m *PlanningManager) SaveTheme(theme access.LifeTheme) error {
 // DeleteTheme deletes a life theme by ID.
 func (m *PlanningManager) DeleteTheme(id string) error {
 	if id == "" {
-		return fmt.Errorf("PlanningManager.DeleteTheme: id cannot be empty")
+		return fmt.Errorf("id cannot be empty")
 	}
 	if err := m.planAccess.DeleteTheme(id); err != nil {
-		return fmt.Errorf("PlanningManager.DeleteTheme: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }
@@ -168,10 +168,10 @@ func (m *PlanningManager) DeleteTheme(id string) error {
 // Returns the created theme with its generated ID.
 func (m *PlanningManager) CreateTheme(name, color string) (*access.LifeTheme, error) {
 	if name == "" {
-		return nil, fmt.Errorf("PlanningManager.CreateTheme: name cannot be empty")
+		return nil, fmt.Errorf("name cannot be empty")
 	}
 	if color == "" {
-		return nil, fmt.Errorf("PlanningManager.CreateTheme: color cannot be empty")
+		return nil, fmt.Errorf("color cannot be empty")
 	}
 
 	theme := access.LifeTheme{
@@ -181,13 +181,13 @@ func (m *PlanningManager) CreateTheme(name, color string) (*access.LifeTheme, er
 	}
 
 	if err := m.planAccess.SaveTheme(theme); err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTheme: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Retrieve the saved theme to get the generated ID
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTheme: failed to retrieve created theme: %w", err)
+		return nil, fmt.Errorf("failed to retrieve created theme: %w", err)
 	}
 
 	// Find the theme we just created (the one with matching name and color)
@@ -197,17 +197,17 @@ func (m *PlanningManager) CreateTheme(name, color string) (*access.LifeTheme, er
 		}
 	}
 
-	return nil, fmt.Errorf("PlanningManager.CreateTheme: theme was created but could not be retrieved")
+	return nil, fmt.Errorf("theme was created but could not be retrieved")
 }
 
 // UpdateTheme updates an existing life theme.
 func (m *PlanningManager) UpdateTheme(theme access.LifeTheme) error {
 	if theme.ID == "" {
-		return fmt.Errorf("PlanningManager.UpdateTheme: theme ID cannot be empty")
+		return fmt.Errorf("theme ID cannot be empty")
 	}
 
 	if err := m.planAccess.SaveTheme(theme); err != nil {
-		return fmt.Errorf("PlanningManager.UpdateTheme: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
@@ -266,15 +266,15 @@ type Objective = access.Objective
 // Returns the created objective with its generated ID.
 func (m *PlanningManager) CreateObjective(parentId, title string) (*access.Objective, error) {
 	if parentId == "" {
-		return nil, fmt.Errorf("PlanningManager.CreateObjective: parentId cannot be empty")
+		return nil, fmt.Errorf("parentId cannot be empty")
 	}
 	if title == "" {
-		return nil, fmt.Errorf("PlanningManager.CreateObjective: title cannot be empty")
+		return nil, fmt.Errorf("title cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateObjective: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	newObjective := access.Objective{
@@ -304,17 +304,17 @@ func (m *PlanningManager) CreateObjective(parentId, title string) (*access.Objec
 	}
 
 	if targetTheme == nil {
-		return nil, fmt.Errorf("PlanningManager.CreateObjective: parent with ID %s not found", parentId)
+		return nil, fmt.Errorf("parent with ID %s not found", parentId)
 	}
 
 	if err := m.planAccess.SaveTheme(*targetTheme); err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateObjective: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Retrieve updated theme to get the generated objective ID
 	themes, err = m.planAccess.GetThemes()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateObjective: failed to retrieve updated theme: %w", err)
+		return nil, fmt.Errorf("failed to retrieve updated theme: %w", err)
 	}
 
 	// Find the newly created objective (last child of the parent)
@@ -335,74 +335,74 @@ func (m *PlanningManager) CreateObjective(parentId, title string) (*access.Objec
 		}
 	}
 
-	return nil, fmt.Errorf("PlanningManager.CreateObjective: objective was created but could not be retrieved")
+	return nil, fmt.Errorf("objective was created but could not be retrieved")
 }
 
 // UpdateObjective finds an objective by ID anywhere in the tree and updates its title.
 func (m *PlanningManager) UpdateObjective(objectiveId, title string) error {
 	if objectiveId == "" {
-		return fmt.Errorf("PlanningManager.UpdateObjective: objectiveId cannot be empty")
+		return fmt.Errorf("objectiveId cannot be empty")
 	}
 	if title == "" {
-		return fmt.Errorf("PlanningManager.UpdateObjective: title cannot be empty")
+		return fmt.Errorf("title cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.UpdateObjective: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
 			obj.Title = title
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.UpdateObjective: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.UpdateObjective: objective with ID %s not found", objectiveId)
+	return fmt.Errorf("objective with ID %s not found", objectiveId)
 }
 
 // DeleteObjective finds an objective by ID anywhere in the tree and removes it.
 // Children are removed automatically since they are nested in the struct.
 func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 	if objectiveId == "" {
-		return fmt.Errorf("PlanningManager.DeleteObjective: objectiveId cannot be empty")
+		return fmt.Errorf("objectiveId cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.DeleteObjective: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if parentSlice, idx := findObjectiveParent(&themes[i].Objectives, objectiveId); parentSlice != nil {
 			*parentSlice = append((*parentSlice)[:idx], (*parentSlice)[idx+1:]...)
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.DeleteObjective: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.DeleteObjective: objective with ID %s not found", objectiveId)
+	return fmt.Errorf("objective with ID %s not found", objectiveId)
 }
 
 // CreateKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
 func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error) {
 	if parentObjectiveId == "" {
-		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: parentObjectiveId cannot be empty")
+		return nil, fmt.Errorf("parentObjectiveId cannot be empty")
 	}
 	if description == "" {
-		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: description cannot be empty")
+		return nil, fmt.Errorf("description cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	var targetTheme *access.LifeTheme
@@ -415,17 +415,17 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 	}
 
 	if targetTheme == nil {
-		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: objective with ID %s not found", parentObjectiveId)
+		return nil, fmt.Errorf("objective with ID %s not found", parentObjectiveId)
 	}
 
 	if err := m.planAccess.SaveTheme(*targetTheme); err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Retrieve updated theme to get the generated key result ID
 	themes, err = m.planAccess.GetThemes()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateKeyResult: failed to retrieve updated theme: %w", err)
+		return nil, fmt.Errorf("failed to retrieve updated theme: %w", err)
 	}
 
 	for _, theme := range themes {
@@ -438,82 +438,82 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 		}
 	}
 
-	return nil, fmt.Errorf("PlanningManager.CreateKeyResult: key result was created but could not be retrieved")
+	return nil, fmt.Errorf("key result was created but could not be retrieved")
 }
 
 // UpdateKeyResult finds a key result by ID anywhere in the tree and updates its description.
 func (m *PlanningManager) UpdateKeyResult(keyResultId, description string) error {
 	if keyResultId == "" {
-		return fmt.Errorf("PlanningManager.UpdateKeyResult: keyResultId cannot be empty")
+		return fmt.Errorf("keyResultId cannot be empty")
 	}
 	if description == "" {
-		return fmt.Errorf("PlanningManager.UpdateKeyResult: description cannot be empty")
+		return fmt.Errorf("description cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.UpdateKeyResult: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
 			obj.KeyResults[krIdx].Description = description
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.UpdateKeyResult: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.UpdateKeyResult: key result with ID %s not found", keyResultId)
+	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
 // UpdateKeyResultProgress finds a key result by ID anywhere in the tree and updates its currentValue.
 func (m *PlanningManager) UpdateKeyResultProgress(keyResultId string, currentValue int) error {
 	if keyResultId == "" {
-		return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: keyResultId cannot be empty")
+		return fmt.Errorf("keyResultId cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
 			obj.KeyResults[krIdx].CurrentValue = currentValue
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.UpdateKeyResultProgress: key result with ID %s not found", keyResultId)
+	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
 // DeleteKeyResult finds a key result by ID anywhere in the tree and removes it.
 func (m *PlanningManager) DeleteKeyResult(keyResultId string) error {
 	if keyResultId == "" {
-		return fmt.Errorf("PlanningManager.DeleteKeyResult: keyResultId cannot be empty")
+		return fmt.Errorf("keyResultId cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.DeleteKeyResult: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
 			obj.KeyResults = append(obj.KeyResults[:krIdx], obj.KeyResults[krIdx+1:]...)
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.DeleteKeyResult: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.DeleteKeyResult: key result with ID %s not found", keyResultId)
+	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
 // validateOKRStatusTransition checks whether a status transition is allowed.
@@ -547,21 +547,21 @@ func validateOKRStatusTransition(currentStatus, newStatus string) error {
 // Completing an objective requires all direct children to be completed or archived.
 func (m *PlanningManager) SetObjectiveStatus(objectiveId, status string) error {
 	if objectiveId == "" {
-		return fmt.Errorf("PlanningManager.SetObjectiveStatus: objectiveId cannot be empty")
+		return fmt.Errorf("objectiveId cannot be empty")
 	}
 	if status == "" {
-		return fmt.Errorf("PlanningManager.SetObjectiveStatus: status cannot be empty")
+		return fmt.Errorf("status cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.SetObjectiveStatus: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
 			if err := validateOKRStatusTransition(obj.Status, status); err != nil {
-				return fmt.Errorf("PlanningManager.SetObjectiveStatus: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 
 			// If completing, verify all direct children are completed or archived
@@ -578,61 +578,61 @@ func (m *PlanningManager) SetObjectiveStatus(objectiveId, status string) error {
 					}
 				}
 				if len(incompleteItems) > 0 {
-					return fmt.Errorf("PlanningManager.SetObjectiveStatus: cannot complete objective %s; active children: %v", objectiveId, incompleteItems)
+					return fmt.Errorf("cannot complete: it still has active items — complete them first")
 				}
 			}
 
 			obj.Status = status
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.SetObjectiveStatus: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.SetObjectiveStatus: objective with ID %s not found", objectiveId)
+	return fmt.Errorf("objective with ID %s not found", objectiveId)
 }
 
 // SetKeyResultStatus sets the lifecycle status of a key result.
 func (m *PlanningManager) SetKeyResultStatus(keyResultId, status string) error {
 	if keyResultId == "" {
-		return fmt.Errorf("PlanningManager.SetKeyResultStatus: keyResultId cannot be empty")
+		return fmt.Errorf("keyResultId cannot be empty")
 	}
 	if status == "" {
-		return fmt.Errorf("PlanningManager.SetKeyResultStatus: status cannot be empty")
+		return fmt.Errorf("status cannot be empty")
 	}
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.SetKeyResultStatus: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	for i := range themes {
 		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
 			kr := &obj.KeyResults[krIdx]
 			if err := validateOKRStatusTransition(kr.Status, status); err != nil {
-				return fmt.Errorf("PlanningManager.SetKeyResultStatus: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 
 			kr.Status = status
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("PlanningManager.SetKeyResultStatus: %w", err)
+				return fmt.Errorf("%w", err)
 			}
 			return nil
 		}
 	}
 
-	return fmt.Errorf("PlanningManager.SetKeyResultStatus: key result with ID %s not found", keyResultId)
+	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
 // GetYearFocus returns all day focus entries for a specific year.
 func (m *PlanningManager) GetYearFocus(year int) ([]access.DayFocus, error) {
 	if year < 1900 || year > 9999 {
-		return nil, fmt.Errorf("PlanningManager.GetYearFocus: invalid year %d", year)
+		return nil, fmt.Errorf("invalid year %d", year)
 	}
 	entries, err := m.planAccess.GetYearFocus(year)
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.GetYearFocus: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 	return entries, nil
 }
@@ -640,10 +640,10 @@ func (m *PlanningManager) GetYearFocus(year int) ([]access.DayFocus, error) {
 // SaveDayFocus saves or updates a day focus entry.
 func (m *PlanningManager) SaveDayFocus(day access.DayFocus) error {
 	if day.Date == "" {
-		return fmt.Errorf("PlanningManager.SaveDayFocus: date cannot be empty")
+		return fmt.Errorf("date cannot be empty")
 	}
 	if err := m.planAccess.SaveDayFocus(day); err != nil {
-		return fmt.Errorf("PlanningManager.SaveDayFocus: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 	return nil
 }
@@ -651,13 +651,13 @@ func (m *PlanningManager) SaveDayFocus(day access.DayFocus) error {
 // ClearDayFocus removes a day focus entry by setting empty theme ID.
 func (m *PlanningManager) ClearDayFocus(date string) error {
 	if date == "" {
-		return fmt.Errorf("PlanningManager.ClearDayFocus: date cannot be empty")
+		return fmt.Errorf("date cannot be empty")
 	}
 
 	// Get the existing entry to check if it exists
 	existing, err := m.planAccess.GetDayFocus(date)
 	if err != nil {
-		return fmt.Errorf("PlanningManager.ClearDayFocus: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	// If there's no existing entry, nothing to clear
@@ -674,7 +674,7 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 	}
 
 	if err := m.planAccess.SaveDayFocus(cleared); err != nil {
-		return fmt.Errorf("PlanningManager.ClearDayFocus: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
@@ -710,7 +710,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get board config: %w", err)
+		return nil, fmt.Errorf("failed to get board config: %w", err)
 	}
 
 	// Collect statuses from board config + archived
@@ -723,7 +723,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	for _, status := range statuses {
 		tasks, err := m.planAccess.GetTasksByStatus(status)
 		if err != nil {
-			return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get tasks for status %s: %w", status, err)
+			return nil, fmt.Errorf("failed to get tasks for status %s: %w", status, err)
 		}
 
 		for _, task := range tasks {
@@ -737,7 +737,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	// Sort tasks by persisted order
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.GetTasks: failed to load task order: %w", err)
+		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 
 	if len(orderMap) > 0 {
@@ -830,17 +830,17 @@ func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engi
 // Optional fields: description, tags (comma-separated), dueDate (YYYY-MM-DD), promotionDate (YYYY-MM-DD).
 func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate string) (*access.Task, error) {
 	if !access.IsValidPriority(priority) {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: invalid priority: %s", priority)
+		return nil, fmt.Errorf("invalid priority: %s", priority)
 	}
 
 	if dueDate != "" {
 		if _, err := time.Parse("2006-01-02", dueDate); err != nil {
-			return nil, fmt.Errorf("PlanningManager.CreateTask: invalid dueDate format: %s", dueDate)
+			return nil, fmt.Errorf("invalid dueDate format: %s", dueDate)
 		}
 	}
 	if promotionDate != "" {
 		if _, err := time.Parse("2006-01-02", promotionDate); err != nil {
-			return nil, fmt.Errorf("PlanningManager.CreateTask: invalid promotionDate format: %s", promotionDate)
+			return nil, fmt.Errorf("invalid promotionDate format: %s", promotionDate)
 		}
 	}
 
@@ -867,7 +867,7 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 	// Evaluate rules before creating
 	taskInfos, err := m.buildTaskInfoList()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to build task context: %w", err)
+		return nil, fmt.Errorf("failed to build task context: %w", err)
 	}
 	event := rule_engine.TaskEvent{
 		Type:     rule_engine.EventTaskCreate,
@@ -875,7 +875,7 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 		AllTasks: taskInfos,
 	}
 	if _, err := m.evaluateRules(event); err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Save task and update task order atomically in a single git commit
@@ -883,7 +883,7 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority, todoSlugFromConfig(createConfig))
 	createdTask, err := m.planAccess.SaveTaskWithOrder(task, zone)
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to save task: %w", err)
+		return nil, fmt.Errorf("failed to save task: %w", err)
 	}
 
 	return createdTask, nil
@@ -896,7 +896,7 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to get board config: %w", err)
+		return nil, fmt.Errorf("failed to get board config: %w", err)
 	}
 	validStatus := false
 	for _, col := range config.ColumnDefinitions {
@@ -906,13 +906,13 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		}
 	}
 	if !validStatus {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: invalid status %s", newStatus)
+		return nil, fmt.Errorf("invalid status %s", newStatus)
 	}
 
 	// Get all tasks to find the task being moved and build context
 	allTasks, err := m.GetTasks()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to get tasks: %w", err)
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
 	}
 
 	// Find the task being moved (prefer active copy over archived when IDs collide)
@@ -938,7 +938,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		}
 	}
 	if movingTask == nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: task %s not found", taskId)
+		return nil, fmt.Errorf("task %s not found", taskId)
 	}
 
 	// Build task info list for rule context
@@ -964,7 +964,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	}
 	result, evalErr := m.ruleEngine.EvaluateTaskChange(event)
 	if evalErr != nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: rule evaluation failed: %w", evalErr)
+		return nil, fmt.Errorf("rule evaluation failed: %w", evalErr)
 	}
 	if !result.Allowed {
 		return &MoveTaskResult{
@@ -975,7 +975,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 
 	// Perform the move
 	if err := m.planAccess.MoveTask(taskId, newStatus); err != nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to move task: %w", err)
+		return nil, fmt.Errorf("failed to move task: %w", err)
 	}
 
 	// Update task order: remove from source drop zone, then apply positions or append to target
@@ -983,7 +983,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority, moveTodoSlug)
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to load task order: %w", err)
+		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 	orderMap[sourceZone] = removeFromSlice(orderMap[sourceZone], taskId)
 	if positions != nil {
@@ -995,7 +995,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		orderMap[targetZone] = append(orderMap[targetZone], taskId)
 	}
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
-		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to save task order: %w", err)
+		return nil, fmt.Errorf("failed to save task order: %w", err)
 	}
 
 	// Subtask cascade: parent auto-moves to "doing" when first child starts
@@ -1024,13 +1024,13 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 // UpdateTask updates an existing task.
 func (m *PlanningManager) UpdateTask(task access.Task) error {
 	if task.ID == "" {
-		return fmt.Errorf("PlanningManager.UpdateTask: task ID cannot be empty")
+		return fmt.Errorf("task ID cannot be empty")
 	}
 
 	// Evaluate rules before updating
 	taskInfos, err := m.buildTaskInfoList()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.UpdateTask: failed to build task context: %w", err)
+		return fmt.Errorf("failed to build task context: %w", err)
 	}
 	event := rule_engine.TaskEvent{
 		Type:     rule_engine.EventTaskUpdate,
@@ -1038,11 +1038,11 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 		AllTasks: taskInfos,
 	}
 	if _, err := m.evaluateRules(event); err != nil {
-		return fmt.Errorf("PlanningManager.UpdateTask: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	if err := m.planAccess.SaveTask(task); err != nil {
-		return fmt.Errorf("PlanningManager.UpdateTask: failed to update task: %w", err)
+		return fmt.Errorf("failed to update task: %w", err)
 	}
 
 	return nil
@@ -1054,7 +1054,7 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	allTasks, err := m.GetTasks()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.ProcessPriorityPromotions: failed to get tasks: %w", err)
+		return nil, fmt.Errorf("failed to get tasks: %w", err)
 	}
 
 	now := time.Now()
@@ -1079,7 +1079,7 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		updatedTask.PromotionDate = "" // Clear after promotion
 
 		if err := m.planAccess.SaveTask(updatedTask); err != nil {
-			return nil, fmt.Errorf("PlanningManager.ProcessPriorityPromotions: failed to promote task %s: %w", t.ID, err)
+			return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
 		}
 
 		promoted = append(promoted, PromotedTask{
@@ -1096,12 +1096,12 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 // DeleteTask deletes a task by ID.
 func (m *PlanningManager) DeleteTask(taskId string) error {
 	if taskId == "" {
-		return fmt.Errorf("PlanningManager.DeleteTask: task ID cannot be empty")
+		return fmt.Errorf("task ID cannot be empty")
 	}
 
 	// Delete task and update task order atomically in a single git commit
 	if err := m.planAccess.DeleteTaskWithOrder(taskId); err != nil {
-		return fmt.Errorf("PlanningManager.DeleteTask: failed to delete task: %w", err)
+		return fmt.Errorf("failed to delete task: %w", err)
 	}
 
 	return nil
@@ -1110,12 +1110,12 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 // ArchiveTask archives a done task and all its subtasks.
 func (m *PlanningManager) ArchiveTask(taskId string) error {
 	if taskId == "" {
-		return fmt.Errorf("PlanningManager.ArchiveTask: task ID cannot be empty")
+		return fmt.Errorf("task ID cannot be empty")
 	}
 
 	allTasks, err := m.GetTasks()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.ArchiveTask: failed to get tasks: %w", err)
+		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
 	// Find the target task and verify it's done
@@ -1127,10 +1127,10 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		}
 	}
 	if targetTask == nil {
-		return fmt.Errorf("PlanningManager.ArchiveTask: task %s not found", taskId)
+		return fmt.Errorf("task %s not found", taskId)
 	}
 	if targetTask.Status != string(access.TaskStatusDone) {
-		return fmt.Errorf("PlanningManager.ArchiveTask: task %s is not done (status: %s)", taskId, targetTask.Status)
+		return fmt.Errorf("task can only be archived when done")
 	}
 
 	// Collect all subtask IDs (any status) recursively, then prepend parent
@@ -1138,13 +1138,13 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 
 	for _, id := range toArchive {
 		if err := m.planAccess.ArchiveTask(id); err != nil {
-			return fmt.Errorf("PlanningManager.ArchiveTask: failed to archive task %s: %w", id, err)
+			return fmt.Errorf("failed to archive task %s: %w", id, err)
 		}
 	}
 
 	// Remove archived task IDs from task order
 	if err := m.removeFromTaskOrder(toArchive); err != nil {
-		return fmt.Errorf("PlanningManager.ArchiveTask: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	return nil
@@ -1154,7 +1154,7 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 func (m *PlanningManager) ArchiveAllDoneTasks() error {
 	allTasks, err := m.GetTasks()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.ArchiveAllDoneTasks: failed to get tasks: %w", err)
+		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
 	// Build set of done task IDs
@@ -1174,7 +1174,7 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 			continue // Parent is also done — parent's cascade will handle this
 		}
 		if err := m.ArchiveTask(t.ID); err != nil {
-			return fmt.Errorf("PlanningManager.ArchiveAllDoneTasks: %w", err)
+			return fmt.Errorf("%w", err)
 		}
 	}
 
@@ -1184,12 +1184,12 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 // RestoreTask restores an archived task and all its archived subtasks to done.
 func (m *PlanningManager) RestoreTask(taskId string) error {
 	if taskId == "" {
-		return fmt.Errorf("PlanningManager.RestoreTask: task ID cannot be empty")
+		return fmt.Errorf("task ID cannot be empty")
 	}
 
 	allTasks, err := m.GetTasks()
 	if err != nil {
-		return fmt.Errorf("PlanningManager.RestoreTask: failed to get tasks: %w", err)
+		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
 	// Find the target task and verify it's archived
@@ -1201,10 +1201,10 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		}
 	}
 	if targetTask == nil {
-		return fmt.Errorf("PlanningManager.RestoreTask: task %s not found", taskId)
+		return fmt.Errorf("task %s not found", taskId)
 	}
 	if targetTask.Status != string(access.TaskStatusArchived) {
-		return fmt.Errorf("PlanningManager.RestoreTask: task %s is not archived (status: %s)", taskId, targetTask.Status)
+		return fmt.Errorf("task can only be restored from archive")
 	}
 
 	// Collect archived subtask IDs recursively, then prepend parent
@@ -1212,7 +1212,7 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 
 	for _, id := range toRestore {
 		if err := m.planAccess.RestoreTask(id); err != nil {
-			return fmt.Errorf("PlanningManager.RestoreTask: failed to restore task %s: %w", id, err)
+			return fmt.Errorf("failed to restore task %s: %w", id, err)
 		}
 	}
 
@@ -1283,7 +1283,7 @@ func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
 func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.ReorderTasks: failed to load task order: %w", err)
+		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 
 	// Merge proposed positions into the full order map
@@ -1292,7 +1292,7 @@ func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderR
 	}
 
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
-		return nil, fmt.Errorf("PlanningManager.ReorderTasks: failed to save task order: %w", err)
+		return nil, fmt.Errorf("failed to save task order: %w", err)
 	}
 
 	return &ReorderResult{Success: true, Positions: orderMap}, nil
@@ -1313,7 +1313,7 @@ func removeFromSlice(s []string, val string) []string {
 func (m *PlanningManager) GetBoardConfiguration() (*access.BoardConfiguration, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.GetBoardConfiguration: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 	return config, nil
 }
@@ -1327,21 +1327,21 @@ var reservedSlugs = map[string]bool{
 func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.BoardConfiguration, error) {
 	slug := access.Slugify(title)
 	if slug == "" {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: title produces empty slug")
+		return nil, fmt.Errorf("column name must contain at least one letter or number")
 	}
 	if reservedSlugs[slug] {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: slug %q is reserved", slug)
+		return nil, fmt.Errorf("the name %q is reserved", slug)
 	}
 
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Validate slug uniqueness
 	for _, col := range config.ColumnDefinitions {
 		if col.Name == slug {
-			return nil, fmt.Errorf("PlanningManager.AddColumn: column %q already exists", slug)
+			return nil, fmt.Errorf("column %q already exists", slug)
 		}
 	}
 
@@ -1354,16 +1354,16 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.Boar
 		}
 	}
 	if insertIdx < 0 {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: column %q not found", insertAfterSlug)
+		return nil, fmt.Errorf("column %q not found", insertAfterSlug)
 	}
 
 	// Validate: cannot insert before first (todo) or after last (done)
 	if insertIdx <= 0 {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: cannot insert before the first column")
+		return nil, fmt.Errorf("cannot insert before the first column")
 	}
 	if insertIdx >= len(config.ColumnDefinitions) && config.ColumnDefinitions[len(config.ColumnDefinitions)-1].Type == access.ColumnTypeDone {
 		// insertIdx points past the last column, which is done-type — insert before done
-		return nil, fmt.Errorf("PlanningManager.AddColumn: cannot insert after the last column")
+		return nil, fmt.Errorf("cannot insert after the last column")
 	}
 
 	newCol := access.ColumnDefinition{
@@ -1378,16 +1378,16 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.Boar
 
 	// Create directory
 	if err := m.planAccess.EnsureStatusDirectory(slug); err != nil {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Save config
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if err := m.planAccess.CommitAll(fmt.Sprintf("Add column: %s", strings.TrimSpace(title))); err != nil {
-		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return config, nil
@@ -1397,7 +1397,7 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.Boar
 func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Find column and validate type
@@ -1409,24 +1409,24 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 		}
 	}
 	if colIdx < 0 {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: column %q not found", slug)
+		return nil, fmt.Errorf("column %q not found", slug)
 	}
 	if config.ColumnDefinitions[colIdx].Type != access.ColumnTypeDoing {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: only doing-type columns can be removed")
+		return nil, fmt.Errorf("only custom columns can be removed")
 	}
 
 	// Check no tasks in column
 	tasks, err := m.planAccess.GetTasksByStatus(slug)
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 	if len(tasks) > 0 {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: column %q has %d tasks; move them first", slug, len(tasks))
+		return nil, fmt.Errorf("cannot delete column %q: it still has %d task(s) — move or archive them first", config.ColumnDefinitions[colIdx].Title, len(tasks))
 	}
 
 	// Remove directory
 	if err := m.planAccess.RemoveStatusDirectory(slug); err != nil {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Clean task order entries
@@ -1441,11 +1441,11 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 	// Update config
 	config.ColumnDefinitions = append(config.ColumnDefinitions[:colIdx], config.ColumnDefinitions[colIdx+1:]...)
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if err := m.planAccess.CommitAll(fmt.Sprintf("Remove column: %s", slug)); err != nil {
-		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return config, nil
@@ -1455,16 +1455,16 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardConfiguration, error) {
 	newSlug := access.Slugify(newTitle)
 	if newSlug == "" {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: new title produces empty slug")
+		return nil, fmt.Errorf("column name must contain at least one letter or number")
 	}
 	if reservedSlugs[newSlug] {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: slug %q is reserved", newSlug)
+		return nil, fmt.Errorf("the name %q is reserved", newSlug)
 	}
 	if oldSlug == newSlug {
 		// Only title change, no slug change — just update the title
 		config, err := m.planAccess.GetBoardConfiguration()
 		if err != nil {
-			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+			return nil, fmt.Errorf("%w", err)
 		}
 		found := false
 		for i, col := range config.ColumnDefinitions {
@@ -1475,20 +1475,20 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 			}
 		}
 		if !found {
-			return nil, fmt.Errorf("PlanningManager.RenameColumn: column %q not found", oldSlug)
+			return nil, fmt.Errorf("column %q not found", oldSlug)
 		}
 		if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
-			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+			return nil, fmt.Errorf("%w", err)
 		}
 		if err := m.planAccess.CommitAll(fmt.Sprintf("Rename column title: %s", strings.TrimSpace(newTitle))); err != nil {
-			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+			return nil, fmt.Errorf("%w", err)
 		}
 		return config, nil
 	}
 
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Validate old column exists and new slug is unique
@@ -1498,16 +1498,16 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 			colIdx = i
 		}
 		if col.Name == newSlug {
-			return nil, fmt.Errorf("PlanningManager.RenameColumn: column %q already exists", newSlug)
+			return nil, fmt.Errorf("column %q already exists", newSlug)
 		}
 	}
 	if colIdx < 0 {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: column %q not found", oldSlug)
+		return nil, fmt.Errorf("column %q not found", oldSlug)
 	}
 
 	// Rename directory
 	if err := m.planAccess.RenameStatusDirectory(oldSlug, newSlug); err != nil {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	// Update task_order.json keys
@@ -1524,11 +1524,11 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 	config.ColumnDefinitions[colIdx].Name = newSlug
 	config.ColumnDefinitions[colIdx].Title = strings.TrimSpace(newTitle)
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if err := m.planAccess.CommitAll(fmt.Sprintf("Rename column: %s -> %s", oldSlug, strings.TrimSpace(newTitle))); err != nil {
-		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return config, nil
@@ -1538,11 +1538,11 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfiguration, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
-		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if len(slugs) != len(config.ColumnDefinitions) {
-		return nil, fmt.Errorf("PlanningManager.ReorderColumns: expected %d slugs, got %d", len(config.ColumnDefinitions), len(slugs))
+		return nil, fmt.Errorf("expected %d columns, got %d", len(config.ColumnDefinitions), len(slugs))
 	}
 
 	// Build lookup
@@ -1556,31 +1556,31 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfigura
 	reordered := make([]access.ColumnDefinition, 0, len(slugs))
 	for _, slug := range slugs {
 		if seen[slug] {
-			return nil, fmt.Errorf("PlanningManager.ReorderColumns: duplicate slug %q", slug)
+			return nil, fmt.Errorf("duplicate column %q", slug)
 		}
 		seen[slug] = true
 		col, ok := colMap[slug]
 		if !ok {
-			return nil, fmt.Errorf("PlanningManager.ReorderColumns: unknown column %q", slug)
+			return nil, fmt.Errorf("column %q not found", slug)
 		}
 		reordered = append(reordered, col)
 	}
 
 	// Validate bookends: first must be todo, last must be done
 	if reordered[0].Type != access.ColumnTypeTodo {
-		return nil, fmt.Errorf("PlanningManager.ReorderColumns: first column must be todo-type")
+		return nil, fmt.Errorf("first column cannot be moved")
 	}
 	if reordered[len(reordered)-1].Type != access.ColumnTypeDone {
-		return nil, fmt.Errorf("PlanningManager.ReorderColumns: last column must be done-type")
+		return nil, fmt.Errorf("last column cannot be moved")
 	}
 
 	config.ColumnDefinitions = reordered
 	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
-		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	if err := m.planAccess.CommitAll("Reorder columns"); err != nil {
-		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
+		return nil, fmt.Errorf("%w", err)
 	}
 
 	return config, nil
@@ -1590,7 +1590,7 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfigura
 func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) {
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
-		return "", fmt.Errorf("PlanningManager.SuggestThemeAbbreviation: %w", err)
+		return "", fmt.Errorf("%w", err)
 	}
 	return access.SuggestAbbreviation(name, themes), nil
 }
@@ -1641,7 +1641,7 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {
-		return fmt.Errorf("PlanningManager.SaveNavigationContext: %w", err)
+		return fmt.Errorf("%w", err)
 	}
 
 	m.navigationContext = &ctx

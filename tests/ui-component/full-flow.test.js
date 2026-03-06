@@ -640,8 +640,8 @@ export async function runTests() {
       // Verify error banner appears
       await page.waitForSelector('.error-banner', { timeout: 5000 })
       const errorText = await page.$eval('.error-banner span', el => el.textContent)
-      if (!errorText.includes('not empty')) {
-        throw new Error(`Expected "not empty" error, got "${errorText}"`)
+      if (!errorText.includes('cannot delete column')) {
+        throw new Error(`Expected "cannot delete column" error, got "${errorText}"`)
       }
 
       // Dismiss error banner

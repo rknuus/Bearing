@@ -10,7 +10,7 @@
   import { SvelteMap } from 'svelte/reactivity';
   import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
-  import { getBindings } from '../lib/utils/bindings';
+  import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
@@ -64,7 +64,7 @@
         yearFocus.set(entry.date, entry);
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load data';
+      error = extractError(e);
       console.error('CalendarView: Failed to load data', e);
     } finally {
       loading = false;
@@ -241,7 +241,7 @@
       editingDay = null;
     } catch (e) {
       console.error('CalendarView: Failed to save day focus', e);
-      alert('Failed to save: ' + (e instanceof Error ? e.message : 'Unknown error'));
+      alert('Failed to save: ' + extractError(e));
     }
   }
 

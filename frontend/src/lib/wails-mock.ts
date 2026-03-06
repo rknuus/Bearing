@@ -615,7 +615,7 @@ export const mockAppBindings = {
         }
       }
       if (incompleteItems.length > 0) {
-        throw new Error(`cannot complete objective ${objectiveId}; active children: ${incompleteItems.join(', ')}`);
+        throw new Error('cannot complete: it still has active items — complete them first');
       }
     }
     obj.status = status;
@@ -839,15 +839,15 @@ export const mockAppBindings = {
 
   AddColumn: async (title: string, insertAfterSlug: string): Promise<BoardConfiguration> => {
     const slug = slugify(title);
-    if (!slug) throw new Error('column title is required');
+    if (!slug) throw new Error('column name must contain at least one letter or number');
     if (mockBoardConfig.columnDefinitions.some(c => c.name === slug)) {
-      throw new Error(`column slug "${slug}" already exists`);
+      throw new Error(`column "${slug}" already exists`);
     }
-    if (slug === 'archived') throw new Error(`slug "archived" is reserved`);
+    if (slug === 'archived') throw new Error(`the name "archived" is reserved`);
     const afterIdx = mockBoardConfig.columnDefinitions.findIndex(c => c.name === insertAfterSlug);
     if (afterIdx === -1) throw new Error(`column "${insertAfterSlug}" not found`);
     const afterCol = mockBoardConfig.columnDefinitions[afterIdx];
-    if (afterCol.type === 'done') throw new Error('cannot insert after the done column');
+    if (afterCol.type === 'done') throw new Error('cannot insert after the last column');
     const newCol: ColumnDefinition = { name: slug, title, type: 'doing' };
     mockBoardConfig.columnDefinitions.splice(afterIdx + 1, 0, newCol);
     return JSON.parse(JSON.stringify(mockBoardConfig));
@@ -856,9 +856,10 @@ export const mockAppBindings = {
   RemoveColumn: async (slug: string): Promise<BoardConfiguration> => {
     const col = mockBoardConfig.columnDefinitions.find(c => c.name === slug);
     if (!col) throw new Error(`column "${slug}" not found`);
-    if (col.type !== 'doing') throw new Error('can only remove doing-type columns');
-    if (mockTasks.some(t => t.status === slug)) {
-      throw new Error(`column "${slug}" is not empty`);
+    if (col.type !== 'doing') throw new Error('only custom columns can be removed');
+    const tasksInColumn = mockTasks.filter(t => t.status === slug);
+    if (tasksInColumn.length > 0) {
+      throw new Error(`cannot delete column "${col.title}": it still has ${tasksInColumn.length} task(s) — move or archive them first`);
     }
     mockBoardConfig.columnDefinitions = mockBoardConfig.columnDefinitions.filter(c => c.name !== slug);
     delete taskPositions[slug];
@@ -869,11 +870,11 @@ export const mockAppBindings = {
     const col = mockBoardConfig.columnDefinitions.find(c => c.name === oldSlug);
     if (!col) throw new Error(`column "${oldSlug}" not found`);
     const newSlug = slugify(newTitle);
-    if (!newSlug) throw new Error('column title is required');
+    if (!newSlug) throw new Error('column name must contain at least one letter or number');
     if (newSlug !== oldSlug && mockBoardConfig.columnDefinitions.some(c => c.name === newSlug)) {
-      throw new Error(`column slug "${newSlug}" already exists`);
+      throw new Error(`column "${newSlug}" already exists`);
     }
-    if (newSlug !== oldSlug && newSlug === 'archived') throw new Error(`slug "archived" is reserved`);
+    if (newSlug !== oldSlug && newSlug === 'archived') throw new Error(`the name "archived" is reserved`);
     col.title = newTitle;
     if (newSlug !== oldSlug) {
       col.name = newSlug;
@@ -892,11 +893,11 @@ export const mockAppBindings = {
 
   ReorderColumns: async (slugs: string[]): Promise<BoardConfiguration> => {
     const cols = mockBoardConfig.columnDefinitions;
-    if (slugs.length !== cols.length) throw new Error('slug count mismatch');
+    if (slugs.length !== cols.length) throw new Error(`expected ${cols.length} columns, got ${slugs.length}`);
     const first = cols.find(c => c.type === 'todo');
     const last = cols.find(c => c.type === 'done');
-    if (first && slugs[0] !== first.name) throw new Error('todo column must be first');
-    if (last && slugs[slugs.length - 1] !== last.name) throw new Error('done column must be last');
+    if (first && slugs[0] !== first.name) throw new Error('first column cannot be moved');
+    if (last && slugs[slugs.length - 1] !== last.name) throw new Error('last column cannot be moved');
     const byName = new Map(cols.map(c => [c.name, c]));
     const reordered: ColumnDefinition[] = [];
     for (const s of slugs) {

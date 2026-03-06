@@ -97,12 +97,12 @@ describe('Column CRUD', () => {
 
   it('RemoveColumn rejects non-empty column', async () => {
     // 'doing' column has mock tasks
-    await expect(mockAppBindings.RemoveColumn('doing')).rejects.toThrow('not empty');
+    await expect(mockAppBindings.RemoveColumn('doing')).rejects.toThrow('cannot delete column');
   });
 
   it('RemoveColumn rejects todo/done columns', async () => {
-    await expect(mockAppBindings.RemoveColumn('todo')).rejects.toThrow('doing-type');
-    await expect(mockAppBindings.RemoveColumn('done')).rejects.toThrow('doing-type');
+    await expect(mockAppBindings.RemoveColumn('todo')).rejects.toThrow('only custom columns');
+    await expect(mockAppBindings.RemoveColumn('done')).rejects.toThrow('only custom columns');
   });
 
   it('RenameColumn updates title and slug, migrates task statuses', async () => {
@@ -137,10 +137,10 @@ describe('Column CRUD', () => {
   });
 
   it('ReorderColumns rejects todo not first', async () => {
-    await expect(mockAppBindings.ReorderColumns(['doing', 'todo', 'done'])).rejects.toThrow('todo');
+    await expect(mockAppBindings.ReorderColumns(['doing', 'todo', 'done'])).rejects.toThrow('first column cannot be moved');
   });
 
   it('ReorderColumns rejects done not last', async () => {
-    await expect(mockAppBindings.ReorderColumns(['todo', 'done', 'doing'])).rejects.toThrow('done');
+    await expect(mockAppBindings.ReorderColumns(['todo', 'done', 'doing'])).rejects.toThrow('last column cannot be moved');
   });
 });
