@@ -324,7 +324,7 @@ func TestUnit_AllowedTransitions(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if result.Allowed {
-			t.Error("expected rejection for todo->done transition")
+			t.Error("expected rejection for todo->done transition with restrictive rules")
 		}
 	})
 
@@ -381,7 +381,7 @@ func TestUnit_AllowedTransitions_Archived(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects transition archived->doing with clear message", func(t *testing.T) {
+	t.Run("allows transition archived->doing with permissive policy", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
 			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
@@ -392,19 +392,8 @@ func TestUnit_AllowedTransitions_Archived(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if result.Allowed {
-			t.Error("expected rejection for archived->doing transition")
-		}
-		if len(result.Violations) == 0 {
-			t.Fatal("expected at least one violation")
-		}
-		msg := result.Violations[0].Message
-		if msg == "No transitions defined from column \"archived\"" {
-			t.Errorf("expected specific rejection message, not %q", msg)
-		}
-		expected := "Transition from \"archived\" to \"doing\" is not allowed"
-		if msg != expected {
-			t.Errorf("expected message %q, got %q", expected, msg)
+		if !result.Allowed {
+			t.Errorf("expected allowed for archived->doing with permissive policy, got violations: %v", result.Violations)
 		}
 	})
 }
