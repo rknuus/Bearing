@@ -674,13 +674,16 @@ func TestGetTasksByStatus(t *testing.T) {
 	}
 }
 
-func TestGetTasksByStatus_InvalidStatus(t *testing.T) {
+func TestGetTasksByStatus_UnknownStatus_ReturnsEmpty(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	_, err := pa.GetTasksByStatus("invalid")
-	if err == nil {
-		t.Error("Expected error for invalid status")
+	tasks, err := pa.GetTasksByStatus("nonexistent-column")
+	if err != nil {
+		t.Errorf("Expected no error for unknown status directory, got: %v", err)
+	}
+	if len(tasks) != 0 {
+		t.Errorf("Expected empty task list for unknown status, got %d tasks", len(tasks))
 	}
 }
 
@@ -2068,5 +2071,200 @@ func TestIsAnyTaskStatus(t *testing.T) {
 	}
 	if IsAnyTaskStatus("invalid") {
 		t.Error("IsAnyTaskStatus should reject 'invalid'")
+	}
+}
+
+// === Board Configuration Persistence Tests ===
+
+func TestUnit_GetBoardConfiguration_DefaultFallback(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	config, err := pa.GetBoardConfiguration()
+	if err != nil {
+		t.Fatalf("GetBoardConfiguration failed: %v", err)
+	}
+	if config.Name != "Bearing Board" {
+		t.Errorf("Expected default board name, got %q", config.Name)
+	}
+	if len(config.ColumnDefinitions) != 3 {
+		t.Errorf("Expected 3 default columns, got %d", len(config.ColumnDefinitions))
+	}
+}
+
+func TestUnit_SaveAndGetBoardConfiguration(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	custom := &BoardConfiguration{
+		Name: "Custom Board",
+		ColumnDefinitions: []ColumnDefinition{
+			{Name: "todo", Title: "Backlog", Type: ColumnTypeTodo},
+			{Name: "in-review", Title: "In Review", Type: ColumnTypeDoing},
+			{Name: "doing", Title: "Doing", Type: ColumnTypeDoing},
+			{Name: "done", Title: "Done", Type: ColumnTypeDone},
+		},
+	}
+
+	if err := pa.SaveBoardConfiguration(custom); err != nil {
+		t.Fatalf("SaveBoardConfiguration failed: %v", err)
+	}
+
+	loaded, err := pa.GetBoardConfiguration()
+	if err != nil {
+		t.Fatalf("GetBoardConfiguration failed: %v", err)
+	}
+	if loaded.Name != "Custom Board" {
+		t.Errorf("Expected 'Custom Board', got %q", loaded.Name)
+	}
+	if len(loaded.ColumnDefinitions) != 4 {
+		t.Errorf("Expected 4 columns, got %d", len(loaded.ColumnDefinitions))
+	}
+	if loaded.ColumnDefinitions[1].Name != "in-review" {
+		t.Errorf("Expected second column 'in-review', got %q", loaded.ColumnDefinitions[1].Name)
+	}
+}
+
+func TestUnit_FindTaskInPlan_DynamicStatuses(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Save a custom config with an extra column
+	custom := &BoardConfiguration{
+		Name: "Custom Board",
+		ColumnDefinitions: []ColumnDefinition{
+			{Name: "todo", Title: "TODO", Type: ColumnTypeTodo},
+			{Name: "review", Title: "Review", Type: ColumnTypeDoing},
+			{Name: "done", Title: "Done", Type: ColumnTypeDone},
+		},
+	}
+	if err := pa.SaveBoardConfiguration(custom); err != nil {
+		t.Fatalf("SaveBoardConfiguration failed: %v", err)
+	}
+
+	// Create the review directory and put a task in it
+	if err := pa.EnsureStatusDirectory("review"); err != nil {
+		t.Fatalf("EnsureStatusDirectory failed: %v", err)
+	}
+
+	task := Task{ID: "T-T1", ThemeID: "T", Title: "Review task", Priority: "important-urgent"}
+	if err := writeJSON(pa.taskFilePath("review", "T-T1"), task); err != nil {
+		t.Fatalf("Failed to write task: %v", err)
+	}
+
+	// findTaskInPlan should find it in the "review" status
+	found, status, _, err := pa.findTaskInPlan("T-T1")
+	if err != nil {
+		t.Fatalf("findTaskInPlan failed: %v", err)
+	}
+	if found == nil {
+		t.Fatal("Expected to find task T-T1")
+	}
+	if status != "review" {
+		t.Errorf("Expected status 'review', got %q", status)
+	}
+}
+
+func TestUnit_EnsureAndRemoveStatusDirectory(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	if err := pa.EnsureStatusDirectory("in-review"); err != nil {
+		t.Fatalf("EnsureStatusDirectory failed: %v", err)
+	}
+
+	dirPath := filepath.Join(tmpDir, "data", "tasks", "in-review")
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		t.Error("Expected directory to exist after EnsureStatusDirectory")
+	}
+
+	if err := pa.RemoveStatusDirectory("in-review"); err != nil {
+		t.Fatalf("RemoveStatusDirectory failed: %v", err)
+	}
+
+	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
+		t.Error("Expected directory to be removed after RemoveStatusDirectory")
+	}
+}
+
+func TestUnit_RenameStatusDirectory(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	if err := pa.EnsureStatusDirectory("old-name"); err != nil {
+		t.Fatalf("EnsureStatusDirectory failed: %v", err)
+	}
+
+	if err := pa.RenameStatusDirectory("old-name", "new-name"); err != nil {
+		t.Fatalf("RenameStatusDirectory failed: %v", err)
+	}
+
+	oldPath := filepath.Join(tmpDir, "data", "tasks", "old-name")
+	newPath := filepath.Join(tmpDir, "data", "tasks", "new-name")
+
+	if _, err := os.Stat(oldPath); !os.IsNotExist(err) {
+		t.Error("Expected old directory to not exist")
+	}
+	if _, err := os.Stat(newPath); os.IsNotExist(err) {
+		t.Error("Expected new directory to exist")
+	}
+}
+
+// === Slugify Tests ===
+
+func TestUnit_Slugify(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"In Review", "in-review"},
+		{"DOING", "doing"},
+		{"  In Progress  ", "in-progress"},
+		{"hello--world", "hello-world"},
+		{"Special!@#Chars", "special-chars"},
+		{"", ""},
+		{"---", ""},
+		{"a", "a"},
+		{"Hello World 123", "hello-world-123"},
+		{"Über Cool", "ber-cool"}, // Non-ASCII becomes hyphen, leading hyphen trimmed
+	}
+
+	for _, tt := range tests {
+		got := Slugify(tt.input)
+		if got != tt.expected {
+			t.Errorf("Slugify(%q) = %q, want %q", tt.input, got, tt.expected)
+		}
+	}
+}
+
+func TestUnit_EnsureDirectoryStructure_CustomConfig(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Save custom config before calling ensureDirectoryStructure
+	custom := &BoardConfiguration{
+		Name: "Custom Board",
+		ColumnDefinitions: []ColumnDefinition{
+			{Name: "backlog", Title: "Backlog", Type: ColumnTypeTodo},
+			{Name: "in-progress", Title: "In Progress", Type: ColumnTypeDoing},
+			{Name: "review", Title: "Review", Type: ColumnTypeDoing},
+			{Name: "shipped", Title: "Shipped", Type: ColumnTypeDone},
+		},
+	}
+	if err := pa.SaveBoardConfiguration(custom); err != nil {
+		t.Fatalf("SaveBoardConfiguration failed: %v", err)
+	}
+
+	// Re-run ensureDirectoryStructure
+	if err := pa.ensureDirectoryStructure(); err != nil {
+		t.Fatalf("ensureDirectoryStructure failed: %v", err)
+	}
+
+	// Verify custom directories exist
+	for _, slug := range []string{"backlog", "in-progress", "review", "shipped", "archived"} {
+		dirPath := filepath.Join(tmpDir, "data", "tasks", slug)
+		if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+			t.Errorf("Expected directory %q to exist", slug)
+		}
 	}
 }

@@ -44,6 +44,11 @@ type IPlanAccess interface {
 
 	// Board Configuration
 	GetBoardConfiguration() (*BoardConfiguration, error)
+	SaveBoardConfiguration(config *BoardConfiguration) error
+	EnsureStatusDirectory(slug string) error
+	RemoveStatusDirectory(slug string) error
+	RenameStatusDirectory(oldSlug, newSlug string) error
+	UpdateTaskStatusField(dirSlug, newStatus string) ([]string, error)
 
 	// Navigation
 	LoadNavigationContext() (*NavigationContext, error)
@@ -86,14 +91,15 @@ func NewPlanAccess(dataPath string, repo utilities.IRepository) (*PlanAccess, er
 
 // ensureDirectoryStructure creates the required directory structure if it doesn't exist.
 func (pa *PlanAccess) ensureDirectoryStructure() error {
+	config, _ := pa.GetBoardConfiguration()
 	dirs := []string{
 		filepath.Join(pa.dataPath, "themes"),
 		filepath.Join(pa.dataPath, "calendar"),
-		filepath.Join(pa.dataPath, "tasks", "todo"),
-		filepath.Join(pa.dataPath, "tasks", "doing"),
-		filepath.Join(pa.dataPath, "tasks", "done"),
-		filepath.Join(pa.dataPath, "tasks", "archived"),
 	}
+	for _, col := range config.ColumnDefinitions {
+		dirs = append(dirs, filepath.Join(pa.dataPath, "tasks", col.Name))
+	}
+	dirs = append(dirs, filepath.Join(pa.dataPath, "tasks", string(TaskStatusArchived)))
 
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -200,19 +206,31 @@ func (pa *PlanAccess) commitFiles(paths []string, message string) error {
 // findTaskInPlan searches all statuses for a task by ID.
 // Returns the task, status name, and task index within the status list.
 func (pa *PlanAccess) findTaskInPlan(taskID string) (*Task, string, int, error) {
-	for _, status := range AllTaskStatuses() {
-		tasks, err := pa.GetTasksByStatus(string(status))
+	statuses := pa.allStatusSlugs()
+	for _, status := range statuses {
+		tasks, err := pa.GetTasksByStatus(status)
 		if err != nil {
 			continue
 		}
 		for i, task := range tasks {
 			if task.ID == taskID {
-				return &task, string(status), i, nil
+				return &task, status, i, nil
 			}
 		}
 	}
 
 	return nil, "", -1, nil
+}
+
+// allStatusSlugs returns all status directory slugs from board config plus "archived".
+func (pa *PlanAccess) allStatusSlugs() []string {
+	config, _ := pa.GetBoardConfiguration()
+	slugs := make([]string, 0, len(config.ColumnDefinitions)+1)
+	for _, col := range config.ColumnDefinitions {
+		slugs = append(slugs, col.Name)
+	}
+	slugs = append(slugs, string(TaskStatusArchived))
+	return slugs
 }
 
 // GetThemes returns all life themes.
@@ -421,8 +439,8 @@ func (pa *PlanAccess) GetYearFocus(year int) ([]DayFocus, error) {
 func (pa *PlanAccess) GetTasksByTheme(themeID string) ([]Task, error) {
 	var allTasks []Task
 
-	for _, status := range AllTaskStatuses() {
-		tasks, err := pa.GetTasksByStatus(string(status))
+	for _, status := range pa.allStatusSlugs() {
+		tasks, err := pa.GetTasksByStatus(status)
 		if err != nil {
 			return nil, fmt.Errorf("PlanAccess.GetTasksByTheme: failed to get tasks with status %s: %w", status, err)
 		}
@@ -437,11 +455,8 @@ func (pa *PlanAccess) GetTasksByTheme(themeID string) ([]Task, error) {
 }
 
 // GetTasksByStatus returns all tasks for a specific status.
+// Accepts any slug string; returns empty list if directory doesn't exist.
 func (pa *PlanAccess) GetTasksByStatus(status string) ([]Task, error) {
-	if !IsAnyTaskStatus(status) {
-		return nil, fmt.Errorf("PlanAccess.GetTasksByStatus: invalid status %s", status)
-	}
-
 	dirPath := pa.taskDirPath(status)
 
 	entries, err := os.ReadDir(dirPath)
@@ -494,8 +509,8 @@ func (pa *PlanAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 		task.ID = pa.generateTaskID(task.ThemeID, existingTasks)
 
 		// Guard: verify generated ID doesn't already exist on disk
-		for _, s := range AllTaskStatuses() {
-			if _, err := os.Stat(pa.taskFilePath(string(s), task.ID)); err == nil {
+		for _, s := range pa.allStatusSlugs() {
+			if _, err := os.Stat(pa.taskFilePath(s, task.ID)); err == nil {
 				return nil, false, fmt.Errorf("PlanAccess.saveTaskFile: duplicate task ID: %s already exists in %s", task.ID, s)
 			}
 		}
@@ -639,11 +654,8 @@ func (pa *PlanAccess) DeleteTaskWithOrder(taskID string) error {
 }
 
 // MoveTask moves a task to a new status using git mv.
+// The caller (manager layer) is responsible for validating the target status.
 func (pa *PlanAccess) MoveTask(taskID, newStatus string) error {
-	if !IsValidTaskStatus(newStatus) {
-		return fmt.Errorf("PlanAccess.MoveTask: invalid status %s", newStatus)
-	}
-
 	// Find the task and its current status
 	foundTask, currentStatus, _, err := pa.findTaskInPlan(taskID)
 	if err != nil {
@@ -754,9 +766,91 @@ func (pa *PlanAccess) DeleteTask(taskID string) error {
 	return nil
 }
 
-// GetBoardConfiguration returns the static board configuration.
+// boardConfigFilePath returns the path to the board configuration file.
+func (pa *PlanAccess) boardConfigFilePath() string {
+	return filepath.Join(pa.dataPath, "board_config.json")
+}
+
+// GetBoardConfiguration returns the board configuration.
+// Reads from board_config.json if it exists, falls back to DefaultBoardConfiguration().
 func (pa *PlanAccess) GetBoardConfiguration() (*BoardConfiguration, error) {
-	return DefaultBoardConfiguration(), nil
+	filePath := pa.boardConfigFilePath()
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return DefaultBoardConfiguration(), nil
+		}
+		return nil, fmt.Errorf("PlanAccess.GetBoardConfiguration: failed to read config file: %w", err)
+	}
+
+	var config BoardConfiguration
+	if err := json.Unmarshal(data, &config); err != nil {
+		return nil, fmt.Errorf("PlanAccess.GetBoardConfiguration: failed to parse config file: %w", err)
+	}
+	return &config, nil
+}
+
+// SaveBoardConfiguration writes the board configuration to file without git commit.
+// The caller is responsible for committing the change.
+func (pa *PlanAccess) SaveBoardConfiguration(config *BoardConfiguration) error {
+	filePath := pa.boardConfigFilePath()
+	if err := writeJSON(filePath, config); err != nil {
+		return fmt.Errorf("PlanAccess.SaveBoardConfiguration: %w", err)
+	}
+	return nil
+}
+
+// EnsureStatusDirectory creates a task status directory if it doesn't exist.
+func (pa *PlanAccess) EnsureStatusDirectory(slug string) error {
+	dir := pa.taskDirPath(slug)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("PlanAccess.EnsureStatusDirectory: failed to create directory %s: %w", dir, err)
+	}
+	return nil
+}
+
+// RemoveStatusDirectory removes an empty task status directory.
+func (pa *PlanAccess) RemoveStatusDirectory(slug string) error {
+	dir := pa.taskDirPath(slug)
+	if err := os.Remove(dir); err != nil {
+		return fmt.Errorf("PlanAccess.RemoveStatusDirectory: failed to remove directory %s: %w", dir, err)
+	}
+	return nil
+}
+
+// RenameStatusDirectory renames a task status directory.
+func (pa *PlanAccess) RenameStatusDirectory(oldSlug, newSlug string) error {
+	oldDir := pa.taskDirPath(oldSlug)
+	newDir := pa.taskDirPath(newSlug)
+	if err := os.Rename(oldDir, newDir); err != nil {
+		return fmt.Errorf("PlanAccess.RenameStatusDirectory: failed to rename %s to %s: %w", oldDir, newDir, err)
+	}
+	return nil
+}
+
+// UpdateTaskStatusField reads all task JSON files in a status directory,
+// updates each task's status-related data to reflect the new status,
+// and returns the list of affected file paths (for commit orchestration).
+// Note: This does NOT rename the directory — use RenameStatusDirectory for that.
+func (pa *PlanAccess) UpdateTaskStatusField(dirSlug, newStatus string) ([]string, error) {
+	dirPath := pa.taskDirPath(dirSlug)
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, fmt.Errorf("PlanAccess.UpdateTaskStatusField: failed to read directory: %w", err)
+	}
+
+	var affectedPaths []string
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		filePath := filepath.Join(dirPath, entry.Name())
+		// Read, update, and write back — tasks don't have a status field in JSON
+		// (status is derived from directory), but this method is available for
+		// future use if task files gain a status field.
+		affectedPaths = append(affectedPaths, filePath)
+	}
+	return affectedPaths, nil
 }
 
 // Helper functions

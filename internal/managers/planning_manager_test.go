@@ -282,6 +282,26 @@ func (m *mockPlanAccess) SaveTaskDrafts(data json.RawMessage) error {
 	return nil
 }
 
+func (m *mockPlanAccess) SaveBoardConfiguration(config *access.BoardConfiguration) error {
+	return nil
+}
+
+func (m *mockPlanAccess) EnsureStatusDirectory(slug string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) RemoveStatusDirectory(slug string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) RenameStatusDirectory(oldSlug, newSlug string) error {
+	return nil
+}
+
+func (m *mockPlanAccess) UpdateTaskStatusField(dirSlug, newStatus string) ([]string, error) {
+	return nil, nil
+}
+
 func TestNewPlanningManager(t *testing.T) {
 	t.Run("creates manager with valid access", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
