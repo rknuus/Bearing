@@ -688,6 +688,32 @@
   // Column menu state
   let columnMenuSlug = $state<string | null>(null);
 
+  // Prompt dialog state (replaces window.prompt which doesn't work in WebView)
+  let promptOpen = $state(false);
+  let promptLabel = $state('');
+  let promptValue = $state('');
+  let promptResolve: ((value: string | null) => void) | null = null;
+
+  function showPrompt(label: string, defaultValue = ''): Promise<string | null> {
+    promptLabel = label;
+    promptValue = defaultValue;
+    promptOpen = true;
+    return new Promise((resolve) => { promptResolve = resolve; });
+  }
+
+  function handlePromptConfirm() {
+    const value = promptValue.trim();
+    promptOpen = false;
+    promptResolve?.(value || null);
+    promptResolve = null;
+  }
+
+  function handlePromptCancel() {
+    promptOpen = false;
+    promptResolve?.(null);
+    promptResolve = null;
+  }
+
   function toggleColumnMenu(slug: string) {
     columnMenuSlug = columnMenuSlug === slug ? null : slug;
   }
@@ -705,7 +731,7 @@
     closeColumnMenu();
     const col = columns.find(c => c.name === slug);
     if (!col) return;
-    const newTitle = window.prompt('Rename column:', col.title);
+    const newTitle = await showPrompt('Rename column:', col.title);
     if (!newTitle || newTitle === col.title) return;
     try {
       await getBindings().RenameColumn(slug, newTitle);
@@ -727,7 +753,7 @@
 
   async function handleInsertColumn(afterSlug: string) {
     closeColumnMenu();
-    const title = window.prompt('New column title:');
+    const title = await showPrompt('New column title:');
     if (!title) return;
     try {
       await getBindings().AddColumn(title, afterSlug);
@@ -742,7 +768,7 @@
     closeColumnMenu();
     const idx = columns.findIndex(c => c.name === slug);
     if (idx <= 0) return; // Can't insert before the first column (todo)
-    const title = window.prompt('New column title:');
+    const title = await showPrompt('New column title:');
     if (!title) return;
     try {
       await getBindings().AddColumn(title, columns[idx - 1].name);
@@ -1160,6 +1186,30 @@
   <!-- Error Dialog (rule violations) -->
   {#if errorViolations.length > 0}
     <ErrorDialog violations={errorViolations} onClose={handleErrorClose} />
+  {/if}
+
+  <!-- Prompt Dialog (replaces window.prompt for WebView compatibility) -->
+  {#if promptOpen}
+    <div class="prompt-overlay" role="presentation" onclick={handlePromptCancel}>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div class="prompt-dialog" role="dialog" tabindex="-1" aria-label={promptLabel} onclick={(e) => e.stopPropagation()}>
+        <label class="prompt-label">
+          {promptLabel}
+          <!-- svelte-ignore a11y_autofocus -->
+          <input
+            autofocus
+            class="prompt-input"
+            type="text"
+            bind:value={promptValue}
+            onkeydown={(e) => { if (e.key === 'Enter') handlePromptConfirm(); if (e.key === 'Escape') handlePromptCancel(); }}
+          />
+        </label>
+        <div class="prompt-actions">
+          <button type="button" class="prompt-cancel" onclick={handlePromptCancel}>Cancel</button>
+          <button type="button" class="prompt-ok" onclick={handlePromptConfirm}>OK</button>
+        </div>
+      </div>
+    </div>
   {/if}
 </div>
 
@@ -1643,5 +1693,88 @@
 
   .column-menu-item:hover {
     background-color: var(--color-gray-100);
+  }
+
+  /* Prompt dialog styles */
+  .prompt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .prompt-dialog {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    padding: 1.25rem;
+    min-width: 300px;
+    max-width: 400px;
+  }
+
+  .prompt-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 0.5rem;
+  }
+
+  .prompt-input {
+    display: block;
+    width: 100%;
+    margin-top: 0.375rem;
+    padding: 0.5rem 0.625rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    font-size: 0.875rem;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .prompt-input:focus {
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  }
+
+  .prompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .prompt-cancel,
+  .prompt-ok {
+    padding: 0.375rem 0.875rem;
+    border-radius: 6px;
+    font-size: 0.8125rem;
+    cursor: pointer;
+  }
+
+  .prompt-cancel {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    color: var(--color-gray-600);
+  }
+
+  .prompt-cancel:hover {
+    background-color: var(--color-gray-100);
+  }
+
+  .prompt-ok {
+    background-color: var(--color-primary-500);
+    border: none;
+    color: white;
+  }
+
+  .prompt-ok:hover {
+    background-color: var(--color-primary-600);
   }
 </style>
