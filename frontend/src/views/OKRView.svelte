@@ -11,7 +11,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { Button, ErrorBanner } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
-  import { getBindings } from '../lib/utils/bindings';
+  import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
@@ -156,7 +156,7 @@
     try {
       themes = await getBindings().GetThemes();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load themes';
+      error = extractError(e);
       console.error('Failed to load themes:', e);
     } finally {
       loading = false;
@@ -218,7 +218,7 @@
       showNewThemeForm = false;
     } catch (e) {
       console.error('Failed to create theme:', e);
-      error = e instanceof Error ? e.message : 'Failed to create theme';
+      error = extractError(e);
     }
   }
 
@@ -230,7 +230,7 @@
       editingThemeId = null;
     } catch (e) {
       console.error('Failed to update theme:', e);
-      error = e instanceof Error ? e.message : 'Failed to update theme';
+      error = extractError(e);
     }
   }
 
@@ -243,7 +243,7 @@
       await verifyThemeState();
     } catch (e) {
       console.error('Failed to delete theme:', e);
-      error = e instanceof Error ? e.message : 'Failed to delete theme';
+      error = extractError(e);
     }
   }
 
@@ -261,7 +261,7 @@
       expandId(parentId);
     } catch (e) {
       console.error('Failed to create objective:', e);
-      error = e instanceof Error ? e.message : 'Failed to create objective';
+      error = extractError(e);
     }
   }
 
@@ -274,7 +274,7 @@
       editingObjectiveId = null;
     } catch (e) {
       console.error('Failed to update objective:', e);
-      error = e instanceof Error ? e.message : 'Failed to update objective';
+      error = extractError(e);
     }
   }
 
@@ -288,7 +288,7 @@
       await verifyThemeState();
     } catch (e) {
       console.error('Failed to delete objective:', e);
-      error = e instanceof Error ? e.message : 'Failed to delete objective';
+      error = extractError(e);
     }
   }
 
@@ -308,7 +308,7 @@
       expandId(objectiveId);
     } catch (e) {
       console.error('Failed to create key result:', e);
-      error = e instanceof Error ? e.message : 'Failed to create key result';
+      error = extractError(e);
     }
   }
 
@@ -321,7 +321,7 @@
       editingKeyResultId = null;
     } catch (e) {
       console.error('Failed to update key result:', e);
-      error = e instanceof Error ? e.message : 'Failed to update key result';
+      error = extractError(e);
     }
   }
 
@@ -333,7 +333,7 @@
       await verifyThemeState();
     } catch (e) {
       console.error('Failed to update key result progress:', e);
-      error = e instanceof Error ? e.message : 'Failed to update progress';
+      error = extractError(e);
     }
   }
 
@@ -347,7 +347,7 @@
       await verifyThemeState();
     } catch (e) {
       console.error('Failed to delete key result:', e);
-      error = e instanceof Error ? e.message : 'Failed to delete key result';
+      error = extractError(e);
     }
   }
 
@@ -371,7 +371,7 @@
       await verifyThemeState();
     } catch (e) {
       console.error('Failed to set objective status:', e);
-      error = e instanceof Error ? e.message : 'Failed to update status';
+      error = extractError(e);
     }
   }
 
@@ -382,7 +382,7 @@
       await verifyThemeState();
     } catch (e) {
       console.error('Failed to set key result status:', e);
-      error = e instanceof Error ? e.message : 'Failed to update status';
+      error = extractError(e);
     }
   }
 

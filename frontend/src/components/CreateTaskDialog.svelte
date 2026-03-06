@@ -12,7 +12,7 @@
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
-  import { getBindings } from '../lib/utils/bindings';
+  import { getBindings, extractError } from '../lib/utils/bindings';
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
   type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent' | 'staging';
@@ -245,7 +245,7 @@
         isSubmitting = false;
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to create tasks';
+      error = extractError(e);
       isSubmitting = false;
     }
   }

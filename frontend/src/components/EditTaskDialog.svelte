@@ -9,6 +9,7 @@
   import type { Task, LifeTheme } from '../lib/wails-mock';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
+  import { extractError } from '../lib/utils/bindings';
 
   interface Props {
     task: Task | null;
@@ -69,7 +70,7 @@
       };
       await onSave(updatedTask);
     } catch (e) {
-      errorMessage = e instanceof Error ? e.message : 'Failed to save task';
+      errorMessage = extractError(e);
     } finally {
       isSubmitting = false;
     }

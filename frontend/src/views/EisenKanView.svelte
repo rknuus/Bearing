@@ -29,7 +29,7 @@
     type Task,
     type PromotedTask,
   } from '../lib/wails-mock';
-  import { getBindings } from '../lib/utils/bindings';
+  import { getBindings, extractError } from '../lib/utils/bindings';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
   import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
@@ -398,7 +398,7 @@
         console.error('[EisenKan] Failed to process priority promotions');
       }
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to load data';
+      error = extractError(e);
     } finally {
       loading = false;
     }
@@ -561,7 +561,7 @@
         tasks = reorderZone(tasks, taskIds);
         await verifyTaskState();
       } catch (e) {
-        error = e instanceof Error ? e.message : 'Failed to save task order';
+        error = extractError(e);
       }
       return;
     }
@@ -600,7 +600,7 @@
       isRollingBack = true;
       tasks = snapshotTasks;
       queueMicrotask(() => { isRollingBack = false; });
-      error = e instanceof Error ? e.message : 'Failed to move task';
+      error = extractError(e);
     } finally {
       isValidating = false;
     }
@@ -641,7 +641,7 @@
         tasks = reorderZone(tasks, taskIds);
         await verifyTaskState();
       } catch (e) {
-        error = e instanceof Error ? e.message : 'Failed to save task order';
+        error = extractError(e);
       }
       return;
     }
@@ -677,7 +677,7 @@
         isRollingBack = true;
         tasks = snapshotTasks;
         queueMicrotask(() => { isRollingBack = false; });
-        error = e instanceof Error ? e.message : 'Failed to move task';
+        error = extractError(e);
       } finally {
         isValidating = false;
       }
@@ -706,7 +706,7 @@
         isRollingBack = true;
         tasks = snapshotTasks;
         queueMicrotask(() => { isRollingBack = false; });
-        error = e instanceof Error ? e.message : 'Failed to update priority';
+        error = extractError(e);
       } finally {
         isValidating = false;
       }
@@ -720,7 +720,7 @@
       tasks = tasks.filter(t => t.id !== taskId);
       await verifyTaskState();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete task';
+      error = extractError(e);
     }
   }
 
@@ -757,7 +757,7 @@
       tasks = await fetchTasks();
       await verifyTaskState();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to archive task';
+      error = extractError(e);
     }
   }
 
@@ -767,7 +767,7 @@
       tasks = await fetchTasks();
       await verifyTaskState();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to archive tasks';
+      error = extractError(e);
     }
   }
 
@@ -777,7 +777,7 @@
       tasks = await fetchTasks();
       await verifyTaskState();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to restore task';
+      error = extractError(e);
     }
   }
 
@@ -842,7 +842,7 @@
       await getBindings().RenameColumn(slug, newTitle);
       await refreshBoard();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to rename column';
+      error = extractError(e);
     }
   }
 
@@ -852,7 +852,7 @@
       await getBindings().RemoveColumn(slug);
       await refreshBoard();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to delete column';
+      error = extractError(e);
     }
   }
 
@@ -864,7 +864,7 @@
       await getBindings().AddColumn(title, afterSlug);
       await refreshBoard();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to add column';
+      error = extractError(e);
     }
   }
 
@@ -879,7 +879,7 @@
       await getBindings().AddColumn(title, columns[idx - 1].name);
       await refreshBoard();
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Failed to add column';
+      error = extractError(e);
     }
   }
 </script>
