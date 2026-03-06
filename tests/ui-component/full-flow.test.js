@@ -526,7 +526,198 @@ export async function runTests() {
       reporter.fail(err)
     }
 
-    // ---- Sub-test 10: Final error check ----
+    // ---- Sub-test 10: Add a new column via column header menu ----
+    reporter.startTest('Columns: add a new column via Insert right')
+    try {
+      // Ensure we're on Tasks view
+      await page.keyboard.press('Control+3')
+      await page.waitForSelector('.kanban-board', { timeout: 5000 })
+
+      // Open column menu on TODO column and click "Insert right"
+      await page.click('.kanban-column:first-child .column-menu-btn')
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Insert right")')
+
+      // Fill in the prompt dialog
+      await page.waitForSelector('.prompt-dialog', { timeout: 5000 })
+      await page.fill('.prompt-input', 'Review')
+      await page.click('.prompt-ok')
+      await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
+
+      // Verify "Review" column appears on the board
+      await page.waitForSelector('h2:has-text("Review")', { timeout: 5000 })
+
+      // Verify column order: TODO, Review, DOING, DONE
+      const colTitles = await page.$$eval(
+        '.kanban-column .column-header h2',
+        els => els.map(el => el.textContent.trim())
+      )
+      const expectedCols = ['TODO', 'Review', 'DOING', 'DONE']
+      if (JSON.stringify(colTitles) !== JSON.stringify(expectedCols)) {
+        throw new Error(`Expected columns [${expectedCols.join(', ')}], got [${colTitles.join(', ')}]`)
+      }
+
+      reporter.pass('New "Review" column added after TODO')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 11: Insert a column to the left of another ----
+    reporter.startTest('Columns: insert column to the left')
+    try {
+      // Open column menu on DOING column and click "Insert left"
+      const doingCol = await page.$('.kanban-column:has(h2:has-text("DOING"))')
+      await doingCol.$eval('.column-menu-btn', el => el.click())
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Insert left")')
+
+      // Fill in the prompt dialog
+      await page.waitForSelector('.prompt-dialog', { timeout: 5000 })
+      await page.fill('.prompt-input', 'QA')
+      await page.click('.prompt-ok')
+      await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
+
+      // Verify column order: TODO, Review, QA, DOING, DONE
+      await page.waitForSelector('h2:has-text("QA")', { timeout: 5000 })
+      const colTitles = await page.$$eval(
+        '.kanban-column .column-header h2',
+        els => els.map(el => el.textContent.trim())
+      )
+      const expectedCols = ['TODO', 'Review', 'QA', 'DOING', 'DONE']
+      if (JSON.stringify(colTitles) !== JSON.stringify(expectedCols)) {
+        throw new Error(`Expected columns [${expectedCols.join(', ')}], got [${colTitles.join(', ')}]`)
+      }
+
+      reporter.pass('Column "QA" inserted left of DOING')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 12: Rename a column via prompt dialog ----
+    reporter.startTest('Columns: rename a column')
+    try {
+      // Open column menu on QA column and click "Rename"
+      const qaCol = await page.$('.kanban-column:has(h2:has-text("QA"))')
+      await qaCol.$eval('.column-menu-btn', el => el.click())
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Rename")')
+
+      // Fill in the prompt dialog with new name
+      await page.waitForSelector('.prompt-dialog', { timeout: 5000 })
+      await page.fill('.prompt-input', 'Quality Check')
+      await page.click('.prompt-ok')
+      await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
+
+      // Verify column header text updated
+      await page.waitForSelector('h2:has-text("Quality Check")', { timeout: 5000 })
+
+      // Verify "QA" no longer appears as a column header
+      const colTitles = await page.$$eval(
+        '.kanban-column .column-header h2',
+        els => els.map(el => el.textContent.trim())
+      )
+      if (colTitles.includes('QA')) {
+        throw new Error('Column "QA" should have been renamed')
+      }
+      if (!colTitles.includes('Quality Check')) {
+        throw new Error('Column "Quality Check" not found after rename')
+      }
+
+      reporter.pass('Column renamed from "QA" to "Quality Check"')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 13: Attempt to delete non-empty column → error ----
+    reporter.startTest('Columns: delete non-empty column shows error')
+    try {
+      // DOING column has CG-T2 ("Respond to emails") in it
+      const doingCol = await page.$('.kanban-column:has(h2:has-text("DOING"))')
+      await doingCol.$eval('.column-menu-btn', el => el.click())
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Delete")')
+
+      // Verify error banner appears
+      await page.waitForSelector('.error-banner', { timeout: 5000 })
+      const errorText = await page.$eval('.error-banner span', el => el.textContent)
+      if (!errorText.includes('not empty')) {
+        throw new Error(`Expected "not empty" error, got "${errorText}"`)
+      }
+
+      // Dismiss error banner
+      await page.click('.error-banner button')
+      await page.waitForSelector('.error-banner', { state: 'detached', timeout: 5000 })
+
+      // DOING column should still exist
+      await page.waitForSelector('h2:has-text("DOING")', { timeout: 5000 })
+
+      reporter.pass('Non-empty column deletion blocked with error')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 14: Delete an empty doing-type column ----
+    reporter.startTest('Columns: delete empty doing-type column')
+    try {
+      // Delete the empty "Review" column
+      const reviewCol = await page.$('.kanban-column:has(h2:has-text("Review"))')
+      await reviewCol.$eval('.column-menu-btn', el => el.click())
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Delete")')
+
+      // Verify "Review" column is gone
+      await page.waitForFunction(() => {
+        const headers = document.querySelectorAll('.kanban-column .column-header h2')
+        return !Array.from(headers).some(h => h.textContent.trim() === 'Review')
+      }, { timeout: 5000 })
+
+      // Verify remaining columns: TODO, Quality Check, DOING, DONE
+      const colTitles = await page.$$eval(
+        '.kanban-column .column-header h2',
+        els => els.map(el => el.textContent.trim())
+      )
+      const expectedCols = ['TODO', 'Quality Check', 'DOING', 'DONE']
+      if (JSON.stringify(colTitles) !== JSON.stringify(expectedCols)) {
+        throw new Error(`Expected columns [${expectedCols.join(', ')}], got [${colTitles.join(', ')}]`)
+      }
+
+      reporter.pass('Empty "Review" column deleted')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 15: Column changes persist across navigation ----
+    reporter.startTest('Columns: changes persist across navigation')
+    try {
+      // Navigate to OKRs
+      await page.keyboard.press('Control+1')
+      await page.waitForSelector('.okr-header', { timeout: 5000 })
+
+      // Navigate back to Tasks
+      await page.keyboard.press('Control+3')
+      await page.waitForSelector('.kanban-board', { timeout: 5000 })
+
+      // Verify columns still include "Quality Check" and exclude "Review"
+      const colTitles = await page.$$eval(
+        '.kanban-column .column-header h2',
+        els => els.map(el => el.textContent.trim())
+      )
+      if (!colTitles.includes('Quality Check')) {
+        throw new Error(`"Quality Check" column not found after navigation. Got: [${colTitles.join(', ')}]`)
+      }
+      if (colTitles.includes('Review')) {
+        throw new Error('"Review" column reappeared after navigation')
+      }
+      if (colTitles.includes('QA')) {
+        throw new Error('"QA" column reappeared after navigation (should be renamed)')
+      }
+
+      reporter.pass('Column changes persisted across navigation')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- Sub-test 16: Final error check ----
     reporter.startTest('Final: no page or console errors throughout flow')
     try {
       if (pageErrors.length > 0) {
