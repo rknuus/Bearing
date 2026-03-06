@@ -783,6 +783,68 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 	}
 }
 
+func TestIntegration_TaskIDGenerationMismatchedArchive(t *testing.T) {
+	manager, _, _, tmpDir, cleanup := setupIntegrationTest(t)
+	defer cleanup()
+
+	theme, err := manager.CreateTheme("Health", "#22c55e")
+	if err != nil {
+		t.Fatalf("Failed to create theme: %v", err)
+	}
+
+	task1, err := manager.CreateTask("First task", theme.ID, "2026-01-15", "important-urgent", "", "", "", "")
+	if err != nil {
+		t.Fatalf("Failed to create task: %v", err)
+	}
+	if task1.ID != "H-T1" {
+		t.Fatalf("Expected task ID H-T1, got %s", task1.ID)
+	}
+
+	moveResult, err := manager.MoveTask(task1.ID, "done", nil)
+	if err != nil {
+		t.Fatalf("Failed to move task to done: %v", err)
+	}
+	if !moveResult.Success {
+		t.Fatalf("Move task rejected: %v", moveResult.Violations)
+	}
+
+	if err := manager.ArchiveTask(task1.ID); err != nil {
+		t.Fatalf("Failed to archive task: %v", err)
+	}
+
+	archivedPath := filepath.Join(tmpDir, "data", "tasks", "archived", task1.ID+".json")
+	data, err := os.ReadFile(archivedPath)
+	if err != nil {
+		t.Fatalf("Failed to read archived task file: %v", err)
+	}
+
+	var taskData map[string]interface{}
+	if err := json.Unmarshal(data, &taskData); err != nil {
+		t.Fatalf("Failed to parse archived task file: %v", err)
+	}
+	taskData["themeId"] = "XX"
+	modified, err := json.MarshalIndent(taskData, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal modified task: %v", err)
+	}
+	if err := os.WriteFile(archivedPath, modified, 0644); err != nil {
+		t.Fatalf("Failed to write modified task file: %v", err)
+	}
+
+	task2, err := manager.CreateTask("Second task", theme.ID, "2026-01-16", "important-urgent", "", "", "", "")
+	if err != nil {
+		t.Fatalf("Failed to create second task: %v", err)
+	}
+	if task2.ID != "H-T2" {
+		t.Errorf("Expected task ID H-T2, got %s", task2.ID)
+	}
+
+	newTaskPath := filepath.Join(tmpDir, "data", "tasks", "todo", task2.ID+".json")
+	if _, err := os.Stat(newTaskPath); os.IsNotExist(err) {
+		t.Errorf("New task file not found at expected location: %s", newTaskPath)
+	}
+}
+
 // TestIntegration_TaskWorkflowComplete tests the complete task workflow
 func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	manager, _, _, _, cleanup := setupIntegrationTest(t)
