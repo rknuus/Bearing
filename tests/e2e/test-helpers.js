@@ -119,6 +119,26 @@ export function assertFileNotExists(dataDir, relativePath) {
 }
 
 /**
+ * Assert directory exists at the given relative path
+ */
+export function assertDirExists(dataDir, relativePath) {
+  const fullPath = path.join(dataDir, relativePath)
+  if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
+    throw new Error(`Expected directory to exist: ${relativePath}`)
+  }
+}
+
+/**
+ * Assert directory does NOT exist at the given relative path
+ */
+export function assertDirNotExists(dataDir, relativePath) {
+  const fullPath = path.join(dataDir, relativePath)
+  if (fs.existsSync(fullPath)) {
+    throw new Error(`Expected directory NOT to exist: ${relativePath}`)
+  }
+}
+
+/**
  * List task files in a status directory
  */
 export function getTaskFiles(dataDir, status) {

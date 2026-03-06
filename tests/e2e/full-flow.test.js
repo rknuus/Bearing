@@ -25,6 +25,8 @@ import {
   getGitCommitCount,
   assertFileExists,
   assertFileNotExists,
+  assertDirExists,
+  assertDirNotExists,
   getTaskFiles,
   isWorkingTreeClean,
 } from './test-helpers.js'
@@ -615,6 +617,176 @@ export async function runTests() {
       assertCommitCount('after clear day focus')
 
       reporter.pass(`Day focus cleared: ${dayToClear.date}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ================================================================
+    // Phase 6: Column Management
+    // ================================================================
+
+    // Navigate to EisenKan board
+    await page.keyboard.press('Control+3')
+    await page.waitForSelector('.eisenkan-container', { timeout: 10000 })
+
+    // ---- 6a: Add column via UI ----
+    reporter.startTest('Phase 6a: Add column via UI and verify files')
+    try {
+      const doingMenuBtn = page.locator('button[aria-label="Column options for DOING"]')
+      await doingMenuBtn.click()
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Insert right")')
+      await page.waitForSelector('.prompt-dialog', { timeout: 5000 })
+      await page.fill('.prompt-input', 'E2E Review')
+      await page.click('.prompt-ok')
+      await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
+      await page.waitForSelector('h2:has-text("E2E Review")', { timeout: 5000 })
+
+      assertFileExists(DATA_DIR, 'board_config.json')
+      const config = readJSON(DATA_DIR, 'board_config.json')
+      const newCol = config.columnDefinitions.find(c => c.name === 'e2e-review')
+      if (!newCol) throw new Error('Column "e2e-review" not found in board_config.json')
+      if (newCol.title !== 'E2E Review') throw new Error(`Expected title "E2E Review", got "${newCol.title}"`)
+      if (newCol.type !== 'doing') throw new Error(`Expected type "doing", got "${newCol.type}"`)
+
+      assertDirExists(DATA_DIR, 'tasks/e2e-review')
+
+      expectedCommits++
+      assertCommitCount('after add column')
+      assertLatestCommitContains('Add column')
+
+      reporter.pass('Column "e2e-review" added')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 6b: Create task in custom column, then rename column ----
+    reporter.startTest('Phase 6b: Create task in custom column, rename column, verify migration')
+    try {
+      await page.evaluate(async () => {
+        const app = window.go.main.App
+        await app.CreateTask('E2E Column Task', '', '2026-03-01', 'important-urgent', '', '', '', '')
+      })
+
+      expectedCommits++
+
+      // Move task to the custom column
+      const todoFilesForCol = getTaskFiles(DATA_DIR, 'todo')
+      const colTaskFile = todoFilesForCol.find(f => {
+        const t = readJSON(DATA_DIR, `tasks/todo/${f}`)
+        return t.title === 'E2E Column Task'
+      })
+      if (!colTaskFile) throw new Error('Task "E2E Column Task" not found in todo')
+      const colTask = readJSON(DATA_DIR, `tasks/todo/${colTaskFile}`)
+      const colTaskId = colTask.id
+
+      await page.evaluate(async (taskId) => {
+        const app = window.go.main.App
+        await app.MoveTask(taskId, 'e2e-review', null)
+      }, colTaskId)
+
+      expectedCommits += 2
+      assertFileExists(DATA_DIR, `tasks/e2e-review/${colTaskId}.json`)
+
+      // Rename column via UI
+      const reviewMenuBtn = page.locator('button[aria-label="Column options for E2E Review"]')
+      await reviewMenuBtn.click()
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Rename")')
+      await page.waitForSelector('.prompt-dialog', { timeout: 5000 })
+      await page.fill('.prompt-input', 'E2E Verify')
+      await page.click('.prompt-ok')
+      await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
+      await page.waitForSelector('h2:has-text("E2E Verify")', { timeout: 5000 })
+
+      expectedCommits++
+
+      // Verify task file migrated to new directory
+      assertDirNotExists(DATA_DIR, 'tasks/e2e-review')
+      assertDirExists(DATA_DIR, 'tasks/e2e-verify')
+      assertFileExists(DATA_DIR, `tasks/e2e-verify/${colTaskId}.json`)
+
+      const migratedTask = readJSON(DATA_DIR, `tasks/e2e-verify/${colTaskId}.json`)
+      if (migratedTask.title !== 'E2E Column Task') {
+        throw new Error(`Migrated task title="${migratedTask.title}", expected "E2E Column Task"`)
+      }
+
+      // Verify task_order.json updated
+      const order = readJSON(DATA_DIR, 'task_order.json')
+      if (order['e2e-review']) throw new Error('task_order.json still has "e2e-review" key')
+      const verifyOrder = order['e2e-verify'] || []
+      if (!verifyOrder.includes(colTaskId)) {
+        throw new Error(`task_order.json "e2e-verify" does not contain ${colTaskId}`)
+      }
+
+      // Verify board_config.json updated
+      const configAfterRename = readJSON(DATA_DIR, 'board_config.json')
+      const renamedCol = configAfterRename.columnDefinitions.find(c => c.name === 'e2e-verify')
+      if (!renamedCol) throw new Error('Column "e2e-verify" not found in board_config.json after rename')
+      if (renamedCol.title !== 'E2E Verify') throw new Error(`Renamed column title="${renamedCol.title}"`)
+      const oldCol = configAfterRename.columnDefinitions.find(c => c.name === 'e2e-review')
+      if (oldCol) throw new Error('Old column "e2e-review" still in board_config.json')
+
+      reporter.pass(`Column renamed, task ${colTaskId} migrated to e2e-verify`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 6c: Remove empty column via UI ----
+    reporter.startTest('Phase 6c: Remove empty column via UI and verify files')
+    try {
+      // Move task out of the custom column first
+      const verifyFiles = getTaskFiles(DATA_DIR, 'e2e-verify')
+      if (verifyFiles.length > 0) {
+        const taskToMove = readJSON(DATA_DIR, `tasks/e2e-verify/${verifyFiles[0]}`)
+        await page.evaluate(async (taskId) => {
+          const app = window.go.main.App
+          await app.MoveTask(taskId, 'doing', null)
+        }, taskToMove.id)
+        expectedCommits += 2
+      }
+
+      // Delete the now-empty column via UI
+      const verifyMenuBtn = page.locator('button[aria-label="Column options for E2E Verify"]')
+      await verifyMenuBtn.click()
+      await page.waitForSelector('.column-menu', { timeout: 5000 })
+      await page.click('.column-menu-item:has-text("Delete")')
+      await page.waitForSelector('h2:has-text("E2E Verify")', { state: 'detached', timeout: 5000 })
+
+      expectedCommits++
+
+      assertDirNotExists(DATA_DIR, 'tasks/e2e-verify')
+
+      const configAfterDelete = readJSON(DATA_DIR, 'board_config.json')
+      const deletedCol = configAfterDelete.columnDefinitions.find(c => c.name === 'e2e-verify')
+      if (deletedCol) throw new Error('Column "e2e-verify" still in board_config.json after delete')
+
+      const orderAfterDelete = readJSON(DATA_DIR, 'task_order.json')
+      if (orderAfterDelete['e2e-verify']) {
+        throw new Error('task_order.json still has "e2e-verify" key after column delete')
+      }
+
+      assertLatestCommitContains('Remove column')
+
+      reporter.pass('Column "e2e-verify" removed')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 6d: Verify git commit count for column operations ----
+    reporter.startTest('Phase 6d: Verify git commit count for column operations')
+    try {
+      assertCommitCount('after all column operations')
+
+      const log = getGitLog(DATA_DIR)
+      const addCommit = log.find(m => m.includes('Add column') && m.includes('E2E Review'))
+      if (!addCommit) throw new Error('No "Add column: E2E Review" commit found')
+      const renameCommit = log.find(m => m.includes('Rename column'))
+      if (!renameCommit) throw new Error('No "Rename column" commit found')
+      const removeCommit = log.find(m => m.includes('Remove column') && m.includes('e2e-verify'))
+      if (!removeCommit) throw new Error('No "Remove column: e2e-verify" commit found')
+
+      reporter.pass('All column operation commits verified')
     } catch (err) {
       reporter.fail(err)
     }
