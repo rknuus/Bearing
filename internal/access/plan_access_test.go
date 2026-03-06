@@ -2204,25 +2204,51 @@ func TestUnit_FindTaskInPlan_DynamicStatuses(t *testing.T) {
 	}
 }
 
-func TestUnit_EnsureAndRemoveStatusDirectory(t *testing.T) {
+func TestUnit_EnsureStatusDirectory(t *testing.T) {
 	pa, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
+
+	dirPath := filepath.Join(tmpDir, "data", "tasks", "in-review")
 
 	if err := pa.EnsureStatusDirectory("in-review"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
-
-	dirPath := filepath.Join(tmpDir, "data", "tasks", "in-review")
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		t.Error("Expected directory to exist after EnsureStatusDirectory")
 	}
 
-	if err := pa.RemoveStatusDirectory("in-review"); err != nil {
-		t.Fatalf("RemoveStatusDirectory failed: %v", err)
+	if err := pa.EnsureStatusDirectory("in-review"); err != nil {
+		t.Fatalf("Idempotent EnsureStatusDirectory failed: %v", err)
+	}
+	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+		t.Error("Expected directory to still exist after idempotent call")
+	}
+}
+
+func TestUnit_RemoveStatusDirectory(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	if err := pa.EnsureStatusDirectory("empty-col"); err != nil {
+		t.Fatalf("EnsureStatusDirectory failed: %v", err)
+	}
+	if err := pa.RemoveStatusDirectory("empty-col"); err != nil {
+		t.Fatalf("RemoveStatusDirectory on empty dir failed: %v", err)
+	}
+	dirPath := filepath.Join(tmpDir, "data", "tasks", "empty-col")
+	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
+		t.Error("Expected directory to be removed")
 	}
 
-	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
-		t.Error("Expected directory to be removed after RemoveStatusDirectory")
+	if err := pa.EnsureStatusDirectory("non-empty"); err != nil {
+		t.Fatalf("EnsureStatusDirectory failed: %v", err)
+	}
+	filePath := filepath.Join(tmpDir, "data", "tasks", "non-empty", "task.json")
+	if err := os.WriteFile(filePath, []byte("{}"), 0644); err != nil {
+		t.Fatalf("Failed to create file in directory: %v", err)
+	}
+	if err := pa.RemoveStatusDirectory("non-empty"); err == nil {
+		t.Error("Expected error when removing non-empty directory")
 	}
 }
 
@@ -2233,6 +2259,10 @@ func TestUnit_RenameStatusDirectory(t *testing.T) {
 	if err := pa.EnsureStatusDirectory("old-name"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
+	filePath := filepath.Join(tmpDir, "data", "tasks", "old-name", "task.json")
+	if err := os.WriteFile(filePath, []byte(`{"id":"T1"}`), 0644); err != nil {
+		t.Fatalf("Failed to create file: %v", err)
+	}
 
 	if err := pa.RenameStatusDirectory("old-name", "new-name"); err != nil {
 		t.Fatalf("RenameStatusDirectory failed: %v", err)
@@ -2240,12 +2270,99 @@ func TestUnit_RenameStatusDirectory(t *testing.T) {
 
 	oldPath := filepath.Join(tmpDir, "data", "tasks", "old-name")
 	newPath := filepath.Join(tmpDir, "data", "tasks", "new-name")
-
 	if _, err := os.Stat(oldPath); !os.IsNotExist(err) {
 		t.Error("Expected old directory to not exist")
 	}
 	if _, err := os.Stat(newPath); os.IsNotExist(err) {
 		t.Error("Expected new directory to exist")
+	}
+	movedFile := filepath.Join(newPath, "task.json")
+	data, err := os.ReadFile(movedFile)
+	if err != nil {
+		t.Fatalf("Expected file to exist under new name: %v", err)
+	}
+	if string(data) != `{"id":"T1"}` {
+		t.Errorf("Expected file contents preserved, got %s", string(data))
+	}
+}
+
+func TestUnit_CommitAll(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
+	repo, _ := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
+	defer repo.Close()
+
+	baseHistory, err := repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	baseCount := len(baseHistory)
+
+	configPath := pa.boardConfigFilePath()
+	if err := writeJSON(configPath, map[string]string{"name": "modified"}); err != nil {
+		t.Fatalf("Failed to write board config: %v", err)
+	}
+	taskFile := filepath.Join(tmpDir, "data", "tasks", "todo", "X-T1.json")
+	if err := os.WriteFile(taskFile, []byte(`{"id":"X-T1"}`), 0644); err != nil {
+		t.Fatalf("Failed to write task file: %v", err)
+	}
+
+	if err := pa.CommitAll("batch update"); err != nil {
+		t.Fatalf("CommitAll failed: %v", err)
+	}
+
+	afterHistory, err := repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	if len(afterHistory)-baseCount != 1 {
+		t.Errorf("Expected exactly 1 new commit, got %d", len(afterHistory)-baseCount)
+	}
+	if afterHistory[0].Message != "batch update" {
+		t.Errorf("Expected commit message 'batch update', got %q", afterHistory[0].Message)
+	}
+
+	status, err := repo.Status()
+	if err != nil {
+		t.Fatalf("Status failed: %v", err)
+	}
+	if len(status.ModifiedFiles)+len(status.StagedFiles)+len(status.UntrackedFiles) != 0 {
+		t.Error("Expected no uncommitted files after CommitAll")
+	}
+}
+
+func TestUnit_WriteTaskOrder(t *testing.T) {
+	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
+	repo, _ := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
+	defer repo.Close()
+
+	beforeHistory, err := repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	beforeCount := len(beforeHistory)
+
+	order := map[string][]string{"todo": {"H-T1", "H-T2"}}
+	if err := pa.WriteTaskOrder(order); err != nil {
+		t.Fatalf("WriteTaskOrder failed: %v", err)
+	}
+
+	filePath := filepath.Join(tmpDir, "data", "task_order.json")
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		t.Error("Expected task_order.json to exist on disk")
+	}
+
+	afterHistory, err := repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	if len(afterHistory) != beforeCount {
+		t.Errorf("Expected no new git commit, but commit count changed from %d to %d", beforeCount, len(afterHistory))
 	}
 }
 
