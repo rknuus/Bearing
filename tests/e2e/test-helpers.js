@@ -153,7 +153,7 @@ export function getTaskFiles(dataDir, status) {
 export function isWorkingTreeClean(dataDir) {
   try {
     // Only check tracked files (ignore untracked like .gitignore, navigation_context.json)
-    const output = execSync('git diff --name-only && git diff --cached --name-only', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
+    const output = execSync('git diff --name-only -- ":!bearing.log" && git diff --cached --name-only -- ":!bearing.log"', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
     return output.trim() === ''
   } catch {
     return true

@@ -663,10 +663,29 @@ export async function runTests() {
     // ---- 6b: Create task in custom column, then rename column ----
     reporter.startTest('Phase 6b: Create task in custom column, rename column, verify migration')
     try {
-      await page.evaluate(async () => {
+      // Create a theme for Phase 6 tasks (Phase 5d deleted the original)
+      await page.click('.nav-link:has-text("OKRs")')
+      await page.waitForSelector('.okr-header', { timeout: 10000 })
+      await page.click('.btn-primary:has-text("+ Add Theme")')
+      await page.waitForSelector('.theme-form', { timeout: 5000 })
+      await page.fill('.theme-form input[type="text"]', 'Column Test')
+      await page.click('.theme-form .color-option:nth-child(2)')
+      await page.click('.theme-form .btn-primary:has-text("Create")')
+      await page.waitForSelector('.item-name:has-text("Column Test")', { timeout: 5000 })
+      expectedCommits++
+
+      const colThemes = readThemes(DATA_DIR)
+      const colThemeId = colThemes.find(t => t.name === 'Column Test')?.id
+      if (!colThemeId) throw new Error('Column Test theme not found')
+
+      // Navigate back to EisenKan
+      await page.keyboard.press('Control+3')
+      await page.waitForSelector('.eisenkan-container', { timeout: 10000 })
+
+      await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Column Task', '', '2026-03-01', 'important-urgent', '', '', '', '')
-      })
+        await app.CreateTask('E2E Column Task', tid, '2026-03-01', 'important-urgent', '', '', '', '')
+      }, colThemeId)
 
       expectedCommits++
 
