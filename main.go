@@ -897,20 +897,8 @@ func (a *App) ReorderTasks(positions map[string][]string) (*ReorderResult, error
 	}, nil
 }
 
-// GetBoardConfiguration returns the board structure and column layout
-func (a *App) GetBoardConfiguration() (*BoardConfiguration, error) {
-	if a.planningManager == nil {
-		slog.Warn("GetBoardConfiguration: planning manager not initialized")
-		return nil, fmt.Errorf("planning manager not initialized")
-	}
-
-	config, err := a.planningManager.GetBoardConfiguration()
-	if err != nil {
-		slog.Error("GetBoardConfiguration failed", "error", err)
-		return nil, err
-	}
-
-	// Convert to Wails binding types
+// convertBoardConfig converts an access.BoardConfiguration to the Wails binding type.
+func convertBoardConfig(config *access.BoardConfiguration) *BoardConfiguration {
 	columns := make([]ColumnDefinition, len(config.ColumnDefinitions))
 	for i, col := range config.ColumnDefinitions {
 		sections := make([]SectionDefinition, len(col.Sections))
@@ -928,11 +916,90 @@ func (a *App) GetBoardConfiguration() (*BoardConfiguration, error) {
 			Sections: sections,
 		}
 	}
-
 	return &BoardConfiguration{
 		Name:              config.Name,
 		ColumnDefinitions: columns,
-	}, nil
+	}
+}
+
+// GetBoardConfiguration returns the board structure and column layout
+func (a *App) GetBoardConfiguration() (*BoardConfiguration, error) {
+	if a.planningManager == nil {
+		slog.Warn("GetBoardConfiguration: planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	config, err := a.planningManager.GetBoardConfiguration()
+	if err != nil {
+		slog.Error("GetBoardConfiguration failed", "error", err)
+		return nil, err
+	}
+
+	return convertBoardConfig(config), nil
+}
+
+// AddColumn adds a new doing-type column after the specified column
+func (a *App) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, error) {
+	if a.planningManager == nil {
+		slog.Warn("AddColumn: planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	config, err := a.planningManager.AddColumn(title, insertAfterSlug)
+	if err != nil {
+		slog.Error("AddColumn failed", "error", err, "title", title, "insertAfter", insertAfterSlug)
+		return nil, err
+	}
+
+	return convertBoardConfig(config), nil
+}
+
+// RemoveColumn removes an empty doing-type column
+func (a *App) RemoveColumn(slug string) (*BoardConfiguration, error) {
+	if a.planningManager == nil {
+		slog.Warn("RemoveColumn: planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	config, err := a.planningManager.RemoveColumn(slug)
+	if err != nil {
+		slog.Error("RemoveColumn failed", "error", err, "slug", slug)
+		return nil, err
+	}
+
+	return convertBoardConfig(config), nil
+}
+
+// RenameColumn renames a column, migrating its directory and task data
+func (a *App) RenameColumn(oldSlug, newTitle string) (*BoardConfiguration, error) {
+	if a.planningManager == nil {
+		slog.Warn("RenameColumn: planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	config, err := a.planningManager.RenameColumn(oldSlug, newTitle)
+	if err != nil {
+		slog.Error("RenameColumn failed", "error", err, "oldSlug", oldSlug, "newTitle", newTitle)
+		return nil, err
+	}
+
+	return convertBoardConfig(config), nil
+}
+
+// ReorderColumns reorders columns while keeping TODO first and DONE last
+func (a *App) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
+	if a.planningManager == nil {
+		slog.Warn("ReorderColumns: planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	config, err := a.planningManager.ReorderColumns(slugs)
+	if err != nil {
+		slog.Error("ReorderColumns failed", "error", err)
+		return nil, err
+	}
+
+	return convertBoardConfig(config), nil
 }
 
 // LoadNavigationContext retrieves the saved navigation state
