@@ -216,8 +216,8 @@ export async function runTests() {
       })
 
       // Navigate away and back to trigger fresh data fetch
-      await page.click('.nav-link:has-text("Home")')
-      await page.waitForSelector('.placeholder-view', { timeout: 5000 })
+      await page.click('.nav-link:has-text("OKRs")')
+      await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
@@ -276,8 +276,8 @@ export async function runTests() {
       })
 
       // Navigate away and back to refresh
-      await page.click('.nav-link:has-text("Home")')
-      await page.waitForSelector('.placeholder-view', { timeout: 5000 })
+      await page.click('.nav-link:has-text("OKRs")')
+      await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
@@ -377,8 +377,8 @@ export async function runTests() {
       })
 
       // Navigate away and back to refresh state
-      await page.click('.nav-link:has-text("Home")')
-      await page.waitForSelector('.placeholder-view', { timeout: 5000 })
+      await page.click('.nav-link:has-text("OKRs")')
+      await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
