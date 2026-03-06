@@ -745,6 +745,7 @@
               aria-label="Select color {color}"
             ></button>
           {/each}
+          <input type="color" class="color-input" bind:value={newThemeColor} aria-label="Custom color" />
         </div>
         <div class="form-actions">
           <Button variant="primary" onclick={createTheme}>Create</Button>
@@ -785,6 +786,7 @@
                     aria-label="Select color {color}"
                   ></button>
                 {/each}
+                <input type="color" class="color-input small" bind:value={editThemeColor} aria-label="Custom color" />
               </div>
               <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save">&#10003;</Button>
               <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">&#10005;</Button>
@@ -1100,6 +1102,20 @@
   .color-option.small {
     width: 18px;
     height: 18px;
+  }
+
+  .color-input {
+    height: 24px;
+    width: 24px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .color-input.small {
+    height: 18px;
+    width: 18px;
   }
 
   .form-actions {
