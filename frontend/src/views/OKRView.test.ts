@@ -288,4 +288,75 @@ describe('OKRView', () => {
       );
     });
   });
+
+  it('custom color input is present in create-theme form', async () => {
+    await renderView();
+
+    // Click "+ Add Theme" button
+    const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+    addThemeBtn!.click();
+    await tick();
+
+    const colorInput = container.querySelector<HTMLInputElement>('.theme-form input[type="color"]');
+    expect(colorInput).toBeTruthy();
+  });
+
+  it('custom color input is present in edit-theme form', async () => {
+    await renderView();
+
+    // Click edit button on the theme
+    const editButton = container.querySelector<HTMLButtonElement>('.theme-header .btn-icon.icon-edit');
+    expect(editButton).toBeTruthy();
+    editButton!.click();
+    await tick();
+
+    const colorInput = container.querySelector<HTMLInputElement>('.theme-header input[type="color"]');
+    expect(colorInput).toBeTruthy();
+  });
+
+  it('duplicate warning appears when selecting a color used by another theme', async () => {
+    await renderView();
+
+    // Click "+ Add Theme" button — default color is #3b82f6, same as Test Theme
+    const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+    addThemeBtn!.click();
+    await tick();
+
+    const warning = container.querySelector('.color-warning');
+    expect(warning).toBeTruthy();
+    expect(warning!.textContent).toContain('Already used by');
+    expect(warning!.textContent).toContain('Test Theme');
+  });
+
+  it('duplicate warning disappears when selecting a unique color', async () => {
+    await renderView();
+
+    // Click "+ Add Theme" button
+    const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+    addThemeBtn!.click();
+    await tick();
+
+    // Change to a unique color
+    const colorInput = container.querySelector<HTMLInputElement>('.theme-form input[type="color"]');
+    expect(colorInput).toBeTruthy();
+    await fireEvent.input(colorInput!, { target: { value: '#000000' } });
+    await tick();
+
+    const warning = container.querySelector('.theme-form .color-warning');
+    expect(warning).toBeNull();
+  });
+
+  it('duplicate warning excludes the theme being edited (no self-conflict)', async () => {
+    await renderView();
+
+    // Click edit button on the theme (its color is #3b82f6)
+    const editButton = container.querySelector<HTMLButtonElement>('.theme-header .btn-icon.icon-edit');
+    expect(editButton).toBeTruthy();
+    editButton!.click();
+    await tick();
+
+    // Its own color should NOT show a warning (self-conflict excluded)
+    const warning = container.querySelector('.theme-header .color-warning');
+    expect(warning).toBeNull();
+  });
 });
