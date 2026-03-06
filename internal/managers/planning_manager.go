@@ -682,11 +682,24 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 
 // dropZoneForTask returns the drop zone ID for a task based on its status and priority.
 // Todo tasks use their priority section name; doing/done tasks use the column name.
-func dropZoneForTask(status, priority string) string {
-	if status == string(access.TaskStatusTodo) && priority != "" {
+// dropZoneForTask returns the drop zone ID for a task. For todo-type columns,
+// the drop zone is the priority (for section-based rendering). For other columns,
+// the drop zone is the status itself. todoSlug is the slug of the todo-type column.
+func dropZoneForTask(status, priority, todoSlug string) string {
+	if status == todoSlug && priority != "" {
 		return priority
 	}
 	return status
+}
+
+// todoSlugFromConfig returns the slug of the todo-type column from the board config.
+func todoSlugFromConfig(config *access.BoardConfiguration) string {
+	for _, col := range config.ColumnDefinitions {
+		if col.Type == access.ColumnTypeTodo {
+			return col.Name
+		}
+	}
+	return string(access.TaskStatusTodo) // fallback
 }
 
 // GetTasks returns all tasks with their status across all themes.
@@ -695,8 +708,20 @@ func dropZoneForTask(status, priority string) string {
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	var allTasks []TaskWithStatus
 
-	for _, status := range access.AllTaskStatuses() {
-		tasks, err := m.planAccess.GetTasksByStatus(string(status))
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get board config: %w", err)
+	}
+
+	// Collect statuses from board config + archived
+	statuses := make([]string, 0, len(config.ColumnDefinitions)+1)
+	for _, col := range config.ColumnDefinitions {
+		statuses = append(statuses, col.Name)
+	}
+	statuses = append(statuses, string(access.TaskStatusArchived))
+
+	for _, status := range statuses {
+		tasks, err := m.planAccess.GetTasksByStatus(status)
 		if err != nil {
 			return nil, fmt.Errorf("PlanningManager.GetTasks: failed to get tasks for status %s: %w", status, err)
 		}
@@ -704,7 +729,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 		for _, task := range tasks {
 			allTasks = append(allTasks, TaskWithStatus{
 				Task:   task,
-				Status: string(status),
+				Status: status,
 			})
 		}
 	}
@@ -724,10 +749,11 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 			}
 		}
 
+		tSlug := todoSlugFromConfig(config)
 		sort.SliceStable(allTasks, func(i, j int) bool {
 			a, b := allTasks[i], allTasks[j]
-			zoneA := dropZoneForTask(a.Status, a.Priority)
-			zoneB := dropZoneForTask(b.Status, b.Priority)
+			zoneA := dropZoneForTask(a.Status, a.Priority, tSlug)
+			zoneB := dropZoneForTask(b.Status, b.Priority, tSlug)
 			if zoneA != zoneB {
 				return zoneA < zoneB // Total order across zones for sort correctness
 			}
@@ -853,7 +879,8 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 	}
 
 	// Save task and update task order atomically in a single git commit
-	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority)
+	createConfig, _ := m.planAccess.GetBoardConfiguration()
+	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority, todoSlugFromConfig(createConfig))
 	createdTask, err := m.planAccess.SaveTaskWithOrder(task, zone)
 	if err != nil {
 		return nil, fmt.Errorf("PlanningManager.CreateTask: failed to save task: %w", err)
@@ -867,7 +894,18 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 // with the move. When nil, the task is appended to the end of the target zone.
 // Returns a MoveTaskResult with violation details on rejection.
 func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error) {
-	if !access.IsValidTaskStatus(newStatus) {
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to get board config: %w", err)
+	}
+	validStatus := false
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == newStatus {
+			validStatus = true
+			break
+		}
+	}
+	if !validStatus {
 		return nil, fmt.Errorf("PlanningManager.MoveTask: invalid status %s", newStatus)
 	}
 
@@ -941,7 +979,8 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	}
 
 	// Update task order: remove from source drop zone, then apply positions or append to target
-	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority)
+	moveTodoSlug := todoSlugFromConfig(config)
+	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority, moveTodoSlug)
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
 		return nil, fmt.Errorf("PlanningManager.MoveTask: failed to load task order: %w", err)
@@ -952,7 +991,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 			orderMap[zone] = ids
 		}
 	} else {
-		targetZone := dropZoneForTask(newStatus, movingTask.Priority)
+		targetZone := dropZoneForTask(newStatus, movingTask.Priority, moveTodoSlug)
 		orderMap[targetZone] = append(orderMap[targetZone], taskId)
 	}
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
@@ -1276,6 +1315,255 @@ func (m *PlanningManager) GetBoardConfiguration() (*access.BoardConfiguration, e
 	if err != nil {
 		return nil, fmt.Errorf("PlanningManager.GetBoardConfiguration: %w", err)
 	}
+	return config, nil
+}
+
+// reservedSlugs are column slugs that cannot be used for custom columns.
+var reservedSlugs = map[string]bool{
+	"archived": true,
+}
+
+// AddColumn adds a new doing-type column after the specified column.
+func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.BoardConfiguration, error) {
+	slug := access.Slugify(title)
+	if slug == "" {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: title produces empty slug")
+	}
+	if reservedSlugs[slug] {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: slug %q is reserved", slug)
+	}
+
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+	}
+
+	// Validate slug uniqueness
+	for _, col := range config.ColumnDefinitions {
+		if col.Name == slug {
+			return nil, fmt.Errorf("PlanningManager.AddColumn: column %q already exists", slug)
+		}
+	}
+
+	// Find insertion position
+	insertIdx := -1
+	for i, col := range config.ColumnDefinitions {
+		if col.Name == insertAfterSlug {
+			insertIdx = i + 1
+			break
+		}
+	}
+	if insertIdx < 0 {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: column %q not found", insertAfterSlug)
+	}
+
+	// Validate: cannot insert before first (todo) or after last (done)
+	if insertIdx <= 0 {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: cannot insert before the first column")
+	}
+	if insertIdx >= len(config.ColumnDefinitions) && config.ColumnDefinitions[len(config.ColumnDefinitions)-1].Type == access.ColumnTypeDone {
+		// insertIdx points past the last column, which is done-type — insert before done
+		return nil, fmt.Errorf("PlanningManager.AddColumn: cannot insert after the last column")
+	}
+
+	newCol := access.ColumnDefinition{
+		Name:  slug,
+		Title: strings.TrimSpace(title),
+		Type:  access.ColumnTypeDoing,
+	}
+
+	// Insert at position
+	config.ColumnDefinitions = append(config.ColumnDefinitions[:insertIdx],
+		append([]access.ColumnDefinition{newCol}, config.ColumnDefinitions[insertIdx:]...)...)
+
+	// Create directory
+	if err := m.planAccess.EnsureStatusDirectory(slug); err != nil {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+	}
+
+	// Save config and commit
+	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.AddColumn: %w", err)
+	}
+
+	return config, nil
+}
+
+// RemoveColumn removes a doing-type column that has no tasks.
+func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration, error) {
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+	}
+
+	// Find column and validate type
+	colIdx := -1
+	for i, col := range config.ColumnDefinitions {
+		if col.Name == slug {
+			colIdx = i
+			break
+		}
+	}
+	if colIdx < 0 {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: column %q not found", slug)
+	}
+	if config.ColumnDefinitions[colIdx].Type != access.ColumnTypeDoing {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: only doing-type columns can be removed")
+	}
+
+	// Check no tasks in column
+	tasks, err := m.planAccess.GetTasksByStatus(slug)
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+	}
+	if len(tasks) > 0 {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: column %q has %d tasks; move them first", slug, len(tasks))
+	}
+
+	// Remove directory
+	if err := m.planAccess.RemoveStatusDirectory(slug); err != nil {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+	}
+
+	// Clean task order entries
+	orderMap, loadErr := m.planAccess.LoadTaskOrder()
+	if loadErr == nil {
+		if _, exists := orderMap[slug]; exists {
+			delete(orderMap, slug)
+			_ = m.planAccess.SaveTaskOrder(orderMap)
+		}
+	}
+
+	// Update config
+	config.ColumnDefinitions = append(config.ColumnDefinitions[:colIdx], config.ColumnDefinitions[colIdx+1:]...)
+	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.RemoveColumn: %w", err)
+	}
+
+	return config, nil
+}
+
+// RenameColumn renames a column, migrating its directory and updating task order.
+func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardConfiguration, error) {
+	newSlug := access.Slugify(newTitle)
+	if newSlug == "" {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: new title produces empty slug")
+	}
+	if reservedSlugs[newSlug] {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: slug %q is reserved", newSlug)
+	}
+	if oldSlug == newSlug {
+		// Only title change, no slug change — just update the title
+		config, err := m.planAccess.GetBoardConfiguration()
+		if err != nil {
+			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		}
+		found := false
+		for i, col := range config.ColumnDefinitions {
+			if col.Name == oldSlug {
+				config.ColumnDefinitions[i].Title = strings.TrimSpace(newTitle)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("PlanningManager.RenameColumn: column %q not found", oldSlug)
+		}
+		if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+			return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+		}
+		return config, nil
+	}
+
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+	}
+
+	// Validate old column exists and new slug is unique
+	colIdx := -1
+	for i, col := range config.ColumnDefinitions {
+		if col.Name == oldSlug {
+			colIdx = i
+		}
+		if col.Name == newSlug {
+			return nil, fmt.Errorf("PlanningManager.RenameColumn: column %q already exists", newSlug)
+		}
+	}
+	if colIdx < 0 {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: column %q not found", oldSlug)
+	}
+
+	// Rename directory
+	if err := m.planAccess.RenameStatusDirectory(oldSlug, newSlug); err != nil {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+	}
+
+	// Update task_order.json keys
+	orderMap, loadErr := m.planAccess.LoadTaskOrder()
+	if loadErr == nil {
+		if ids, exists := orderMap[oldSlug]; exists {
+			orderMap[newSlug] = ids
+			delete(orderMap, oldSlug)
+			_ = m.planAccess.SaveTaskOrder(orderMap)
+		}
+	}
+
+	// Update config
+	config.ColumnDefinitions[colIdx].Name = newSlug
+	config.ColumnDefinitions[colIdx].Title = strings.TrimSpace(newTitle)
+	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.RenameColumn: %w", err)
+	}
+
+	return config, nil
+}
+
+// ReorderColumns reorders columns while enforcing bookend constraints.
+func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfiguration, error) {
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
+	}
+
+	if len(slugs) != len(config.ColumnDefinitions) {
+		return nil, fmt.Errorf("PlanningManager.ReorderColumns: expected %d slugs, got %d", len(config.ColumnDefinitions), len(slugs))
+	}
+
+	// Build lookup
+	colMap := make(map[string]access.ColumnDefinition, len(config.ColumnDefinitions))
+	for _, col := range config.ColumnDefinitions {
+		colMap[col.Name] = col
+	}
+
+	// Validate: all slugs present, no duplicates
+	seen := make(map[string]bool, len(slugs))
+	reordered := make([]access.ColumnDefinition, 0, len(slugs))
+	for _, slug := range slugs {
+		if seen[slug] {
+			return nil, fmt.Errorf("PlanningManager.ReorderColumns: duplicate slug %q", slug)
+		}
+		seen[slug] = true
+		col, ok := colMap[slug]
+		if !ok {
+			return nil, fmt.Errorf("PlanningManager.ReorderColumns: unknown column %q", slug)
+		}
+		reordered = append(reordered, col)
+	}
+
+	// Validate bookends: first must be todo, last must be done
+	if reordered[0].Type != access.ColumnTypeTodo {
+		return nil, fmt.Errorf("PlanningManager.ReorderColumns: first column must be todo-type")
+	}
+	if reordered[len(reordered)-1].Type != access.ColumnTypeDone {
+		return nil, fmt.Errorf("PlanningManager.ReorderColumns: last column must be done-type")
+	}
+
+	config.ColumnDefinitions = reordered
+	if err := m.planAccess.SaveBoardConfiguration(config); err != nil {
+		return nil, fmt.Errorf("PlanningManager.ReorderColumns: %w", err)
+	}
+
 	return config, nil
 }
 
