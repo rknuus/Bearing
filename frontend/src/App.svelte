@@ -9,6 +9,7 @@
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
   import { initLocale } from './lib/utils/date-format';
+  import { UNTAGGED_SENTINEL } from './lib/constants/filters';
 
   // View types
   type ViewType = 'home' | 'calendar' | 'eisenkan' | 'okr' | 'components';
@@ -44,7 +45,8 @@
       parts.push({ id: 'FILTER:themes', label: `Themes: ${filterThemeIds.join(', ')}` });
     }
     if (filterTagIds.length > 0) {
-      parts.push({ id: 'FILTER:tags', label: `Tags: ${filterTagIds.join(', ')}` });
+      const displayTags = filterTagIds.map(t => t === UNTAGGED_SENTINEL ? 'Untagged' : t);
+      parts.push({ id: 'FILTER:tags', label: `Tags: ${displayTags.join(', ')}` });
     }
     if (filterDate) {
       parts.push({ id: `FILTER:date:${filterDate}`, label: filterDate });

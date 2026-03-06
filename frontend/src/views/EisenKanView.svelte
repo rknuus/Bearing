@@ -32,6 +32,7 @@
   import { getBindings } from '../lib/utils/bindings';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
+  import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
   import { formatDate, formatDateLong } from '../lib/utils/date-format';
   import { checkFullState } from '../lib/utils/state-check';
 
@@ -140,7 +141,14 @@
       result = result.filter(t => filterThemeIds.includes(t.themeId));
     }
     if (filterTagIds.length > 0) {
-      result = result.filter(t => filterTagIds.every(tag => t.tags?.includes(tag)));
+      const realTags = filterTagIds.filter(t => t !== UNTAGGED_SENTINEL);
+      const includeUntagged = filterTagIds.includes(UNTAGGED_SENTINEL);
+      result = result.filter(t => {
+        const hasTags = t.tags && t.tags.length > 0;
+        if (includeUntagged && !hasTags) return true;
+        if (realTags.length > 0 && hasTags) return realTags.every(tag => t.tags!.includes(tag));
+        return false;
+      });
     }
     if (filterDate) {
       result = result.filter(t => t.dayDate === filterDate);
@@ -150,6 +158,70 @@
 
   // Derive available tags from all tasks (not filtered) for the tag filter bar
   const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
+
+  // Base task set for count computation (excludes archived unless shown)
+  const countBaseTasks = $derived(
+    showArchivedTasks ? tasks : tasks.filter(t => t.status !== 'archived')
+  );
+
+  // Theme filter pill counts: each theme count = tasks matching that theme + active tag/date filters
+  const themeCounts = $derived.by(() => {
+    const base = countBaseTasks;
+    const realTags = filterTagIds.filter(t => t !== UNTAGGED_SENTINEL);
+    const includeUntagged = filterTagIds.includes(UNTAGGED_SENTINEL);
+
+    function matchesTags(t: TaskWithStatus): boolean {
+      if (filterTagIds.length === 0) return true;
+      const hasTags = t.tags && t.tags.length > 0;
+      if (includeUntagged && !hasTags) return true;
+      if (realTags.length > 0 && hasTags) return realTags.every(tag => t.tags!.includes(tag));
+      return false;
+    }
+    function matchesDate(t: TaskWithStatus): boolean {
+      return !filterDate || t.dayDate === filterDate;
+    }
+
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    for (const t of base) {
+      if (!matchesTags(t) || !matchesDate(t)) continue;
+      allCount++;
+      counts[t.themeId] = (counts[t.themeId] ?? 0) + 1;
+    }
+    counts['__all__'] = allCount;
+    return counts;
+  });
+
+  // Tag filter pill counts: each tag count = tasks having that tag + active theme/date filters
+  const tagCounts = $derived.by(() => {
+    const base = countBaseTasks;
+
+    function matchesTheme(t: TaskWithStatus): boolean {
+      return filterThemeIds.length === 0 || filterThemeIds.includes(t.themeId);
+    }
+    function matchesDate(t: TaskWithStatus): boolean {
+      return !filterDate || t.dayDate === filterDate;
+    }
+
+    const counts: Record<string, number> = {};
+    let allCount = 0;
+    let untaggedCount = 0;
+    for (const t of base) {
+      if (!matchesTheme(t) || !matchesDate(t)) continue;
+      allCount++;
+      const hasTags = t.tags && t.tags.length > 0;
+      if (!hasTags) {
+        untaggedCount++;
+      } else {
+        for (const tag of t.tags!) {
+          counts[tag] = (counts[tag] ?? 0) + 1;
+        }
+      }
+    }
+    counts['__all__'] = allCount;
+    counts[UNTAGGED_SENTINEL] = untaggedCount;
+    return counts;
+  });
 
   // Re-derive columnItems and sectionItems from the current filteredTasks.
   // Called by the $effect (reactive sync) and by the drag-cancel path (synchronous reset).
@@ -810,14 +882,17 @@
         activeThemeIds={filterThemeIds}
         onToggle={onFilterThemeToggle}
         onClear={onFilterThemeClear}
+        counts={themeCounts}
       />
     {/if}
-    {#if availableTags.length > 0 && onFilterTagToggle && onFilterTagClear}
+    {#if (availableTags.length > 0 || (tagCounts[UNTAGGED_SENTINEL] ?? 0) > 0) && onFilterTagToggle && onFilterTagClear}
       <TagFilterBar
         {availableTags}
         activeTagIds={filterTagIds}
         onToggle={onFilterTagToggle}
         onClear={onFilterTagClear}
+        counts={tagCounts}
+        untaggedActive={filterTagIds.includes(UNTAGGED_SENTINEL)}
       />
     {/if}
     <div class="kanban-board" style="grid-template-columns: repeat({columns.length + (showArchivedTasks ? 1 : 0)}, 1fr);">
