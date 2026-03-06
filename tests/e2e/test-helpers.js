@@ -119,6 +119,26 @@ export function assertFileNotExists(dataDir, relativePath) {
 }
 
 /**
+ * Assert directory exists at the given relative path
+ */
+export function assertDirExists(dataDir, relativePath) {
+  const fullPath = path.join(dataDir, relativePath)
+  if (!fs.existsSync(fullPath) || !fs.statSync(fullPath).isDirectory()) {
+    throw new Error(`Expected directory to exist: ${relativePath}`)
+  }
+}
+
+/**
+ * Assert directory does NOT exist at the given relative path
+ */
+export function assertDirNotExists(dataDir, relativePath) {
+  const fullPath = path.join(dataDir, relativePath)
+  if (fs.existsSync(fullPath)) {
+    throw new Error(`Expected directory NOT to exist: ${relativePath}`)
+  }
+}
+
+/**
  * List task files in a status directory
  */
 export function getTaskFiles(dataDir, status) {
@@ -133,7 +153,7 @@ export function getTaskFiles(dataDir, status) {
 export function isWorkingTreeClean(dataDir) {
   try {
     // Only check tracked files (ignore untracked like .gitignore, navigation_context.json)
-    const output = execSync('git diff --name-only && git diff --cached --name-only', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
+    const output = execSync('git diff --name-only -- ":!bearing.log" && git diff --cached --name-only -- ":!bearing.log"', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
     return output.trim() === ''
   } catch {
     return true
