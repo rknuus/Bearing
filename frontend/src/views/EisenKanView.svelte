@@ -684,6 +684,73 @@
   function getColumnTaskCount(columnName: string): number {
     return (columnItems[columnName] ?? []).length;
   }
+
+  // Column menu state
+  let columnMenuSlug = $state<string | null>(null);
+
+  function toggleColumnMenu(slug: string) {
+    columnMenuSlug = columnMenuSlug === slug ? null : slug;
+  }
+
+  function closeColumnMenu() {
+    columnMenuSlug = null;
+  }
+
+  async function refreshBoard() {
+    boardConfig = await fetchBoardConfig();
+    tasks = await fetchTasks();
+  }
+
+  async function handleRenameColumn(slug: string) {
+    closeColumnMenu();
+    const col = columns.find(c => c.name === slug);
+    if (!col) return;
+    const newTitle = window.prompt('Rename column:', col.title);
+    if (!newTitle || newTitle === col.title) return;
+    try {
+      await getBindings().RenameColumn(slug, newTitle);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to rename column';
+    }
+  }
+
+  async function handleDeleteColumn(slug: string) {
+    closeColumnMenu();
+    try {
+      await getBindings().RemoveColumn(slug);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to delete column';
+    }
+  }
+
+  async function handleInsertColumn(afterSlug: string) {
+    closeColumnMenu();
+    const title = window.prompt('New column title:');
+    if (!title) return;
+    try {
+      await getBindings().AddColumn(title, afterSlug);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to add column';
+    }
+  }
+
+  /** Insert a column before the given slug by finding the preceding column. */
+  async function handleInsertColumnBefore(slug: string) {
+    closeColumnMenu();
+    const idx = columns.findIndex(c => c.name === slug);
+    if (idx <= 0) return; // Can't insert before the first column (todo)
+    const title = window.prompt('New column title:');
+    if (!title) return;
+    try {
+      await getBindings().AddColumn(title, columns[idx - 1].name);
+      await refreshBoard();
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to add column';
+    }
+  }
 </script>
 
 <div class="eisenkan-container">
@@ -748,6 +815,39 @@
                 </button>
               {/if}
               <span class="task-count">{getColumnTaskCount(column.name)}</span>
+              <div class="column-menu-wrapper">
+                <button
+                  type="button"
+                  class="column-menu-btn"
+                  onclick={(e) => { e.stopPropagation(); toggleColumnMenu(column.name); }}
+                  aria-label="Column options for {column.title}"
+                >
+                  &#x22EF;
+                </button>
+                {#if columnMenuSlug === column.name}
+                  <div class="column-menu-overlay" onclick={closeColumnMenu} role="presentation"></div>
+                  <div class="column-menu" role="menu">
+                    <button type="button" class="column-menu-item" onclick={() => handleRenameColumn(column.name)}>
+                      Rename
+                    </button>
+                    {#if column.type === 'doing'}
+                      <button type="button" class="column-menu-item" onclick={() => handleDeleteColumn(column.name)}>
+                        Delete
+                      </button>
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumnBefore(column.name)}>
+                        Insert left
+                      </button>
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumn(column.name)}>
+                        Insert right
+                      </button>
+                    {:else if column.type === 'todo'}
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumn(column.name)}>
+                        Insert right
+                      </button>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
             </div>
           </div>
 
@@ -1482,5 +1582,66 @@
   .context-menu-item:last-child {
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
+  }
+
+  /* Column menu styles */
+  .column-menu-wrapper {
+    position: relative;
+  }
+
+  .column-menu-btn {
+    background: none;
+    border: none;
+    color: var(--color-gray-400);
+    font-size: 1rem;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
+  }
+
+  .column-menu-btn:hover {
+    color: var(--color-gray-700);
+    background-color: var(--color-gray-300);
+  }
+
+  .column-menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 999;
+  }
+
+  .column-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 140px;
+    z-index: 1000;
+    overflow: hidden;
+  }
+
+  .column-menu-item {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 0.8125rem;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    transition: background-color 0.15s;
+  }
+
+  .column-menu-item:hover {
+    background-color: var(--color-gray-100);
   }
 </style>
