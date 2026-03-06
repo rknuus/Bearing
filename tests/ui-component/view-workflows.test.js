@@ -171,10 +171,6 @@ export async function runTests() {
     // ---- Test 4: Keyboard navigation — use shortcuts to switch views ----
     reporter.startTest('Keyboard navigation: Ctrl+1/2/3 switch views')
     try {
-      // Navigate home first
-      await page.click('.nav-link:has-text("Home")')
-      await page.waitForSelector('.placeholder-view', { timeout: 5000 })
-
       // Ctrl+1 → OKRs
       await page.keyboard.press('Control+1')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })

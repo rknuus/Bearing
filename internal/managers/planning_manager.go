@@ -1602,12 +1602,12 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 	if err != nil {
 		// Return default context on error
 		return &NavigationContext{
-			CurrentView: "home",
+			CurrentView: "okr",
 		}, nil
 	}
 	if ctx == nil {
 		return &NavigationContext{
-			CurrentView: "home",
+			CurrentView: "okr",
 		}, nil
 	}
 

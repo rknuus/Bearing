@@ -13,7 +13,7 @@ function makeMockBindings() {
   return {
     // Navigation context
     LoadNavigationContext: vi.fn().mockResolvedValue({
-      currentView: 'home',
+      currentView: 'okr',
       currentItem: '',
       filterThemeId: '',
       filterDate: '',
@@ -88,36 +88,22 @@ describe('App', () => {
     return result;
   }
 
-  it('renders home view by default with welcome message', async () => {
+  it('renders OKR view by default', async () => {
     await renderApp();
 
-    const placeholder = container.querySelector('.placeholder-view');
-    expect(placeholder).toBeTruthy();
-
-    const heading = placeholder!.querySelector('h1');
-    expect(heading?.textContent).toContain('Welcome to Bearing');
-
-    // Quick nav buttons should be present
-    const quickNavBtns = container.querySelectorAll('.quick-nav-btn');
-    expect(quickNavBtns.length).toBe(3);
+    // OKRs nav link should be active
+    const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'OKRs');
+    expect(okrLink?.classList.contains('active')).toBe(true);
   });
 
   it('clicking nav links switches between views', async () => {
     await renderApp();
 
-    // Should start on home
-    expect(container.querySelector('.placeholder-view')).toBeTruthy();
-
-    // Click OKRs nav link
-    const navLinks = container.querySelectorAll<HTMLButtonElement>('.nav-link');
-    const okrLink = Array.from(navLinks).find(l => l.textContent?.trim() === 'OKRs');
-    expect(okrLink).toBeTruthy();
-    okrLink!.click();
-    await tick();
-    // Wait for child view to start loading
-    await vi.waitFor(() => {
-      expect(container.querySelector('.placeholder-view')).toBeNull();
-    });
+    // Should start on OKRs
+    const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'OKRs');
+    expect(okrLink?.classList.contains('active')).toBe(true);
 
     // Click Calendar nav link
     const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
@@ -132,22 +118,20 @@ describe('App', () => {
   it('active nav link updates to reflect current view', async () => {
     await renderApp();
 
-    // Home should be active
-    const homeLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Home');
-    expect(homeLink?.classList.contains('active')).toBe(true);
-
-    // Click OKRs
+    // OKRs should be active by default
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
       .find(l => l.textContent?.trim() === 'OKRs');
-    okrLink!.click();
+    expect(okrLink?.classList.contains('active')).toBe(true);
+
+    // Click Calendar
+    const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'Calendar');
+    calLink!.click();
     await tick();
 
-    // OKRs should now be active, Home should not
-    expect(okrLink?.classList.contains('active')).toBe(true);
-    const homeLinkAfter = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Home');
-    expect(homeLinkAfter?.classList.contains('active')).toBe(false);
+    // Calendar should now be active, OKRs should not
+    expect(calLink?.classList.contains('active')).toBe(true);
+    expect(okrLink?.classList.contains('active')).toBe(false);
   });
 
   it('keyboard shortcuts switch views', async () => {
@@ -194,9 +178,6 @@ describe('App', () => {
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
       .find(l => l.textContent?.trim() === 'OKRs');
     expect(okrLink?.classList.contains('active')).toBe(true);
-
-    // Home should not be visible
-    expect(container.querySelector('.placeholder-view')).toBeNull();
   });
 
   it('saves navigation context when view changes', async () => {
@@ -232,8 +213,8 @@ describe('App', () => {
     expect(brand?.textContent).toBe('Bearing');
 
     const navLinks = container.querySelectorAll('.nav-link');
+    expect(navLinks.length).toBe(3);
     const linkTexts = Array.from(navLinks).map(l => l.textContent?.trim());
-    expect(linkTexts).toContain('Home');
     expect(linkTexts).toContain('OKRs');
     expect(linkTexts).toContain('Calendar');
     expect(linkTexts).toContain('Tasks');
@@ -297,19 +278,4 @@ describe('App', () => {
     expect(calLink?.classList.contains('active')).toBe(true);
   });
 
-  it('quick nav buttons on home navigate to correct views', async () => {
-    await renderApp();
-
-    // Click "Tasks" quick nav button (third button)
-    const quickNavBtns = container.querySelectorAll<HTMLButtonElement>('.quick-nav-btn');
-    expect(quickNavBtns.length).toBe(3);
-
-    // Click the Tasks quick nav button
-    quickNavBtns[2].click();
-    await tick();
-
-    const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Tasks');
-    expect(taskLink?.classList.contains('active')).toBe(true);
-  });
 });

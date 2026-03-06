@@ -1006,13 +1006,13 @@ func (a *App) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
 func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 	if a.planningManager == nil {
 		slog.Warn("LoadNavigationContext: planning manager not initialized")
-		return &NavigationContext{CurrentView: "home"}, nil
+		return &NavigationContext{CurrentView: "okr"}, nil
 	}
 
 	ctx, err := a.planningManager.LoadNavigationContext()
 	if err != nil {
 		slog.Error("LoadNavigationContext failed", "error", err)
-		return &NavigationContext{CurrentView: "home"}, nil
+		return &NavigationContext{CurrentView: "okr"}, nil
 	}
 
 	return &NavigationContext{

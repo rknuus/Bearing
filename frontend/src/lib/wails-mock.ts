@@ -375,7 +375,7 @@ let mockTaskDrafts = '{}';
 
 // Mock navigation context storage
 let mockNavigationContext: NavigationContext = {
-  currentView: 'home',
+  currentView: 'okr',
   currentItem: '',
   filterThemeId: '',
   filterDate: '',

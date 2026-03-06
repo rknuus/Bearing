@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { initMockBindings, isWailsRuntime } from './lib/wails-mock';
-  import ComponentDemo from './lib/components/ComponentDemo.svelte';
   import CalendarView from './views/CalendarView.svelte';
   import EisenKanView from './views/EisenKanView.svelte';
   import OKRView from './views/OKRView.svelte';
@@ -12,10 +11,10 @@
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
 
   // View types
-  type ViewType = 'home' | 'calendar' | 'eisenkan' | 'okr' | 'components';
+  type ViewType = 'calendar' | 'eisenkan' | 'okr';
 
   // Current view state using Svelte 5 runes
-  let currentView = $state<ViewType>('home');
+  let currentView = $state<ViewType>('okr');
   let currentItemId = $state<string>('');
   let filterThemeIds = $state<string[]>([]);
   let filterTagIds = $state<string[]>([]);
@@ -68,10 +67,6 @@
     saveNavigationContext();
   }
 
-  function navigateToHome() {
-    navigateTo('home');
-  }
-
   function navigateToCalendar(options?: { themeId?: string; date?: string }) {
     navigateTo('calendar', { themeId: options?.themeId, date: options?.date });
   }
@@ -82,10 +77,6 @@
 
   function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
     navigateTo('eisenkan', options);
-  }
-
-  function navigateToComponents() {
-    navigateTo('components');
   }
 
   // Handle breadcrumb navigation
@@ -206,7 +197,10 @@
       if (bindings?.LoadNavigationContext) {
         const ctx = await bindings.LoadNavigationContext();
         if (ctx && ctx.currentView) {
-          currentView = ctx.currentView as ViewType;
+          const validViews: ViewType[] = ['calendar', 'eisenkan', 'okr'];
+          currentView = validViews.includes(ctx.currentView as ViewType)
+            ? (ctx.currentView as ViewType)
+            : 'okr';
           currentItemId = ctx.currentItem ?? '';
           filterDate = ctx.filterDate || undefined;
 
@@ -302,14 +296,6 @@
     <div class="nav-links">
       <button
         class="nav-link"
-        class:active={currentView === 'home'}
-        onclick={navigateToHome}
-        title="Home"
-      >
-        Home
-      </button>
-      <button
-        class="nav-link"
         class:active={currentView === 'okr'}
         onclick={() => navigateToOKR()}
         title="OKRs (Ctrl+1 / Cmd+1)"
@@ -332,19 +318,11 @@
       >
         Tasks
       </button>
-      <button
-        class="nav-link"
-        class:active={currentView === 'components'}
-        onclick={navigateToComponents}
-        title="Components"
-      >
-        Components
-      </button>
     </div>
   </nav>
 
   <!-- Breadcrumb Bar -->
-  {#if currentView !== 'home' && breadcrumbPath.length > 0}
+  {#if breadcrumbPath.length > 0}
     <div class="breadcrumb-bar">
       <Breadcrumb
         itemId={currentItemId || ''}
@@ -355,29 +333,7 @@
 
   <!-- Main Content Area -->
   <main class="content">
-    {#if currentView === 'home'}
-      <div class="placeholder-view">
-        <h1>Welcome to Bearing</h1>
-        <p>Your personal planning system for interlinked long-, medium, and short-term planning.</p>
-        <div class="quick-nav">
-          <button class="quick-nav-btn" onclick={() => navigateToOKR()}>
-            <span class="quick-nav-icon">OKR</span>
-            <span class="quick-nav-label">OKRs & Themes</span>
-            <span class="quick-nav-shortcut">Ctrl+1</span>
-          </button>
-          <button class="quick-nav-btn" onclick={() => navigateToCalendar()}>
-            <span class="quick-nav-icon">CAL</span>
-            <span class="quick-nav-label">Calendar</span>
-            <span class="quick-nav-shortcut">Ctrl+2</span>
-          </button>
-          <button class="quick-nav-btn" onclick={() => navigateToEisenKan()}>
-            <span class="quick-nav-icon">TSK</span>
-            <span class="quick-nav-label">Tasks</span>
-            <span class="quick-nav-shortcut">Ctrl+3</span>
-          </button>
-        </div>
-      </div>
-    {:else if currentView === 'calendar'}
+    {#if currentView === 'calendar'}
       <CalendarView
         onNavigateToTheme={handleNavigateToTheme}
         onNavigateToTasks={handleNavigateToTasks}
@@ -403,10 +359,6 @@
         onFilterTagToggle={handleFilterTagToggle}
         onFilterTagClear={handleFilterTagClear}
       />
-    {:else if currentView === 'components'}
-      <div class="scrollable-view">
-        <ComponentDemo />
-      </div>
     {/if}
   </main>
 </div>
@@ -468,28 +420,6 @@
     overflow: hidden;
   }
 
-  .placeholder-view {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2rem;
-  }
-
-  .placeholder-view h1 {
-    font-size: 2rem;
-    margin-bottom: 1rem;
-    color: var(--color-gray-800);
-  }
-
-  .placeholder-view p {
-    font-size: 1.1rem;
-    color: var(--color-gray-500);
-    max-width: 500px;
-  }
-
   .scrollable-view {
     flex: 1;
     overflow-y: auto;
@@ -506,49 +436,4 @@
     min-height: 36px;
   }
 
-  /* Quick navigation on home page */
-  .quick-nav {
-    display: flex;
-    gap: 1rem;
-    margin-top: 2rem;
-  }
-
-  .quick-nav-btn {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1.5rem 2rem;
-    background: white;
-    border: 1px solid var(--color-gray-200);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    min-width: 140px;
-  }
-
-  .quick-nav-btn:hover {
-    border-color: var(--color-primary-600);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
-    transform: translateY(-2px);
-  }
-
-  .quick-nav-icon {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--color-primary-600);
-    margin-bottom: 0.5rem;
-  }
-
-  .quick-nav-label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: var(--color-gray-700);
-    margin-bottom: 0.25rem;
-  }
-
-  .quick-nav-shortcut {
-    font-size: 0.7rem;
-    color: var(--color-gray-400);
-    font-family: monospace;
-  }
 </style>

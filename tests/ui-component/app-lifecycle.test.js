@@ -110,24 +110,10 @@ export async function runTests() {
     // ---- Test 2: Default view renders ----
     reporter.startTest('Default view renders with expected content')
     try {
-      // The default view is 'home' which shows .placeholder-view
-      const homeView = await page.waitForSelector('.placeholder-view', {
+      // The default view is 'okr' which renders inside .scrollable-view
+      await page.waitForSelector('.scrollable-view', {
         timeout: 5000,
       })
-      if (!homeView) {
-        throw new Error('Home view (.placeholder-view) not found')
-      }
-
-      // Verify the welcome heading is present
-      const headingText = await page.$eval(
-        '.placeholder-view h1',
-        (el) => el.textContent.trim()
-      )
-      if (!headingText.includes('Welcome to Bearing')) {
-        throw new Error(
-          `Expected heading "Welcome to Bearing", got "${headingText}"`
-        )
-      }
 
       // Verify navigation bar is present with brand name
       const brandText = await page.$eval(
@@ -140,26 +126,26 @@ export async function runTests() {
         )
       }
 
-      // Verify quick navigation buttons are present on home view
-      const quickNavButtons = await page.$$('.quick-nav-btn')
-      if (quickNavButtons.length < 3) {
-        throw new Error(
-          `Expected at least 3 quick nav buttons, found ${quickNavButtons.length}`
-        )
-      }
-
-      // Verify Home nav link is active by default
+      // Verify OKRs nav link is active by default
       const activeNavLink = await page.$eval(
         '.nav-link.active',
         (el) => el.textContent.trim()
       )
-      if (activeNavLink !== 'Home') {
+      if (activeNavLink !== 'OKRs') {
         throw new Error(
-          `Expected active nav link "Home", got "${activeNavLink}"`
+          `Expected active nav link "OKRs", got "${activeNavLink}"`
         )
       }
 
-      reporter.pass('Default home view renders correctly')
+      // Verify nav bar has exactly 3 links
+      const navLinks = await page.$$('.nav-link')
+      if (navLinks.length !== 3) {
+        throw new Error(
+          `Expected 3 nav links, found ${navLinks.length}`
+        )
+      }
+
+      reporter.pass('Default OKR view renders correctly')
     } catch (err) {
       reporter.fail(err)
     }
@@ -167,68 +153,41 @@ export async function runTests() {
     // ---- Test 3: Navigation between views works ----
     reporter.startTest('Navigation between views works')
     try {
-      // Click the OKRs nav link
-      await page.click('.nav-link:has-text("OKRs")')
+      // Navigate to Calendar view
+      await page.click('.nav-link:has-text("Calendar")')
+      await page.waitForSelector('.calendar-view', {
+        timeout: 5000,
+      })
 
-      // Wait for the OKR view to render (wrapped in .scrollable-view)
+      const activeAfterCal = await page.$eval(
+        '.nav-link.active',
+        (el) => el.textContent.trim()
+      )
+      if (activeAfterCal !== 'Calendar') {
+        throw new Error(
+          `Expected active nav link "Calendar" after click, got "${activeAfterCal}"`
+        )
+      }
+
+      // Navigate to Tasks view
+      await page.click('.nav-link:has-text("Tasks")')
+      await page.waitForSelector('.nav-link.active:has-text("Tasks")', {
+        timeout: 5000,
+      })
+
+      // Navigate back to OKRs
+      await page.click('.nav-link:has-text("OKRs")')
       await page.waitForSelector('.scrollable-view', {
         timeout: 5000,
       })
 
-      // Verify the OKRs nav link is now active
       const activeAfterOKR = await page.$eval(
         '.nav-link.active',
         (el) => el.textContent.trim()
       )
       if (activeAfterOKR !== 'OKRs') {
         throw new Error(
-          `Expected active nav link "OKRs" after click, got "${activeAfterOKR}"`
-        )
-      }
-
-      // Verify Home view is no longer visible
-      const homeViewGone = await page.$('.placeholder-view')
-      if (homeViewGone) {
-        throw new Error(
-          'Home view should not be visible after navigating to OKRs'
-        )
-      }
-
-      // Navigate to Tasks view
-      await page.click('.nav-link:has-text("Tasks")')
-
-      // Wait for the Tasks nav link to become active
-      await page.waitForSelector('.nav-link.active:has-text("Tasks")', {
-        timeout: 5000,
-      })
-
-      // Verify the OKR scrollable-view is gone (replaced by EisenKan)
-      const okrViewGone = await page.$('.scrollable-view')
-      if (okrViewGone) {
-        // .scrollable-view is only used for OKR and Components; Tasks does not use it
-        const content = await okrViewGone.evaluate(
-          (el) => el.textContent
-        )
-        if (content.includes('Objectives')) {
-          throw new Error(
-            'OKR view should not be visible after navigating to Tasks'
-          )
-        }
-      }
-
-      // Navigate back to Home
-      await page.click('.nav-link:has-text("Home")')
-      await page.waitForSelector('.placeholder-view', {
-        timeout: 5000,
-      })
-
-      const activeAfterHome = await page.$eval(
-        '.nav-link.active',
-        (el) => el.textContent.trim()
-      )
-      if (activeAfterHome !== 'Home') {
-        throw new Error(
-          `Expected active nav link "Home" after returning, got "${activeAfterHome}"`
+          `Expected active nav link "OKRs" after returning, got "${activeAfterOKR}"`
         )
       }
 
