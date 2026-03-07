@@ -209,7 +209,6 @@ type Task struct {
 	Title         string   `json:"title"`
 	Description   string   `json:"description,omitempty"`
 	ThemeID       string   `json:"themeId"`
-	DayDate       string   `json:"dayDate"`
 	Priority      string   `json:"priority"`
 	Tags          []string `json:"tags,omitempty"`
 	PromotionDate string   `json:"promotionDate,omitempty"`
@@ -251,7 +250,6 @@ type NavigationContext struct {
 	CurrentView       string   `json:"currentView"`
 	CurrentItem       string   `json:"currentItem"`
 	FilterThemeID     string   `json:"filterThemeId"`
-	FilterDate        string   `json:"filterDate"`
 	LastAccessed      string   `json:"lastAccessed"`
 	ShowCompleted     bool     `json:"showCompleted,omitempty"`
 	ShowArchived      bool     `json:"showArchived,omitempty"`
@@ -663,7 +661,6 @@ func (a *App) GetTasks() ([]TaskWithStatus, error) {
 				Title:         t.Title,
 				Description:   t.Description,
 				ThemeID:       t.ThemeID,
-				DayDate:       t.DayDate,
 				Priority:      t.Priority,
 				Tags:          t.Tags,
 				PromotionDate: t.PromotionDate,
@@ -679,13 +676,13 @@ func (a *App) GetTasks() ([]TaskWithStatus, error) {
 }
 
 // CreateTask creates a new task with the given properties
-func (a *App) CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate string) (*Task, error) {
+func (a *App) CreateTask(title, themeId, priority, description, tags, promotionDate string) (*Task, error) {
 	if a.planningManager == nil {
 		slog.Warn("CreateTask: planning manager not initialized")
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	task, err := a.planningManager.CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate)
+	task, err := a.planningManager.CreateTask(title, themeId, priority, description, tags, promotionDate)
 	if err != nil {
 		slog.Error("CreateTask failed", "error", err, "themeId", themeId)
 		return nil, err
@@ -696,7 +693,6 @@ func (a *App) CreateTask(title, themeId, dayDate, priority, description, tags, p
 		Title:         task.Title,
 		Description:   task.Description,
 		ThemeID:       task.ThemeID,
-		DayDate:       task.DayDate,
 		Priority:      task.Priority,
 		Tags:          task.Tags,
 		PromotionDate: task.PromotionDate,
@@ -718,7 +714,6 @@ func (a *App) UpdateTask(task Task) error {
 		Title:         task.Title,
 		Description:   task.Description,
 		ThemeID:       task.ThemeID,
-		DayDate:       task.DayDate,
 		Priority:      task.Priority,
 		Tags:          task.Tags,
 		PromotionDate: task.PromotionDate,
@@ -1015,7 +1010,6 @@ func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 		CurrentView:       ctx.CurrentView,
 		CurrentItem:       ctx.CurrentItem,
 		FilterThemeID:     ctx.FilterThemeID,
-		FilterDate:        ctx.FilterDate,
 		LastAccessed:      ctx.LastAccessed,
 		ShowCompleted:     ctx.ShowCompleted,
 		ShowArchived:      ctx.ShowArchived,
@@ -1035,7 +1029,6 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 		CurrentView:       ctx.CurrentView,
 		CurrentItem:       ctx.CurrentItem,
 		FilterThemeID:     ctx.FilterThemeID,
-		FilterDate:        ctx.FilterDate,
 		LastAccessed:      ctx.LastAccessed,
 		ShowCompleted:     ctx.ShowCompleted,
 		ShowArchived:      ctx.ShowArchived,

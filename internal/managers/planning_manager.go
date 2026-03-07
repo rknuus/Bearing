@@ -26,7 +26,6 @@ type NavigationContext struct {
 	CurrentView       string   `json:"currentView"`
 	CurrentItem       string   `json:"currentItem"`
 	FilterThemeID     string   `json:"filterThemeId"`
-	FilterDate        string   `json:"filterDate"`
 	LastAccessed      string   `json:"lastAccessed"`
 	ShowCompleted     bool     `json:"showCompleted,omitempty"`
 	ShowArchived      bool     `json:"showArchived,omitempty"`
@@ -66,7 +65,7 @@ type IPlanningManager interface {
 
 	// Tasks
 	GetTasks() ([]TaskWithStatus, error)
-	CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate string) (*access.Task, error)
+	CreateTask(title, themeId, priority, description, tags, promotionDate string) (*access.Task, error)
 	MoveTask(taskId, newStatus string) (*MoveTaskResult, error)
 	UpdateTask(task access.Task) error
 	DeleteTask(taskId string) error
@@ -828,7 +827,7 @@ func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engi
 // CreateTask creates a new task with the given properties.
 // Priority must be one of the valid Eisenhower priorities.
 // Optional fields: description, tags (comma-separated), promotionDate (YYYY-MM-DD).
-func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate string) (*access.Task, error) {
+func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags, promotionDate string) (*access.Task, error) {
 	if !access.IsValidPriority(priority) {
 		return nil, fmt.Errorf("invalid priority: %s", priority)
 	}
@@ -851,7 +850,6 @@ func (m *PlanningManager) CreateTask(title, themeId, dayDate, priority, descript
 	task := access.Task{
 		Title:         title,
 		ThemeID:       themeId,
-		DayDate:       dayDate,
 		Priority:      priority,
 		Description:   description,
 		Tags:          tagSlice,
@@ -1609,7 +1607,6 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		CurrentView:       ctx.CurrentView,
 		CurrentItem:       ctx.CurrentItem,
 		FilterThemeID:     ctx.FilterThemeID,
-		FilterDate:        ctx.FilterDate,
 		LastAccessed:      ctx.LastAccessed,
 		ShowCompleted:     ctx.ShowCompleted,
 		ShowArchived:      ctx.ShowArchived,
@@ -1625,7 +1622,6 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		CurrentView:       ctx.CurrentView,
 		CurrentItem:       ctx.CurrentItem,
 		FilterThemeID:     ctx.FilterThemeID,
-		FilterDate:        ctx.FilterDate,
 		LastAccessed:      ctx.LastAccessed,
 		ShowCompleted:     ctx.ShowCompleted,
 		ShowArchived:      ctx.ShowArchived,

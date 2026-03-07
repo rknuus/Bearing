@@ -19,7 +19,8 @@
   let currentItemId = $state<string>('');
   let filterThemeIds = $state<string[]>([]);
   let filterTagIds = $state<string[]>([]);
-  let filterDate = $state<string | undefined>(undefined);
+  let todayFocusActive = $state(true);
+  let todayFocusThemeId = $state<string | null>(null);
 
   // Build breadcrumb path including view context
   let breadcrumbPath = $derived.by(() => {
@@ -39,7 +40,9 @@
     }
 
     // Add filter context if present
-    if (filterThemeIds.length === 1) {
+    if (todayFocusActive && todayFocusThemeId) {
+      parts.push({ id: 'FILTER:todayfocus', label: `Today's Focus: ${todayFocusThemeId}` });
+    } else if (filterThemeIds.length === 1) {
       parts.push({ id: `FILTER:theme:${filterThemeIds[0]}`, label: `Theme: ${filterThemeIds[0]}` });
     } else if (filterThemeIds.length > 1) {
       parts.push({ id: 'FILTER:themes', label: `Themes: ${filterThemeIds.join(', ')}` });
@@ -47,9 +50,6 @@
     if (filterTagIds.length > 0) {
       const displayTags = filterTagIds.map(t => t === UNTAGGED_SENTINEL ? 'Untagged' : t);
       parts.push({ id: 'FILTER:tags', label: `Tags: ${displayTags.join(', ')}` });
-    }
-    if (filterDate) {
-      parts.push({ id: `FILTER:date:${filterDate}`, label: filterDate });
     }
 
     return parts;
@@ -62,7 +62,6 @@
     if (options?.themeId !== undefined) {
       filterThemeIds = options.themeId ? [options.themeId] : [];
     }
-    filterDate = options?.date;
 
     // Save navigation context
     saveNavigationContext();
@@ -76,7 +75,13 @@
     navigateTo('okr', options);
   }
 
-  function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
+  async function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
+    // Re-resolve today's focus in case the user just set it in Calendar
+    todayFocusThemeId = await resolveTodayFocusThemeId(getBindings());
+    if (todayFocusThemeId && options?.themeId === undefined) {
+      todayFocusActive = true;
+      filterThemeIds = [todayFocusThemeId];
+    }
     navigateTo('eisenkan', options);
   }
 
@@ -111,6 +116,7 @@
 
   // Theme filter handlers for ThemeFilterBar
   function handleFilterThemeToggle(themeId: string) {
+    todayFocusActive = false;
     if (filterThemeIds.includes(themeId)) {
       filterThemeIds = filterThemeIds.filter(id => id !== themeId);
     } else {
@@ -120,7 +126,18 @@
   }
 
   function handleFilterThemeClear() {
-    filterThemeIds = [];
+    todayFocusActive = true;
+    filterThemeIds = todayFocusThemeId ? [todayFocusThemeId] : [];
+    saveNavigationContext();
+  }
+
+  function handleTodayFocusToggle() {
+    todayFocusActive = !todayFocusActive;
+    if (todayFocusActive && todayFocusThemeId) {
+      filterThemeIds = [todayFocusThemeId];
+    } else {
+      filterThemeIds = [];
+    }
     saveNavigationContext();
   }
 
@@ -185,7 +202,7 @@
           filterThemeId: filterThemeIds.length === 1 ? filterThemeIds[0] : '',
           filterThemeIds: filterThemeIds.length > 0 ? filterThemeIds : undefined,
           filterTagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
-          filterDate: filterDate ?? '',
+          todayFocusActive: todayFocusActive || undefined,
           lastAccessed: new Date().toISOString()
         });
       }
@@ -206,16 +223,26 @@
             ? (ctx.currentView as ViewType)
             : 'okr';
           currentItemId = ctx.currentItem ?? '';
-          filterDate = ctx.filterDate || undefined;
 
-          // Load filterThemeIds: prefer array, fall back to single string (backward compat)
-          if (ctx.filterThemeIds && ctx.filterThemeIds.length > 0) {
-            filterThemeIds = ctx.filterThemeIds;
-          } else if (ctx.filterThemeId) {
-            filterThemeIds = [ctx.filterThemeId];
+          // Resolve today's focus theme
+          todayFocusThemeId = await resolveTodayFocusThemeId(bindings);
+
+          // Determine Today's Focus state
+          if (ctx.todayFocusActive === false) {
+            // Explicitly saved as inactive
+            todayFocusActive = false;
+            // Load manual theme filter
+            if (ctx.filterThemeIds && ctx.filterThemeIds.length > 0) {
+              filterThemeIds = ctx.filterThemeIds;
+            } else if (ctx.filterThemeId) {
+              filterThemeIds = [ctx.filterThemeId];
+            } else {
+              filterThemeIds = [];
+            }
           } else {
-            // Smart default: use today's DayFocus theme if available
-            filterThemeIds = await getSmartDefaultThemeIds(bindings);
+            // Default: Today's Focus active
+            todayFocusActive = true;
+            filterThemeIds = todayFocusThemeId ? [todayFocusThemeId] : [];
           }
 
           if (ctx.filterTagIds && ctx.filterTagIds.length > 0) {
@@ -228,21 +255,21 @@
     }
   }
 
-  // Smart default: find today's DayFocus theme from the calendar
-  async function getSmartDefaultThemeIds(bindings: ReturnType<typeof getBindings>): Promise<string[]> {
+  // Resolve today's DayFocus theme ID from the calendar
+  async function resolveTodayFocusThemeId(bindings: ReturnType<typeof getBindings>): Promise<string | null> {
     try {
-      if (!bindings?.GetYearFocus) return [];
+      if (!bindings?.GetYearFocus) return null;
       const today = new Date();
       const yearFocus = await bindings.GetYearFocus(today.getFullYear());
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       const todayFocus = yearFocus.find((d: { date: string }) => d.date === todayStr);
       if (todayFocus?.themeId) {
-        return [todayFocus.themeId];
+        return todayFocus.themeId;
       }
     } catch {
-      // Non-critical: fall through to show all
+      // Non-critical: fall through to null
     }
-    return [];
+    return null;
   }
 
   // Initialize locale from OS detection
@@ -354,14 +381,15 @@
     {:else if currentView === 'eisenkan'}
       <EisenKanView
         onNavigateToTheme={handleNavigateToTheme}
-        onNavigateToDay={handleNavigateToDay}
         {filterThemeIds}
-        {filterDate}
         onFilterThemeToggle={handleFilterThemeToggle}
         onFilterThemeClear={handleFilterThemeClear}
         {filterTagIds}
         onFilterTagToggle={handleFilterTagToggle}
         onFilterTagClear={handleFilterTagClear}
+        {todayFocusThemeId}
+        {todayFocusActive}
+        onTodayFocusToggle={handleTodayFocusToggle}
       />
     {/if}
   </main>

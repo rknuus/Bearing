@@ -52,7 +52,6 @@ describe('CalendarView', () => {
         currentView: 'calendar',
         currentItem: '',
         filterThemeId: '',
-        filterDate: '',
         lastAccessed: '',
       }),
       SaveNavigationContext: vi.fn().mockResolvedValue(undefined),

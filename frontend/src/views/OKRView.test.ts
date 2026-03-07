@@ -45,7 +45,7 @@ function makeMockBindings(themes: LifeTheme[]) {
     SetObjectiveStatus: vi.fn().mockResolvedValue(undefined),
     SetKeyResultStatus: vi.fn().mockResolvedValue(undefined),
     LogFrontend: vi.fn(),
-    LoadNavigationContext: vi.fn().mockResolvedValue({ currentView: 'okr', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '' }),
+    LoadNavigationContext: vi.fn().mockResolvedValue({ currentView: 'okr', currentItem: '', filterThemeId: '', lastAccessed: '' }),
     SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -190,7 +190,6 @@ describe('OKRView', () => {
       currentView: 'okr',
       currentItem: '',
       filterThemeId: '',
-      filterDate: '',
       lastAccessed: '',
       expandedOkrIds: ['TST', 'TST-O1'],
     });

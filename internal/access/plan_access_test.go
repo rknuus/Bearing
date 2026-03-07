@@ -527,7 +527,6 @@ func TestSaveTask_NewTask(t *testing.T) {
 	task := Task{
 		Title:    "Morning run",
 		ThemeID:  "H",
-		DayDate:  "2026-01-15",
 		Priority: string(PriorityImportantUrgent),
 	}
 
@@ -571,7 +570,6 @@ func TestSaveTask_ThemeChange(t *testing.T) {
 	task := Task{
 		Title:    "Study Go",
 		ThemeID:  "W",
-		DayDate:  "2026-01-15",
 		Priority: string(PriorityImportantUrgent),
 	}
 	if err := pa.SaveTask(task); err != nil {
@@ -1594,7 +1592,6 @@ func TestSaveTaskWithOrder(t *testing.T) {
 	task := Task{
 		Title:    "Morning run",
 		ThemeID:  "H",
-		DayDate:  "2026-01-15",
 		Priority: string(PriorityImportantUrgent),
 	}
 
@@ -1640,7 +1637,6 @@ func TestSaveTaskWithOrder_Multiple(t *testing.T) {
 		task := Task{
 			Title:    "Task",
 			ThemeID:  "H",
-			DayDate:  "2026-01-15",
 			Priority: string(PriorityImportantUrgent),
 		}
 		_, err := pa.SaveTaskWithOrder(task, "important-urgent")
@@ -1754,7 +1750,7 @@ func TestArchiveTask(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	task := Task{Title: "Morning run", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -1799,7 +1795,7 @@ func TestArchiveTask_AlreadyArchived(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	task := Task{Title: "Test", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task := Task{Title: "Test", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -1837,7 +1833,7 @@ func TestRestoreTask(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	task := Task{Title: "Morning run", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -1880,7 +1876,7 @@ func TestRestoreTask_NotArchived(t *testing.T) {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	task := Task{Title: "Test", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task := Task{Title: "Test", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -1916,8 +1912,8 @@ func TestGetTasksByStatus_Archived(t *testing.T) {
 	}
 
 	// Create two tasks, archive one
-	t1 := Task{Title: "Task 1", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
-	t2 := Task{Title: "Task 2", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	t1 := Task{Title: "Task 1", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
+	t2 := Task{Title: "Task 2", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(t1); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -1965,11 +1961,11 @@ func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
 	}
 
 	// Create two tasks: H-T1 and H-T2
-	task1 := Task{Title: "Task one", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task1 := Task{Title: "Task one", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task1); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
-	task2 := Task{Title: "Task two", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task2 := Task{Title: "Task two", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task2); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -1983,7 +1979,7 @@ func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
 	}
 
 	// Create a new task — should get H-T3, not H-T1 (collision with archived)
-	task3 := Task{Title: "Task three", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task3 := Task{Title: "Task three", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task3); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -2012,7 +2008,7 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	}
 
 	// Create a task normally — gets H-T1
-	task1 := Task{Title: "Task one", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task1 := Task{Title: "Task one", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task1); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
@@ -2022,7 +2018,7 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	if err := os.MkdirAll(archivedDir, 0755); err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
-	rogueTask := Task{ID: "H-T2", Title: "Rogue", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	rogueTask := Task{ID: "H-T2", Title: "Rogue", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	rogueData, _ := json.Marshal(rogueTask)
 	roguePath := pa.taskFilePath("archived", "H-T2")
 	if err := os.WriteFile(roguePath, rogueData, 0644); err != nil {
@@ -2032,7 +2028,7 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	// generateTaskID scans filenames on disk, so it sees H-T1 in todo and
 	// H-T2 in archived — even if H-T2's internal themeId doesn't match.
 	// It generates H-T3 (max=2, next=3).
-	task2 := Task{Title: "Task two", ThemeID: "H", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	task2 := Task{Title: "Task two", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(task2); err != nil {
 		t.Fatalf("SaveTask should succeed (generateTaskID returns H-T3, no conflict): %v", err)
 	}
@@ -2070,14 +2066,14 @@ func TestGenerateTaskIDMismatchedThemeInFile(t *testing.T) {
 	if err := os.MkdirAll(archivedDir, 0755); err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
-	rogueTask := Task{ID: "W-T1", Title: "Mismatched", ThemeID: "L", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	rogueTask := Task{ID: "W-T1", Title: "Mismatched", ThemeID: "L", Priority: string(PriorityImportantUrgent)}
 	rogueData, _ := json.Marshal(rogueTask)
 	if err := os.WriteFile(pa.taskFilePath("archived", "W-T1"), rogueData, 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
 	// Creating a new W task should skip W-T1 and produce W-T2
-	newTask := Task{Title: "New work task", ThemeID: "W", DayDate: "2026-01-15", Priority: string(PriorityImportantUrgent)}
+	newTask := Task{Title: "New work task", ThemeID: "W", Priority: string(PriorityImportantUrgent)}
 	if err := pa.SaveTask(newTask); err != nil {
 		t.Fatalf("SaveTask should succeed but got: %v", err)
 	}

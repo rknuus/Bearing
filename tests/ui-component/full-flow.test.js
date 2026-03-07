@@ -177,9 +177,9 @@ export async function runTests() {
       // Create 3 tasks via mock API (Eisenhower DnD unreliable in Playwright)
       await page.evaluate(async () => {
         const app = window.go.main.App
-        await app.CreateTask('Task A', 'EF', '2026-01-01', 'important-urgent')
-        await app.CreateTask('Task B', 'EF', '2026-01-01', 'important-not-urgent')
-        await app.CreateTask('Task C', 'EF', '2026-01-01', 'not-important-urgent')
+        await app.CreateTask('Task A', 'EF', 'important-urgent')
+        await app.CreateTask('Task B', 'EF', 'important-not-urgent')
+        await app.CreateTask('Task C', 'EF', 'not-important-urgent')
       })
 
       // Navigate to Tasks view (onMount fetches fresh data)
@@ -211,8 +211,8 @@ export async function runTests() {
       // Create 2 more tasks in the same priority buckets
       await page.evaluate(async () => {
         const app = window.go.main.App
-        await app.CreateTask('Task D', 'EF', '2026-01-01', 'important-urgent')
-        await app.CreateTask('Task E', 'EF', '2026-01-01', 'important-not-urgent')
+        await app.CreateTask('Task D', 'EF', 'important-urgent')
+        await app.CreateTask('Task E', 'EF', 'important-not-urgent')
       })
 
       // Navigate away and back to trigger fresh data fetch

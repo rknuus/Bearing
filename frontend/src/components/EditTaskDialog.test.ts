@@ -17,7 +17,6 @@ function makeTestTask(overrides: Partial<Task> = {}): Task {
     title: 'Exercise daily',
     description: 'Do 30 minutes of cardio',
     themeId: 'HF',
-    dayDate: '2026-01-31',
     priority: 'important-urgent',
     tags: ['health', 'morning'],
     promotionDate: '2026-02-10',

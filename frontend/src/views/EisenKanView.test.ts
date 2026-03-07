@@ -13,10 +13,10 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeTestTasks(): TaskWithStatus[] {
   return [
-    { id: 'T1', title: 'Exercise', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'] },
-    { id: 'T2', title: 'Study', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-not-urgent', status: 'todo', tags: ['backend'] },
-    { id: 'T3', title: 'Emails', themeId: 'CG', dayDate: '2025-01-16', priority: 'not-important-urgent', status: 'doing', tags: ['api'] },
-    { id: 'T4', title: 'Done task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
+    { id: 'T1', title: 'Exercise', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'] },
+    { id: 'T2', title: 'Study', themeId: 'CG', priority: 'important-not-urgent', status: 'todo', tags: ['backend'] },
+    { id: 'T3', title: 'Emails', themeId: 'CG', priority: 'not-important-urgent', status: 'doing', tags: ['api'] },
+    { id: 'T4', title: 'Done task', themeId: 'HF', priority: 'important-urgent', status: 'done' },
   ];
 }
 
@@ -42,10 +42,10 @@ function makeTestBoardConfig(): BoardConfiguration {
 
 function makeTasksWithSubtasks(): TaskWithStatus[] {
   return [
-    { id: 'T1', title: 'Parent task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-    { id: 'T1-S1', title: 'Subtask 1', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo', parentTaskId: 'T1' },
-    { id: 'T1-S2', title: 'Subtask 2', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo', parentTaskId: 'T1' },
-    { id: 'T2', title: 'Standalone task', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-not-urgent', status: 'doing' },
+    { id: 'T1', title: 'Parent task', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+    { id: 'T1-S1', title: 'Subtask 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', parentTaskId: 'T1' },
+    { id: 'T1-S2', title: 'Subtask 2', themeId: 'HF', priority: 'important-urgent', status: 'todo', parentTaskId: 'T1' },
+    { id: 'T2', title: 'Standalone task', themeId: 'CG', priority: 'important-not-urgent', status: 'doing' },
   ];
 }
 
@@ -117,8 +117,8 @@ describe('EisenKanView', () => {
     mockGetTasks.mockImplementation(async () => JSON.parse(JSON.stringify(currentTasks)));
     mockGetThemes.mockResolvedValue(JSON.parse(JSON.stringify(makeTestThemes())));
     mockGetBoardConfiguration.mockResolvedValue(JSON.parse(JSON.stringify(makeTestBoardConfig())));
-    mockCreateTask.mockImplementation(async (title: string, themeId: string, dayDate: string, priority: string) => {
-      const task = { id: 'T-NEW', title, themeId, dayDate, priority, status: 'todo' } as TaskWithStatus;
+    mockCreateTask.mockImplementation(async (title: string, themeId: string, priority: string) => {
+      const task = { id: 'T-NEW', title, themeId, priority, status: 'todo' } as TaskWithStatus;
       currentTasks = [...currentTasks, task];
       return task;
     });
@@ -147,7 +147,7 @@ describe('EisenKanView', () => {
     mockRestoreTask.mockImplementation(async (id: string) => {
       currentTasks = currentTasks.map(t => t.id === id ? { ...t, status: 'done' } : t);
     });
-    mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '' });
+    mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', lastAccessed: '' });
     mockSaveNavigationContext.mockResolvedValue(undefined);
   });
 
@@ -304,18 +304,10 @@ describe('EisenKanView', () => {
     expect(titles).toContain('Done task');
   });
 
-  it('filters tasks by filterDate prop', async () => {
-    await renderView({ filterDate: '2025-01-15' });
-
-    // Only tasks from 2025-01-15 (T1 and T2) should be visible
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(2);
-  });
-
   it('shows empty column placeholder when column has no tasks', async () => {
     // Provide tasks only for todo column
     currentTasks = [
-      { id: 'T1', title: 'Only todo', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
+      { id: 'T1', title: 'Only todo', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
     ];
 
     await renderView();
@@ -519,7 +511,7 @@ describe('EisenKanView', () => {
 
   it('count badges exclude archived tasks by default', async () => {
     // Add an archived task
-    currentTasks.push({ id: 'T5', title: 'Archived', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'archived' });
+    currentTasks.push({ id: 'T5', title: 'Archived', themeId: 'HF', priority: 'important-urgent', status: 'archived' });
     const onFilterThemeToggle = vi.fn();
     const onFilterThemeClear = vi.fn();
     await renderView({ onFilterThemeToggle, onFilterThemeClear });
@@ -604,10 +596,10 @@ describe('EisenKanView', () => {
   describe('DnD position preservation', () => {
     function makeTasksForDndTest(): TaskWithStatus[] {
       return [
-        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
-        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
       ];
     }
 
@@ -631,10 +623,10 @@ describe('EisenKanView', () => {
 
       // Simulate dropping T1 (from todo) into DOING at position 2 (between D1 and D2)
       const dndItems: TaskWithStatus[] = [
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
-        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
       ];
 
       dispatchDndFinalize(doingZone, dndItems);
@@ -656,10 +648,10 @@ describe('EisenKanView', () => {
 
       // Simulate dropping T1 at the beginning of DOING
       const dndItems: TaskWithStatus[] = [
-        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
-        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
       ];
 
       dispatchDndFinalize(doingZone, dndItems);
@@ -674,9 +666,9 @@ describe('EisenKanView', () => {
     it('cross-section drop within TODO preserves DnD position', async () => {
       // Set up tasks: two in important-urgent, one in important-not-urgent
       currentTasks = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
-        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', priority: 'important-not-urgent', status: 'todo' },
       ];
 
       await renderView();
@@ -687,8 +679,8 @@ describe('EisenKanView', () => {
 
       // Simulate dropping IU1 into important-not-urgent at position 1 (before INU1)
       const dndItems: TaskWithStatus[] = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', priority: 'important-not-urgent', status: 'todo' },
       ];
 
       dispatchDndFinalize(targetSection, dndItems);
@@ -704,9 +696,9 @@ describe('EisenKanView', () => {
     it('cross-section move sends both source and target zones to ReorderTasks', async () => {
       // Set up tasks: two in important-urgent, one in important-not-urgent
       currentTasks = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
-        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', priority: 'important-not-urgent', status: 'todo' },
       ];
 
       await renderView();
@@ -717,8 +709,8 @@ describe('EisenKanView', () => {
 
       // Simulate dropping IU1 into important-not-urgent (before INU1)
       const dndItems: TaskWithStatus[] = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', priority: 'important-not-urgent', status: 'todo' },
       ];
 
       dispatchDndFinalize(targetSection, dndItems);
@@ -744,8 +736,8 @@ describe('EisenKanView', () => {
 
     it('cross-section ReorderTasks failure triggers rollback and shows error', async () => {
       currentTasks = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', priority: 'important-not-urgent', status: 'todo' },
       ];
 
       // UpdateTask succeeds but ReorderTasks fails
@@ -757,8 +749,8 @@ describe('EisenKanView', () => {
       const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
 
       const dndItems: TaskWithStatus[] = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-not-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'INU1', title: 'Not Urgent One', themeId: 'HF', priority: 'important-not-urgent', status: 'todo' },
       ];
 
       dispatchDndFinalize(targetSection, dndItems);
@@ -795,9 +787,9 @@ describe('EisenKanView', () => {
 
       // Simulate reordering within DOING: D3 moved to first position
       const dndItems: TaskWithStatus[] = [
-        { id: 'D3', title: 'Doing Third', themeId: 'HF', dayDate: '2025-01-17', priority: 'important-urgent', status: 'doing' },
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'D3', title: 'Doing Third', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
       ];
 
       dispatchDndFinalize(doingZone, dndItems);
@@ -812,9 +804,9 @@ describe('EisenKanView', () => {
     it('cross-column drop with active filter includes hidden tasks in zone order', async () => {
       // Setup: two done tasks from different themes
       currentTasks = [
-        { id: 'D1', title: 'Doing One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'DONE-CG', title: 'Done CG', themeId: 'CG', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
-        { id: 'DONE-HF', title: 'Done HF', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
+        { id: 'D1', title: 'Doing One', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
+        { id: 'DONE-CG', title: 'Done CG', themeId: 'CG', priority: 'important-urgent', status: 'done' },
+        { id: 'DONE-HF', title: 'Done HF', themeId: 'HF', priority: 'important-urgent', status: 'done' },
       ];
 
       // Render with theme filter: only HF tasks visible
@@ -825,8 +817,8 @@ describe('EisenKanView', () => {
 
       // DnD shows only filtered tasks; drop D1 into done (before DONE-HF)
       const dndItems: TaskWithStatus[] = [
-        { id: 'D1', title: 'Doing One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'DONE-HF', title: 'Done HF', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'done' },
+        { id: 'D1', title: 'Doing One', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
+        { id: 'DONE-HF', title: 'Done HF', themeId: 'HF', priority: 'important-urgent', status: 'done' },
       ];
 
       dispatchDndFinalize(doneZone, dndItems);
@@ -957,7 +949,7 @@ describe('EisenKanView', () => {
     it('archived tasks are not shown in kanban columns', async () => {
       currentTasks = [
         ...makeTestTasks(),
-        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+        { id: 'T5', title: 'Archived task', themeId: 'HF', priority: 'important-urgent', status: 'archived' },
       ];
 
       await renderView();
@@ -971,7 +963,7 @@ describe('EisenKanView', () => {
     it('toggle shows archived column as 4th board column', async () => {
       currentTasks = [
         ...makeTestTasks(),
-        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+        { id: 'T5', title: 'Archived task', themeId: 'HF', priority: 'important-urgent', status: 'archived' },
       ];
 
       await renderView();
@@ -1002,11 +994,11 @@ describe('EisenKanView', () => {
     it('archived column shows task count in header', async () => {
       currentTasks = [
         ...makeTestTasks(),
-        { id: 'T5', title: 'Archived 1', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
-        { id: 'T6', title: 'Archived 2', themeId: 'HF', dayDate: '2025-01-15', priority: 'not-important-urgent', status: 'archived' },
+        { id: 'T5', title: 'Archived 1', themeId: 'HF', priority: 'important-urgent', status: 'archived' },
+        { id: 'T6', title: 'Archived 2', themeId: 'HF', priority: 'not-important-urgent', status: 'archived' },
       ];
 
-      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
+      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', lastAccessed: '', showArchivedTasks: true });
 
       await renderView();
 
@@ -1017,10 +1009,10 @@ describe('EisenKanView', () => {
     it('archived column task cards display theme badge and priority badge', async () => {
       currentTasks = [
         ...makeTestTasks(),
-        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+        { id: 'T5', title: 'Archived task', themeId: 'HF', priority: 'important-urgent', status: 'archived' },
       ];
 
-      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
+      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', lastAccessed: '', showArchivedTasks: true });
 
       await renderView();
 
@@ -1032,11 +1024,11 @@ describe('EisenKanView', () => {
     it('restore button on archived task calls RestoreTask', async () => {
       currentTasks = [
         ...makeTestTasks(),
-        { id: 'T5', title: 'Archived task', themeId: 'HF', dayDate: '2025-01-14', priority: 'important-urgent', status: 'archived' },
+        { id: 'T5', title: 'Archived task', themeId: 'HF', priority: 'important-urgent', status: 'archived' },
       ];
 
       // Set toggle on via nav context
-      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', filterDate: '', lastAccessed: '', showArchivedTasks: true });
+      mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', lastAccessed: '', showArchivedTasks: true });
 
       await renderView();
 
@@ -1074,9 +1066,9 @@ describe('EisenKanView', () => {
   describe('Escape-to-cancel DnD', () => {
     function makeTasksForDndTest(): TaskWithStatus[] {
       return [
-        { id: 'T1', title: 'Todo Task', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'T1', title: 'Todo Task', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
       ];
     }
 
@@ -1105,8 +1097,8 @@ describe('EisenKanView', () => {
 
       // Simulate drag start via consider event
       dispatchDndConsider(doingZone, [
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
       ]);
       await tick();
 
@@ -1116,8 +1108,8 @@ describe('EisenKanView', () => {
 
       // Simulate finalize (triggered by the synthetic mouseup the Escape handler dispatches)
       dispatchDndFinalize(doingZone, [
-        { id: 'D1', title: 'Doing First', themeId: 'CG', dayDate: '2025-01-15', priority: 'important-urgent', status: 'doing' },
-        { id: 'D2', title: 'Doing Second', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'doing' },
+        { id: 'D1', title: 'Doing First', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
+        { id: 'D2', title: 'Doing Second', themeId: 'CG', priority: 'important-urgent', status: 'doing' },
       ]);
       await tick();
       await tick();
@@ -1129,8 +1121,8 @@ describe('EisenKanView', () => {
 
     it('Escape during section drag re-fetches tasks and does not call MoveTask or ReorderTasks', async () => {
       currentTasks = [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
       ];
 
       await renderView();
@@ -1140,8 +1132,8 @@ describe('EisenKanView', () => {
 
       // Simulate drag start via consider event on section zone
       dispatchDndConsider(sectionZone, [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
       ]);
       await tick();
 
@@ -1151,8 +1143,8 @@ describe('EisenKanView', () => {
 
       // Simulate finalize on section zone
       dispatchDndFinalize(sectionZone, [
-        { id: 'IU1', title: 'Urgent One', themeId: 'HF', dayDate: '2025-01-15', priority: 'important-urgent', status: 'todo' },
-        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', dayDate: '2025-01-16', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
       ]);
       await tick();
       await tick();
@@ -1273,6 +1265,41 @@ describe('EisenKanView', () => {
       expect(warnings.length).toBeGreaterThan(0);
       // Don't call mockRestore — let the global afterEach handle cleanup.
       // Restoring early would re-expose our wrapper to late async console.error calls.
+    });
+  });
+
+  describe('Today\'s Focus pass-through', () => {
+    it('passes Today\'s Focus props to ThemeFilterBar', async () => {
+      const onFilterThemeToggle = vi.fn();
+      const onFilterThemeClear = vi.fn();
+      const onTodayFocusToggle = vi.fn();
+
+      await renderView({
+        onFilterThemeToggle,
+        onFilterThemeClear,
+        todayFocusThemeId: 'HF',
+        todayFocusActive: true,
+        onTodayFocusToggle,
+      });
+
+      // ThemeFilterBar should render the today-focus-pill button
+      const chip = container.querySelector('.today-focus-pill');
+      expect(chip).not.toBeNull();
+      expect(chip?.textContent?.trim()).toBe("Today's Focus");
+      expect(chip?.classList.contains('active')).toBe(true);
+    });
+
+    it('does not render Today\'s Focus chip when onTodayFocusToggle not provided', async () => {
+      const onFilterThemeToggle = vi.fn();
+      const onFilterThemeClear = vi.fn();
+
+      await renderView({
+        onFilterThemeToggle,
+        onFilterThemeClear,
+      });
+
+      const chip = container.querySelector('.today-focus-pill');
+      expect(chip).toBeNull();
     });
   });
 });
