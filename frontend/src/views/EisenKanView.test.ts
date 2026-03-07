@@ -53,6 +53,7 @@ const mockReorderTasks = vi.fn();
 const mockArchiveTask = vi.fn();
 const mockArchiveAllDoneTasks = vi.fn();
 const mockRestoreTask = vi.fn();
+const mockReorderColumns = vi.fn();
 const mockLoadNavigationContext = vi.fn();
 const mockSaveNavigationContext = vi.fn();
 
@@ -74,6 +75,7 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
       ArchiveTask: (...args: unknown[]) => mockArchiveTask(...args),
       ArchiveAllDoneTasks: (...args: unknown[]) => mockArchiveAllDoneTasks(...args as []),
       RestoreTask: (...args: unknown[]) => mockRestoreTask(...args),
+      ReorderColumns: (...args: unknown[]) => mockReorderColumns(...args),
       LoadNavigationContext: (...args: unknown[]) => mockLoadNavigationContext(...args as []),
       SaveNavigationContext: (...args: unknown[]) => mockSaveNavigationContext(...args),
     },
@@ -137,6 +139,11 @@ describe('EisenKanView', () => {
     });
     mockRestoreTask.mockImplementation(async (id: string) => {
       currentTasks = currentTasks.map(t => t.id === id ? { ...t, status: 'done' } : t);
+    });
+    mockReorderColumns.mockImplementation(async (slugs: string[]) => {
+      const config = await mockGetBoardConfiguration();
+      const byName = new Map(config.columnDefinitions.map((c: { name: string }) => [c.name, c]));
+      return { ...config, columnDefinitions: slugs.map((s: string) => byName.get(s)) };
     });
     mockLoadNavigationContext.mockResolvedValue({ currentView: 'eisenkan', currentItem: '', filterThemeId: '', lastAccessed: '' });
     mockSaveNavigationContext.mockResolvedValue(undefined);
@@ -1472,6 +1479,52 @@ describe('EisenKanView', () => {
       expect(columns[0].classList.contains('collapsed-column')).toBe(false); // todo expanded
       expect(columns[1].classList.contains('collapsed-column')).toBe(true);  // doing collapsed
       expect(columns[2].classList.contains('collapsed-column')).toBe(true);  // done collapsed
+    });
+  });
+
+  describe('column drag handle', () => {
+    function makeMultiDoingConfig(): BoardConfiguration {
+      return {
+        name: 'Bearing Board',
+        columnDefinitions: [
+          {
+            name: 'todo',
+            title: 'TODO',
+            type: 'todo',
+            sections: [
+              { name: 'important-urgent', title: 'Important & Urgent', color: '#ef4444' },
+              { name: 'not-important-urgent', title: 'Not Important & Urgent', color: '#f59e0b' },
+              { name: 'important-not-urgent', title: 'Important & Not Urgent', color: '#3b82f6' },
+            ],
+          },
+          { name: 'doing', title: 'DOING', type: 'doing' },
+          { name: 'review', title: 'REVIEW', type: 'doing' },
+          { name: 'done', title: 'DONE', type: 'done' },
+        ],
+      };
+    }
+
+    it('shows grip handles only on doing-type columns when multiple exist', async () => {
+      mockGetBoardConfiguration.mockResolvedValue(JSON.parse(JSON.stringify(makeMultiDoingConfig())));
+      await renderView();
+
+      const handles = container.querySelectorAll('.column-drag-handle');
+      expect(handles.length).toBe(2);
+
+      // Verify handles are inside doing columns, not todo or done
+      const columns = container.querySelectorAll('.kanban-column');
+      expect(columns[0].querySelector('.column-drag-handle')).toBeNull(); // todo
+      expect(columns[1].querySelector('.column-drag-handle')).not.toBeNull(); // doing
+      expect(columns[2].querySelector('.column-drag-handle')).not.toBeNull(); // review
+      expect(columns[3].querySelector('.column-drag-handle')).toBeNull(); // done
+    });
+
+    it('hides grip handles when only one doing column exists', async () => {
+      // Default config has a single doing column
+      await renderView();
+
+      const handles = container.querySelectorAll('.column-drag-handle');
+      expect(handles.length).toBe(0);
     });
   });
 });
