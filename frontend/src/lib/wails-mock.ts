@@ -53,14 +53,12 @@ export interface Task {
   priority: string;
   tags?: string[];
   promotionDate?: string;
-  parentTaskId?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
 
 export interface TaskWithStatus extends Task {
   status: string;
-  subtaskIds?: string[];
 }
 
 export interface SectionDefinition {
@@ -283,22 +281,6 @@ function suggestAbbreviation(name: string, existingThemes: LifeTheme[]): string 
   }
 
   return word.substring(0, 3);
-}
-
-/** Compute subtaskIds for each task based on parentTaskId relationships. */
-function computeSubtaskIds(tasks: TaskWithStatus[]): TaskWithStatus[] {
-  const parentToChildren = new Map<string, string[]>();
-  for (const t of tasks) {
-    if (t.parentTaskId) {
-      const children = parentToChildren.get(t.parentTaskId) || [];
-      children.push(t.id);
-      parentToChildren.set(t.parentTaskId, children);
-    }
-  }
-  return tasks.map(t => ({
-    ...t,
-    subtaskIds: parentToChildren.get(t.id),
-  }));
 }
 
 // Mock data storage for browser testing
@@ -675,7 +657,7 @@ export const mockAppBindings = {
 
   // Task operations
   GetTasks: async (): Promise<TaskWithStatus[]> => {
-    const result = computeSubtaskIds([...mockTasks]);
+    const result = [...mockTasks];
     // Sort by persisted order within each drop zone
     result.sort((a, b) => {
       const zoneA = dropZoneForTask(a);
@@ -755,33 +737,14 @@ export const mockAppBindings = {
   ArchiveTask: async (taskId: string): Promise<void> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (!task) return;
-    // Collect task + all descendants
-    const toArchive = [taskId];
-    const collectDescendants = (parentId: string) => {
-      for (const t of mockTasks) {
-        if (t.parentTaskId === parentId) {
-          toArchive.push(t.id);
-          collectDescendants(t.id);
-        }
-      }
-    };
-    collectDescendants(taskId);
-    for (const id of toArchive) {
-      const t = mockTasks.find(t => t.id === id);
-      if (t) {
-        const oldZone = dropZoneForTask(t);
-        taskPositions[oldZone] = (taskPositions[oldZone] ?? []).filter(tid => tid !== id);
-        t.status = 'archived';
-      }
-    }
+    const oldZone = dropZoneForTask(task);
+    taskPositions[oldZone] = (taskPositions[oldZone] ?? []).filter(tid => tid !== taskId);
+    task.status = 'archived';
   },
 
   ArchiveAllDoneTasks: async (): Promise<void> => {
-    const doneIds = new Set(mockTasks.filter(t => t.status === 'done').map(t => t.id));
-    const rootDone = mockTasks.filter(t =>
-      t.status === 'done' && (!t.parentTaskId || !doneIds.has(t.parentTaskId))
-    );
-    for (const task of rootDone) {
+    const doneTasks = mockTasks.filter(t => t.status === 'done');
+    for (const task of doneTasks) {
       await mockAppBindings.ArchiveTask(task.id);
     }
   },
@@ -789,21 +752,7 @@ export const mockAppBindings = {
   RestoreTask: async (taskId: string): Promise<void> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (!task || task.status !== 'archived') return;
-    // Collect task + all archived descendants
-    const toRestore = [taskId];
-    const collectArchivedDescendants = (parentId: string) => {
-      for (const t of mockTasks) {
-        if (t.parentTaskId === parentId && t.status === 'archived') {
-          toRestore.push(t.id);
-          collectArchivedDescendants(t.id);
-        }
-      }
-    };
-    collectArchivedDescendants(taskId);
-    for (const id of toRestore) {
-      const t = mockTasks.find(t => t.id === id);
-      if (t) t.status = 'done';
-    }
+    task.status = 'done';
   },
 
   ReorderTasks: async (positions: Record<string, string[]>): Promise<ReorderResult> => {
@@ -960,7 +909,7 @@ export const mockAppBindings = {
     if (themeId) {
       filtered = filtered.filter(t => t.themeId === themeId);
     }
-    return computeSubtaskIds(filtered);
+    return filtered;
   },
 
   // Get days in calendar that use a specific theme

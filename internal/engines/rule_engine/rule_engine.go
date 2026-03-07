@@ -73,19 +73,6 @@ func DefaultRules() []Rule {
 			Enabled:  true,
 			Priority: 100,
 		},
-		{
-			ID:          "subtask-hierarchy",
-			Name:        "Subtask Hierarchy Validation",
-			Category:    "validation",
-			TriggerType: "all",
-			Conditions: map[string]interface{}{
-				"max_depth":           2,
-				"validate_parent":     true,
-				"no_circular_refs":    true,
-			},
-			Enabled:  true,
-			Priority: 100,
-		},
 	}
 }
 
@@ -144,7 +131,7 @@ func (re *RuleEngine) evaluateRule(rule Rule, event TaskEvent) []RuleViolation {
 	}
 }
 
-// evaluateValidationRule evaluates validation rules (WIP limits, required fields, subtask hierarchy).
+// evaluateValidationRule evaluates validation rules (WIP limits, required fields).
 func (re *RuleEngine) evaluateValidationRule(rule Rule, event TaskEvent) []RuleViolation {
 	var violations []RuleViolation
 
@@ -158,11 +145,6 @@ func (re *RuleEngine) evaluateValidationRule(rule Rule, event TaskEvent) []RuleV
 	// Required Fields
 	if reqFields, ok := rule.Conditions["required_fields"]; ok {
 		violations = append(violations, re.checkRequiredFields(rule, event, reqFields)...)
-	}
-
-	// Subtask Hierarchy
-	if _, ok := rule.Conditions["validate_parent"]; ok {
-		violations = append(violations, re.checkSubtaskHierarchy(rule, event)...)
 	}
 
 	return violations
@@ -270,114 +252,6 @@ func (re *RuleEngine) checkRequiredFields(rule Rule, event TaskEvent, reqFieldsR
 			}
 		}
 	}
-	return violations
-}
-
-// checkSubtaskHierarchy validates parent task references and depth constraints.
-func (re *RuleEngine) checkSubtaskHierarchy(rule Rule, event TaskEvent) []RuleViolation {
-	if event.Task.ParentTaskID == nil || *event.Task.ParentTaskID == "" {
-		return nil // Not a subtask, no hierarchy to validate
-	}
-
-	var violations []RuleViolation
-	parentID := *event.Task.ParentTaskID
-
-	// Check parent exists
-	parentExists := false
-	for _, t := range event.AllTasks {
-		if t.ID == parentID {
-			parentExists = true
-			break
-		}
-	}
-	if !parentExists {
-		violations = append(violations, RuleViolation{
-			RuleID:   rule.ID,
-			Priority: rule.Priority,
-			Message:  fmt.Sprintf("Parent task %q does not exist", parentID),
-			Category: rule.Category,
-		})
-		return violations
-	}
-
-	// Check no circular references: task cannot be its own parent
-	if event.Task.ID != "" && event.Task.ID == parentID {
-		violations = append(violations, RuleViolation{
-			RuleID:   rule.ID,
-			Priority: rule.Priority,
-			Message:  "Task cannot be its own parent",
-			Category: rule.Category,
-		})
-		return violations
-	}
-
-	// Check circular refs: walk up the parent chain
-	if event.Task.ID != "" {
-		taskMap := make(map[string]*string) // id -> parentTaskID
-		for _, t := range event.AllTasks {
-			if t.ID == event.Task.ID {
-				// Use the new parent from the event
-				pid := parentID
-				taskMap[t.ID] = &pid
-			} else {
-				taskMap[t.ID] = t.ParentTaskID
-			}
-		}
-		if _, exists := taskMap[event.Task.ID]; !exists {
-			pid := parentID
-			taskMap[event.Task.ID] = &pid
-		}
-
-		visited := map[string]bool{event.Task.ID: true}
-		current := parentID
-		for current != "" {
-			if visited[current] {
-				violations = append(violations, RuleViolation{
-					RuleID:   rule.ID,
-					Priority: rule.Priority,
-					Message:  "Circular parent reference detected",
-					Category: rule.Category,
-				})
-				return violations
-			}
-			visited[current] = true
-			pid, ok := taskMap[current]
-			if !ok || pid == nil {
-				break
-			}
-			current = *pid
-		}
-	}
-
-	// Check max depth
-	if maxDepthRaw, ok := rule.Conditions["max_depth"]; ok {
-		maxDepth, valid := toInt(maxDepthRaw)
-		if valid {
-			depth := 1 // current task is already 1 level deep
-			current := parentID
-			taskMap := make(map[string]*string)
-			for _, t := range event.AllTasks {
-				taskMap[t.ID] = t.ParentTaskID
-			}
-			for current != "" {
-				pid, ok := taskMap[current]
-				if !ok || pid == nil || *pid == "" {
-					break
-				}
-				depth++
-				current = *pid
-			}
-			if depth > maxDepth {
-				violations = append(violations, RuleViolation{
-					RuleID:   rule.ID,
-					Priority: rule.Priority,
-					Message:  fmt.Sprintf("Subtask depth %d exceeds maximum depth %d", depth, maxDepth),
-					Category: rule.Category,
-				})
-			}
-		}
-	}
-
 	return violations
 }
 

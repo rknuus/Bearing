@@ -5,12 +5,10 @@
    * A Kanban board for short-term task execution using Eisenhower priority.
    * Board configuration is fetched dynamically from GetBoardConfiguration API.
    * The Todo column renders tasks grouped by priority sections from the config.
-   * Subtasks are nested under their parent tasks with expand/collapse.
    * Drag-and-drop powered by svelte-dnd-action with optimistic rollback.
    */
 
   import { onMount, onDestroy, untrack } from 'svelte';
-  import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
@@ -85,9 +83,6 @@
 
   // Error dialog state (rule violations)
   let errorViolations = $state<RuleViolation[]>([]);
-
-  // Subtask expand/collapse state
-  let collapsedParents = new SvelteSet<string>();
 
   // Drag-and-drop state (svelte-dnd-action)
   let isValidating = $state(false);
@@ -244,7 +239,7 @@
       if (col.sections) {
         for (const section of col.sections) {
           sectionGrouped[section.name] = (grouped[col.name] ?? []).filter(
-            t => t.priority === section.name && !t.parentTaskId
+            t => t.priority === section.name
           );
         }
       }
@@ -262,36 +257,6 @@
       regroupItems();
     });
   });
-
-  // Helper: get top-level tasks (no parent) for a column
-  function getTopLevelTasks(columnName: string): TaskWithStatus[] {
-    return (columnItems[columnName] ?? []).filter(t => !t.parentTaskId);
-  }
-
-  // Helper: get subtasks for a parent task within a column
-  function getSubtasks(parentId: string, columnName: string): TaskWithStatus[] {
-    return (columnItems[columnName] ?? []).filter(t => t.parentTaskId === parentId);
-  }
-
-  // Helper: get subtask count for a parent task (across all tasks, not just column)
-  function getSubtaskCount(parentId: string): number {
-    return tasks.filter(t => t.parentTaskId === parentId).length;
-  }
-
-  // Helper: check if a task has subtasks
-  function hasSubtasks(taskId: string): boolean {
-    return tasks.some(t => t.parentTaskId === taskId);
-  }
-
-  // Toggle parent expand/collapse
-  function toggleParentCollapse(taskId: string) {
-    if (collapsedParents.has(taskId)) {
-      collapsedParents.delete(taskId);
-    } else {
-      collapsedParents.add(taskId);
-    }
-  }
-
 
   // API functions using Wails bindings (or mocks in browser mode)
   async function fetchTasks(): Promise<TaskWithStatus[]> {
@@ -342,7 +307,7 @@
     await getBindings().RestoreTask(taskId);
   }
 
-  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'promotionDate', 'description', 'parentTaskId', 'status'];
+  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'promotionDate', 'description', 'status'];
 
   const taskDropZone = (t: Record<string, unknown>) =>
     t.status === 'todo' ? (String(t.priority) || 'todo') : String(t.status);
@@ -470,7 +435,7 @@
 
     const posInDnd = dndOrderIds.indexOf(taskId);
     if (posInDnd <= 0) {
-      const firstPeerIdx = without.findIndex(t => t.status === updated.status && !t.parentTaskId);
+      const firstPeerIdx = without.findIndex(t => t.status === updated.status);
       if (firstPeerIdx === -1) return [...without, updated];
       return [...without.slice(0, firstPeerIdx), updated, ...without.slice(firstPeerIdx)];
     }
@@ -486,7 +451,7 @@
   function fullZoneOrder(visibleIds: string[], zone: string, excludeIds?: Set<string>): string[] {
     const visibleSet = new Set(visibleIds);
     const originalZoneIds = tasks
-      .filter(t => !t.parentTaskId && (t.status === 'todo' ? (t.priority || 'todo') : t.status) === zone)
+      .filter(t => (t.status === 'todo' ? (t.priority || 'todo') : t.status) === zone)
       .filter(t => !excludeIds || !excludeIds.has(t.id))
       .map(t => t.id);
     const hiddenIds = originalZoneIds.filter(id => !visibleSet.has(id));
@@ -551,7 +516,7 @@
     const movedTask = newItems.find(t => t.status !== status);
     if (!movedTask) {
       // Within-column reorder: persist new order
-      const visibleIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const visibleIds = newItems.map(t => t.id);
       const taskIds = fullZoneOrder(visibleIds, status);
       try {
         await apiReorderTasks({ [status]: taskIds });
@@ -566,7 +531,7 @@
     const taskId = movedTask.id;
 
     // Capture desired order from DnD before $effect re-derives columnItems
-    const visibleTargetIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const visibleTargetIds = newItems.map(t => t.id);
     const targetZoneIds = fullZoneOrder(visibleTargetIds, status);
 
     // Snapshot pre-move state for rollback
@@ -631,7 +596,7 @@
     const movedTask = newItems.find(t => t.status !== columnName || t.priority !== sectionName);
     if (!movedTask) {
       // Within-section reorder: persist new order
-      const visibleIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+      const visibleIds = newItems.map(t => t.id);
       const taskIds = fullZoneOrder(visibleIds, sectionName);
       try {
         await apiReorderTasks({ [sectionName]: taskIds });
@@ -647,7 +612,7 @@
     const snapshotTasks = [...tasks];
 
     // Capture desired order from DnD before $effect re-derives sectionItems
-    const visibleTargetIds = newItems.filter(t => !t.parentTaskId).map(t => t.id);
+    const visibleTargetIds = newItems.map(t => t.id);
     const targetZoneIds = fullZoneOrder(visibleTargetIds, sectionName);
 
     if (movedTask.status !== columnName) {
@@ -682,7 +647,7 @@
       // Within-column move: priority change -- use UpdateTask
       const sourceSection = movedTask.priority;
       const visibleSourceIds = (sectionItems[sourceSection] ?? [])
-        .filter(t => t.id !== taskId && !t.parentTaskId)
+        .filter(t => t.id !== taskId)
         .map(t => t.id);
       const sourceZoneIds = fullZoneOrder(visibleSourceIds, sourceSection, new Set([taskId]));
       const updatedTask = { ...movedTask, priority: sectionName };
@@ -773,7 +738,7 @@
 
   // Derive archived tasks (filtered by theme/tag/date like other tasks)
   const archivedTasks = $derived(filteredTasks.filter(t => t.status === 'archived'));
-  const rootArchivedTasks = $derived(archivedTasks.filter(t => !t.parentTaskId));
+  const rootArchivedTasks = $derived(archivedTasks);
 
   // Column task count (exclude archived)
   function getColumnTaskCount(columnName: string): number {
@@ -1012,19 +977,6 @@
                           <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                             {priorityLabels[task.priority]}
                           </span>
-                          {#if hasSubtasks(task.id)}
-                            <button
-                              type="button"
-                              class="toggle-btn"
-                              onclick={(e) => { e.stopPropagation(); toggleParentCollapse(task.id); }}
-                              aria-label="{collapsedParents.has(task.id) ? 'Expand' : 'Collapse'} subtasks"
-                            >
-                              {collapsedParents.has(task.id) ? '+' : '-'}
-                            </button>
-                            {#if collapsedParents.has(task.id)}
-                              <span class="subtask-count">{getSubtaskCount(task.id)}</span>
-                            {/if}
-                          {/if}
                         </div>
                         <h3 class="task-title">{task.title}</h3>
                         <TagBadges tags={task.tags} />
@@ -1047,22 +999,6 @@
                           </button>
                         </div>
                       </div>
-                      {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
-                        {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
-                          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-                          <div
-                            class="task-card subtask-card"
-                            onclick={() => handleTaskClick(subtask)}
-                            oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
-                            style="--theme-color: {getThemeColor(themes, subtask.themeId)};"
-                            role="article"
-                            aria-label="{subtask.title}"
-                          >
-                            <h3 class="task-title">{subtask.title}</h3>
-                            <TagBadges tags={subtask.tags} />
-                          </div>
-                        {/each}
-                      {/if}
                     {/each}
                   </div>
                 </div>
@@ -1076,7 +1012,7 @@
               onconsider={(e) => handleDndConsider(column.name, e)}
               onfinalize={(e) => handleDndFinalize(column.name, e)}
             >
-              {#each getTopLevelTasks(column.name) as task (task.id)}
+              {#each (columnItems[column.name] ?? []) as task (task.id)}
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
                 <div
                   class="task-card"
@@ -1091,19 +1027,6 @@
                     <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                       {priorityLabels[task.priority]}
                     </span>
-                    {#if hasSubtasks(task.id)}
-                      <button
-                        type="button"
-                        class="toggle-btn"
-                        onclick={(e) => { e.stopPropagation(); toggleParentCollapse(task.id); }}
-                        aria-label="{collapsedParents.has(task.id) ? 'Expand' : 'Collapse'} subtasks"
-                      >
-                        {collapsedParents.has(task.id) ? '+' : '-'}
-                      </button>
-                      {#if collapsedParents.has(task.id)}
-                        <span class="subtask-count">{getSubtaskCount(task.id)}</span>
-                      {/if}
-                    {/if}
                   </div>
                   <h3 class="task-title">{task.title}</h3>
                   <TagBadges tags={task.tags} />
@@ -1137,22 +1060,6 @@
                     </button>
                   </div>
                 </div>
-                {#if hasSubtasks(task.id) && !collapsedParents.has(task.id)}
-                  {#each getSubtasks(task.id, column.name) as subtask (subtask.id)}
-                    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-                    <div
-                      class="task-card subtask-card"
-                      onclick={() => handleTaskClick(subtask)}
-                      oncontextmenu={(e) => handleTaskContextMenu(e, subtask)}
-                      style="--theme-color: {getThemeColor(themes, subtask.themeId)};"
-                      role="article"
-                      aria-label="{subtask.title}"
-                    >
-                      <h3 class="task-title">{subtask.title}</h3>
-                      <TagBadges tags={subtask.tags} />
-                    </div>
-                  {/each}
-                {/if}
               {/each}
 
               {#if (columnItems[column.name] ?? []).length === 0}
@@ -1448,19 +1355,6 @@
     transform: rotate(2deg);
   }
 
-  /* Subtask card: indented and smaller */
-  .subtask-card {
-    margin-left: 1.5rem;
-    padding: 0.5rem 0.625rem;
-    opacity: 0.85;
-    font-size: 0.8125rem;
-  }
-
-  .subtask-card .task-title {
-    font-size: 0.8125rem;
-    margin: 0;
-  }
-
   .task-header {
     display: flex;
     align-items: center;
@@ -1476,29 +1370,6 @@
     border-radius: 4px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-  }
-
-  .toggle-btn {
-    background: none;
-    border: 1px solid var(--color-gray-300);
-    color: var(--color-gray-500);
-    font-size: 0.75rem;
-    font-weight: 700;
-    cursor: pointer;
-    padding: 0 0.375rem;
-    line-height: 1.25;
-    border-radius: 3px;
-    transition: background-color 0.15s;
-  }
-
-  .toggle-btn:hover {
-    background-color: var(--color-gray-100);
-  }
-
-  .subtask-count {
-    font-size: 0.6875rem;
-    color: var(--color-gray-500);
-    font-weight: 500;
   }
 
   .task-title {
