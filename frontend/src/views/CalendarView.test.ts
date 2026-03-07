@@ -47,6 +47,7 @@ describe('CalendarView', () => {
         const idx = currentYearFocus.findIndex(e => e.date === date);
         if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeId: '' };
       }),
+      GetTasks: vi.fn().mockResolvedValue([]),
       LogFrontend: vi.fn(),
       LoadNavigationContext: vi.fn().mockResolvedValue({
         currentView: 'calendar',
@@ -230,8 +231,9 @@ describe('CalendarView', () => {
     await tick();
     expect(container.querySelector('.dialog')).toBeTruthy();
 
-    // Click cancel
-    const cancelButton = container.querySelector<HTMLButtonElement>('.btn-secondary');
+    // Click cancel (find by text to avoid matching the Add button)
+    const cancelButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
+      .find(btn => btn.textContent?.trim() === 'Cancel');
     cancelButton!.click();
     await tick();
 

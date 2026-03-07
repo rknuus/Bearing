@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type Objective } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -34,6 +34,11 @@
   let editingDay = $state<{ date: string; month: number; day: number } | null>(null);
   let editThemeId = $state('');
   let editText = $state('');
+  let editOkrIds = $state<string[]>([]);
+  let editTags = $state<string[]>([]);
+  let prevThemeId = $state('');
+  let availableTags = $state<string[]>([]);
+  let newTagInput = $state('');
 
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
@@ -199,13 +204,97 @@
     }
   }
 
-  function handleDayClick(month: number, day: number) {
+  // Flatten a theme's OKR hierarchy into a selectable list
+  interface OkrItem { id: string; type: 'O' | 'KR'; title: string }
+
+  function flattenOkrItems(themeId: string): OkrItem[] {
+    const theme = themes.find(t => t.id === themeId);
+    if (!theme) return [];
+    const items: OkrItem[] = [];
+    function walkObjectives(objectives: Objective[]) {
+      for (const obj of objectives) {
+        if (obj.status === 'archived') continue;
+        items.push({ id: obj.id, type: 'O', title: obj.title });
+        for (const kr of obj.keyResults) {
+          if (kr.status === 'archived') continue;
+          items.push({ id: kr.id, type: 'KR', title: kr.description });
+        }
+        if (obj.objectives) walkObjectives(obj.objectives);
+      }
+    }
+    walkObjectives(theme.objectives);
+    return items;
+  }
+
+  // Derive OKR items for the currently selected theme in the editor
+  const editOkrItems = $derived(editThemeId ? flattenOkrItems(editThemeId) : []);
+
+  async function handleDayClick(month: number, day: number) {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
 
     editingDay = { date: dateStr, month, day };
     editThemeId = focus?.themeId ?? '';
+    prevThemeId = editThemeId;
     editText = focus?.text ?? '';
+    editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
+    editTags = focus?.tags ? [...focus.tags] : [];
+    newTagInput = '';
+
+    // Fetch available tags from tasks
+    try {
+      const tasks = await getBindings().GetTasks();
+      availableTags = [...new Set(tasks.flatMap(t => t.tags ?? []))].sort();
+    } catch {
+      availableTags = [];
+    }
+  }
+
+  function handleThemeChange(event: Event) {
+    const newThemeId = (event.target as HTMLSelectElement).value;
+    if (editOkrIds.length > 0 && newThemeId !== prevThemeId) {
+      if (!confirm('Changing the theme will clear your OKR references. Continue?')) {
+        editThemeId = prevThemeId;
+        return;
+      }
+      editOkrIds = [];
+    }
+    editThemeId = newThemeId;
+    prevThemeId = newThemeId;
+  }
+
+  function toggleOkrId(id: string) {
+    if (editOkrIds.includes(id)) {
+      editOkrIds = editOkrIds.filter(x => x !== id);
+    } else {
+      editOkrIds = [...editOkrIds, id];
+    }
+  }
+
+  function toggleTag(tag: string) {
+    if (editTags.includes(tag)) {
+      editTags = editTags.filter(t => t !== tag);
+    } else {
+      editTags = [...editTags, tag];
+    }
+  }
+
+  function addNewTag() {
+    const tag = newTagInput.trim();
+    if (tag && !editTags.includes(tag)) {
+      editTags = [...editTags, tag];
+      if (!availableTags.includes(tag)) {
+        availableTags = [...availableTags, tag].sort();
+      }
+    }
+    newTagInput = '';
+  }
+
+  function handleNewTagKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addNewTag();
+    }
   }
 
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
@@ -232,7 +321,9 @@
         date: editingDay.date,
         themeId: editThemeId,
         notes: existing?.notes ?? '',
-        text: editText
+        text: editText,
+        okrIds: editOkrIds.length > 0 ? editOkrIds : undefined,
+        tags: editTags.length > 0 ? editTags : undefined,
       };
       await bindings.SaveDayFocus(dayFocus);
       yearFocus.set(editingDay.date, dayFocus);
@@ -374,12 +465,66 @@
     <Dialog title={displayDate(editingDay.month, editingDay.day)} id="dialog-title" onclose={cancelEdit}>
       <div class="form-group">
         <label for="theme-select">Theme</label>
-        <select id="theme-select" bind:value={editThemeId}>
+        <select id="theme-select" value={editThemeId} onchange={handleThemeChange}>
           <option value="">No theme</option>
           {#each themes as theme (theme.id)}
             <option value={theme.id}>{theme.name}</option>
           {/each}
         </select>
+      </div>
+
+      {#if editThemeId && editOkrItems.length > 0}
+        <div class="form-group">
+          <span class="form-label">OKR References</span>
+          <div class="okr-picker">
+            {#each editOkrItems as item (item.id)}
+              <label class="okr-item">
+                <input
+                  type="checkbox"
+                  checked={editOkrIds.includes(item.id)}
+                  onchange={() => toggleOkrId(item.id)}
+                />
+                <span class="okr-type-badge">[{item.type}]</span>
+                {item.title}
+              </label>
+            {/each}
+          </div>
+        </div>
+      {/if}
+
+      <div class="form-group">
+        <span class="form-label">Tags</span>
+        <div class="tag-picker">
+          {#each availableTags as tag (tag)}
+            <button
+              type="button"
+              class="tag-pill"
+              class:active={editTags.includes(tag)}
+              onclick={() => toggleTag(tag)}
+            >
+              {tag}
+            </button>
+          {/each}
+          {#each editTags.filter(t => !availableTags.includes(t)) as tag (tag)}
+            <button
+              type="button"
+              class="tag-pill active"
+              onclick={() => toggleTag(tag)}
+            >
+              {tag}
+            </button>
+          {/each}
+        </div>
+        <div class="tag-input-row">
+          <input
+            type="text"
+            bind:value={newTagInput}
+            onkeydown={handleNewTagKeydown}
+            placeholder="Add new tag..."
+            class="tag-input"
+          />
+          <Button variant="secondary" onclick={addNewTag} disabled={!newTagInput.trim()}>Add</Button>
+        </div>
       </div>
 
       <div class="form-group">
@@ -643,7 +788,8 @@
     margin-bottom: 1rem;
   }
 
-  .form-group label {
+  .form-group label,
+  .form-group .form-label {
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
@@ -666,6 +812,76 @@
     outline: none;
     border-color: var(--color-primary-600);
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  /* OKR Picker */
+  .okr-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .okr-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+
+  .okr-type-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+  }
+
+  /* Tag Picker */
+  .tag-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag-pill {
+    padding: 0.25rem 0.75rem;
+    border-radius: var(--radius-full, 9999px);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--color-gray-300);
+    background-color: transparent;
+    color: var(--color-gray-600);
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  }
+
+  .tag-pill:hover {
+    background-color: var(--color-gray-100);
+  }
+
+  .tag-pill.active {
+    background-color: var(--color-primary-600);
+    color: white;
+    border-color: var(--color-primary-600);
+  }
+
+  .tag-pill.active:hover {
+    background-color: var(--color-primary-700);
+    border-color: var(--color-primary-700);
+  }
+
+  .tag-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .tag-input {
+    flex: 1;
   }
 
 </style>
