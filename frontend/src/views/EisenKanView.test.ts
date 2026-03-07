@@ -247,7 +247,7 @@ describe('EisenKanView', () => {
     const firstCard = cards[0];
     const badge = firstCard.querySelector('.priority-badge');
     expect(badge).toBeTruthy();
-    expect(badge?.textContent?.trim()).toMatch(/Q[123]/);
+    expect(badge?.textContent?.trim()).toMatch(/I&U|nI&U|I&nU/);
 
     const title = firstCard.querySelector('.task-title');
     expect(title).toBeTruthy();

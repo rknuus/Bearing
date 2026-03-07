@@ -107,9 +107,9 @@ describe('CreateTaskDialog', () => {
 
     const titles = container.querySelectorAll('.quadrant-title');
     const titleTexts = Array.from(titles).map(t => t.textContent);
-    expect(titleTexts).toContain('Q1 - Important & Urgent');
-    expect(titleTexts).toContain('Q2 - Not Important & Urgent');
-    expect(titleTexts).toContain('Q3 - Important & Not Urgent');
+    expect(titleTexts).toContain('Important & Urgent');
+    expect(titleTexts).toContain('Not Important & Urgent');
+    expect(titleTexts).toContain('Important & Not Urgent');
     expect(titleTexts).toContain('Q4 - Staging');
   });
 
