@@ -906,7 +906,7 @@
                   onclick={handleArchiveAllDone}
                   title="Archive all done tasks"
                 >
-                  Archive all
+                  Archive all ✅
                 </button>
               {/if}
               <span class="task-count">{getColumnTaskCount(column.name)}</span>
