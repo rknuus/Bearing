@@ -959,15 +959,15 @@
               <span class="collapsed-column-title">{column.title}</span>
               <span class="collapsed-column-count">{getColumnTaskCount(column.name)}</span>
             </button>
-          {:else}
-          <div class="column-header">
+          {/if}
+          <div class="column-header" class:collapsed-column-hidden={columnCollapsed}>
             <div class="column-header-left">
               <button
                 type="button"
                 class="column-fold-btn"
                 onclick={() => toggleColumn(column.name)}
-                aria-expanded="true"
-                aria-label="Collapse {column.title}"
+                aria-expanded={!columnCollapsed}
+                aria-label="{columnCollapsed ? 'Expand' : 'Collapse'} {column.title}"
               >
                 <span class="fold-icon">&#x25BC;</span>
               </button>
@@ -1023,7 +1023,7 @@
 
           {#if column.sections && column.sections.length > 0}
             <!-- Sectioned column: render sections as separate groups -->
-            <div class="section-container">
+            <div class="section-container" class:collapsed-column-hidden={columnCollapsed}>
               {#each column.sections as section (section.name)}
                 {@const sectionTaskItems = sectionItems[section.name] ?? []}
                 {@const sectionCollapsed = collapsedSections.has(section.name)}
@@ -1094,6 +1094,7 @@
             <!-- Regular column: single drop zone -->
             <div
               class="column-content"
+              class:collapsed-column-hidden={columnCollapsed}
               use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack || (columnItems[column.name] ?? []).length === 0 }}
               onconsider={(e) => handleDndConsider(column.name, e)}
               onfinalize={(e) => handleDndFinalize(column.name, e)}
@@ -1154,7 +1155,6 @@
                 </div>
               {/if}
             </div>
-          {/if}
           {/if}
         </div>
       {/each}
@@ -1380,6 +1380,16 @@
     font-weight: 500;
     padding: 0.125rem 0.5rem;
     border-radius: 9999px;
+  }
+
+  /* !important needed to override inline min-height set by svelte-dnd-action */
+  .collapsed-column-hidden {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0;
+    gap: 0;
+    margin: 0;
   }
 
   .column-fold-btn {

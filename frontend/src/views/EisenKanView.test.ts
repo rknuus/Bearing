@@ -1405,7 +1405,7 @@ describe('EisenKanView', () => {
       expect(columns[1].classList.contains('collapsed-column')).toBe(false);
     });
 
-    it('collapsed column hides header controls', async () => {
+    it('collapsed column hides header controls via CSS', async () => {
       await renderView();
 
       const foldBtns = container.querySelectorAll<HTMLButtonElement>('.column-fold-btn');
@@ -1414,8 +1414,8 @@ describe('EisenKanView', () => {
       await tick();
 
       const columns = container.querySelectorAll('.kanban-column');
-      expect(columns[2].querySelector('.column-header')).toBeNull();
-      expect(columns[2].querySelector('.archive-all-btn')).toBeNull();
+      // Header stays in DOM (for DnD) but is marked hidden
+      expect(columns[2].querySelector('.column-header')?.classList.contains('collapsed-column-hidden')).toBe(true);
     });
 
     it('collapsed column shows task count', async () => {
