@@ -45,9 +45,12 @@
     onFilterThemeClear?: () => void;
     onFilterTagToggle?: (tag: string) => void;
     onFilterTagClear?: () => void;
+    todayFocusThemeId?: string | null;
+    todayFocusActive?: boolean;
+    onTodayFocusToggle?: () => void;
   }
 
-  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear }: Props = $props();
+  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -898,6 +901,9 @@
         onToggle={onFilterThemeToggle}
         onClear={onFilterThemeClear}
         counts={themeCounts}
+        {todayFocusThemeId}
+        {todayFocusActive}
+        {onTodayFocusToggle}
       />
     {/if}
     {#if (availableTags.length > 0 || (tagCounts[UNTAGGED_SENTINEL] ?? 0) > 0) && onFilterTagToggle && onFilterTagClear}
