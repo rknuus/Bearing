@@ -31,10 +31,12 @@
     onTasksChange: (tasks: PendingTask[]) => void;
     onDragStart?: () => void;
     onDragEnd?: () => void;
+    onTaskClick?: (task: PendingTask) => void;
+    onTaskDelete?: (taskId: string) => void;
     isStaging?: boolean;
   }
 
-  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, isStaging = false }: Props = $props();
+  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, onTaskClick, onTaskDelete, isStaging = false }: Props = $props();
 
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
 
@@ -70,10 +72,13 @@
     onfinalize={handleDndFinalize}
   >
     {#each tasks as task (task.id)}
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
       <div
         class="pending-task"
         data-testid="pending-task-{task.id}"
         style="--theme-color: {getThemeColor(themes, task.themeId)};"
+        onclick={() => onTaskClick?.(task)}
+        role="article"
       >
         <div class="task-header">
           <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
@@ -82,6 +87,13 @@
           {/if}
           {#if getTheme(themes, task.themeId)}
             <span class="theme-name">{getTheme(themes, task.themeId)?.name}</span>
+          {/if}
+          {#if onTaskDelete}
+            <button
+              class="delete-btn"
+              onclick={(e) => { e.stopPropagation(); onTaskDelete(task.id); }}
+              aria-label="Remove task"
+            >&times;</button>
           {/if}
         </div>
         <span class="task-title">{task.title}</span>
@@ -179,6 +191,24 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .delete-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--color-gray-400);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.25rem;
+    border-radius: 4px;
+    transition: color 0.15s, background-color 0.15s;
+  }
+
+  .delete-btn:hover {
+    color: var(--color-error-600);
+    background-color: var(--color-error-100, rgba(239, 68, 68, 0.1));
   }
 
   .task-title {

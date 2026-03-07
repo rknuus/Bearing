@@ -51,6 +51,13 @@
   let error = $state<string | null>(null);
   let nextId = $state(1);
 
+  // Edit pending task state
+  let editingPendingTask = $state<PendingTask | null>(null);
+  let editTitle = $state('');
+  let editThemeId = $state('');
+  let editDescription = $state('');
+  let editTags = $state<string[]>([]);
+
   const emptyQuadrants: Record<QuadrantId, PendingTask[]> = {
     'important-urgent': [],
     'important-not-urgent': [],
@@ -242,8 +249,53 @@
   }
 
   async function handleClose() {
+    if (editingPendingTask) return;
     await saveDrafts();
     onClose();
+  }
+
+  function handlePendingTaskClick(task: PendingTask) {
+    if (isDragging) return;
+    editingPendingTask = task;
+    editTitle = task.title;
+    editThemeId = task.themeId ?? (themes.length > 0 ? themes[0].id : '');
+    editDescription = task.description ?? '';
+    editTags = task.tags ? task.tags.split(', ').filter(Boolean) : [];
+  }
+
+  async function handlePendingTaskEditSave() {
+    if (!editingPendingTask || !editTitle.trim()) return;
+    const updatedTask: PendingTask = {
+      id: editingPendingTask.id,
+      title: editTitle.trim(),
+      themeId: editThemeId,
+      description: editDescription.trim() || undefined,
+      tags: editTags.length > 0 ? editTags.join(', ') : undefined,
+    };
+    for (const qId of Object.keys(tasksByQuadrant) as QuadrantId[]) {
+      const idx = tasksByQuadrant[qId].findIndex(t => t.id === updatedTask.id);
+      if (idx !== -1) {
+        tasksByQuadrant = {
+          ...tasksByQuadrant,
+          [qId]: tasksByQuadrant[qId].map(t => t.id === updatedTask.id ? updatedTask : t),
+        };
+        break;
+      }
+    }
+    editingPendingTask = null;
+    await saveDrafts();
+  }
+
+  function handlePendingTaskEditCancel() {
+    editingPendingTask = null;
+  }
+
+  async function handlePendingTaskDelete(quadrantId: QuadrantId, taskId: string) {
+    tasksByQuadrant = {
+      ...tasksByQuadrant,
+      [quadrantId]: tasksByQuadrant[quadrantId].filter(t => t.id !== taskId),
+    };
+    await saveDrafts();
   }
 
   async function handleClearStaging() {
@@ -310,6 +362,8 @@
             onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onTaskClick={handlePendingTaskClick}
+            onTaskDelete={(taskId) => handlePendingTaskDelete(q.id, taskId)}
             isStaging={q.isStaging}
           />
         {/each}
@@ -325,6 +379,8 @@
             onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
+            onTaskClick={handlePendingTaskClick}
+            onTaskDelete={(taskId) => handlePendingTaskDelete(q.id, taskId)}
             isStaging={q.isStaging}
           />
         {/each}
@@ -335,6 +391,39 @@
       <p class="staging-hint">
         Tasks in staging (Q4) are saved as drafts but won't be committed. Drag them to a priority quadrant to include them.
       </p>
+    {/if}
+
+    {#if editingPendingTask}
+      <Dialog title="Edit Task" id="edit-pending-dialog-title" onclose={handlePendingTaskEditCancel}>
+        <TaskFormFields
+          bind:title={editTitle}
+          bind:themeId={editThemeId}
+          bind:description={editDescription}
+          {themes}
+          idPrefix="edit-pending"
+        />
+        <div class="form-group">
+          <label for="edit-pending-tags">Tags</label>
+          <TagEditor
+            tags={editTags}
+            {availableTags}
+            onTagsChange={(t) => { editTags = t; }}
+          />
+        </div>
+
+        {#snippet actions()}
+          <Button variant="secondary" onclick={handlePendingTaskEditCancel}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onclick={handlePendingTaskEditSave}
+            disabled={!editTitle.trim()}
+          >
+            Save
+          </Button>
+        {/snippet}
+      </Dialog>
     {/if}
 
     {#snippet actions()}
