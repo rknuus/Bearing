@@ -75,7 +75,12 @@
     navigateTo('okr', options);
   }
 
-  function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
+  async function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
+    // Re-resolve today's focus in case the user just set it in Calendar
+    todayFocusThemeId = await resolveTodayFocusThemeId(getBindings());
+    if (todayFocusActive && todayFocusThemeId && options?.themeId === undefined) {
+      filterThemeIds = [todayFocusThemeId];
+    }
     navigateTo('eisenkan', options);
   }
 
