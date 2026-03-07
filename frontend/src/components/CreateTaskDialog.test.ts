@@ -24,14 +24,13 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeCreateTaskMock() {
   let callCount = 0;
-  return vi.fn<(title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>>(
-    async (title, themeId, dayDate, priority) => {
+  return vi.fn<(title: string, themeId: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>>(
+    async (title, themeId, priority) => {
       callCount++;
       return {
         id: `${themeId}-T${callCount}`,
         title,
         themeId,
-        dayDate,
         priority,
       };
     }
@@ -57,7 +56,7 @@ describe('CreateTaskDialog', () => {
     themes: LifeTheme[];
     onDone: () => void;
     onClose: () => void;
-    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>;
   }> = {}) {
     const result = render(CreateTaskDialog, {
       target: container,
@@ -435,10 +434,10 @@ describe('CreateTaskDialog', () => {
 
     it('shows error count on partial failure and does not call onDone', async () => {
       let callCount = 0;
-      const createTask = vi.fn(async (title: string, themeId: string, dayDate: string, priority: string) => {
+      const createTask = vi.fn(async (title: string, themeId: string, priority: string) => {
         callCount++;
         if (callCount === 2) throw new Error('Server error');
-        return { id: `T-${callCount}`, title, themeId, dayDate, priority };
+        return { id: `T-${callCount}`, title, themeId, priority };
       });
       const onDone = vi.fn();
       await renderDialog({ createTask, onDone });

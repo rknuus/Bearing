@@ -16,7 +16,6 @@ function makeMockBindings() {
       currentView: 'okr',
       currentItem: '',
       filterThemeId: '',
-      filterDate: '',
       lastAccessed: '',
     }),
     SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
@@ -168,7 +167,6 @@ describe('App', () => {
       currentView: 'okr',
       currentItem: '',
       filterThemeId: '',
-      filterDate: '',
       lastAccessed: '',
     });
 
@@ -226,7 +224,6 @@ describe('App', () => {
       currentItem: '',
       filterThemeId: '',
       filterThemeIds: ['HF'],
-      filterDate: '',
       lastAccessed: '',
     });
 
@@ -248,7 +245,6 @@ describe('App', () => {
       currentView: 'eisenkan',
       currentItem: '',
       filterThemeId: 'CG',
-      filterDate: '',
       lastAccessed: '',
     });
 
@@ -259,23 +255,6 @@ describe('App', () => {
       .find(l => l.textContent?.trim() === 'Tasks');
     expect(taskLink?.classList.contains('active')).toBe(true);
 
-  });
-
-  it('restores Calendar view with filterDate from navigation context', async () => {
-    mockBindings.LoadNavigationContext.mockResolvedValue({
-      currentView: 'calendar',
-      currentItem: '',
-      filterThemeId: '',
-      filterDate: '2026-01-15',
-      lastAccessed: '',
-    });
-
-    await renderApp();
-
-    // Calendar nav link should be active
-    const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Calendar');
-    expect(calLink?.classList.contains('active')).toBe(true);
   });
 
 });
