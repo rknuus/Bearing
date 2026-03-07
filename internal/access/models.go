@@ -306,5 +306,7 @@ type NavigationContext struct {
 	ShowArchived      bool     `json:"showArchived,omitempty"`
 	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
 	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
-	FilterTagIDs   []string `json:"filterTagIds,omitempty"`
+	FilterTagIDs      []string `json:"filterTagIds,omitempty"`
+	TodayFocusActive  *bool    `json:"todayFocusActive,omitempty"`
+	TagFocusActive    *bool    `json:"tagFocusActive,omitempty"`
 }

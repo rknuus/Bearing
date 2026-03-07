@@ -48,9 +48,12 @@
     todayFocusThemeId?: string | null;
     todayFocusActive?: boolean;
     onTodayFocusToggle?: () => void;
+    todayFocusTags?: string[];
+    tagFocusActive?: boolean;
+    onTagFocusToggle?: () => void;
   }
 
-  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle }: Props = $props();
+  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle, todayFocusTags, tagFocusActive, onTagFocusToggle }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -141,7 +144,9 @@
     if (filterThemeIds.length > 0) {
       result = result.filter(t => filterThemeIds.includes(t.themeId));
     }
-    if (filterTagIds.length > 0) {
+    if (tagFocusActive && todayFocusTags && todayFocusTags.length > 0) {
+      result = result.filter(t => t.tags?.some(tag => todayFocusTags.includes(tag)));
+    } else if (filterTagIds.length > 0) {
       const realTags = filterTagIds.filter(t => t !== UNTAGGED_SENTINEL);
       const includeUntagged = filterTagIds.includes(UNTAGGED_SENTINEL);
       result = result.filter(t => {
@@ -914,6 +919,9 @@
         onClear={onFilterTagClear}
         counts={tagCounts}
         untaggedActive={filterTagIds.includes(UNTAGGED_SENTINEL)}
+        {todayFocusTags}
+        todayFocusActive={tagFocusActive}
+        onTodayFocusToggle={onTagFocusToggle}
       />
     {/if}
     <div class="kanban-board" style="grid-template-columns: repeat({columns.length + (showArchivedTasks ? 1 : 0)}, 1fr);">

@@ -22,6 +22,9 @@ describe('TagFilterBar', () => {
     onClear?: () => void;
     counts?: Record<string, number>;
     untaggedActive?: boolean;
+    todayFocusTags?: string[];
+    todayFocusActive?: boolean;
+    onTodayFocusToggle?: () => void;
   }) {
     const result = render(TagFilterBar, {
       target: container,
@@ -32,6 +35,9 @@ describe('TagFilterBar', () => {
         onClear: props.onClear ?? (() => {}),
         counts: props.counts,
         untaggedActive: props.untaggedActive,
+        todayFocusTags: props.todayFocusTags,
+        todayFocusActive: props.todayFocusActive,
+        onTodayFocusToggle: props.onTodayFocusToggle,
       },
     });
     await tick();
@@ -162,5 +168,141 @@ describe('TagFilterBar', () => {
 
     const allPill = container.querySelector('.all-pill');
     expect(allPill?.textContent?.trim()).toBe('All');
+  });
+
+  it('renders Today\'s Focus pill when onTodayFocusToggle provided', async () => {
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      onTodayFocusToggle: () => {},
+    });
+
+    const pill = container.querySelector('.today-focus-pill');
+    expect(pill).not.toBeNull();
+    expect(pill?.textContent?.trim()).toBe("Today's Focus");
+  });
+
+  it('does not render Today\'s Focus pill when onTodayFocusToggle not provided', async () => {
+    await renderBar({ availableTags: ['backend'], activeTagIds: [] });
+
+    const pill = container.querySelector('.today-focus-pill');
+    expect(pill).toBeNull();
+  });
+
+  it('Today\'s Focus pill is active when todayFocusActive=true and tags exist', async () => {
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusTags: ['backend'],
+      todayFocusActive: true,
+      onTodayFocusToggle: () => {},
+    });
+
+    const pill = container.querySelector('.today-focus-pill');
+    expect(pill?.classList.contains('active')).toBe(true);
+  });
+
+  it('Today\'s Focus pill is disabled when todayFocusTags is empty', async () => {
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusTags: [],
+      todayFocusActive: true,
+      onTodayFocusToggle: () => {},
+    });
+
+    const pill = container.querySelector<HTMLButtonElement>('.today-focus-pill');
+    expect(pill?.disabled).toBe(true);
+    expect(pill?.classList.contains('active')).toBe(false);
+  });
+
+  it('Today\'s Focus pill is disabled when todayFocusTags is undefined', async () => {
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusActive: true,
+      onTodayFocusToggle: () => {},
+    });
+
+    const pill = container.querySelector<HTMLButtonElement>('.today-focus-pill');
+    expect(pill?.disabled).toBe(true);
+  });
+
+  it('tag pills are locked when Today\'s Focus is active with tags', async () => {
+    await renderBar({
+      availableTags: ['backend', 'api'],
+      activeTagIds: [],
+      todayFocusTags: ['backend'],
+      todayFocusActive: true,
+      onTodayFocusToggle: () => {},
+    });
+
+    const allPill = container.querySelector('.all-pill');
+    expect(allPill?.classList.contains('pills-locked')).toBe(true);
+
+    const tagPills = container.querySelectorAll('.tag-pill');
+    for (const pill of tagPills) {
+      expect(pill.classList.contains('pills-locked')).toBe(true);
+    }
+  });
+
+  it('tag pills are not locked when todayFocusTags is empty', async () => {
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusTags: [],
+      todayFocusActive: true,
+      onTodayFocusToggle: () => {},
+    });
+
+    const allPill = container.querySelector('.all-pill');
+    expect(allPill?.classList.contains('pills-locked')).toBe(false);
+  });
+
+  it('tag pills are not locked when Today\'s Focus is inactive', async () => {
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusTags: ['backend'],
+      todayFocusActive: false,
+      onTodayFocusToggle: () => {},
+    });
+
+    const allPill = container.querySelector('.all-pill');
+    expect(allPill?.classList.contains('pills-locked')).toBe(false);
+  });
+
+  it('clicking Today\'s Focus pill calls onTodayFocusToggle', async () => {
+    const onTodayFocusToggle = vi.fn();
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusTags: ['backend'],
+      todayFocusActive: true,
+      onTodayFocusToggle,
+    });
+
+    const pill = container.querySelector<HTMLButtonElement>('.today-focus-pill');
+    pill!.click();
+    await tick();
+
+    expect(onTodayFocusToggle).toHaveBeenCalledOnce();
+  });
+
+  it('clicking disabled Today\'s Focus pill does not call handler', async () => {
+    const onTodayFocusToggle = vi.fn();
+    await renderBar({
+      availableTags: ['backend'],
+      activeTagIds: [],
+      todayFocusTags: [],
+      todayFocusActive: false,
+      onTodayFocusToggle,
+    });
+
+    const pill = container.querySelector<HTMLButtonElement>('.today-focus-pill');
+    pill!.click();
+    await tick();
+
+    expect(onTodayFocusToggle).not.toHaveBeenCalled();
   });
 });

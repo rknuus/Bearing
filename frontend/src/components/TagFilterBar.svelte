@@ -17,20 +17,38 @@
     onClear: () => void;
     counts?: Record<string, number>;
     untaggedActive?: boolean;
+    todayFocusTags?: string[];
+    todayFocusActive?: boolean;
+    onTodayFocusToggle?: () => void;
   }
 
-  let { availableTags, activeTagIds, onToggle, onClear, counts, untaggedActive = false }: Props = $props();
+  let { availableTags, activeTagIds, onToggle, onClear, counts, untaggedActive = false, todayFocusTags, todayFocusActive = false, onTodayFocusToggle }: Props = $props();
 
   const allActive = $derived(activeTagIds.length === 0);
   const hasUntagged = $derived((counts?.[UNTAGGED_SENTINEL] ?? 0) > 0);
+  const todayFocusDisabled = $derived(!todayFocusTags?.length);
+  const pillsLocked = $derived(todayFocusActive && !todayFocusDisabled);
 </script>
 
 {#if availableTags.length > 0 || hasUntagged}
   <div class="tag-filter-bar">
     <span class="filter-label">Filter by tag:</span>
+    {#if onTodayFocusToggle !== undefined}
+      <button
+        class="today-focus-pill"
+        class:active={todayFocusActive && !todayFocusDisabled}
+        disabled={todayFocusDisabled}
+        onclick={onTodayFocusToggle}
+        type="button"
+        title={todayFocusDisabled ? 'No focus tags set for today' : "Today's Focus"}
+      >
+        Today's Focus
+      </button>
+    {/if}
     <button
       class="filter-pill all-pill"
       class:active={allActive}
+      class:pills-locked={pillsLocked}
       onclick={onClear}
       type="button"
     >
@@ -42,6 +60,7 @@
       <button
         class="filter-pill tag-pill"
         class:active={isActive}
+        class:pills-locked={pillsLocked}
         onclick={() => onToggle(tag)}
         type="button"
         title={tag}
@@ -54,6 +73,7 @@
       <button
         class="filter-pill tag-pill untagged-pill"
         class:active={untaggedActive}
+        class:pills-locked={pillsLocked}
         onclick={() => onToggle(UNTAGGED_SENTINEL)}
         type="button"
         title="Tasks with no tags"
@@ -158,5 +178,45 @@
 
   .untagged-pill {
     font-style: italic;
+  }
+
+  .today-focus-pill {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--color-primary-500);
+    background-color: transparent;
+    color: var(--color-primary-600);
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+
+  .today-focus-pill:hover:not(:disabled) {
+    background-color: var(--color-primary-50);
+  }
+
+  .today-focus-pill.active {
+    background-color: var(--color-primary-600);
+    color: white;
+    border-color: var(--color-primary-600);
+  }
+
+  .today-focus-pill.active:hover {
+    background-color: var(--color-primary-700);
+    border-color: var(--color-primary-700);
+  }
+
+  .today-focus-pill:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: var(--color-gray-300);
+    color: var(--color-gray-400);
+  }
+
+  .pills-locked {
+    opacity: 0.4;
+    pointer-events: none;
   }
 </style>
