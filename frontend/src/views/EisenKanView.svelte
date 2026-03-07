@@ -995,7 +995,7 @@
                             onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                             aria-label="Delete task"
                           >
-                            x
+                            🗑️
                           </button>
                         </div>
                       </div>
@@ -1056,7 +1056,7 @@
                       onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                       aria-label="Delete task"
                     >
-                      x
+                      🗑️
                     </button>
                   </div>
                 </div>
