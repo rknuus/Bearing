@@ -24,6 +24,7 @@ export interface Objective {
   parentId?: string;
   title: string;
   status?: string;
+  tags?: string[];
   keyResults: KeyResult[];
   objectives?: Objective[];
 }
@@ -528,12 +529,13 @@ export const mockAppBindings = {
     return newObjective;
   },
 
-  UpdateObjective: async (objectiveId: string, title: string): Promise<void> => {
+  UpdateObjective: async (objectiveId: string, title: string, tags: string[]): Promise<void> => {
     const obj = findObjectiveById(mockThemes, objectiveId);
     if (!obj) {
       throw new Error(`Objective ${objectiveId} not found`);
     }
     obj.title = title;
+    obj.tags = tags;
   },
 
   DeleteObjective: async (objectiveId: string): Promise<void> => {

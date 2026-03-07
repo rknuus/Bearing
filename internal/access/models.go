@@ -22,6 +22,7 @@ type Objective struct {
 	ParentID   string      `json:"parentId"`             // ID of parent theme or objective
 	Title      string      `json:"title"`                // Objective title/description
 	Status     string      `json:"status,omitempty"`     // Lifecycle status: active, completed, archived (empty = active)
+	Tags       []string    `json:"tags,omitempty"`       // Freeform tags for categorization
 	KeyResults []KeyResult `json:"keyResults"`           // Measurable key results
 	Objectives []Objective `json:"objectives,omitempty"` // Nested child objectives
 }

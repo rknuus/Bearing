@@ -39,6 +39,7 @@
     parentId?: string;
     title: string;
     status?: string;
+    tags?: string[];
     keyResults: KeyResult[];
     objectives?: Objective[];
   }
@@ -265,10 +266,10 @@
     }
   }
 
-  // UpdateObjective — new API: (objectiveId, title)
-  async function updateObjective(objectiveId: string, newTitle: string) {
+  // UpdateObjective — new API: (objectiveId, title, tags)
+  async function updateObjective(objectiveId: string, newTitle: string, tags: string[]) {
     try {
-      await getBindings().UpdateObjective(objectiveId, newTitle);
+      await getBindings().UpdateObjective(objectiveId, newTitle, tags);
       await loadThemes();
       await verifyThemeState();
       editingObjectiveId = null;
@@ -415,7 +416,7 @@
   }
 
   function submitEditObjective(objective: Objective) {
-    updateObjective(objective.id, editObjectiveTitle);
+    updateObjective(objective.id, editObjectiveTitle, objective.tags ?? []);
   }
 
   function submitEditKeyResult(kr: KeyResult) {
