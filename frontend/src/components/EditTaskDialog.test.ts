@@ -19,7 +19,6 @@ function makeTestTask(overrides: Partial<Task> = {}): Task {
     themeId: 'HF',
     priority: 'important-urgent',
     tags: ['health', 'morning'],
-    promotionDate: '2026-02-10',
     createdAt: '2026-01-31T08:00:00Z',
     updatedAt: '2026-01-31T08:00:00Z',
     ...overrides,
@@ -89,9 +88,6 @@ describe('EditTaskDialog', () => {
     const activeTagTexts = Array.from(activePills).map(p => p.textContent?.trim());
     expect(activeTagTexts).toContain('health');
     expect(activeTagTexts).toContain('morning');
-
-    const promotionDateInput = container.querySelector<HTMLInputElement>('#edit-task-promotion-date');
-    expect(promotionDateInput?.value).toBe('2026-02-10');
 
     const themeSelect = container.querySelector<HTMLSelectElement>('#edit-task-theme');
     expect(themeSelect?.value).toBe('HF');

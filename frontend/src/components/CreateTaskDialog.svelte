@@ -23,7 +23,7 @@
     availableTags?: string[];
     onDone: () => void;
     onClose: () => void;
-    createTask: (title: string, themeId: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, priority: string, description: string, tags: string) => Promise<Task>;
   }
 
   let { open, themes, availableTags = [], onDone, onClose, createTask }: Props = $props();
@@ -218,7 +218,7 @@
         for (const task of tasks) {
           total++;
           try {
-            await createTask(task.title, task.themeId ?? selectedThemeId, quadrant.priority, task.description ?? '', task.tags ?? '', task.promotionDate ?? '');
+            await createTask(task.title, task.themeId ?? selectedThemeId, quadrant.priority, task.description ?? '', task.tags ?? '');
             created++;
           } catch {
             remaining.push(task);

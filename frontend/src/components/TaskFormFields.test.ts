@@ -37,20 +37,6 @@ describe('TaskFormFields', () => {
     expect(container.querySelector('textarea[id$="description"]')).toBeTruthy();
   });
 
-  it('does not render promotion date when not provided', () => {
-    render(TaskFormFields, { target: container, props: defaultProps() });
-
-    expect(container.querySelector('input[id$="promotion-date"]')).toBeNull();
-  });
-
-  it('renders promotion date when provided', () => {
-    render(TaskFormFields, { target: container, props: { ...defaultProps(), promotionDate: '2026-03-01' } });
-
-    const dateInput = container.querySelector<HTMLInputElement>('input[id$="promotion-date"]');
-    expect(dateInput).toBeTruthy();
-    expect(dateInput!.value).toBe('2026-03-01');
-  });
-
   it('applies idPrefix to all field ids', () => {
     render(TaskFormFields, { target: container, props: { ...defaultProps(), idPrefix: 'test' } });
 
