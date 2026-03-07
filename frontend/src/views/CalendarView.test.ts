@@ -412,9 +412,9 @@ describe('CalendarView', () => {
       ];
     }
 
-    async function openDialogWithTheme(themeId: string) {
+    async function openDialogWithTheme(themeId: string, okrIds?: string[]) {
       mockBindings = makeMockBindings(themesWithOkrs(), [
-        { date: '2025-01-01', themeId, notes: '', text: '' },
+        { date: '2025-01-01', themeId, notes: '', text: '', okrIds },
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
@@ -431,8 +431,16 @@ describe('CalendarView', () => {
       });
     }
 
+    function expandOkrSection() {
+      const headers = container.querySelectorAll<HTMLButtonElement>('.collapsible-header');
+      const okrHeader = Array.from(headers).find(h => h.textContent?.includes('OKR'));
+      okrHeader?.click();
+    }
+
     it('shows OKR picker when theme with objectives is selected', async () => {
       await openDialogWithTheme('HF');
+      expandOkrSection();
+      await tick();
 
       const okrPicker = container.querySelector('.okr-picker');
       expect(okrPicker).toBeTruthy();
@@ -441,13 +449,16 @@ describe('CalendarView', () => {
       expect(items.length).toBe(2); // O1 + KR1 (O2 is archived)
     });
 
-    it('shows type badges [O] and [KR]', async () => {
+    it('shows hierarchical markers for objectives and key results', async () => {
       await openDialogWithTheme('HF');
+      expandOkrSection();
+      await tick();
 
-      const badges = container.querySelectorAll('.okr-type-badge');
-      const badgeTexts = Array.from(badges).map(b => b.textContent);
-      expect(badgeTexts).toContain('[O]');
-      expect(badgeTexts).toContain('[KR]');
+      const objMarkers = container.querySelectorAll('.okr-marker-obj');
+      expect(objMarkers.length).toBe(1);
+
+      const krMarkers = container.querySelectorAll('.okr-marker-kr');
+      expect(krMarkers.length).toBe(1);
     });
 
     it('hides OKR picker when no theme is selected', async () => {
@@ -459,6 +470,8 @@ describe('CalendarView', () => {
 
     it('toggles OKR item selection', async () => {
       await openDialogWithTheme('HF');
+      expandOkrSection();
+      await tick();
 
       const checkboxes = container.querySelectorAll<HTMLInputElement>('.okr-item input[type="checkbox"]');
       expect(checkboxes.length).toBe(2);
@@ -475,6 +488,8 @@ describe('CalendarView', () => {
 
     it('saves selected OKR IDs with day focus', async () => {
       await openDialogWithTheme('HF');
+      expandOkrSection();
+      await tick();
 
       // Select the first OKR item
       const checkbox = container.querySelector<HTMLInputElement>('.okr-item input[type="checkbox"]');
@@ -522,6 +537,12 @@ describe('CalendarView', () => {
   });
 
   describe('tag picker', () => {
+    function expandTagSection() {
+      const headers = container.querySelectorAll<HTMLButtonElement>('.collapsible-header');
+      const tagHeader = Array.from(headers).find(h => h.textContent?.includes('Tags'));
+      tagHeader?.click();
+    }
+
     it('shows tags from tasks as toggleable pills', async () => {
       mockBindings = makeMockBindings();
       mockBindings.GetTasks.mockResolvedValue([
@@ -538,6 +559,9 @@ describe('CalendarView', () => {
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
+
+      expandTagSection();
+      await tick();
 
       const tagPills = container.querySelectorAll('.tag-pill');
       expect(tagPills.length).toBe(3); // api, backend, frontend (sorted)
@@ -560,6 +584,9 @@ describe('CalendarView', () => {
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
+
+      expandTagSection();
+      await tick();
 
       const tagPill = container.querySelector<HTMLButtonElement>('.tag-pill');
       expect(tagPill?.classList.contains('active')).toBe(false);
@@ -588,6 +615,9 @@ describe('CalendarView', () => {
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
+
+      expandTagSection();
+      await tick();
 
       // Select the tag
       const tagPill = container.querySelector<HTMLButtonElement>('.tag-pill');
@@ -620,6 +650,9 @@ describe('CalendarView', () => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
 
+      expandTagSection();
+      await tick();
+
       // Type a new tag
       const tagInput = container.querySelector<HTMLInputElement>('.tag-input');
       expect(tagInput).toBeTruthy();
@@ -631,6 +664,119 @@ describe('CalendarView', () => {
       const activePills = container.querySelectorAll('.tag-pill.active');
       expect(activePills.length).toBe(1);
       expect(activePills[0].textContent?.trim()).toBe('deep-work');
+    });
+
+    it('expands tag section by default when day has existing tags', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), [
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: '', tags: ['review'] },
+      ]);
+      mockBindings.GetTasks.mockResolvedValue([
+        { id: 'T1', title: 'Task 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['review'] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Tag section should be expanded automatically
+      const tagPills = container.querySelectorAll('.tag-pill');
+      expect(tagPills.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('collapsible sections', () => {
+    it('OKR section defaults to collapsed when no OKR refs exist', async () => {
+      const themes: LifeTheme[] = [{
+        id: 'HF', name: 'Health', color: '#22c55e',
+        objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
+      }];
+      mockBindings = makeMockBindings(themes, [
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: '' },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // OKR picker should not be visible (section collapsed)
+      expect(container.querySelector('.okr-picker')).toBeNull();
+    });
+
+    it('OKR section defaults to expanded when day has existing OKR refs', async () => {
+      const themes: LifeTheme[] = [{
+        id: 'HF', name: 'Health', color: '#22c55e',
+        objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
+      }];
+      mockBindings = makeMockBindings(themes, [
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: '', okrIds: ['HF-O1'] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // OKR picker should be visible (section expanded)
+      expect(container.querySelector('.okr-picker')).toBeTruthy();
+    });
+
+    it('clicking collapsible header toggles section visibility', async () => {
+      const themes: LifeTheme[] = [{
+        id: 'HF', name: 'Health', color: '#22c55e',
+        objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
+      }];
+      mockBindings = makeMockBindings(themes, [
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: '' },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Initially collapsed
+      expect(container.querySelector('.okr-picker')).toBeNull();
+
+      // Click to expand
+      const headers = container.querySelectorAll<HTMLButtonElement>('.collapsible-header');
+      const okrHeader = Array.from(headers).find(h => h.textContent?.includes('OKR'));
+      expect(okrHeader).toBeTruthy();
+      okrHeader!.click();
+      await tick();
+
+      expect(container.querySelector('.okr-picker')).toBeTruthy();
+
+      // Click to collapse again
+      okrHeader!.click();
+      await tick();
+
+      expect(container.querySelector('.okr-picker')).toBeNull();
     });
   });
 });
