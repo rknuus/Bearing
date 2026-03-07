@@ -505,6 +505,198 @@ describe('CreateTaskDialog', () => {
     });
   });
 
+  describe('edit pending task', () => {
+    it('clicking a pending task card opens edit modal with pre-populated fields', async () => {
+      mockDraftsData = JSON.stringify({
+        'staging': [{ id: 'pending-1', title: 'My task', themeId: 'CG', description: 'A description', tags: 'tag1, tag2' }],
+      });
+
+      await renderDialog();
+
+      const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
+      await fireEvent.click(taskCard!);
+      await tick();
+
+      // Edit modal should be open
+      const editDialog = container.querySelector('#edit-pending-dialog-title');
+      expect(editDialog).toBeTruthy();
+      expect(editDialog!.textContent).toBe('Edit Task');
+
+      // Fields should be pre-populated
+      const titleInput = container.querySelector<HTMLInputElement>('#edit-pending-title');
+      expect(titleInput!.value).toBe('My task');
+
+      const themeSelect = container.querySelector<HTMLSelectElement>('#edit-pending-theme');
+      expect(themeSelect!.value).toBe('CG');
+
+      const descInput = container.querySelector<HTMLTextAreaElement>('#edit-pending-description');
+      expect(descInput!.value).toBe('A description');
+    });
+
+    it('saving an edit updates the task in-place and saves drafts', async () => {
+      mockDraftsData = JSON.stringify({
+        'staging': [
+          { id: 'pending-1', title: 'First' },
+          { id: 'pending-2', title: 'Second' },
+        ],
+      });
+
+      await renderDialog();
+      mockSaveTaskDrafts.mockClear();
+
+      // Click the second task to edit it
+      const taskCard = container.querySelector('[data-testid="pending-task-pending-2"]');
+      await fireEvent.click(taskCard!);
+      await tick();
+
+      // Change the title
+      const titleInput = container.querySelector<HTMLInputElement>('#edit-pending-title');
+      await fireEvent.input(titleInput!, { target: { value: 'Updated Second' } });
+      await tick();
+
+      // Click Save
+      const saveBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-primary'))
+        .find(b => b.textContent?.trim() === 'Save');
+      await fireEvent.click(saveBtn!);
+      await tick();
+
+      // Edit modal should be closed
+      expect(container.querySelector('#edit-pending-dialog-title')).toBeNull();
+
+      // Task should be updated in-place
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      const titles = staging!.querySelectorAll('.task-title');
+      expect(titles.length).toBe(2);
+      expect(titles[0].textContent).toBe('First');
+      expect(titles[1].textContent).toBe('Updated Second');
+
+      // Drafts should have been saved
+      await vi.waitFor(() => expect(mockSaveTaskDrafts).toHaveBeenCalled());
+    });
+
+    it('cancelling an edit leaves tasks unchanged', async () => {
+      mockDraftsData = JSON.stringify({
+        'staging': [{ id: 'pending-1', title: 'Original' }],
+      });
+
+      await renderDialog();
+
+      // Click task to open edit
+      const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
+      await fireEvent.click(taskCard!);
+      await tick();
+
+      // Change the title
+      const titleInput = container.querySelector<HTMLInputElement>('#edit-pending-title');
+      await fireEvent.input(titleInput!, { target: { value: 'Changed' } });
+      await tick();
+
+      // Click Cancel
+      const cancelBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
+        .find(b => b.textContent?.trim() === 'Cancel');
+      await fireEvent.click(cancelBtn!);
+      await tick();
+
+      // Edit modal should be closed
+      expect(container.querySelector('#edit-pending-dialog-title')).toBeNull();
+
+      // Task title should be unchanged
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      expect(staging!.querySelector('.task-title')!.textContent).toBe('Original');
+    });
+
+    it('editing works in priority quadrants (not just staging)', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'Urgent task' }],
+      });
+
+      await renderDialog();
+      mockSaveTaskDrafts.mockClear();
+
+      const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
+      await fireEvent.click(taskCard!);
+      await tick();
+
+      // Edit modal should be open
+      expect(container.querySelector('#edit-pending-dialog-title')).toBeTruthy();
+
+      // Change title and save
+      const titleInput = container.querySelector<HTMLInputElement>('#edit-pending-title');
+      await fireEvent.input(titleInput!, { target: { value: 'Updated urgent' } });
+      await tick();
+
+      const saveBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-primary'))
+        .find(b => b.textContent?.trim() === 'Save');
+      await fireEvent.click(saveBtn!);
+      await tick();
+
+      const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
+      expect(q1!.querySelector('.task-title')!.textContent).toBe('Updated urgent');
+      await vi.waitFor(() => expect(mockSaveTaskDrafts).toHaveBeenCalled());
+    });
+  });
+
+  describe('delete individual task', () => {
+    it('clicking x button removes a single task and saves drafts', async () => {
+      mockDraftsData = JSON.stringify({
+        'staging': [
+          { id: 'pending-1', title: 'Keep' },
+          { id: 'pending-2', title: 'Remove' },
+          { id: 'pending-3', title: 'Also keep' },
+        ],
+      });
+
+      await renderDialog();
+      mockSaveTaskDrafts.mockClear();
+
+      // Click the x button on the second task
+      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-2"] .delete-btn');
+      expect(deleteBtn).toBeTruthy();
+      await fireEvent.click(deleteBtn!);
+      await tick();
+
+      // Only two tasks should remain
+      const staging = container.querySelector('[data-testid="quadrant-staging"]');
+      const titles = staging!.querySelectorAll('.task-title');
+      expect(titles.length).toBe(2);
+      expect(titles[0].textContent).toBe('Keep');
+      expect(titles[1].textContent).toBe('Also keep');
+
+      // Drafts should have been saved
+      await vi.waitFor(() => expect(mockSaveTaskDrafts).toHaveBeenCalled());
+    });
+
+    it('x button click does not open the edit modal', async () => {
+      mockDraftsData = JSON.stringify({
+        'staging': [{ id: 'pending-1', title: 'Task' }],
+      });
+
+      await renderDialog();
+
+      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-1"] .delete-btn');
+      await fireEvent.click(deleteBtn!);
+      await tick();
+
+      // Edit modal should NOT be open
+      expect(container.querySelector('#edit-pending-dialog-title')).toBeNull();
+    });
+
+    it('deleting from priority quadrant works', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-not-urgent': [{ id: 'pending-1', title: 'Q3 task' }],
+      });
+
+      await renderDialog();
+
+      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-1"] .delete-btn');
+      await fireEvent.click(deleteBtn!);
+      await tick();
+
+      const q3 = container.querySelector('[data-testid="quadrant-important-not-urgent"]');
+      expect(q3!.querySelectorAll('.task-title').length).toBe(0);
+    });
+  });
+
   describe('Escape-to-cancel DnD', () => {
     function dispatchDndConsider(element: Element, items: { id: string; title: string }[]) {
       element.dispatchEvent(new CustomEvent('consider', {
