@@ -105,6 +105,14 @@
   let isDragging = $state(false);
   let dragCancelled = $state(false);
 
+  // Column drag-and-drop state (pointer events on grip handle)
+  let columnDragState = $state<{
+    draggedColumnName: string;
+    snapshot: ColumnDefinition[];
+    pointerId: number;
+    handleEl: HTMLElement;
+  } | null>(null);
+
   // Escape key handler: cancel active pointer drag
   function handleEscapeDuringDrag(event: KeyboardEvent) {
     if (event.key === 'Escape' && isDragging) {
@@ -353,9 +361,11 @@
   // Load data on mount
   onMount(() => {
     window.addEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+    window.addEventListener('keydown', handleColumnDragKeydown, { capture: true });
   });
   onDestroy(() => {
     window.removeEventListener('keydown', handleEscapeDuringDrag, { capture: true });
+    window.removeEventListener('keydown', handleColumnDragKeydown, { capture: true });
   });
 
   onMount(async () => {
@@ -881,6 +891,81 @@
     }
   }
 
+  // --- Column drag-and-drop handlers ---
+
+  function handleColumnDragStart(e: PointerEvent, columnName: string) {
+    if (isDragging || isValidating || isRollingBack) return;
+    const el = e.currentTarget as HTMLElement;
+    el.setPointerCapture(e.pointerId);
+    columnDragState = {
+      draggedColumnName: columnName,
+      snapshot: JSON.parse(JSON.stringify(boardConfig!.columnDefinitions)),
+      pointerId: e.pointerId,
+      handleEl: el,
+    };
+    document.body.style.cursor = 'grabbing';
+    e.preventDefault();
+  }
+
+  function handleColumnDragMove(e: PointerEvent) {
+    if (!columnDragState || !boardConfig) return;
+    // Release capture temporarily to find the element under the pointer
+    columnDragState.handleEl.releasePointerCapture(columnDragState.pointerId);
+    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+    columnDragState.handleEl.setPointerCapture(columnDragState.pointerId);
+    if (!targetEl) return;
+    const colEl = targetEl.closest('[data-column-name]') as HTMLElement | null;
+    if (!colEl) return;
+    const targetName = colEl.dataset.columnName;
+    if (!targetName) return;
+    const cols = boardConfig.columnDefinitions;
+    const targetCol = cols.find(c => c.name === targetName);
+    if (!targetCol || targetCol.type !== 'doing') return;
+    const dragIdx = cols.findIndex(c => c.name === columnDragState!.draggedColumnName);
+    const targetIdx = cols.findIndex(c => c.name === targetName);
+    if (dragIdx === targetIdx || dragIdx < 0 || targetIdx < 0) return;
+    // Swap
+    [cols[dragIdx], cols[targetIdx]] = [cols[targetIdx], cols[dragIdx]];
+    boardConfig.columnDefinitions = cols;
+  }
+
+  async function handleColumnDragEnd() {
+    if (!columnDragState || !boardConfig) return;
+    const { snapshot, handleEl, pointerId } = columnDragState;
+    handleEl.releasePointerCapture(pointerId);
+    document.body.style.cursor = '';
+    const currentSlugs = boardConfig.columnDefinitions.map(c => c.name);
+    const snapshotSlugs = snapshot.map(c => c.name);
+    const changed = currentSlugs.some((s, i) => s !== snapshotSlugs[i]);
+    columnDragState = null;
+    if (changed) {
+      try {
+        await getBindings().ReorderColumns(currentSlugs);
+        await refreshBoard();
+      } catch (e) {
+        boardConfig.columnDefinitions = snapshot;
+        error = extractError(e);
+      }
+    }
+  }
+
+  function handleColumnDragCancel() {
+    if (!columnDragState || !boardConfig) return;
+    const { snapshot, handleEl, pointerId } = columnDragState;
+    handleEl.releasePointerCapture(pointerId);
+    document.body.style.cursor = '';
+    boardConfig.columnDefinitions = snapshot;
+    columnDragState = null;
+  }
+
+  function handleColumnDragKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && columnDragState) {
+      handleColumnDragCancel();
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
   /** Insert a column before the given slug by finding the preceding column. */
   async function handleInsertColumnBefore(slug: string) {
     closeColumnMenu();
@@ -954,8 +1039,10 @@
         <div
           class="kanban-column"
           class:collapsed-column={columnCollapsed}
+          class:column-dragging={columnDragState?.draggedColumnName === column.name}
           role="region"
           aria-label="{column.title} column"
+          data-column-name={column.name}
         >
           {#if columnCollapsed}
             <button
@@ -971,6 +1058,16 @@
           {/if}
           <div class="column-header" class:collapsed-column-hidden={columnCollapsed}>
             <div class="column-header-left">
+              {#if column.type === 'doing' && columns.filter(c => c.type === 'doing').length > 1}
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <span
+                  class="column-drag-handle"
+                  class:column-drag-handle-active={columnDragState?.draggedColumnName === column.name}
+                  onpointerdown={(e) => handleColumnDragStart(e, column.name)}
+                  onpointermove={handleColumnDragMove}
+                  onpointerup={handleColumnDragEnd}
+                >&#x2807;</span>
+              {/if}
               <button
                 type="button"
                 class="column-fold-btn"
@@ -1403,6 +1500,24 @@
     padding: 0;
     gap: 0;
     margin: 0;
+  }
+
+  .column-drag-handle {
+    cursor: grab;
+    color: var(--color-gray-400);
+    user-select: none;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 2px;
+    touch-action: none;
+  }
+
+  .column-drag-handle-active {
+    cursor: grabbing;
+  }
+
+  .column-dragging {
+    opacity: 0.6;
   }
 
   .column-fold-btn {
