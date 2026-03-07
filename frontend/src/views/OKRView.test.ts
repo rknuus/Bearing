@@ -288,32 +288,6 @@ describe('OKRView', () => {
     });
   });
 
-  it('custom color hex input is present in create-theme form', async () => {
-    await renderView();
-
-    // Click "+ Add Theme" button
-    const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
-    addThemeBtn!.click();
-    await tick();
-
-    const hexInput = container.querySelector<HTMLInputElement>('.theme-form .color-hex-input');
-    expect(hexInput).toBeTruthy();
-    expect(hexInput!.value).toBe('#3b82f6');
-  });
-
-  it('custom color hex input is present in edit-theme form', async () => {
-    await renderView();
-
-    // Click edit button on the theme
-    const editButton = container.querySelector<HTMLButtonElement>('.theme-header .btn-icon.icon-edit');
-    expect(editButton).toBeTruthy();
-    editButton!.click();
-    await tick();
-
-    const hexInput = container.querySelector<HTMLInputElement>('.theme-header .color-hex-input');
-    expect(hexInput).toBeTruthy();
-  });
-
   it('duplicate warning appears when selecting a color used by another theme', async () => {
     await renderView();
 
@@ -336,36 +310,14 @@ describe('OKRView', () => {
     addThemeBtn!.click();
     await tick();
 
-    // Type a unique hex color
-    const hexInput = container.querySelector<HTMLInputElement>('.theme-form .color-hex-input');
-    expect(hexInput).toBeTruthy();
-    await fireEvent.input(hexInput!, { target: { value: '#000000' } });
+    // Click a palette color that isn't used by any theme
+    const colorButtons = container.querySelectorAll<HTMLButtonElement>('.theme-form .color-option');
+    // Pick the last palette color (unlikely to be #3b82f6)
+    colorButtons[colorButtons.length - 1].click();
     await tick();
 
     const warning = container.querySelector('.theme-form .color-warning');
     expect(warning).toBeNull();
-  });
-
-  it('hex input ignores invalid values and accepts valid hex', async () => {
-    await renderView();
-
-    const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
-    addThemeBtn!.click();
-    await tick();
-
-    // Warning present initially (default #3b82f6 conflicts with Test Theme)
-    expect(container.querySelector('.theme-form .color-warning')).toBeTruthy();
-
-    // Invalid hex — warning should remain (color unchanged)
-    const hexInput = container.querySelector<HTMLInputElement>('.theme-form .color-hex-input');
-    await fireEvent.input(hexInput!, { target: { value: '#xyz' } });
-    await tick();
-    expect(container.querySelector('.theme-form .color-warning')).toBeTruthy();
-
-    // Valid hex — warning should disappear
-    await fireEvent.input(hexInput!, { target: { value: '#abcdef' } });
-    await tick();
-    expect(container.querySelector('.theme-form .color-warning')).toBeNull();
   });
 
   it('duplicate warning excludes the theme being edited (no self-conflict)', async () => {

@@ -674,14 +674,6 @@
               aria-label="Select color {color}"
             ></button>
           {/each}
-          <input
-            type="text"
-            class="color-hex-input"
-            placeholder="#hex"
-            value={newThemeColor}
-            oninput={(e) => { const v = e.currentTarget.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) newThemeColor = v; }}
-            aria-label="Custom color hex"
-          />
         </div>
         {#if getColorConflicts(newThemeColor).length > 0}
           <div class="color-warning">Already used by: {getColorConflicts(newThemeColor).join(', ')}</div>
@@ -730,14 +722,6 @@
                   aria-label="Select color {color}"
                 ></button>
               {/each}
-              <input
-                type="text"
-                class="color-hex-input small"
-                placeholder="#hex"
-                value={editThemeColor}
-                oninput={(e) => { const v = e.currentTarget.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) editThemeColor = v; }}
-                aria-label="Custom color hex"
-              />
             </div>
             {@const editConflicts = getColorConflicts(editThemeColor, theme.id)}
             {#if editConflicts.length > 0}
@@ -1162,28 +1146,6 @@
   .color-option.small {
     width: 18px;
     height: 18px;
-  }
-
-  .color-hex-input {
-    width: 5.5rem;
-    height: 24px;
-    padding: 0 0.375rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-family: monospace;
-    color: var(--color-gray-700);
-  }
-
-  .color-hex-input:focus {
-    outline: 2px solid var(--color-primary-500);
-    outline-offset: -1px;
-  }
-
-  .color-hex-input.small {
-    height: 18px;
-    width: 5rem;
-    font-size: 0.6875rem;
   }
 
   .color-warning {
