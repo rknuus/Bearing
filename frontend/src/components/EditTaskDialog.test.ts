@@ -84,8 +84,11 @@ describe('EditTaskDialog', () => {
     const descInput = container.querySelector<HTMLTextAreaElement>('#edit-task-description');
     expect(descInput?.value).toBe('Do 30 minutes of cardio');
 
-    const tagsInput = container.querySelector<HTMLInputElement>('#edit-task-tags');
-    expect(tagsInput?.value).toBe('health, morning');
+    // Tags are rendered via TagEditor with active pills
+    const activePills = container.querySelectorAll('.tag-pill.active');
+    const activeTagTexts = Array.from(activePills).map(p => p.textContent?.trim());
+    expect(activeTagTexts).toContain('health');
+    expect(activeTagTexts).toContain('morning');
 
     const promotionDateInput = container.querySelector<HTMLInputElement>('#edit-task-promotion-date');
     expect(promotionDateInput?.value).toBe('2026-02-10');
@@ -177,12 +180,20 @@ describe('EditTaskDialog', () => {
     });
   });
 
-  it('parses comma-separated tags correctly', async () => {
+  it('saves tags added via TagEditor', async () => {
     const onSave = vi.fn<(t: Task) => Promise<void>>().mockResolvedValue(undefined);
-    await renderDialog({ task: makeTestTask({ tags: [] }), onSave });
+    await renderDialog({ task: makeTestTask({ tags: ['health'] }), onSave });
 
-    const tagsInput = container.querySelector<HTMLInputElement>('#edit-task-tags');
-    await fireEvent.input(tagsInput!, { target: { value: 'alpha, beta, gamma' } });
+    // 'health' should be active
+    const activePills = container.querySelectorAll('.tag-pill.active');
+    expect(activePills.length).toBe(1);
+    expect(activePills[0].textContent?.trim()).toBe('health');
+
+    // Add a new tag via the TagEditor input
+    const tagInput = container.querySelector<HTMLInputElement>('.tag-editor .tag-input');
+    await fireEvent.input(tagInput!, { target: { value: 'alpha' } });
+    await tick();
+    await fireEvent.keyDown(tagInput!, { key: 'Enter' });
     await tick();
 
     const saveBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
@@ -194,6 +205,7 @@ describe('EditTaskDialog', () => {
     });
 
     const savedTask = onSave.mock.calls[0][0];
-    expect(savedTask.tags).toEqual(['alpha', 'beta', 'gamma']);
+    expect(savedTask.tags).toContain('health');
+    expect(savedTask.tags).toContain('alpha');
   });
 });

@@ -9,7 +9,7 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { Button, ErrorBanner, TagBadges } from '../lib/components';
+  import { Button, ErrorBanner, TagBadges, TagEditor } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError } from '../lib/utils/bindings';
@@ -168,11 +168,7 @@
   let editKeyResultStartValue = $state(0);
   let editKeyResultTargetValue = $state(0);
 
-  // Tag autocomplete state for objective editing
-  let editTagInput = $state('');
-  let editTagSuggestions = $state<string[]>([]);
-  let editTagHighlightedIndex = $state(-1);
-  let showEditTagSuggestions = $state(false);
+  // Available tags for objective editing (unified from objectives + tasks + day focus)
   let availableTags = $state<string[]>([]);
 
   // Toggle expansion for any ID (theme or objective)
@@ -469,10 +465,6 @@
     editingObjectiveId = objective.id;
     editObjectiveTitle = objective.title;
     editObjectiveTags = [...(objective.tags ?? [])];
-    editTagInput = '';
-    editTagSuggestions = [];
-    editTagHighlightedIndex = -1;
-    showEditTagSuggestions = false;
 
     // Collect tags from all objectives
     const objectiveTags = flattenObjectives(themes).flatMap(o => o.tags ?? []);
@@ -557,76 +549,6 @@
       }
     }
     updateKeyResult(kr.id, editKeyResultDescription);
-  }
-
-  // Tag autocomplete helpers for objective editing
-  function computeEditTagSuggestions(input: string): string[] {
-    const query = input.trim().toLowerCase();
-    if (!query) return [];
-    return availableTags.filter(tag =>
-      tag.toLowerCase().includes(query) && !editObjectiveTags.includes(tag)
-    );
-  }
-
-  function handleEditTagInput() {
-    editTagSuggestions = computeEditTagSuggestions(editTagInput);
-    showEditTagSuggestions = editTagSuggestions.length > 0;
-    editTagHighlightedIndex = -1;
-  }
-
-  function addEditTag() {
-    const tag = editTagInput.trim();
-    if (tag && !editObjectiveTags.includes(tag)) {
-      editObjectiveTags = [...editObjectiveTags, tag];
-      if (!availableTags.includes(tag)) {
-        availableTags = [...availableTags, tag].sort();
-      }
-    }
-    editTagInput = '';
-    showEditTagSuggestions = false;
-    editTagHighlightedIndex = -1;
-  }
-
-  function selectEditTagSuggestion(tag: string) {
-    if (!editObjectiveTags.includes(tag)) {
-      editObjectiveTags = [...editObjectiveTags, tag];
-    }
-    editTagInput = '';
-    showEditTagSuggestions = false;
-    editTagHighlightedIndex = -1;
-  }
-
-  function removeEditTag(tag: string) {
-    editObjectiveTags = editObjectiveTags.filter(t => t !== tag);
-  }
-
-  function handleEditTagKeydown(event: KeyboardEvent) {
-    if (showEditTagSuggestions && editTagSuggestions.length > 0) {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        editTagHighlightedIndex = (editTagHighlightedIndex + 1) % editTagSuggestions.length;
-        return;
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        editTagHighlightedIndex = editTagHighlightedIndex <= 0 ? editTagSuggestions.length - 1 : editTagHighlightedIndex - 1;
-        return;
-      } else if ((event.key === 'Enter' || event.key === 'Tab') && editTagHighlightedIndex >= 0) {
-        event.preventDefault();
-        selectEditTagSuggestion(editTagSuggestions[editTagHighlightedIndex]);
-        return;
-      } else if (event.key === 'Escape') {
-        showEditTagSuggestions = false;
-        return;
-      }
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      addEditTag();
-    }
-  }
-
-  function handleEditTagBlur() {
-    setTimeout(() => { showEditTagSuggestions = false; }, 150);
   }
 
   // Cancel editing
@@ -726,56 +648,11 @@
             <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save">&#10003;</Button>
             <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">&#10005;</Button>
           </div>
-          <div class="objective-edit-tags">
-            {#if editObjectiveTags.length > 0}
-              <div class="edit-tag-badges">
-                {#each editObjectiveTags as tag (tag)}
-                  <span class="edit-tag-badge">
-                    {tag}
-                    <button class="edit-tag-remove" onclick={() => removeEditTag(tag)} aria-label="Remove tag {tag}">&times;</button>
-                  </span>
-                {/each}
-              </div>
-            {/if}
-            <div class="edit-tag-input-wrapper">
-              <input
-                type="text"
-                bind:value={editTagInput}
-                oninput={handleEditTagInput}
-                onkeydown={handleEditTagKeydown}
-                onblur={handleEditTagBlur}
-                placeholder="Add tag..."
-                class="edit-tag-input"
-                role="combobox"
-                aria-expanded={showEditTagSuggestions}
-                aria-controls="edit-tag-suggestions-listbox"
-                aria-autocomplete="list"
-                aria-activedescendant={editTagHighlightedIndex >= 0 ? `edit-tag-option-${editTagHighlightedIndex}` : undefined}
-                autocomplete="off"
-              />
-              {#if showEditTagSuggestions && editTagSuggestions.length > 0}
-                <ul
-                  class="edit-tag-suggestions-dropdown"
-                  id="edit-tag-suggestions-listbox"
-                  role="listbox"
-                  aria-label="Tag suggestions"
-                >
-                  {#each editTagSuggestions as suggestion, i (suggestion)}
-                    <li
-                      id="edit-tag-option-{i}"
-                      class="edit-tag-suggestion-item"
-                      class:highlighted={i === editTagHighlightedIndex}
-                      role="option"
-                      aria-selected={i === editTagHighlightedIndex}
-                      onmousedown={() => selectEditTagSuggestion(suggestion)}
-                    >
-                      {suggestion}
-                    </li>
-                  {/each}
-                </ul>
-              {/if}
-            </div>
-          </div>
+          <TagEditor
+            tags={editObjectiveTags}
+            {availableTags}
+            onTagsChange={(newTags) => { editObjectiveTags = newTags; }}
+          />
         </div>
       {:else}
         <span class="item-name">{objective.title}</span>
@@ -1548,7 +1425,7 @@
     border-color: var(--color-primary-500);
   }
 
-  /* Objective tag editing */
+  /* Objective inline editing layout */
   .objective-edit-area {
     flex: 1;
     display: flex;
@@ -1561,93 +1438,5 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-  }
-
-  .objective-edit-tags {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .edit-tag-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-  }
-
-  .edit-tag-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.125rem 0.5rem;
-    background-color: var(--color-primary-50, #eff6ff);
-    color: var(--color-primary-700, #1d4ed8);
-    border-radius: var(--radius-full, 9999px);
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-
-  .edit-tag-remove {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    font-size: 0.875rem;
-    line-height: 1;
-    color: var(--color-primary-500);
-  }
-
-  .edit-tag-remove:hover {
-    color: var(--color-danger-500, #ef4444);
-  }
-
-  .edit-tag-input-wrapper {
-    position: relative;
-  }
-
-  .edit-tag-input {
-    width: 100%;
-    padding: 0.25rem 0.5rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 4px;
-    font-size: 0.8125rem;
-    font-family: inherit;
-    box-sizing: border-box;
-  }
-
-  .edit-tag-input:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-  }
-
-  .edit-tag-suggestions-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    margin: 0;
-    padding: 0.25rem 0;
-    list-style: none;
-    background: white;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    max-height: 160px;
-    overflow-y: auto;
-  }
-
-  .edit-tag-suggestion-item {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8125rem;
-    color: var(--color-gray-700);
-    cursor: pointer;
-  }
-
-  .edit-tag-suggestion-item:hover,
-  .edit-tag-suggestion-item.highlighted {
-    background-color: var(--color-primary-50, #eff6ff);
-    color: var(--color-primary-700, #1d4ed8);
   }
 </style>

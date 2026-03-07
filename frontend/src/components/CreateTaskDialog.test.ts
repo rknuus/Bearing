@@ -238,7 +238,8 @@ describe('CreateTaskDialog', () => {
     await renderDialog();
 
     expect(container.querySelector('#new-task-description')).toBeTruthy();
-    expect(container.querySelector('#new-task-tags')).toBeTruthy();
+    // Tags are now rendered via TagEditor (pill toggles + text input)
+    expect(container.querySelector('.tag-editor')).toBeTruthy();
     // Promotion date is not shown in the create dialog
     expect(container.querySelector('#new-task-promotion-date')).toBeNull();
   });
@@ -247,10 +248,13 @@ describe('CreateTaskDialog', () => {
     await renderDialog();
 
     const desc = container.querySelector<HTMLTextAreaElement>('#new-task-description');
-    const tags = container.querySelector<HTMLInputElement>('#new-task-tags');
-
     expect(desc!.value).toBe('');
-    expect(tags!.value).toBe('');
+
+    // TagEditor input should default to empty
+    const tagInput = container.querySelector<HTMLInputElement>('.tag-editor .tag-input');
+    expect(tagInput!.value).toBe('');
+    // No active tag pills
+    expect(container.querySelectorAll('.tag-pill.active').length).toBe(0);
   });
 
   it('optional fields are cleared after adding a task', async () => {
@@ -258,12 +262,10 @@ describe('CreateTaskDialog', () => {
 
     const input = container.querySelector<HTMLInputElement>('#new-task-title');
     const desc = container.querySelector<HTMLTextAreaElement>('#new-task-description');
-    const tags = container.querySelector<HTMLInputElement>('#new-task-tags');
 
     // Fill in fields
     await fireEvent.input(input!, { target: { value: 'Task with details' } });
     await fireEvent.input(desc!, { target: { value: 'Some description' } });
-    await fireEvent.input(tags!, { target: { value: 'tag1, tag2' } });
     await tick();
 
     // Add task via button
@@ -274,7 +276,8 @@ describe('CreateTaskDialog', () => {
     // Fields should be cleared
     expect(input!.value).toBe('');
     expect(desc!.value).toBe('');
-    expect(tags!.value).toBe('');
+    // No active tag pills after clearing
+    expect(container.querySelectorAll('.tag-pill.active').length).toBe(0);
   });
 
   it('adds task with only title filled', async () => {

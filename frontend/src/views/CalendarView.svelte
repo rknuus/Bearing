@@ -9,7 +9,7 @@
 
   import { SvelteMap } from 'svelte/reactivity';
   import { type LifeTheme, type DayFocus, type Objective } from '../lib/wails-mock';
-  import { Dialog, Button, ErrorBanner } from '../lib/components';
+  import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
@@ -38,7 +38,6 @@
   let editTags = $state<string[]>([]);
   let prevThemeId = $state('');
   let availableTags = $state<string[]>([]);
-  let newTagInput = $state('');
   let okrSectionOpen = $state(false);
   let tagSectionOpen = $state(false);
 
@@ -219,7 +218,6 @@
     editText = focus?.text ?? '';
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
-    newTagInput = '';
     okrSectionOpen = (focus?.okrIds?.length ?? 0) > 0;
     tagSectionOpen = (focus?.tags?.length ?? 0) > 0;
 
@@ -251,84 +249,6 @@
     } else {
       editOkrIds = [...editOkrIds, id];
     }
-  }
-
-  function toggleTag(tag: string) {
-    if (editTags.includes(tag)) {
-      editTags = editTags.filter(t => t !== tag);
-    } else {
-      editTags = [...editTags, tag];
-    }
-  }
-
-  // Tag autocomplete state
-  let tagSuggestions = $state<string[]>([]);
-  let showTagSuggestions = $state(false);
-  let tagHighlightedIndex = $state(-1);
-
-  function computeTagSuggestions(input: string): string[] {
-    const query = input.trim().toLowerCase();
-    if (!query) return [];
-    return availableTags.filter(tag =>
-      tag.toLowerCase().includes(query) && !editTags.includes(tag)
-    );
-  }
-
-  function handleTagInput() {
-    tagSuggestions = computeTagSuggestions(newTagInput);
-    showTagSuggestions = tagSuggestions.length > 0;
-    tagHighlightedIndex = -1;
-  }
-
-  function addNewTag() {
-    const tag = newTagInput.trim();
-    if (tag && !editTags.includes(tag)) {
-      editTags = [...editTags, tag];
-      if (!availableTags.includes(tag)) {
-        availableTags = [...availableTags, tag].sort();
-      }
-    }
-    newTagInput = '';
-    showTagSuggestions = false;
-    tagHighlightedIndex = -1;
-  }
-
-  function selectTagSuggestion(tag: string) {
-    if (!editTags.includes(tag)) {
-      editTags = [...editTags, tag];
-    }
-    newTagInput = '';
-    showTagSuggestions = false;
-    tagHighlightedIndex = -1;
-  }
-
-  function handleNewTagKeydown(event: KeyboardEvent) {
-    if (showTagSuggestions && tagSuggestions.length > 0) {
-      if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        tagHighlightedIndex = (tagHighlightedIndex + 1) % tagSuggestions.length;
-        return;
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault();
-        tagHighlightedIndex = tagHighlightedIndex <= 0 ? tagSuggestions.length - 1 : tagHighlightedIndex - 1;
-        return;
-      } else if ((event.key === 'Enter' || event.key === 'Tab') && tagHighlightedIndex >= 0) {
-        event.preventDefault();
-        selectTagSuggestion(tagSuggestions[tagHighlightedIndex]);
-        return;
-      } else if (event.key === 'Escape') {
-        showTagSuggestions = false;
-        return;
-      }
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      addNewTag();
-    }
-  }
-
-  function handleTagBlur() {
-    setTimeout(() => { showTagSuggestions = false; }, 150);
   }
 
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
@@ -537,65 +457,11 @@
           <span class="form-label">Tags</span>
         </button>
         {#if tagSectionOpen}
-          <div class="tag-picker">
-            {#each availableTags as tag (tag)}
-              <button
-                type="button"
-                class="tag-pill"
-                class:active={editTags.includes(tag)}
-                onclick={() => toggleTag(tag)}
-              >
-                {tag}
-              </button>
-            {/each}
-            {#each editTags.filter(t => !availableTags.includes(t)) as tag (tag)}
-              <button
-                type="button"
-                class="tag-pill active"
-                onclick={() => toggleTag(tag)}
-              >
-                {tag}
-              </button>
-            {/each}
-          </div>
-          <div class="tag-input-wrapper">
-            <input
-              type="text"
-              bind:value={newTagInput}
-              oninput={handleTagInput}
-              onkeydown={handleNewTagKeydown}
-              onblur={handleTagBlur}
-              placeholder="Add new tag..."
-              class="tag-input"
-              role="combobox"
-              aria-expanded={showTagSuggestions}
-              aria-controls="tag-suggestions-listbox"
-              aria-autocomplete="list"
-              aria-activedescendant={tagHighlightedIndex >= 0 ? `tag-option-${tagHighlightedIndex}` : undefined}
-              autocomplete="off"
-            />
-            {#if showTagSuggestions && tagSuggestions.length > 0}
-              <ul
-                class="tag-suggestions-dropdown"
-                id="tag-suggestions-listbox"
-                role="listbox"
-                aria-label="Tag suggestions"
-              >
-                {#each tagSuggestions as suggestion, i (suggestion)}
-                  <li
-                    id="tag-option-{i}"
-                    class="tag-suggestion-item"
-                    class:highlighted={i === tagHighlightedIndex}
-                    role="option"
-                    aria-selected={i === tagHighlightedIndex}
-                    onmousedown={() => selectTagSuggestion(suggestion)}
-                  >
-                    {suggestion}
-                  </li>
-                {/each}
-              </ul>
-            {/if}
-          </div>
+          <TagEditor
+            tags={editTags}
+            {availableTags}
+            onTagsChange={(newTags) => { editTags = newTags; }}
+          />
         {/if}
       </div>
 
@@ -972,91 +838,6 @@
     border-radius: 50%;
     flex-shrink: 0;
     opacity: 0.6;
-  }
-
-  /* Tag Picker */
-  .tag-picker {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .tag-pill {
-    padding: 0.25rem 0.75rem;
-    border-radius: var(--radius-full, 9999px);
-    font-size: 0.8125rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1.5px solid var(--color-gray-300);
-    background-color: transparent;
-    color: var(--color-gray-600);
-    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-  }
-
-  .tag-pill:hover {
-    background-color: var(--color-gray-100);
-  }
-
-  .tag-pill.active {
-    background-color: var(--color-primary-600);
-    color: white;
-    border-color: var(--color-primary-600);
-  }
-
-  .tag-pill.active:hover {
-    background-color: var(--color-primary-700);
-    border-color: var(--color-primary-700);
-  }
-
-  .tag-input-wrapper {
-    position: relative;
-  }
-
-  .tag-input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-family: inherit;
-    box-sizing: border-box;
-  }
-
-  .tag-input:focus {
-    outline: none;
-    border-color: var(--color-primary-600);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-  }
-
-  .tag-suggestions-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    margin: 0;
-    padding: 0.25rem 0;
-    list-style: none;
-    background: white;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 10;
-    max-height: 160px;
-    overflow-y: auto;
-  }
-
-  .tag-suggestion-item {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.875rem;
-    color: var(--color-gray-700);
-    cursor: pointer;
-  }
-
-  .tag-suggestion-item:hover,
-  .tag-suggestion-item.highlighted {
-    background-color: var(--color-primary-50, #eff6ff);
-    color: var(--color-primary-700, #1d4ed8);
   }
 
 </style>

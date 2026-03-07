@@ -8,7 +8,7 @@
 
   import type { Task, LifeTheme } from '../lib/wails-mock';
   import TaskFormFields from './TaskFormFields.svelte';
-  import { Dialog, Button, ErrorBanner } from '../lib/components';
+  import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
   import { extractError } from '../lib/utils/bindings';
 
   interface Props {
@@ -25,7 +25,7 @@
   let editTitle = $state('');
   let editThemeId = $state('');
   let editDescription = $state('');
-  let editTags = $state('');
+  let editTags = $state<string[]>([]);
   let editPromotionDate = $state('');
   let isSubmitting = $state(false);
   let errorMessage = $state('');
@@ -36,18 +36,11 @@
       editTitle = task.title;
       editThemeId = task.themeId;
       editDescription = task.description ?? '';
-      editTags = (task.tags ?? []).join(', ');
+      editTags = [...(task.tags ?? [])];
       editPromotionDate = task.promotionDate ?? '';
       errorMessage = '';
     }
   });
-
-  function parseTags(input: string): string[] {
-    return input
-      .split(',')
-      .map(t => t.trim())
-      .filter(t => t.length > 0);
-  }
 
   async function handleSave() {
     if (!task || !editTitle.trim()) return;
@@ -62,7 +55,7 @@
         themeId: editThemeId,
         description: editDescription.trim() || undefined,
         priority: task.priority,
-        tags: parseTags(editTags),
+        tags: editTags,
         promotionDate: editPromotionDate || undefined,
       };
       await onSave(updatedTask);
@@ -85,12 +78,18 @@
       bind:title={editTitle}
       bind:themeId={editThemeId}
       bind:description={editDescription}
-      bind:tags={editTags}
       bind:promotionDate={editPromotionDate}
       {themes}
-      {availableTags}
       idPrefix="edit-task"
     />
+    <div class="form-group">
+      <label for="edit-task-tags">Tags</label>
+      <TagEditor
+        tags={editTags}
+        {availableTags}
+        onTagsChange={(t) => { editTags = t; }}
+      />
+    </div>
 
     {#snippet actions()}
       <Button variant="secondary" onclick={onCancel}>
@@ -106,4 +105,18 @@
     {/snippet}
   </Dialog>
 {/if}
+
+<style>
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 0.375rem;
+  }
+</style>
 
