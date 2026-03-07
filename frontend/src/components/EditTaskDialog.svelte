@@ -88,7 +88,6 @@
         tags={editTags}
         {availableTags}
         onTagsChange={(t) => { editTags = t; }}
-        placeholder="Add tag..."
       />
     </div>
 

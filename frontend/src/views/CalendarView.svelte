@@ -461,7 +461,6 @@
             tags={editTags}
             {availableTags}
             onTagsChange={(newTags) => { editTags = newTags; }}
-            placeholder="Add new tag..."
           />
         {/if}
       </div>

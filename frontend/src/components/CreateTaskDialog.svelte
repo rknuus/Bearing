@@ -287,7 +287,6 @@
           tags={newTaskTags}
           {availableTags}
           onTagsChange={(t) => newTaskTags = t}
-          placeholder="Add tag..."
         />
       </div>
       <button

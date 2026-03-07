@@ -22,7 +22,7 @@
     tags,
     availableTags,
     onTagsChange,
-    placeholder = 'Add tag...',
+    placeholder = 'Add new tag...',
   }: Props = $props();
 
   // Extra tags created during this session (not in availableTags)

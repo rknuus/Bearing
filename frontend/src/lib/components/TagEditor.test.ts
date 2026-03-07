@@ -291,7 +291,7 @@ describe('TagEditor', () => {
     });
 
     const input = getInput();
-    expect(input.placeholder).toBe('Add tag...');
+    expect(input.placeholder).toBe('Add new tag...');
   });
 
   it('does not add duplicate tags', async () => {
