@@ -17,12 +17,13 @@
     onClear: () => void;
     counts?: Record<string, number>;
     untaggedActive?: boolean;
+    hasUntaggedTasks?: boolean;
     todayFocusTags?: string[];
     todayFocusActive?: boolean;
     onTodayFocusToggle?: () => void;
   }
 
-  let { availableTags, activeTagIds, onToggle, onClear, counts, untaggedActive = false, todayFocusTags, todayFocusActive = false, onTodayFocusToggle }: Props = $props();
+  let { availableTags, activeTagIds, onToggle, onClear, counts, untaggedActive = false, hasUntaggedTasks, todayFocusTags, todayFocusActive = false, onTodayFocusToggle }: Props = $props();
 
   const allActive = $derived(activeTagIds.length === 0);
   const hasUntagged = $derived((counts?.[UNTAGGED_SENTINEL] ?? 0) > 0);
@@ -69,7 +70,7 @@
         {#if counts}<span class="count-badge">{counts[tag] ?? 0}</span>{/if}
       </button>
     {/each}
-    {#if hasUntagged || untaggedActive}
+    {#if (hasUntaggedTasks ?? hasUntagged) || untaggedActive}
       <button
         class="filter-pill tag-pill untagged-pill"
         class:active={untaggedActive}

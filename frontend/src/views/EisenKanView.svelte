@@ -187,6 +187,9 @@
     showArchivedTasks ? tasks : tasks.filter(t => t.status !== 'archived')
   );
 
+  // Whether any task in the full base set has no tags (for Untagged pill visibility)
+  const hasUntaggedTasks = $derived(countBaseTasks.some(t => !t.tags || t.tags.length === 0));
+
   // Theme filter pill counts: each theme count = tasks matching that theme + active tag/date filters
   const themeCounts = $derived.by(() => {
     const base = countBaseTasks;
@@ -213,6 +216,7 @@
   });
 
   // Tag filter pill counts: each tag count = tasks having that tag + active theme/date filters
+  // Untagged count uses the full base (not theme-filtered) so it stays stable across theme changes.
   const tagCounts = $derived.by(() => {
     const base = countBaseTasks;
 
@@ -224,12 +228,13 @@
     let allCount = 0;
     let untaggedCount = 0;
     for (const t of base) {
-      if (!matchesTheme(t)) continue;
-      allCount++;
       const hasTags = t.tags && t.tags.length > 0;
       if (!hasTags) {
         untaggedCount++;
-      } else {
+      }
+      if (!matchesTheme(t)) continue;
+      allCount++;
+      if (hasTags) {
         for (const tag of t.tags!) {
           counts[tag] = (counts[tag] ?? 0) + 1;
         }
@@ -929,7 +934,7 @@
         {onTodayFocusToggle}
       />
     {/if}
-    {#if (availableTags.length > 0 || (tagCounts[UNTAGGED_SENTINEL] ?? 0) > 0) && onFilterTagToggle && onFilterTagClear}
+    {#if (availableTags.length > 0 || hasUntaggedTasks) && onFilterTagToggle && onFilterTagClear}
       <TagFilterBar
         {availableTags}
         activeTagIds={filterTagIds}
@@ -937,6 +942,7 @@
         onClear={onFilterTagClear}
         counts={tagCounts}
         untaggedActive={filterTagIds.includes(UNTAGGED_SENTINEL)}
+        {hasUntaggedTasks}
         {todayFocusTags}
         todayFocusActive={tagFocusActive}
         onTodayFocusToggle={onTagFocusToggle}
