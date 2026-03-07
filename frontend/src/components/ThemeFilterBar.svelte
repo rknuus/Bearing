@@ -15,18 +15,35 @@
     onToggle: (themeId: string) => void;
     onClear: () => void;
     counts?: Record<string, number>;
+    todayFocusThemeId?: string | null;
+    todayFocusActive?: boolean;
+    onTodayFocusToggle?: () => void;
   }
 
-  let { themes, activeThemeIds, onToggle, onClear, counts }: Props = $props();
+  let { themes, activeThemeIds, onToggle, onClear, counts, todayFocusThemeId, todayFocusActive = false, onTodayFocusToggle }: Props = $props();
 
   const allActive = $derived(activeThemeIds.length === 0);
+  const todayFocusDisabled = $derived(!todayFocusThemeId);
 </script>
 
 <div class="theme-filter-bar">
   <span class="filter-label">Filter by theme:</span>
+  {#if onTodayFocusToggle !== undefined}
+    <button
+      class="today-focus-pill"
+      class:active={todayFocusActive && !todayFocusDisabled}
+      disabled={todayFocusDisabled}
+      onclick={onTodayFocusToggle}
+      type="button"
+      title={todayFocusDisabled ? 'No focus set for today' : "Today's Focus"}
+    >
+      Today's Focus
+    </button>
+  {/if}
   <button
     class="filter-pill all-pill"
     class:active={allActive}
+    class:pills-locked={todayFocusActive}
     onclick={onClear}
     type="button"
   >
@@ -38,6 +55,7 @@
     <button
       class="filter-pill theme-pill"
       class:active={isActive}
+      class:pills-locked={todayFocusActive}
       style="
         --pill-color: {theme.color};
         {isActive
@@ -126,5 +144,45 @@
 
   .theme-pill:hover {
     opacity: 0.85;
+  }
+
+  .today-focus-pill {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--color-primary-500);
+    background-color: transparent;
+    color: var(--color-primary-600);
+    transition: background-color 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+
+  .today-focus-pill:hover:not(:disabled) {
+    background-color: var(--color-primary-50);
+  }
+
+  .today-focus-pill.active {
+    background-color: var(--color-primary-600);
+    color: white;
+    border-color: var(--color-primary-600);
+  }
+
+  .today-focus-pill.active:hover {
+    background-color: var(--color-primary-700);
+    border-color: var(--color-primary-700);
+  }
+
+  .today-focus-pill:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: var(--color-gray-300);
+    color: var(--color-gray-400);
+  }
+
+  .pills-locked {
+    opacity: 0.4;
+    pointer-events: none;
   }
 </style>
