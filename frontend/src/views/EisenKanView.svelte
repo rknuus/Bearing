@@ -149,8 +149,10 @@
   const columns = $derived<ColumnDefinition[]>(boardConfig?.columnDefinitions ?? []);
 
   // Dynamic grid template: 1fr for expanded columns, 48px for collapsed
+  // Collapsed columns widen during drag to provide a viable drop target
+  const collapsedWidth = $derived(isDragging ? '120px' : '48px');
   const gridTemplateCols = $derived.by(() => {
-    const cols = columns.map(c => collapsedColumns.has(c.name) ? '48px' : '1fr');
+    const cols = columns.map(c => collapsedColumns.has(c.name) ? collapsedWidth : '1fr');
     if (showArchivedTasks) cols.push('1fr');
     return cols.join(' ');
   });
