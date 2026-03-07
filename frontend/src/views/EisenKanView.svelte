@@ -149,10 +149,10 @@
   const columns = $derived<ColumnDefinition[]>(boardConfig?.columnDefinitions ?? []);
 
   // Dynamic grid template: 1fr for expanded columns, 48px for collapsed
-  // During drag, collapsed columns expand to 1fr so they are viable drop targets
+  // During drag, all columns expand so card width matches drop zone width
   const gridTemplateCols = $derived.by(() => {
     const cols = columns.map(c =>
-      collapsedColumns.has(c.name) ? (isDragging ? '1fr' : '48px') : '1fr'
+      (!isDragging && collapsedColumns.has(c.name)) ? '48px' : '1fr'
     );
     if (showArchivedTasks) cols.push('1fr');
     return cols.join(' ');
@@ -944,7 +944,7 @@
     {/if}
     <div class="kanban-board" style="grid-template-columns: {gridTemplateCols};">
       {#each columns as column (column.name)}
-        {@const columnCollapsed = collapsedColumns.has(column.name)}
+        {@const columnCollapsed = collapsedColumns.has(column.name) && !isDragging}
         <div
           class="kanban-column"
           class:collapsed-column={columnCollapsed}
