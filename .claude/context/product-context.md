@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-20T14:57:09Z
-version: 1.0
+last_updated: 2026-03-07T23:50:43Z
+version: 1.1
 author: Claude Code PM System
 ---
 
@@ -28,7 +28,7 @@ author: Claude Code PM System
 - Navigate to related tasks for a specific day/theme
 
 ### 3. Task Execution (EisenKan View)
-- Create tasks linked to themes with Eisenhower priority
+- Create tasks linked to themes with direct priority placement (I&U, nI&U, I&nU buttons)
 - Move tasks through kanban columns
 - Automatic priority promotion based on dates
 - Filter tasks by theme, tags, or date

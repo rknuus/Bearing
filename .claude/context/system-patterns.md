@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-28T15:17:06Z
-version: 1.1
+last_updated: 2026-03-07T23:50:43Z
+version: 1.2
 author: Claude Code PM System
 ---
 
@@ -84,6 +84,9 @@ Kanban board structure is dynamic, fetched from `GetBoardConfiguration()`:
 - Column definitions (name, title, type, optional sections)
 - Sections within columns (e.g., priority bands in Todo)
 - Rule definitions (WIP limits, allowed transitions)
+
+### WebView Input Workarounds
+Native `<input type="color">` in WKWebView/WebView2 may not fire `input` or `change` events, breaking Svelte's `bind:value`. Pattern: use `bind:this` to capture the DOM element reference and read `.value` directly at save time as a fallback. Add `onchange` handler for real-time preview where events do fire.
 
 ## CSS Patterns
 - CSS custom properties: `--color-gray-*`, `--color-primary-*`, `--color-error-*`

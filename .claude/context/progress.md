@@ -1,28 +1,28 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-28T15:17:06Z
-version: 1.1
+last_updated: 2026-03-07T23:50:43Z
+version: 1.2
 author: Claude Code PM System
 ---
 
 # Progress
 
 ## Current State
-- Branch: main
-- All tests passing (190 frontend + Go suite)
-- No uncommitted changes
+- Branch: `epic/select-custom-color-for-theme-does-not-work` (in progress)
+- All tests passing (372 frontend + Go suite)
+- Uncommitted changes: OKRView color input fix (WIP)
 
 ## Recent Completed Work
-- **Flatten task directory structure** — Removed theme directory level from task paths (`tasks/{themeID}/{status}/` → `tasks/{status}/`). Includes bash migration script (`make migrate-tasks`) and full codebase refactor across access layer, manager, mock, and tests.
-- **Fix duplicate task IDs** — Added uniqueness guard in `saveTaskFile` to prevent ID collisions. Manually re-ID'd archived duplicates (L-T32..38 → L-T50..56).
-- **Fix failure to move task from todo to doing** — Added archived-to-todo transition in rule engine, included archived tasks in `GetTasksByTheme` for ID generation, skip archived tasks when finding move target in `MoveTask`.
-- Per-column vertical scrolling in EisenKan board (CSS height constraint fix)
-- Drop zone scoping to view/dialog context
-- Locale-aware date formatting across all views
+- **Rename Eisenhower priority labels** — Q1/Q2/Q3 → I&U/nI&U/I&nU for clarity
+- **Fix tag All pill count in EisenKan** — Use theme All count for tag All pill
+- **Preserve NavigationContext across tab switches** — Fix view-specific fields lost when changing tabs
+- **Remove staging quadrant from CreateTaskDialog** — Replace Q4 staging + single button with 3 color-coded priority buttons (I&U, nI&U, I&nU) that place tasks directly into their target quadrant. Grid changed from 2×2 to 1×3.
+- **Fix custom color picker for themes (in progress)** — Native `<input type="color">` doesn't fire DOM events in WKWebView. Fix: read color from DOM element via `bind:this` at save time, add `onchange` fallback for real-time preview, show color input visibly (dashed border) instead of hiding behind ➕ icon.
 
 ## Active Epics
+- `select-custom-color-for-theme-does-not-work` — In progress, color picker fix
 - Theme abbreviation update upon renaming (backlog, not decomposed)
 
 ## Outstanding PRDs
 - 30+ PRDs in the system, mostly historical
-- Active area: EisenKan usability improvements
+- Active area: EisenKan usability, OKR view fixes
