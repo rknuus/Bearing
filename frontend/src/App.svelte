@@ -19,7 +19,6 @@
   let currentItemId = $state<string>('');
   let filterThemeIds = $state<string[]>([]);
   let filterTagIds = $state<string[]>([]);
-  let filterDate = $state<string | undefined>(undefined);
 
   // Build breadcrumb path including view context
   let breadcrumbPath = $derived.by(() => {
@@ -48,9 +47,6 @@
       const displayTags = filterTagIds.map(t => t === UNTAGGED_SENTINEL ? 'Untagged' : t);
       parts.push({ id: 'FILTER:tags', label: `Tags: ${displayTags.join(', ')}` });
     }
-    if (filterDate) {
-      parts.push({ id: `FILTER:date:${filterDate}`, label: filterDate });
-    }
 
     return parts;
   });
@@ -62,7 +58,6 @@
     if (options?.themeId !== undefined) {
       filterThemeIds = options.themeId ? [options.themeId] : [];
     }
-    filterDate = options?.date;
 
     // Save navigation context
     saveNavigationContext();
@@ -185,7 +180,6 @@
           filterThemeId: filterThemeIds.length === 1 ? filterThemeIds[0] : '',
           filterThemeIds: filterThemeIds.length > 0 ? filterThemeIds : undefined,
           filterTagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
-          filterDate: filterDate ?? '',
           lastAccessed: new Date().toISOString()
         });
       }
@@ -206,7 +200,6 @@
             ? (ctx.currentView as ViewType)
             : 'okr';
           currentItemId = ctx.currentItem ?? '';
-          filterDate = ctx.filterDate || undefined;
 
           // Load filterThemeIds: prefer array, fall back to single string (backward compat)
           if (ctx.filterThemeIds && ctx.filterThemeIds.length > 0) {
@@ -354,9 +347,7 @@
     {:else if currentView === 'eisenkan'}
       <EisenKanView
         onNavigateToTheme={handleNavigateToTheme}
-        onNavigateToDay={handleNavigateToDay}
         {filterThemeIds}
-        {filterDate}
         onFilterThemeToggle={handleFilterThemeToggle}
         onFilterThemeClear={handleFilterThemeClear}
         {filterTagIds}

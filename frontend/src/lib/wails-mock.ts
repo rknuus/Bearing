@@ -47,7 +47,6 @@ export interface Task {
   title: string;
   description?: string;
   themeId: string;
-  dayDate: string;
   priority: string;
   tags?: string[];
   promotionDate?: string;
@@ -109,7 +108,6 @@ export interface NavigationContext {
   currentItem: string;
   filterThemeId: string;
   filterThemeIds?: string[];
-  filterDate: string;
   lastAccessed: string;
   showCompleted?: boolean;
   showArchived?: boolean;
@@ -362,11 +360,11 @@ const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
-  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', dayDate: '2026-01-31', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'], createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
-  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
-  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', dayDate: '2026-01-31', priority: 'not-important-urgent', status: 'doing', tags: ['urgent', 'review'], createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T10:00:00Z' },
-  { id: 'L-T1', title: 'Update documentation', themeId: 'L', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'done', tags: ['frontend'], createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
-  { id: 'PF-T1', title: 'Review budget spreadsheet', themeId: 'PF', dayDate: '2026-01-31', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T09:00:00Z' },
+  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'], createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
+  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
+  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', priority: 'not-important-urgent', status: 'doing', tags: ['urgent', 'review'], createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T10:00:00Z' },
+  { id: 'L-T1', title: 'Update documentation', themeId: 'L', priority: 'important-not-urgent', status: 'done', tags: ['frontend'], createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
+  { id: 'PF-T1', title: 'Review budget spreadsheet', themeId: 'PF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T09:00:00Z' },
 ];
 
 // Mock task drafts storage
@@ -377,7 +375,6 @@ let mockNavigationContext: NavigationContext = {
   currentView: 'okr',
   currentItem: '',
   filterThemeId: '',
-  filterDate: '',
   lastAccessed: ''
 };
 
@@ -689,14 +686,13 @@ export const mockAppBindings = {
     return result;
   },
 
-  CreateTask: async (title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> => {
+  CreateTask: async (title: string, themeId: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> => {
     const now = new Date().toISOString();
     const maxNum = getMaxTaskNumForTheme(mockTasks, themeId);
     const newTask: TaskWithStatus = {
       id: `${themeId}-T${maxNum + 1}`,
       title,
       themeId,
-      dayDate,
       priority,
       status: 'todo',
       createdAt: now,
@@ -950,14 +946,11 @@ export const mockAppBindings = {
     }
   },
 
-  // Helper to get tasks filtered by theme and/or date
-  GetTasksFiltered: async (themeId?: string, date?: string): Promise<TaskWithStatus[]> => {
+  // Helper to get tasks filtered by theme
+  GetTasksFiltered: async (themeId?: string): Promise<TaskWithStatus[]> => {
     let filtered = [...mockTasks];
     if (themeId) {
       filtered = filtered.filter(t => t.themeId === themeId);
-    }
-    if (date) {
-      filtered = filtered.filter(t => t.dayDate === date);
     }
     return computeSubtaskIds(filtered);
   },

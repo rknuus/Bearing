@@ -33,23 +33,21 @@
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
   import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
-  import { formatDate, formatDateLong } from '../lib/utils/date-format';
+  import { formatDateLong } from '../lib/utils/date-format';
   import { checkFullState } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
   interface Props {
     onNavigateToTheme?: (themeId: string) => void;
-    onNavigateToDay?: (date: string, themeId?: string) => void;
     filterThemeIds?: string[];
     filterTagIds?: string[];
-    filterDate?: string;
     onFilterThemeToggle?: (themeId: string) => void;
     onFilterThemeClear?: () => void;
     onFilterTagToggle?: (tag: string) => void;
     onFilterTagClear?: () => void;
   }
 
-  let { onNavigateToTheme, onNavigateToDay, filterThemeIds = [], filterTagIds = [], filterDate, onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear }: Props = $props();
+  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -150,9 +148,6 @@
         return false;
       });
     }
-    if (filterDate) {
-      result = result.filter(t => t.dayDate === filterDate);
-    }
     return result;
   });
 
@@ -177,14 +172,11 @@
       if (realTags.length > 0 && hasTags) return realTags.every(tag => t.tags!.includes(tag));
       return false;
     }
-    function matchesDate(t: TaskWithStatus): boolean {
-      return !filterDate || t.dayDate === filterDate;
-    }
 
     const counts: Record<string, number> = {};
     let allCount = 0;
     for (const t of base) {
-      if (!matchesTags(t) || !matchesDate(t)) continue;
+      if (!matchesTags(t)) continue;
       allCount++;
       counts[t.themeId] = (counts[t.themeId] ?? 0) + 1;
     }
@@ -199,15 +191,12 @@
     function matchesTheme(t: TaskWithStatus): boolean {
       return filterThemeIds.length === 0 || filterThemeIds.includes(t.themeId);
     }
-    function matchesDate(t: TaskWithStatus): boolean {
-      return !filterDate || t.dayDate === filterDate;
-    }
 
     const counts: Record<string, number> = {};
     let allCount = 0;
     let untaggedCount = 0;
     for (const t of base) {
-      if (!matchesTheme(t) || !matchesDate(t)) continue;
+      if (!matchesTheme(t)) continue;
       allCount++;
       const hasTags = t.tags && t.tags.length > 0;
       if (!hasTags) {
@@ -309,8 +298,8 @@
     return getBindings().GetBoardConfiguration();
   }
 
-  async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
-    return getBindings().CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate);
+  async function apiCreateTask(title: string, themeId: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
+    return getBindings().CreateTask(title, themeId, priority, description, tags, promotionDate);
   }
 
   async function apiMoveTask(taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> {
@@ -421,8 +410,8 @@
     showCreateDialog = true;
   }
 
-  async function apiCreateTaskAndInsert(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
-    const task = await apiCreateTask(title, themeId, dayDate, priority, description, tags, promotionDate);
+  async function apiCreateTaskAndInsert(title: string, themeId: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
+    const task = await apiCreateTask(title, themeId, priority, description, tags, promotionDate);
     tasks = [...tasks, { ...task, status: 'todo' } as TaskWithStatus];
     return task;
   }
@@ -743,13 +732,6 @@
     closeContextMenu();
   }
 
-  function handleGoToDay() {
-    if (contextMenuTask && onNavigateToDay) {
-      onNavigateToDay(contextMenuTask.dayDate, contextMenuTask.themeId);
-    }
-    closeContextMenu();
-  }
-
   // Archive/restore handlers
   async function handleArchiveTask(taskId: string) {
     try {
@@ -1043,14 +1025,6 @@
                           </button>
                           <button
                             type="button"
-                            class="task-date"
-                            title="Go to day"
-                            onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
-                          >
-                            {formatDate(task.dayDate)}
-                          </button>
-                          <button
-                            type="button"
                             class="delete-btn"
                             onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                             aria-label="Delete task"
@@ -1127,14 +1101,6 @@
                       title="Go to theme"
                     >
                       {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
-                    </button>
-                    <button
-                      type="button"
-                      class="task-date"
-                      title="Go to day"
-                      onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
-                    >
-                      {formatDate(task.dayDate)}
                     </button>
                     {#if column.type === 'done'}
                       <button
@@ -1225,14 +1191,6 @@
                   </button>
                   <button
                     type="button"
-                    class="task-date"
-                    title="Go to day"
-                    onclick={(e) => { e.stopPropagation(); onNavigateToDay?.(task.dayDate); }}
-                  >
-                    {formatDate(task.dayDate)}
-                  </button>
-                  <button
-                    type="button"
                     class="restore-btn"
                     onclick={() => handleRestoreTask(task.id)}
                     title="Restore to done"
@@ -1264,9 +1222,6 @@
       >
         <button type="button" class="context-menu-item" onclick={handleGoToTheme}>
           Go to Theme: {getTheme(themes, contextMenuTask.themeId)?.name ?? 'Unknown'}
-        </button>
-        <button type="button" class="context-menu-item" onclick={handleGoToDay}>
-          Go to Day: {formatDate(contextMenuTask.dayDate)}
         </button>
       </div>
     </div>
@@ -1558,21 +1513,6 @@
 
   .theme-name-btn:hover {
     color: var(--color-primary-600);
-  }
-
-  .task-date {
-    font-size: 0.7rem;
-    color: var(--color-gray-400);
-    cursor: pointer;
-    padding: 0.125rem 0.25rem;
-    border-radius: 2px;
-    background: none;
-    border: none;
-  }
-
-  .task-date:hover {
-    background-color: var(--color-gray-100);
-    color: var(--color-gray-500);
   }
 
   .delete-btn {
