@@ -674,10 +674,14 @@
               aria-label="Select color {color}"
             ></button>
           {/each}
-          <label class="color-input-wrapper">
-            <span class="color-input-icon">➕</span>
-            <input type="color" class="color-input" bind:value={newThemeColor} onchange={(e) => { newThemeColor = e.currentTarget.value; }} aria-label="Custom color" />
-          </label>
+          <input
+            type="text"
+            class="color-hex-input"
+            placeholder="#hex"
+            value={newThemeColor}
+            oninput={(e) => { const v = e.currentTarget.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) newThemeColor = v; }}
+            aria-label="Custom color hex"
+          />
         </div>
         {#if getColorConflicts(newThemeColor).length > 0}
           <div class="color-warning">Already used by: {getColorConflicts(newThemeColor).join(', ')}</div>
@@ -726,10 +730,14 @@
                   aria-label="Select color {color}"
                 ></button>
               {/each}
-              <label class="color-input-wrapper small">
-                <span class="color-input-icon">➕</span>
-                <input type="color" class="color-input" bind:value={editThemeColor} onchange={(e) => { editThemeColor = e.currentTarget.value; }} aria-label="Custom color" />
-              </label>
+              <input
+                type="text"
+                class="color-hex-input small"
+                placeholder="#hex"
+                value={editThemeColor}
+                oninput={(e) => { const v = e.currentTarget.value; if (/^#[0-9a-fA-F]{6}$/.test(v)) editThemeColor = v; }}
+                aria-label="Custom color hex"
+              />
             </div>
             {@const editConflicts = getColorConflicts(editThemeColor, theme.id)}
             {#if editConflicts.length > 0}
@@ -1156,51 +1164,26 @@
     height: 18px;
   }
 
-  .color-input-wrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
+  .color-hex-input {
+    width: 5.5rem;
     height: 24px;
-    border: 2px dashed var(--color-gray-400);
-    border-radius: 50%;
-    cursor: pointer;
-    overflow: hidden;
-  }
-
-  .color-input-wrapper:hover {
-    border-color: var(--color-gray-600);
-  }
-
-  .color-input-wrapper.small {
-    width: 18px;
-    height: 18px;
-  }
-
-  .color-input-icon {
+    padding: 0 0.375rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
     font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-gray-400);
-    line-height: 1;
-    pointer-events: none;
+    font-family: monospace;
+    color: var(--color-gray-700);
   }
 
-  .color-input-wrapper:hover .color-input-icon {
-    color: var(--color-gray-600);
+  .color-hex-input:focus {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -1px;
   }
 
-  .color-input-wrapper.small .color-input-icon {
-    font-size: 0.625rem;
-  }
-
-  .color-input {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
-    width: 100%;
-    height: 100%;
+  .color-hex-input.small {
+    height: 18px;
+    width: 5rem;
+    font-size: 0.6875rem;
   }
 
   .color-warning {

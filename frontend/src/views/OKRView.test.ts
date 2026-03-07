@@ -288,7 +288,7 @@ describe('OKRView', () => {
     });
   });
 
-  it('custom color input is present in create-theme form', async () => {
+  it('custom color hex input is present in create-theme form', async () => {
     await renderView();
 
     // Click "+ Add Theme" button
@@ -296,11 +296,12 @@ describe('OKRView', () => {
     addThemeBtn!.click();
     await tick();
 
-    const colorInput = container.querySelector<HTMLInputElement>('.theme-form input[type="color"]');
-    expect(colorInput).toBeTruthy();
+    const hexInput = container.querySelector<HTMLInputElement>('.theme-form .color-hex-input');
+    expect(hexInput).toBeTruthy();
+    expect(hexInput!.value).toBe('#3b82f6');
   });
 
-  it('custom color input is present in edit-theme form', async () => {
+  it('custom color hex input is present in edit-theme form', async () => {
     await renderView();
 
     // Click edit button on the theme
@@ -309,8 +310,8 @@ describe('OKRView', () => {
     editButton!.click();
     await tick();
 
-    const colorInput = container.querySelector<HTMLInputElement>('.theme-header input[type="color"]');
-    expect(colorInput).toBeTruthy();
+    const hexInput = container.querySelector<HTMLInputElement>('.theme-header .color-hex-input');
+    expect(hexInput).toBeTruthy();
   });
 
   it('duplicate warning appears when selecting a color used by another theme', async () => {
@@ -335,34 +336,35 @@ describe('OKRView', () => {
     addThemeBtn!.click();
     await tick();
 
-    // Change to a unique color
-    const colorInput = container.querySelector<HTMLInputElement>('.theme-form input[type="color"]');
-    expect(colorInput).toBeTruthy();
-    await fireEvent.input(colorInput!, { target: { value: '#000000' } });
+    // Type a unique hex color
+    const hexInput = container.querySelector<HTMLInputElement>('.theme-form .color-hex-input');
+    expect(hexInput).toBeTruthy();
+    await fireEvent.input(hexInput!, { target: { value: '#000000' } });
     await tick();
 
     const warning = container.querySelector('.theme-form .color-warning');
     expect(warning).toBeNull();
   });
 
-  it('custom color via change event updates color state (WebView compat)', async () => {
+  it('hex input ignores invalid values and accepts valid hex', async () => {
     await renderView();
 
-    // Click "+ Add Theme" button — default color is #3b82f6, same as Test Theme
     const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
     addThemeBtn!.click();
     await tick();
 
-    // Verify warning is present initially (default color conflicts)
+    // Warning present initially (default #3b82f6 conflicts with Test Theme)
     expect(container.querySelector('.theme-form .color-warning')).toBeTruthy();
 
-    // Fire change event (not input) to simulate WebView behavior
-    const colorInput = container.querySelector<HTMLInputElement>('.theme-form input[type="color"]');
-    expect(colorInput).toBeTruthy();
-    await fireEvent.change(colorInput!, { target: { value: '#000000' } });
+    // Invalid hex — warning should remain (color unchanged)
+    const hexInput = container.querySelector<HTMLInputElement>('.theme-form .color-hex-input');
+    await fireEvent.input(hexInput!, { target: { value: '#xyz' } });
     await tick();
+    expect(container.querySelector('.theme-form .color-warning')).toBeTruthy();
 
-    // Warning should disappear — proves change event updated the color state
+    // Valid hex — warning should disappear
+    await fireEvent.input(hexInput!, { target: { value: '#abcdef' } });
+    await tick();
     expect(container.querySelector('.theme-form .color-warning')).toBeNull();
   });
 
