@@ -9,7 +9,7 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { Button, ErrorBanner } from '../lib/components';
+  import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -557,6 +557,7 @@
       {:else}
         <span class="item-name">{objective.title}</span>
         <span class="item-id">{objective.id}</span>
+        <TagBadges tags={objective.tags} />
         <div class="item-actions">
           {#if isActive(objective.status)}
             <Button variant="icon" color="complete" onclick={() => setObjectiveStatus(objective.id, 'completed')} title="Complete">&#10003;</Button>
