@@ -571,7 +571,7 @@ func TestUpdateObjective(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Original")
-		err := manager.UpdateObjective(obj.ID, "Updated")
+		err := manager.UpdateObjective(obj.ID, "Updated", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -594,7 +594,7 @@ func TestUpdateObjective(t *testing.T) {
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
 
-		err := manager.UpdateObjective(child.ID, "Updated Child")
+		err := manager.UpdateObjective(child.ID, "Updated Child", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -613,7 +613,7 @@ func TestUpdateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		err := manager.UpdateObjective("", "Title")
+		err := manager.UpdateObjective("", "Title", nil)
 		if err == nil {
 			t.Fatal("expected error for empty objectiveId")
 		}
@@ -623,9 +623,132 @@ func TestUpdateObjective(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		err := manager.UpdateObjective("NONEXISTENT", "Title")
+		err := manager.UpdateObjective("NONEXISTENT", "Title", nil)
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
+		}
+	})
+
+	t.Run("sets tags on objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Tagged")
+		err := manager.UpdateObjective(obj.ID, "Tagged", []string{"alpha", "beta"})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found after update")
+		}
+		if !slices.Equal(found.Tags, []string{"alpha", "beta"}) {
+			t.Errorf("expected tags [alpha beta], got %v", found.Tags)
+		}
+	})
+
+	t.Run("tag round-trip persistence", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Persist Tags")
+		tags := []string{"work", "health"}
+		err := manager.UpdateObjective(obj.ID, "Persist Tags", tags)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Re-read from access layer to verify persistence
+		themes, _ := mockAccess.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found in access layer")
+		}
+		if !slices.Equal(found.Tags, []string{"work", "health"}) {
+			t.Errorf("expected tags [work health], got %v", found.Tags)
+		}
+	})
+
+	t.Run("deduplicates tags case-insensitively", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Dedup Tags")
+		err := manager.UpdateObjective(obj.ID, "Dedup Tags", []string{"Work", "work", "WORK", "health"})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found after update")
+		}
+		// Preserve first occurrence's casing
+		if !slices.Equal(found.Tags, []string{"Work", "health"}) {
+			t.Errorf("expected tags [Work health], got %v", found.Tags)
+		}
+	})
+
+	t.Run("rejects empty and whitespace-only tags", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Empty Tags")
+		err := manager.UpdateObjective(obj.ID, "Empty Tags", []string{"", "  ", "valid", "  ", ""})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found after update")
+		}
+		if !slices.Equal(found.Tags, []string{"valid"}) {
+			t.Errorf("expected tags [valid], got %v", found.Tags)
+		}
+	})
+
+	t.Run("trims whitespace from tags", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Trim Tags")
+		err := manager.UpdateObjective(obj.ID, "Trim Tags", []string{"  alpha  ", " beta "})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found after update")
+		}
+		if !slices.Equal(found.Tags, []string{"alpha", "beta"}) {
+			t.Errorf("expected tags [alpha beta], got %v", found.Tags)
+		}
+	})
+
+	t.Run("nil tags results in empty tags", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Nil Tags")
+		err := manager.UpdateObjective(obj.ID, "Nil Tags", nil)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found == nil {
+			t.Fatal("objective not found after update")
+		}
+		if len(found.Tags) != 0 {
+			t.Errorf("expected empty tags, got %v", found.Tags)
 		}
 	})
 }

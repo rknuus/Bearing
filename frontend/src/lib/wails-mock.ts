@@ -24,6 +24,7 @@ export interface Objective {
   parentId?: string;
   title: string;
   status?: string;
+  tags?: string[];
   keyResults: KeyResult[];
   objectives?: Objective[];
 }
@@ -310,6 +311,7 @@ let mockThemes: LifeTheme[] = [
         id: 'HF-O1',
         parentId: 'HF',
         title: 'Improve cardiovascular health',
+        tags: ['Q1', 'health'],
         keyResults: [
           { id: 'HF-KR1', parentId: 'HF-O1', description: 'Run 5K in under 25 minutes', status: 'completed', startValue: 0, currentValue: 1, targetValue: 1 },
           { id: 'HF-KR2', parentId: 'HF-O1', description: 'Exercise 4 times per week', startValue: 0, currentValue: 3, targetValue: 4 },
@@ -346,6 +348,7 @@ let mockThemes: LifeTheme[] = [
         id: 'CG-O1',
         parentId: 'CG',
         title: 'Develop leadership skills',
+        tags: ['blocked'],
         keyResults: [
           { id: 'CG-KR1', parentId: 'CG-O1', description: 'Lead 2 major projects', startValue: 0, currentValue: 1, targetValue: 2 },
           { id: 'CG-KR2', parentId: 'CG-O1', description: 'Mentor 1 junior developer' },  // untracked KR (no target)
@@ -528,12 +531,13 @@ export const mockAppBindings = {
     return newObjective;
   },
 
-  UpdateObjective: async (objectiveId: string, title: string): Promise<void> => {
+  UpdateObjective: async (objectiveId: string, title: string, tags: string[]): Promise<void> => {
     const obj = findObjectiveById(mockThemes, objectiveId);
     if (!obj) {
       throw new Error(`Objective ${objectiveId} not found`);
     }
     obj.title = title;
+    obj.tags = tags;
   },
 
   DeleteObjective: async (objectiveId: string): Promise<void> => {

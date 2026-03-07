@@ -9,8 +9,9 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { Button, ErrorBanner } from '../lib/components';
+  import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+  import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
 
@@ -39,6 +40,7 @@
     parentId?: string;
     title: string;
     status?: string;
+    tags?: string[];
     keyResults: KeyResult[];
     objectives?: Objective[];
   }
@@ -95,13 +97,83 @@
   let showCompleted = $state(false);
   let showArchived = $state(false);
 
+  // Tag filter state (local only, not persisted)
+  let filterTagIds: string[] = $state([]);
+
+  /** Collect unique tags from all objectives across all themes. */
+  const availableObjectiveTags = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- local temporary set, not reactive state
+    const tags = new Set<string>();
+    function walkObjectiveTags(objectives: Objective[]) {
+      for (const obj of objectives) {
+        for (const tag of obj.tags ?? []) tags.add(tag);
+        walkObjectiveTags(obj.objectives ?? []);
+      }
+    }
+    for (const theme of themes) walkObjectiveTags(theme.objectives);
+    return [...tags].sort();
+  });
+
+  /** Recursively filter objectives: keep those matching tags, their ancestors, and their children. */
+  function filterObjectives(objectives: Objective[], activeTagIds: string[]): Objective[] {
+    const result: Objective[] = [];
+    for (const obj of objectives) {
+      const ownMatch = (obj.tags ?? []).some(t => activeTagIds.includes(t));
+      if (ownMatch) {
+        // Parent matches → show all children unchanged
+        result.push(obj);
+      } else {
+        // Check if any descendant matches
+        const filteredChildren = filterObjectives(obj.objectives ?? [], activeTagIds);
+        if (filteredChildren.length > 0) {
+          // Descendant matches → include this parent with filtered children, keep all KRs
+          result.push({ ...obj, objectives: filteredChildren });
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Themes with objectives filtered by active tags. */
+  const filteredThemes = $derived.by(() => {
+    if (filterTagIds.length === 0) return themes;
+    const result: LifeTheme[] = [];
+    for (const theme of themes) {
+      const filtered = filterObjectives(theme.objectives, filterTagIds);
+      if (filtered.length > 0) {
+        result.push({ ...theme, objectives: filtered });
+      }
+    }
+    return result;
+  });
+
+  function handleFilterTagToggle(tag: string) {
+    if (filterTagIds.includes(tag)) {
+      filterTagIds = filterTagIds.filter(t => t !== tag);
+    } else {
+      filterTagIds = [...filterTagIds, tag];
+    }
+  }
+
+  function handleFilterTagClear() {
+    filterTagIds = [];
+  }
+
   // Inline edit values
   let editThemeName = $state('');
   let editThemeColor = $state('');
   let editObjectiveTitle = $state('');
+  let editObjectiveTags = $state<string[]>([]);
   let editKeyResultDescription = $state('');
   let editKeyResultStartValue = $state(0);
   let editKeyResultTargetValue = $state(0);
+
+  // Tag autocomplete state for objective editing
+  let editTagInput = $state('');
+  let editTagSuggestions = $state<string[]>([]);
+  let editTagHighlightedIndex = $state(-1);
+  let showEditTagSuggestions = $state(false);
+  let availableTags = $state<string[]>([]);
 
   // Toggle expansion for any ID (theme or objective)
   function toggleExpanded(id: string) {
@@ -265,10 +337,10 @@
     }
   }
 
-  // UpdateObjective — new API: (objectiveId, title)
-  async function updateObjective(objectiveId: string, newTitle: string) {
+  // UpdateObjective — new API: (objectiveId, title, tags)
+  async function updateObjective(objectiveId: string, newTitle: string, tags: string[]) {
     try {
-      await getBindings().UpdateObjective(objectiveId, newTitle);
+      await getBindings().UpdateObjective(objectiveId, newTitle, tags);
       await loadThemes();
       await verifyThemeState();
       editingObjectiveId = null;
@@ -393,9 +465,37 @@
     editThemeColor = theme.color;
   }
 
-  function startEditObjective(objective: Objective) {
+  async function startEditObjective(objective: Objective) {
     editingObjectiveId = objective.id;
     editObjectiveTitle = objective.title;
+    editObjectiveTags = [...(objective.tags ?? [])];
+    editTagInput = '';
+    editTagSuggestions = [];
+    editTagHighlightedIndex = -1;
+    showEditTagSuggestions = false;
+
+    // Collect tags from all objectives
+    const objectiveTags = flattenObjectives(themes).flatMap(o => o.tags ?? []);
+
+    // Fetch task tags
+    let taskTags: string[] = [];
+    try {
+      const tasks = await getBindings().GetTasks();
+      taskTags = tasks.flatMap(t => t.tags ?? []);
+    } catch {
+      // Ignore — use objective tags only
+    }
+
+    // Fetch day focus tags
+    let dayFocusTags: string[] = [];
+    try {
+      const dayFocusEntries = await getBindings().GetYearFocus(new Date().getFullYear());
+      dayFocusTags = dayFocusEntries.flatMap(d => d.tags ?? []);
+    } catch {
+      // Ignore — use what we have
+    }
+
+    availableTags = [...new Set([...objectiveTags, ...taskTags, ...dayFocusTags])].sort();
   }
 
   function startEditKeyResult(kr: KeyResult) {
@@ -415,7 +515,7 @@
   }
 
   function submitEditObjective(objective: Objective) {
-    updateObjective(objective.id, editObjectiveTitle);
+    updateObjective(objective.id, editObjectiveTitle, editObjectiveTags);
   }
 
   function submitEditKeyResult(kr: KeyResult) {
@@ -457,6 +557,76 @@
       }
     }
     updateKeyResult(kr.id, editKeyResultDescription);
+  }
+
+  // Tag autocomplete helpers for objective editing
+  function computeEditTagSuggestions(input: string): string[] {
+    const query = input.trim().toLowerCase();
+    if (!query) return [];
+    return availableTags.filter(tag =>
+      tag.toLowerCase().includes(query) && !editObjectiveTags.includes(tag)
+    );
+  }
+
+  function handleEditTagInput() {
+    editTagSuggestions = computeEditTagSuggestions(editTagInput);
+    showEditTagSuggestions = editTagSuggestions.length > 0;
+    editTagHighlightedIndex = -1;
+  }
+
+  function addEditTag() {
+    const tag = editTagInput.trim();
+    if (tag && !editObjectiveTags.includes(tag)) {
+      editObjectiveTags = [...editObjectiveTags, tag];
+      if (!availableTags.includes(tag)) {
+        availableTags = [...availableTags, tag].sort();
+      }
+    }
+    editTagInput = '';
+    showEditTagSuggestions = false;
+    editTagHighlightedIndex = -1;
+  }
+
+  function selectEditTagSuggestion(tag: string) {
+    if (!editObjectiveTags.includes(tag)) {
+      editObjectiveTags = [...editObjectiveTags, tag];
+    }
+    editTagInput = '';
+    showEditTagSuggestions = false;
+    editTagHighlightedIndex = -1;
+  }
+
+  function removeEditTag(tag: string) {
+    editObjectiveTags = editObjectiveTags.filter(t => t !== tag);
+  }
+
+  function handleEditTagKeydown(event: KeyboardEvent) {
+    if (showEditTagSuggestions && editTagSuggestions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        editTagHighlightedIndex = (editTagHighlightedIndex + 1) % editTagSuggestions.length;
+        return;
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        editTagHighlightedIndex = editTagHighlightedIndex <= 0 ? editTagSuggestions.length - 1 : editTagHighlightedIndex - 1;
+        return;
+      } else if ((event.key === 'Enter' || event.key === 'Tab') && editTagHighlightedIndex >= 0) {
+        event.preventDefault();
+        selectEditTagSuggestion(editTagSuggestions[editTagHighlightedIndex]);
+        return;
+      } else if (event.key === 'Escape') {
+        showEditTagSuggestions = false;
+        return;
+      }
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addEditTag();
+    }
+  }
+
+  function handleEditTagBlur() {
+    setTimeout(() => { showEditTagSuggestions = false; }, 150);
   }
 
   // Cancel editing
@@ -545,17 +715,72 @@
       <span class="objective-marker" style="background-color: {themeColor};"></span>
 
       {#if editingObjectiveId === objective.id}
-        <input
-          type="text"
-          class="inline-edit"
-          bind:value={editObjectiveTitle}
-          onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(objective); if (e.key === 'Escape') cancelEdit(); }}
-        />
-        <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save">&#10003;</Button>
-        <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">&#10005;</Button>
+        <div class="objective-edit-area">
+          <div class="objective-edit-row">
+            <input
+              type="text"
+              class="inline-edit"
+              bind:value={editObjectiveTitle}
+              onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(objective); if (e.key === 'Escape') cancelEdit(); }}
+            />
+            <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save">&#10003;</Button>
+            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">&#10005;</Button>
+          </div>
+          <div class="objective-edit-tags">
+            {#if editObjectiveTags.length > 0}
+              <div class="edit-tag-badges">
+                {#each editObjectiveTags as tag (tag)}
+                  <span class="edit-tag-badge">
+                    {tag}
+                    <button class="edit-tag-remove" onclick={() => removeEditTag(tag)} aria-label="Remove tag {tag}">&times;</button>
+                  </span>
+                {/each}
+              </div>
+            {/if}
+            <div class="edit-tag-input-wrapper">
+              <input
+                type="text"
+                bind:value={editTagInput}
+                oninput={handleEditTagInput}
+                onkeydown={handleEditTagKeydown}
+                onblur={handleEditTagBlur}
+                placeholder="Add tag..."
+                class="edit-tag-input"
+                role="combobox"
+                aria-expanded={showEditTagSuggestions}
+                aria-controls="edit-tag-suggestions-listbox"
+                aria-autocomplete="list"
+                aria-activedescendant={editTagHighlightedIndex >= 0 ? `edit-tag-option-${editTagHighlightedIndex}` : undefined}
+                autocomplete="off"
+              />
+              {#if showEditTagSuggestions && editTagSuggestions.length > 0}
+                <ul
+                  class="edit-tag-suggestions-dropdown"
+                  id="edit-tag-suggestions-listbox"
+                  role="listbox"
+                  aria-label="Tag suggestions"
+                >
+                  {#each editTagSuggestions as suggestion, i (suggestion)}
+                    <li
+                      id="edit-tag-option-{i}"
+                      class="edit-tag-suggestion-item"
+                      class:highlighted={i === editTagHighlightedIndex}
+                      role="option"
+                      aria-selected={i === editTagHighlightedIndex}
+                      onmousedown={() => selectEditTagSuggestion(suggestion)}
+                    >
+                      {suggestion}
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
+          </div>
+        </div>
       {:else}
         <span class="item-name">{objective.title}</span>
         <span class="item-id">{objective.id}</span>
+        <TagBadges tags={objective.tags} />
         <div class="item-actions">
           {#if isActive(objective.status)}
             <Button variant="icon" color="complete" onclick={() => setObjectiveStatus(objective.id, 'completed')} title="Complete">&#10003;</Button>
@@ -731,6 +956,15 @@
   {#if loading}
     <div class="loading">Loading themes...</div>
   {:else}
+    {#if availableObjectiveTags.length > 0}
+      <TagFilterBar
+        availableTags={availableObjectiveTags}
+        activeTagIds={filterTagIds}
+        onToggle={handleFilterTagToggle}
+        onClear={handleFilterTagClear}
+      />
+    {/if}
+
     <!-- New Theme Form -->
     {#if showNewThemeForm}
       <div class="new-item-form theme-form">
@@ -767,7 +1001,7 @@
 
     <!-- Themes List -->
     <div class="themes-list">
-      {#each themes as theme (theme.id)}
+      {#each filteredThemes as theme (theme.id)}
         <div class="theme-item" class:highlighted={highlightItemId === theme.id} style="--theme-color: {theme.color};">
           <!-- Theme Header -->
           <div class="item-header theme-header">
@@ -1312,5 +1546,108 @@
   .kr-progress-input:focus {
     outline: none;
     border-color: var(--color-primary-500);
+  }
+
+  /* Objective tag editing */
+  .objective-edit-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    min-width: 0;
+  }
+
+  .objective-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .objective-edit-tags {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .edit-tag-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .edit-tag-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--color-primary-50, #eff6ff);
+    color: var(--color-primary-700, #1d4ed8);
+    border-radius: var(--radius-full, 9999px);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .edit-tag-remove {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.875rem;
+    line-height: 1;
+    color: var(--color-primary-500);
+  }
+
+  .edit-tag-remove:hover {
+    color: var(--color-danger-500, #ef4444);
+  }
+
+  .edit-tag-input-wrapper {
+    position: relative;
+  }
+
+  .edit-tag-input {
+    width: 100%;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .edit-tag-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  .edit-tag-suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: white;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .edit-tag-suggestion-item {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+    color: var(--color-gray-700);
+    cursor: pointer;
+  }
+
+  .edit-tag-suggestion-item:hover,
+  .edit-tag-suggestion-item.highlighted {
+    background-color: var(--color-primary-50, #eff6ff);
+    color: var(--color-primary-700, #1d4ed8);
   }
 </style>

@@ -45,7 +45,7 @@ type IPlanningManager interface {
 
 	// Objectives — parentId can be a theme ID or any objective ID
 	CreateObjective(parentId, title string) (*access.Objective, error)
-	UpdateObjective(objectiveId, title string) error
+	UpdateObjective(objectiveId, title string, tags []string) error
 	DeleteObjective(objectiveId string) error
 
 	// Key Results — parentObjectiveId / keyResultId found by tree-walking
@@ -337,14 +337,36 @@ func (m *PlanningManager) CreateObjective(parentId, title string) (*access.Objec
 	return nil, fmt.Errorf("objective was created but could not be retrieved")
 }
 
-// UpdateObjective finds an objective by ID anywhere in the tree and updates its title.
-func (m *PlanningManager) UpdateObjective(objectiveId, title string) error {
+// validateTags trims whitespace, filters empty strings, and deduplicates case-insensitively
+// (preserving the first occurrence's casing).
+func validateTags(tags []string) []string {
+	var result []string
+	seen := make(map[string]bool)
+	for _, tag := range tags {
+		trimmed := strings.TrimSpace(tag)
+		if trimmed == "" {
+			continue
+		}
+		lower := strings.ToLower(trimmed)
+		if seen[lower] {
+			continue
+		}
+		seen[lower] = true
+		result = append(result, trimmed)
+	}
+	return result
+}
+
+// UpdateObjective finds an objective by ID anywhere in the tree and updates its title and tags.
+func (m *PlanningManager) UpdateObjective(objectiveId, title string, tags []string) error {
 	if objectiveId == "" {
 		return fmt.Errorf("objectiveId cannot be empty")
 	}
 	if title == "" {
 		return fmt.Errorf("title cannot be empty")
 	}
+
+	validatedTags := validateTags(tags)
 
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
@@ -354,6 +376,7 @@ func (m *PlanningManager) UpdateObjective(objectiveId, title string) error {
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
 			obj.Title = title
+			obj.Tags = validatedTags
 			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
 				return fmt.Errorf("%w", err)
 			}

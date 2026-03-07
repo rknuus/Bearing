@@ -183,6 +183,7 @@ type Objective struct {
 	ParentID   string      `json:"parentId"`
 	Title      string      `json:"title"`
 	Status     string      `json:"status,omitempty"`
+	Tags       []string    `json:"tags,omitempty"`
 	KeyResults []KeyResult `json:"keyResults"`
 	Objectives []Objective `json:"objectives,omitempty"`
 }
@@ -282,6 +283,7 @@ func convertObjective(o access.Objective) Objective {
 		ParentID:   o.ParentID,
 		Title:      o.Title,
 		Status:     o.Status,
+		Tags:       o.Tags,
 		KeyResults: keyResults,
 	}
 	if len(objectives) > 0 {
@@ -313,6 +315,7 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 		ParentID:   o.ParentID,
 		Title:      o.Title,
 		Status:     o.Status,
+		Tags:       o.Tags,
 		KeyResults: keyResults,
 	}
 	if len(objectives) > 0 {
@@ -449,14 +452,14 @@ func (a *App) CreateObjective(parentId, title string) (*Objective, error) {
 	}, nil
 }
 
-// UpdateObjective updates an existing objective's title
-func (a *App) UpdateObjective(objectiveId, title string) error {
+// UpdateObjective updates an existing objective's title and tags
+func (a *App) UpdateObjective(objectiveId, title string, tags []string) error {
 	if a.planningManager == nil {
 		slog.Warn("UpdateObjective: planning manager not initialized")
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	err := a.planningManager.UpdateObjective(objectiveId, title)
+	err := a.planningManager.UpdateObjective(objectiveId, title, tags)
 	if err != nil {
 		slog.Error("UpdateObjective failed", "error", err, "objectiveId", objectiveId)
 	}
