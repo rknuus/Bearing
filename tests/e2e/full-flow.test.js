@@ -256,7 +256,7 @@ export async function runTests() {
       // quadrant is unreliable in Playwright)
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Task A', tid, '2026-03-01', 'important-urgent', '', '', '', '')
+        await app.CreateTask('E2E Task A', tid, '2026-03-01', 'important-urgent', '', '', '')
       }, themeId)
 
       // Verify task file
@@ -294,7 +294,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Task B', tid, '2026-03-01', 'not-important-urgent', '', '', '', '')
+        await app.CreateTask('E2E Task B', tid, '2026-03-01', 'not-important-urgent', '', '', '')
       }, themeId)
 
       const todoFiles = getTaskFiles(DATA_DIR, 'todo')
@@ -393,7 +393,6 @@ export async function runTests() {
           ...task,
           description: 'Updated description',
           tags: ['e2e', 'test'],
-          dueDate: '2026-12-31',
         })
       }, task2Id)
 
@@ -404,15 +403,11 @@ export async function runTests() {
       if (!updatedTask.tags || !updatedTask.tags.includes('e2e')) {
         throw new Error(`Expected tags to include "e2e", got ${JSON.stringify(updatedTask.tags)}`)
       }
-      if (updatedTask.dueDate !== '2026-12-31') {
-        throw new Error(`Expected dueDate "2026-12-31", got "${updatedTask.dueDate}"`)
-      }
-
       expectedCommits++
       assertCommitCount('after edit task')
       assertLatestCommitContains('Update task')
 
-      reporter.pass('Task 2 edited with description, tags, dueDate')
+      reporter.pass('Task 2 edited with description and tags')
     } catch (err) {
       reporter.fail(err)
     }
@@ -684,7 +679,7 @@ export async function runTests() {
 
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Column Task', tid, '2026-03-01', 'important-urgent', '', '', '', '')
+        await app.CreateTask('E2E Column Task', tid, '2026-03-01', 'important-urgent', '', '', '')
       }, colThemeId)
 
       expectedCommits++

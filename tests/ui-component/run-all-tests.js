@@ -1,5 +1,5 @@
 /**
- * Test Runner for Bearing E2E Tests
+ * Test Runner for Bearing UI Component Tests
  * Orchestrates test execution, server checks, and result aggregation
  *
  * Tests run against Vite dev server with mock Wails bindings.
@@ -97,7 +97,7 @@ class TestRunner {
   }
 
   async runAll() {
-    console.log(`Bearing E2E Test Suite Runner\n`)
+    console.log(`Bearing UI Component Test Suite Runner\n`)
     console.log(`Running ${enabledSuites.length} test suites...\n`)
 
     // Check servers first

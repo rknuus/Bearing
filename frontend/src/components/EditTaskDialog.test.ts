@@ -20,7 +20,6 @@ function makeTestTask(overrides: Partial<Task> = {}): Task {
     dayDate: '2026-01-31',
     priority: 'important-urgent',
     tags: ['health', 'morning'],
-    dueDate: '2026-02-15',
     promotionDate: '2026-02-10',
     createdAt: '2026-01-31T08:00:00Z',
     updatedAt: '2026-01-31T08:00:00Z',
@@ -88,9 +87,6 @@ describe('EditTaskDialog', () => {
 
     const tagsInput = container.querySelector<HTMLInputElement>('#edit-task-tags');
     expect(tagsInput?.value).toBe('health, morning');
-
-    const dueDateInput = container.querySelector<HTMLInputElement>('#edit-task-due-date');
-    expect(dueDateInput?.value).toBe('2026-02-15');
 
     const promotionDateInput = container.querySelector<HTMLInputElement>('#edit-task-promotion-date');
     expect(promotionDateInput?.value).toBe('2026-02-10');

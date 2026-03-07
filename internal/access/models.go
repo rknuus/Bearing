@@ -57,7 +57,6 @@ type Task struct {
 	DayDate       string   `json:"dayDate"`                  // Associated date in YYYY-MM-DD format
 	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, important-not-urgent, not-important-urgent
 	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
-	DueDate       string   `json:"dueDate,omitempty"`        // Due date in YYYY-MM-DD format
 	PromotionDate string   `json:"promotionDate,omitempty"`  // Date when priority should be promoted (YYYY-MM-DD)
 	ParentTaskID  *string  `json:"parentTaskId,omitempty"`   // ID of parent task for subtask hierarchy
 	CreatedAt     string   `json:"createdAt,omitempty"`      // ISO 8601 creation timestamp
@@ -147,8 +146,6 @@ type QueryCriteria struct {
 	Sections       []string `json:"sections,omitempty"`       // Filter by priority section names
 	Priority       string   `json:"priority,omitempty"`       // Filter by priority value
 	Tags           []string `json:"tags,omitempty"`           // Filter by tags (any match)
-	DueDateFrom    string   `json:"dueDateFrom,omitempty"`    // Filter tasks due on or after this date
-	DueDateTo      string   `json:"dueDateTo,omitempty"`      // Filter tasks due on or before this date
 	HierarchyLevel string   `json:"hierarchyLevel,omitempty"` // "top" for root tasks, "sub" for subtasks, empty for all
 }
 

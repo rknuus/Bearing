@@ -50,7 +50,6 @@ export interface Task {
   dayDate: string;
   priority: string;
   tags?: string[];
-  dueDate?: string;
   promotionDate?: string;
   parentTaskId?: string | null;
   createdAt?: string;
@@ -690,7 +689,7 @@ export const mockAppBindings = {
     return result;
   },
 
-  CreateTask: async (title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> => {
+  CreateTask: async (title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> => {
     const now = new Date().toISOString();
     const maxNum = getMaxTaskNumForTheme(mockTasks, themeId);
     const newTask: TaskWithStatus = {
@@ -705,7 +704,6 @@ export const mockAppBindings = {
     };
     if (description) newTask.description = description;
     if (tags) newTask.tags = tags.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    if (dueDate) newTask.dueDate = dueDate;
     if (promotionDate) newTask.promotionDate = promotionDate;
     mockTasks.push(newTask);
     const zone = dropZoneForTask(newTask);

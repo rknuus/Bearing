@@ -1,5 +1,5 @@
 /**
- * E2E Tests for View Workflows
+ * UI Component Tests for View Workflows
  * Tests: OKR theme creation, calendar day editing, task creation, keyboard navigation
  *
  * Runs against Vite dev server (localhost:5173) with mock Wails bindings.
@@ -15,7 +15,7 @@ import {
 const reporter = new TestReporter('View Workflow Tests')
 
 export async function runTests() {
-  console.log('Starting View Workflow E2E Tests...\n')
+  console.log('Starting View Workflow Tests...\n')
 
   let browser
 

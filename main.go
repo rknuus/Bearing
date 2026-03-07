@@ -212,7 +212,6 @@ type Task struct {
 	DayDate       string   `json:"dayDate"`
 	Priority      string   `json:"priority"`
 	Tags          []string `json:"tags,omitempty"`
-	DueDate       string   `json:"dueDate,omitempty"`
 	PromotionDate string   `json:"promotionDate,omitempty"`
 	ParentTaskID  *string  `json:"parentTaskId,omitempty"`
 	CreatedAt     string   `json:"createdAt,omitempty"`
@@ -667,7 +666,6 @@ func (a *App) GetTasks() ([]TaskWithStatus, error) {
 				DayDate:       t.DayDate,
 				Priority:      t.Priority,
 				Tags:          t.Tags,
-				DueDate:       t.DueDate,
 				PromotionDate: t.PromotionDate,
 				ParentTaskID:  t.ParentTaskID,
 				CreatedAt:     t.CreatedAt,
@@ -681,13 +679,13 @@ func (a *App) GetTasks() ([]TaskWithStatus, error) {
 }
 
 // CreateTask creates a new task with the given properties
-func (a *App) CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate string) (*Task, error) {
+func (a *App) CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate string) (*Task, error) {
 	if a.planningManager == nil {
 		slog.Warn("CreateTask: planning manager not initialized")
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	task, err := a.planningManager.CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate)
+	task, err := a.planningManager.CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate)
 	if err != nil {
 		slog.Error("CreateTask failed", "error", err, "themeId", themeId)
 		return nil, err
@@ -701,7 +699,6 @@ func (a *App) CreateTask(title, themeId, dayDate, priority, description, tags, d
 		DayDate:       task.DayDate,
 		Priority:      task.Priority,
 		Tags:          task.Tags,
-		DueDate:       task.DueDate,
 		PromotionDate: task.PromotionDate,
 		ParentTaskID:  task.ParentTaskID,
 		CreatedAt:     task.CreatedAt,
@@ -724,7 +721,6 @@ func (a *App) UpdateTask(task Task) error {
 		DayDate:       task.DayDate,
 		Priority:      task.Priority,
 		Tags:          task.Tags,
-		DueDate:       task.DueDate,
 		PromotionDate: task.PromotionDate,
 		ParentTaskID:  task.ParentTaskID,
 		CreatedAt:     task.CreatedAt,

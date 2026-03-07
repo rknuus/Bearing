@@ -3,7 +3,7 @@
    * EditTaskDialog Component
    *
    * A modal dialog for editing task properties: title, theme, description,
-   * tags, due date, and promotion date. Uses shared TaskFormFields component.
+   * tags, and promotion date. Uses shared TaskFormFields component.
    */
 
   import type { Task, LifeTheme } from '../lib/wails-mock';
@@ -26,7 +26,6 @@
   let editThemeId = $state('');
   let editDescription = $state('');
   let editTags = $state('');
-  let editDueDate = $state('');
   let editPromotionDate = $state('');
   let isSubmitting = $state(false);
   let errorMessage = $state('');
@@ -38,7 +37,6 @@
       editThemeId = task.themeId;
       editDescription = task.description ?? '';
       editTags = (task.tags ?? []).join(', ');
-      editDueDate = task.dueDate ?? '';
       editPromotionDate = task.promotionDate ?? '';
       errorMessage = '';
     }
@@ -65,7 +63,6 @@
         description: editDescription.trim() || undefined,
         priority: task.priority,
         tags: parseTags(editTags),
-        dueDate: editDueDate || undefined,
         promotionDate: editPromotionDate || undefined,
       };
       await onSave(updatedTask);
@@ -89,7 +86,6 @@
       bind:themeId={editThemeId}
       bind:description={editDescription}
       bind:tags={editTags}
-      bind:dueDate={editDueDate}
       bind:promotionDate={editPromotionDate}
       {themes}
       {availableTags}

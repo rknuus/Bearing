@@ -1,5 +1,5 @@
 /**
- * Shared test utilities for Bearing E2E tests
+ * Shared test utilities for Bearing UI component tests
  *
  * Tests run against Vite dev server at http://localhost:5173 with mock Wails
  * bindings. This approach is necessary because Wails v2 does NOT expose bindings
@@ -12,7 +12,7 @@
  */
 
 export const TEST_CONFIG = {
-  // E2E tests run against Vite dev server with mock Wails bindings
+  // UI component tests run against Vite dev server with mock Wails bindings
   // Mock bindings automatically initialized when window.go doesn't exist
   WAILS_DEV_URL: process.env.WAILS_DEV_URL || 'http://localhost:5173',
   TIMEOUT: 30000,

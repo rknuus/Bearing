@@ -20,7 +20,6 @@
     themeId?: string;
     description?: string;
     tags?: string;
-    dueDate?: string;
     promotionDate?: string;
   }
 
@@ -39,8 +38,6 @@
   let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, isStaging = false }: Props = $props();
 
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
-  const today = new Date().toISOString().split('T')[0];
-  const todayDisplay = formatDate(today);
 
   function handleDndConsider(event: CustomEvent<DndEvent<PendingTask>>) {
     const { trigger, source } = event.detail.info;
@@ -89,9 +86,11 @@
           {/if}
         </div>
         <span class="task-title">{task.title}</span>
-        <div class="task-footer">
-          <span class="task-date">{todayDisplay}</span>
-        </div>
+        {#if task.promotionDate}
+          <div class="task-footer">
+            <span class="task-date">{formatDate(task.promotionDate)}</span>
+          </div>
+        {/if}
       </div>
     {/each}
     {#if tasks.length === 0 && isStaging}
