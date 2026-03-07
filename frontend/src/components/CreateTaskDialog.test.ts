@@ -240,7 +240,8 @@ describe('CreateTaskDialog', () => {
 
     expect(container.querySelector('#new-task-description')).toBeTruthy();
     expect(container.querySelector('#new-task-tags')).toBeTruthy();
-    expect(container.querySelector('#new-task-promotion-date')).toBeTruthy();
+    // Promotion date is not shown in the create dialog
+    expect(container.querySelector('#new-task-promotion-date')).toBeNull();
   });
 
   it('optional fields default to empty', async () => {
@@ -248,11 +249,9 @@ describe('CreateTaskDialog', () => {
 
     const desc = container.querySelector<HTMLTextAreaElement>('#new-task-description');
     const tags = container.querySelector<HTMLInputElement>('#new-task-tags');
-    const promotionDate = container.querySelector<HTMLInputElement>('#new-task-promotion-date');
 
     expect(desc!.value).toBe('');
     expect(tags!.value).toBe('');
-    expect(promotionDate!.value).toBe('');
   });
 
   it('optional fields are cleared after adding a task', async () => {

@@ -46,7 +46,6 @@
   let newTaskTitle = $state('');
   let newTaskDescription = $state('');
   let newTaskTags = $state('');
-  let newTaskPromotionDate = $state('');
   let selectedThemeId = $state('');
   let isSubmitting = $state(false);
   let error = $state<string | null>(null);
@@ -145,7 +144,6 @@
         newTaskTitle = '';
         newTaskDescription = '';
         newTaskTags = '';
-        newTaskPromotionDate = '';
         isSubmitting = false;
         error = null;
         if (themes.length > 0) {
@@ -185,7 +183,6 @@
       themeId: selectedThemeId,
       description: newTaskDescription.trim() || undefined,
       tags: newTaskTags.trim() || undefined,
-      promotionDate: newTaskPromotionDate || undefined,
     };
     nextId++;
     tasksByQuadrant = {
@@ -195,7 +192,6 @@
     newTaskTitle = '';
     newTaskDescription = '';
     newTaskTags = '';
-    newTaskPromotionDate = '';
   }
 
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
@@ -283,7 +279,6 @@
         bind:themeId={selectedThemeId}
         bind:description={newTaskDescription}
         bind:tags={newTaskTags}
-        bind:promotionDate={newTaskPromotionDate}
         {themes}
         {availableTags}
         disabled={isSubmitting}

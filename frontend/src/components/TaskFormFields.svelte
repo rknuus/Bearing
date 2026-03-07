@@ -14,7 +14,7 @@
     themeId: string;
     description: string;
     tags: string;
-    promotionDate: string;
+    promotionDate?: string;
     themes: LifeTheme[];
     availableTags?: string[];
     disabled?: boolean;
@@ -26,7 +26,7 @@
     themeId = $bindable(),
     description = $bindable(),
     tags = $bindable(),
-    promotionDate = $bindable(),
+    promotionDate = $bindable(undefined),
     themes,
     availableTags = [],
     disabled = false,
@@ -190,15 +190,17 @@
     {/if}
   </div>
 </div>
-<div class="form-group">
-  <label for="{prefix}promotion-date">Promotion Date</label>
-  <input
-    id="{prefix}promotion-date"
-    type="date"
-    bind:value={promotionDate}
-    {disabled}
-  />
-</div>
+{#if promotionDate !== undefined}
+  <div class="form-group">
+    <label for="{prefix}promotion-date">Promotion Date</label>
+    <input
+      id="{prefix}promotion-date"
+      type="date"
+      bind:value={promotionDate}
+      {disabled}
+    />
+  </div>
+{/if}
 
 <style>
   .form-group {
