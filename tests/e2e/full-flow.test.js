@@ -151,13 +151,13 @@ export async function runTests() {
     // ---- 1b: Create objective ----
     reporter.startTest('Phase 1b: Create objective and verify files')
     try {
-      await page.click('.theme-item:last-child .expand-button')
-      await page.waitForSelector('.theme-item:last-child .empty-state .link-button', { timeout: 5000 })
-      await page.click('.theme-item:last-child .empty-state .link-button')
-      await page.waitForSelector('.theme-item:last-child .objective-form', { timeout: 5000 })
-      await page.fill('.theme-item:last-child .objective-form input[type="text"]', 'E2E Objective')
-      await page.click('.theme-item:last-child .objective-form .btn-primary')
-      await page.waitForSelector('.theme-item:last-child .objective-item', { timeout: 5000 })
+      await page.click('.tree-theme-edit:last-child .expand-button')
+      await page.waitForSelector('.tree-theme-edit:last-child .empty-state .link-button', { timeout: 5000 })
+      await page.click('.tree-theme-edit:last-child .empty-state .link-button')
+      await page.waitForSelector('.tree-theme-edit:last-child .objective-form', { timeout: 5000 })
+      await page.fill('.tree-theme-edit:last-child .objective-form input[type="text"]', 'E2E Objective')
+      await page.click('.tree-theme-edit:last-child .objective-form .btn-primary')
+      await page.waitForSelector('.tree-theme-edit:last-child .tree-objective-edit', { timeout: 5000 })
 
       // Verify files
       const themesAfterObj = readThemes(DATA_DIR)
@@ -180,12 +180,12 @@ export async function runTests() {
     // ---- 1c: Create key result ----
     reporter.startTest('Phase 1c: Create key result and verify files')
     try {
-      await page.hover('.theme-item:last-child .objective-item .objective-header')
-      await page.click('.theme-item:last-child .objective-item button[title="Add Key Result"]')
-      await page.waitForSelector('.theme-item:last-child .kr-form', { timeout: 5000 })
-      await page.fill('.theme-item:last-child .kr-form input[type="text"]', 'E2E Key Result')
-      await page.click('.theme-item:last-child .kr-form .btn-primary')
-      await page.waitForSelector('.theme-item:last-child .kr-item', { timeout: 5000 })
+      await page.hover('.tree-theme-edit:last-child .tree-objective-edit .objective-header')
+      await page.click('.tree-theme-edit:last-child .tree-objective-edit button[title="Add Key Result"]')
+      await page.waitForSelector('.tree-theme-edit:last-child .kr-form', { timeout: 5000 })
+      await page.fill('.tree-theme-edit:last-child .kr-form input[type="text"]', 'E2E Key Result')
+      await page.click('.tree-theme-edit:last-child .kr-form .btn-primary')
+      await page.waitForSelector('.tree-theme-edit:last-child .tree-kr-edit', { timeout: 5000 })
 
       // Verify files
       const themesAfterKR = readThemes(DATA_DIR)
@@ -218,8 +218,8 @@ export async function runTests() {
       await page.click('.day-num')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
-      // Select theme and add text
-      await page.selectOption('#theme-select', themeId)
+      // Select theme checkbox and add text
+      await page.click('.tree-theme-item:has-text("E2E Theme") input[type="checkbox"]')
       await page.fill('#text-input', 'E2E test day')
       await page.click('.dialog .btn-primary')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })

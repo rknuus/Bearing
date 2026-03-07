@@ -9,7 +9,7 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { Button, ErrorBanner, TagBadges, TagEditor } from '../lib/components';
+  import { Button, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError } from '../lib/utils/bindings';
@@ -424,12 +424,6 @@
     return !status || status === 'active';
   }
 
-  function shouldShow(status: string | undefined): boolean {
-    if (isActive(status)) return true;
-    if (status === 'completed') return showCompleted;
-    if (status === 'archived') return showArchived;
-    return true;
-  }
 
   // OKR Status changes
   async function setObjectiveStatus(objectiveId: string, status: string) {
@@ -622,191 +616,6 @@
   });
 </script>
 
-{#snippet objectiveNode(objective: Objective, themeColor: string, depth: number)}
-  {#if shouldShow(objective.status)}
-  <div class="objective-item" class:highlighted={highlightItemId === objective.id} class:okr-completed={!isActive(objective.status)} style="margin-left: {depth > 0 ? 0.5 : 0}rem;">
-    <!-- Objective Header -->
-    <div class="item-header objective-header">
-      <button
-        class="expand-button"
-        onclick={() => toggleExpanded(objective.id)}
-        aria-expanded={expandedIds.has(objective.id)}
-      >
-        <span class="expand-icon">{expandedIds.has(objective.id) ? '\u25BC' : '\u25B6'}</span>
-      </button>
-      <span class="objective-marker" style="background-color: {themeColor};"></span>
-
-      {#if editingObjectiveId === objective.id}
-        <div class="objective-edit-area">
-          <div class="objective-edit-row">
-            <input
-              type="text"
-              class="inline-edit"
-              bind:value={editObjectiveTitle}
-              onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(objective); if (e.key === 'Escape') cancelEdit(); }}
-            />
-            <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save">✅</Button>
-            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
-          </div>
-          <TagEditor
-            tags={editObjectiveTags}
-            {availableTags}
-            onTagsChange={(newTags) => { editObjectiveTags = newTags; }}
-          />
-        </div>
-      {:else}
-        <span class="item-name">{objective.title}</span>
-        <span class="item-id">{objective.id}</span>
-        <TagBadges tags={objective.tags} />
-        <div class="item-actions">
-          {#if isActive(objective.status)}
-            <Button variant="icon" color="complete" onclick={() => setObjectiveStatus(objective.id, 'completed')} title="Complete">✅</Button>
-          {:else if objective.status === 'completed'}
-            <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
-            <Button variant="icon" color="archive" onclick={() => setObjectiveStatus(objective.id, 'archived')} title="Archive">📦</Button>
-          {:else}
-            <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
-          {/if}
-          <Button variant="icon" color="edit" onclick={() => startEditObjective(objective)} title="Edit">✏️</Button>
-          <Button variant="icon" color="delete" onclick={() => deleteObjective(objective.id)} title="Delete">🗑️</Button>
-          <Button
-            variant="icon" color="add"
-            onclick={() => { addingObjectiveTo = objective.id; expandId(objective.id); }}
-            title="Add Child Objective"
-          >➕O</Button>
-          <Button
-            variant="icon" color="add"
-            onclick={() => { addingKeyResultToObjective = objective.id; expandId(objective.id); }}
-            title="Add Key Result"
-          >➕KR</Button>
-        </div>
-      {/if}
-    </div>
-
-    <!-- Children (expanded) -->
-    {#if expandedIds.has(objective.id)}
-      <div class="children-list" style="padding-left: 1.5rem;">
-        <!-- Add Child Objective Form -->
-        {#if addingObjectiveTo === objective.id}
-          <div class="new-item-form objective-form">
-            <input
-              type="text"
-              placeholder="Child objective title"
-              bind:value={newObjectiveTitle}
-              onkeydown={(e) => { if (e.key === 'Enter') createObjective(objective.id); if (e.key === 'Escape') { addingObjectiveTo = null; newObjectiveTitle = ''; } }}
-            />
-            <Button variant="primary" onclick={() => createObjective(objective.id)}>Create</Button>
-            <Button variant="secondary" onclick={() => { addingObjectiveTo = null; newObjectiveTitle = ''; }}>Cancel</Button>
-          </div>
-        {/if}
-
-        <!-- Child Objectives (recursive) -->
-        {#if objective.objectives && objective.objectives.length > 0}
-          {#each objective.objectives as childObjective (childObjective.id)}
-            {@render objectiveNode(childObjective, themeColor, depth + 1)}
-          {/each}
-        {/if}
-
-        <!-- Add Key Result Form -->
-        {#if addingKeyResultToObjective === objective.id}
-          <div class="new-item-form kr-form">
-            <input
-              type="text"
-              placeholder="Key result description"
-              bind:value={newKeyResultDescription}
-              onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
-            />
-            <div class="kr-form-row">
-              <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
-              <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
-              <Button variant="primary" onclick={() => createKeyResult(objective.id)}>Create</Button>
-              <Button variant="secondary" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultStartValue = 0; newKeyResultTargetValue = 0; }}>Cancel</Button>
-            </div>
-          </div>
-        {/if}
-
-        <!-- Key Results -->
-        {#each objective.keyResults as kr (kr.id)}
-          {#if shouldShow(kr.status)}
-          <div class="kr-item" class:highlighted={highlightItemId === kr.id} class:okr-completed={!isActive(kr.status)}>
-            <div class="item-header kr-header">
-              <span class="kr-marker" style="background-color: {themeColor};"></span>
-
-              {#if editingKeyResultId === kr.id}
-                <input
-                  type="text"
-                  class="inline-edit"
-                  bind:value={editKeyResultDescription}
-                  onkeydown={(e) => { if (e.key === 'Enter') submitEditKeyResult(kr); if (e.key === 'Escape') cancelEdit(); }}
-                />
-                <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={editKeyResultStartValue} min="0" /></label>
-                <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={editKeyResultTargetValue} min="0" /></label>
-                <Button variant="icon" color="save" onclick={() => submitEditKeyResult(kr)} title="Save">✅</Button>
-                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
-              {:else}
-                <span class="item-name">{kr.description}</span>
-                <span class="item-id">{kr.id}</span>
-                {#if (kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0}
-                  <input
-                    type="checkbox"
-                    class="kr-checkbox"
-                    checked={(kr.currentValue ?? 0) >= 1}
-                    onchange={() => updateKeyResultProgress(kr.id, (kr.currentValue ?? 0) >= 1 ? 0 : 1)}
-                    title="Toggle completion"
-                  />
-                {:else if (kr.targetValue ?? 0) > 1}
-                  {@const start = kr.startValue ?? 0}
-                  {@const current = kr.currentValue ?? 0}
-                  {@const target = kr.targetValue ?? 1}
-                  {@const pct = Math.max(0, Math.round(((current - start) / (target - start)) * 100))}
-                  <div class="kr-progress" title="{current} / {target} ({pct}%)">
-                    <div class="kr-progress-bar" class:over-achieved={current > target} style="width: {Math.min(pct, 100)}%"></div>
-                    {#if current > target}
-                      <div class="kr-progress-bar kr-progress-over" style="width: {Math.min(pct - 100, 100)}%"></div>
-                    {/if}
-                  </div>
-                  <input
-                    type="number"
-                    class="kr-current-input"
-                    value={current}
-                    min="0"
-                    onchange={(e) => updateKeyResultProgress(kr.id, parseInt((e.target as HTMLInputElement).value) || 0)}
-                    title="Current progress"
-                  />
-                  <span class="kr-target-label">/ {target}</span>
-                {/if}
-                <div class="item-actions">
-                  {#if isActive(kr.status)}
-                    <Button variant="icon" color="complete" onclick={() => setKeyResultStatus(kr.id, 'completed')} title="Complete">✅</Button>
-                  {:else if kr.status === 'completed'}
-                    <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">🔄</Button>
-                    <Button variant="icon" color="archive" onclick={() => setKeyResultStatus(kr.id, 'archived')} title="Archive">📦</Button>
-                  {:else}
-                    <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">🔄</Button>
-                  {/if}
-                  <Button variant="icon" color="edit" onclick={() => startEditKeyResult(kr)} title="Edit">✏️</Button>
-                  <Button variant="icon" color="delete" onclick={() => deleteKeyResult(kr.id)} title="Delete">🗑️</Button>
-                </div>
-              {/if}
-            </div>
-          </div>
-          {/if}
-        {/each}
-
-        {#if (!objective.objectives || objective.objectives.length === 0) && objective.keyResults.length === 0 && addingKeyResultToObjective !== objective.id && addingObjectiveTo !== objective.id}
-          <div class="empty-state">
-            No children yet.
-            <button class="link-button" onclick={() => { addingObjectiveTo = objective.id; }}>Add objective</button>
-            or
-            <button class="link-button" onclick={() => { addingKeyResultToObjective = objective.id; }}>Add key result</button>
-          </div>
-        {/if}
-      </div>
-    {/if}
-  </div>
-  {/if}
-{/snippet}
-
 <div class="okr-view">
   <header class="okr-header">
     <h1>Life Themes & OKRs</h1>
@@ -877,119 +686,278 @@
     {/if}
 
     <!-- Themes List -->
-    <div class="themes-list">
-      {#each filteredThemes as theme (theme.id)}
-        <div class="theme-item" class:highlighted={highlightItemId === theme.id} style="--theme-color: {theme.color};">
-          <!-- Theme Header -->
-          <div class="item-header theme-header">
-            <button
-              class="expand-button"
-              onclick={() => toggleExpanded(theme.id)}
-              aria-expanded={expandedIds.has(theme.id)}
-            >
-              <span class="expand-icon">{expandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
-            </button>
-            <ThemeBadge color={theme.color} size="md" />
+    <ThemeOKRTree
+      themes={filteredThemes}
+      mode="edit"
+      {expandedIds}
+      {showCompleted}
+      {showArchived}
+      {highlightItemId}
+    >
+      {#snippet themeHeader(theme: LifeTheme)}
+        <div class="item-header theme-header">
+          <button
+            class="expand-button"
+            onclick={() => toggleExpanded(theme.id)}
+            aria-expanded={expandedIds.has(theme.id)}
+          >
+            <span class="expand-icon">{expandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
+          </button>
+          <ThemeBadge color={theme.color} size="md" />
 
-            {#if editingThemeId === theme.id}
-              <input
-                type="text"
-                class="inline-edit"
-                bind:value={editThemeName}
-                onkeydown={(e) => { if (e.key === 'Enter') submitEditTheme(theme); if (e.key === 'Escape') cancelEdit(); }}
-              />
-              <div class="color-picker inline">
-                {#each COLOR_PALETTE as color (color)}
-                  <button
-                    class="color-option small"
-                    class:selected={editThemeColor === color}
-                    style="background-color: {color};"
-                    onclick={() => { editThemeColor = color; }}
-                    aria-label="Select color {color}"
-                  ></button>
-                {/each}
-                <label class="color-input-wrapper small">
-                  <span class="color-input-icon">➕</span>
-                  <input type="color" class="color-input" bind:value={editThemeColor} aria-label="Custom color" />
-                </label>
-              </div>
-              {@const editConflicts = getColorConflicts(editThemeColor, theme.id)}
-              {#if editConflicts.length > 0}
-                <div class="color-warning">Already used by: {editConflicts.join(', ')}</div>
-              {/if}
-              <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save">✅</Button>
-              <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
-            {:else}
-              <span class="item-name">{theme.name}</span>
-              <span class="item-id">{theme.id}</span>
-              <div class="item-actions">
-                {#if onNavigateToCalendar}
-                  <Button
-                    variant="icon" color="nav"
-                    onclick={() => onNavigateToCalendar?.(undefined, theme.id)}
-                    title="View in Calendar"
-                  >📅</Button>
-                {/if}
-                {#if onNavigateToTasks}
-                  <Button
-                    variant="icon" color="nav"
-                    onclick={() => onNavigateToTasks?.({ themeId: theme.id })}
-                    title="View Tasks"
-                  >📋</Button>
-                {/if}
-                <Button variant="icon" color="edit" onclick={() => startEditTheme(theme)} title="Edit">✏️</Button>
-                <Button variant="icon" color="delete" onclick={() => deleteTheme(theme.id)} title="Delete">🗑️</Button>
-                <Button
-                  variant="icon" color="add"
-                  onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
-                  title="Add Objective"
-                >➕</Button>
-              </div>
-            {/if}
-          </div>
-
-          <!-- Objectives (expanded) -->
-          {#if expandedIds.has(theme.id)}
-            <div class="objectives-list">
-              <!-- Add Objective Form -->
-              {#if addingObjectiveTo === theme.id}
-                <div class="new-item-form objective-form">
-                  <input
-                    type="text"
-                    placeholder="Objective title"
-                    bind:value={newObjectiveTitle}
-                    onkeydown={(e) => { if (e.key === 'Enter') createObjective(theme.id); if (e.key === 'Escape') { addingObjectiveTo = null; newObjectiveTitle = ''; } }}
-                  />
-                  <Button variant="primary" onclick={() => createObjective(theme.id)}>Create</Button>
-                  <Button variant="secondary" onclick={() => { addingObjectiveTo = null; newObjectiveTitle = ''; }}>Cancel</Button>
-                </div>
-              {/if}
-
-              {#each theme.objectives as objective (objective.id)}
-                {@render objectiveNode(objective, theme.color, 0)}
+          {#if editingThemeId === theme.id}
+            <input
+              type="text"
+              class="inline-edit"
+              bind:value={editThemeName}
+              onkeydown={(e) => { if (e.key === 'Enter') submitEditTheme(theme); if (e.key === 'Escape') cancelEdit(); }}
+            />
+            <div class="color-picker inline">
+              {#each COLOR_PALETTE as color (color)}
+                <button
+                  class="color-option small"
+                  class:selected={editThemeColor === color}
+                  style="background-color: {color};"
+                  onclick={() => { editThemeColor = color; }}
+                  aria-label="Select color {color}"
+                ></button>
               {/each}
-
-              {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
-                <div class="empty-state">
-                  No objectives yet.
-                  <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add one</button>
-                </div>
+              <label class="color-input-wrapper small">
+                <span class="color-input-icon">➕</span>
+                <input type="color" class="color-input" bind:value={editThemeColor} aria-label="Custom color" />
+              </label>
+            </div>
+            {@const editConflicts = getColorConflicts(editThemeColor, theme.id)}
+            {#if editConflicts.length > 0}
+              <div class="color-warning">Already used by: {editConflicts.join(', ')}</div>
+            {/if}
+            <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save">✅</Button>
+            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+          {:else}
+            <span class="item-name">{theme.name}</span>
+            <span class="item-id">{theme.id}</span>
+            <div class="item-actions">
+              {#if onNavigateToCalendar}
+                <Button
+                  variant="icon" color="nav"
+                  onclick={() => onNavigateToCalendar?.(undefined, theme.id)}
+                  title="View in Calendar"
+                >📅</Button>
               {/if}
+              {#if onNavigateToTasks}
+                <Button
+                  variant="icon" color="nav"
+                  onclick={() => onNavigateToTasks?.({ themeId: theme.id })}
+                  title="View Tasks"
+                >📋</Button>
+              {/if}
+              <Button variant="icon" color="edit" onclick={() => startEditTheme(theme)} title="Edit">✏️</Button>
+              <Button variant="icon" color="delete" onclick={() => deleteTheme(theme.id)} title="Delete">🗑️</Button>
+              <Button
+                variant="icon" color="add"
+                onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
+                title="Add Objective"
+              >➕</Button>
             </div>
           {/if}
         </div>
-      {/each}
+      {/snippet}
 
-      {#if themes.length === 0 && !showNewThemeForm}
-        <div class="empty-state large">
-          <p>No life themes defined yet.</p>
-          <p>Create your first theme to start organizing your goals!</p>
-          <Button variant="primary" onclick={() => { showNewThemeForm = true; }}>
-            + Add Your First Theme
-          </Button>
+      {#snippet themeExtra(theme: LifeTheme)}
+        {#if addingObjectiveTo === theme.id}
+          <div class="new-item-form objective-form">
+            <input
+              type="text"
+              placeholder="Objective title"
+              bind:value={newObjectiveTitle}
+              onkeydown={(e) => { if (e.key === 'Enter') createObjective(theme.id); if (e.key === 'Escape') { addingObjectiveTo = null; newObjectiveTitle = ''; } }}
+            />
+            <Button variant="primary" onclick={() => createObjective(theme.id)}>Create</Button>
+            <Button variant="secondary" onclick={() => { addingObjectiveTo = null; newObjectiveTitle = ''; }}>Cancel</Button>
+          </div>
+        {/if}
+
+        {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
+          <div class="empty-state">
+            No objectives yet.
+            <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add one</button>
+          </div>
+        {/if}
+      {/snippet}
+
+      {#snippet objectiveHeader(objective: Objective, themeColor: string)}
+        <div class="item-header objective-header" class:okr-completed={!isActive(objective.status)}>
+          <button
+            class="expand-button"
+            onclick={() => toggleExpanded(objective.id)}
+            aria-expanded={expandedIds.has(objective.id)}
+          >
+            <span class="expand-icon">{expandedIds.has(objective.id) ? '\u25BC' : '\u25B6'}</span>
+          </button>
+          <span class="objective-marker" style="background-color: {themeColor};"></span>
+
+          {#if editingObjectiveId === objective.id}
+            <div class="objective-edit-area">
+              <div class="objective-edit-row">
+                <input
+                  type="text"
+                  class="inline-edit"
+                  bind:value={editObjectiveTitle}
+                  onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(objective); if (e.key === 'Escape') cancelEdit(); }}
+                />
+                <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save">✅</Button>
+                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+              </div>
+              <TagEditor
+                tags={editObjectiveTags}
+                {availableTags}
+                onTagsChange={(newTags) => { editObjectiveTags = newTags; }}
+              />
+            </div>
+          {:else}
+            <span class="item-name">{objective.title}</span>
+            <span class="item-id">{objective.id}</span>
+            <TagBadges tags={objective.tags} />
+            <div class="item-actions">
+              {#if isActive(objective.status)}
+                <Button variant="icon" color="complete" onclick={() => setObjectiveStatus(objective.id, 'completed')} title="Complete">✅</Button>
+              {:else if objective.status === 'completed'}
+                <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
+                <Button variant="icon" color="archive" onclick={() => setObjectiveStatus(objective.id, 'archived')} title="Archive">📦</Button>
+              {:else}
+                <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
+              {/if}
+              <Button variant="icon" color="edit" onclick={() => startEditObjective(objective)} title="Edit">✏️</Button>
+              <Button variant="icon" color="delete" onclick={() => deleteObjective(objective.id)} title="Delete">🗑️</Button>
+              <Button
+                variant="icon" color="add"
+                onclick={() => { addingObjectiveTo = objective.id; expandId(objective.id); }}
+                title="Add Child Objective"
+              >➕O</Button>
+              <Button
+                variant="icon" color="add"
+                onclick={() => { addingKeyResultToObjective = objective.id; expandId(objective.id); }}
+                title="Add Key Result"
+              >➕KR</Button>
+            </div>
+          {/if}
         </div>
-      {/if}
-    </div>
+      {/snippet}
+
+      {#snippet objectiveExtra(objective: Objective)}
+        {#if addingObjectiveTo === objective.id}
+          <div class="new-item-form objective-form">
+            <input
+              type="text"
+              placeholder="Child objective title"
+              bind:value={newObjectiveTitle}
+              onkeydown={(e) => { if (e.key === 'Enter') createObjective(objective.id); if (e.key === 'Escape') { addingObjectiveTo = null; newObjectiveTitle = ''; } }}
+            />
+            <Button variant="primary" onclick={() => createObjective(objective.id)}>Create</Button>
+            <Button variant="secondary" onclick={() => { addingObjectiveTo = null; newObjectiveTitle = ''; }}>Cancel</Button>
+          </div>
+        {/if}
+
+        {#if addingKeyResultToObjective === objective.id}
+          <div class="new-item-form kr-form">
+            <input
+              type="text"
+              placeholder="Key result description"
+              bind:value={newKeyResultDescription}
+              onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
+            />
+            <div class="kr-form-row">
+              <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
+              <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
+              <Button variant="primary" onclick={() => createKeyResult(objective.id)}>Create</Button>
+              <Button variant="secondary" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultStartValue = 0; newKeyResultTargetValue = 0; }}>Cancel</Button>
+            </div>
+          </div>
+        {/if}
+
+        {#if (!objective.objectives || objective.objectives.length === 0) && objective.keyResults.length === 0 && addingKeyResultToObjective !== objective.id && addingObjectiveTo !== objective.id}
+          <div class="empty-state">
+            No children yet.
+            <button class="link-button" onclick={() => { addingObjectiveTo = objective.id; }}>Add objective</button>
+            or
+            <button class="link-button" onclick={() => { addingKeyResultToObjective = objective.id; }}>Add key result</button>
+          </div>
+        {/if}
+      {/snippet}
+
+      {#snippet keyResultItem(kr: KeyResult, themeColor: string)}
+        <div class="item-header kr-header" class:okr-completed={!isActive(kr.status)}>
+          <span class="kr-marker" style="background-color: {themeColor};"></span>
+
+          {#if editingKeyResultId === kr.id}
+            <input
+              type="text"
+              class="inline-edit"
+              bind:value={editKeyResultDescription}
+              onkeydown={(e) => { if (e.key === 'Enter') submitEditKeyResult(kr); if (e.key === 'Escape') cancelEdit(); }}
+            />
+            <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={editKeyResultStartValue} min="0" /></label>
+            <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={editKeyResultTargetValue} min="0" /></label>
+            <Button variant="icon" color="save" onclick={() => submitEditKeyResult(kr)} title="Save">✅</Button>
+            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+          {:else}
+            <span class="item-name">{kr.description}</span>
+            <span class="item-id">{kr.id}</span>
+            {#if (kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0}
+              <input
+                type="checkbox"
+                class="kr-checkbox"
+                checked={(kr.currentValue ?? 0) >= 1}
+                onchange={() => updateKeyResultProgress(kr.id, (kr.currentValue ?? 0) >= 1 ? 0 : 1)}
+                title="Toggle completion"
+              />
+            {:else if (kr.targetValue ?? 0) > 1}
+              {@const start = kr.startValue ?? 0}
+              {@const current = kr.currentValue ?? 0}
+              {@const target = kr.targetValue ?? 1}
+              {@const pct = Math.max(0, Math.round(((current - start) / (target - start)) * 100))}
+              <div class="kr-progress" title="{current} / {target} ({pct}%)">
+                <div class="kr-progress-bar" class:over-achieved={current > target} style="width: {Math.min(pct, 100)}%"></div>
+                {#if current > target}
+                  <div class="kr-progress-bar kr-progress-over" style="width: {Math.min(pct - 100, 100)}%"></div>
+                {/if}
+              </div>
+              <input
+                type="number"
+                class="kr-current-input"
+                value={current}
+                min="0"
+                onchange={(e) => updateKeyResultProgress(kr.id, parseInt((e.target as HTMLInputElement).value) || 0)}
+                title="Current progress"
+              />
+              <span class="kr-target-label">/ {target}</span>
+            {/if}
+            <div class="item-actions">
+              {#if isActive(kr.status)}
+                <Button variant="icon" color="complete" onclick={() => setKeyResultStatus(kr.id, 'completed')} title="Complete">✅</Button>
+              {:else if kr.status === 'completed'}
+                <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">🔄</Button>
+                <Button variant="icon" color="archive" onclick={() => setKeyResultStatus(kr.id, 'archived')} title="Archive">📦</Button>
+              {:else}
+                <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">🔄</Button>
+              {/if}
+              <Button variant="icon" color="edit" onclick={() => startEditKeyResult(kr)} title="Edit">✏️</Button>
+              <Button variant="icon" color="delete" onclick={() => deleteKeyResult(kr.id)} title="Delete">🗑️</Button>
+            </div>
+          {/if}
+        </div>
+      {/snippet}
+    </ThemeOKRTree>
+
+    {#if themes.length === 0 && !showNewThemeForm}
+      <div class="empty-state large">
+        <p>No life themes defined yet.</p>
+        <p>Create your first theme to start organizing your goals!</p>
+        <Button variant="primary" onclick={() => { showNewThemeForm = true; }}>
+          + Add Your First Theme
+        </Button>
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -1041,36 +1009,6 @@
     text-align: center;
     padding: 2rem;
     color: var(--color-gray-500);
-  }
-
-  .themes-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .theme-item {
-    background: white;
-    border: 1px solid var(--color-gray-200);
-    border-radius: 8px;
-    overflow: hidden;
-    border-left: 4px solid var(--theme-color);
-  }
-
-  .theme-item.highlighted,
-  .objective-item.highlighted,
-  .kr-item.highlighted {
-    background-color: var(--color-warning-100);
-    animation: highlight-pulse 2s ease-out;
-  }
-
-  @keyframes highlight-pulse {
-    0% {
-      background-color: #fde68a;
-    }
-    100% {
-      background-color: var(--color-warning-100);
-    }
   }
 
   .item-header {
@@ -1132,16 +1070,6 @@
     opacity: 0.5;
   }
 
-  .objectives-list {
-    padding-left: 2rem;
-    padding-bottom: 0.5rem;
-  }
-
-  .objective-item {
-    border-left: 2px solid var(--color-gray-200);
-    margin-left: 0.5rem;
-  }
-
   .objective-header {
     background-color: #fafafa;
   }
@@ -1151,15 +1079,6 @@
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
-  }
-
-  .children-list {
-    padding-bottom: 0.5rem;
-  }
-
-  .kr-item {
-    border-left: 1px dashed var(--color-gray-300);
-    margin-left: 0.5rem;
   }
 
   .kr-header {

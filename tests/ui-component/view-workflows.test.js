@@ -60,7 +60,7 @@ export async function runTests() {
       }
 
       // Verify at least one theme is rendered from mock data
-      const themeItems = await page.$$('.theme-item')
+      const themeItems = await page.$$('.tree-theme-edit')
       if (themeItems.length === 0) {
         throw new Error('Expected at least one theme item from mock data')
       }
@@ -93,11 +93,11 @@ export async function runTests() {
       await page.click('.day-num')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
-      // Verify dialog has theme select and text input
-      const themeSelect = await page.$('#theme-select')
+      // Verify dialog has theme tree and text input
+      const themeTree = await page.$('.theme-okr-tree')
       const textInput = await page.$('#text-input')
-      if (!themeSelect || !textInput) {
-        throw new Error('Day editor dialog missing theme select or text input')
+      if (!themeTree || !textInput) {
+        throw new Error('Day editor dialog missing theme tree or text input')
       }
 
       // Cancel the dialog
