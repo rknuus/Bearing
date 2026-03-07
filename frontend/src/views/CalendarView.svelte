@@ -618,7 +618,7 @@
 
   {#snippet okrNode(objective: Objective, themeColor: string, depth: number)}
     {#if objective.status !== 'archived'}
-      <label class="okr-item" style="padding-left: {depth}rem;">
+      <label class="okr-item" style="padding-left: {depth * 2}rem;">
         <input
           type="checkbox"
           checked={editOkrIds.includes(objective.id)}
@@ -629,7 +629,7 @@
       </label>
       {#each objective.keyResults as kr (kr.id)}
         {#if kr.status !== 'archived'}
-          <label class="okr-item" style="padding-left: {depth + 1}rem;">
+          <label class="okr-item" style="padding-left: {(depth + 1) * 2}rem;">
             <input
               type="checkbox"
               checked={editOkrIds.includes(kr.id)}
