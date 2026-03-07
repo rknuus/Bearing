@@ -11,7 +11,7 @@
   import { onMount, onDestroy, untrack } from 'svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
-  import { Dialog, Button, ErrorBanner } from '../lib/components';
+  import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
@@ -45,7 +45,7 @@
   });
   let newTaskTitle = $state('');
   let newTaskDescription = $state('');
-  let newTaskTags = $state('');
+  let newTaskTags = $state<string[]>([]);
   let selectedThemeId = $state('');
   let isSubmitting = $state(false);
   let error = $state<string | null>(null);
@@ -143,7 +143,7 @@
       untrack(() => {
         newTaskTitle = '';
         newTaskDescription = '';
-        newTaskTags = '';
+        newTaskTags = [];
         isSubmitting = false;
         error = null;
         if (themes.length > 0) {
@@ -182,7 +182,7 @@
       title,
       themeId: selectedThemeId,
       description: newTaskDescription.trim() || undefined,
-      tags: newTaskTags.trim() || undefined,
+      tags: newTaskTags.length > 0 ? newTaskTags.join(', ') : undefined,
     };
     nextId++;
     tasksByQuadrant = {
@@ -191,7 +191,7 @@
     };
     newTaskTitle = '';
     newTaskDescription = '';
-    newTaskTags = '';
+    newTaskTags = [];
   }
 
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
@@ -277,12 +277,19 @@
         bind:title={newTaskTitle}
         bind:themeId={selectedThemeId}
         bind:description={newTaskDescription}
-        bind:tags={newTaskTags}
         {themes}
-        {availableTags}
         disabled={isSubmitting}
         idPrefix="new-task"
       />
+      <div class="form-group">
+        <label for="new-task-tags">Tags</label>
+        <TagEditor
+          tags={newTaskTags}
+          {availableTags}
+          onTagsChange={(t) => newTaskTags = t}
+          placeholder="Add tag..."
+        />
+      </div>
       <button
         type="button"
         class="btn-add"
@@ -411,6 +418,18 @@
     background-color: var(--color-warning-100);
     border: 1px solid var(--color-warning-400);
     border-radius: 4px;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+    margin-bottom: 0.375rem;
   }
 
   .actions-left {
