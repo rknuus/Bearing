@@ -1488,6 +1488,7 @@
     color: white;
   }
 
+  /* !important needed to override inline min-height set by svelte-dnd-action */
   .collapsed-section {
     height: 0 !important;
     min-height: 0 !important;
