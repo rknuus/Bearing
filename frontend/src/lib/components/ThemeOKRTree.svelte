@@ -6,8 +6,16 @@
    * Supports two modes:
    * - 'select': Checkboxes for theme and OKR selection (used in CalendarView)
    * - 'edit': CRUD actions for theme/objective/KR management (used in OKRView)
+   *
+   * In edit mode, content rendering is delegated to parent via snippet props:
+   * - themeHeader: Theme header content (expand button, badge, name/edit, actions)
+   * - themeExtra: Extra content in expanded theme (add objective form, empty state)
+   * - objectiveHeader: Objective header content (expand button, marker, title/edit, actions)
+   * - objectiveExtra: Extra content in expanded objective (forms, empty state)
+   * - keyResultItem: Key result content (marker, description/edit, progress, actions)
    */
 
+  import type { Snippet } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import type { LifeTheme, Objective, KeyResult } from '../../lib/wails-mock';
   import ThemeBadge from './ThemeBadge.svelte';
@@ -21,6 +29,17 @@
     selectedOkrIds?: string[];
     onThemeSelectionChange?: (themeIds: string[]) => void;
     onOkrSelectionChange?: (okrIds: string[]) => void;
+
+    // Edit mode
+    expandedIds?: SvelteSet<string>;
+    showCompleted?: boolean;
+    showArchived?: boolean;
+    highlightItemId?: string;
+    themeHeader?: Snippet<[LifeTheme]>;
+    themeExtra?: Snippet<[LifeTheme]>;
+    objectiveHeader?: Snippet<[Objective, string]>;
+    objectiveExtra?: Snippet<[Objective]>;
+    keyResultItem?: Snippet<[KeyResult, string]>;
   }
 
   let {
@@ -30,15 +49,19 @@
     selectedOkrIds = [],
     onThemeSelectionChange,
     onOkrSelectionChange,
+    expandedIds,
+    showCompleted = false,
+    showArchived = false,
+    highlightItemId,
+    themeHeader,
+    themeExtra,
+    objectiveHeader,
+    objectiveExtra,
+    keyResultItem,
   }: Props = $props();
 
-  // Internal expand/collapse state
-  let expandedIds = new SvelteSet<string>();
-
-  function toggleExpanded(id: string) {
-    if (expandedIds.has(id)) expandedIds.delete(id);
-    else expandedIds.add(id);
-  }
+  // Internal expand/collapse state (select mode only)
+  let selectExpandedIds = new SvelteSet<string>();
 
   // --- Select mode helpers ---
 
@@ -65,16 +88,15 @@
 
     if (isSelected) {
       newThemeIds = selectedThemeIds.filter(id => id !== themeId);
-      // Clear OKR selections for this theme
       const theme = themes.find(t => t.id === themeId);
       if (theme) {
         const themeOkrIds = new Set(collectOkrIds(theme));
         newOkrIds = newOkrIds.filter(id => !themeOkrIds.has(id));
       }
-      expandedIds.delete(themeId);
+      selectExpandedIds.delete(themeId);
     } else {
       newThemeIds = [...selectedThemeIds, themeId];
-      expandedIds.add(themeId);
+      selectExpandedIds.add(themeId);
     }
 
     onThemeSelectionChange?.(newThemeIds);
@@ -90,13 +112,26 @@
       : [...selectedOkrIds, id];
     onOkrSelectionChange?.(newOkrIds);
   }
+
+  // --- Edit mode helpers ---
+
+  function isActiveStatus(status: string | undefined): boolean {
+    return !status || status === 'active';
+  }
+
+  function shouldShowStatus(status: string | undefined): boolean {
+    if (isActiveStatus(status)) return true;
+    if (status === 'completed') return showCompleted;
+    if (status === 'archived') return showArchived;
+    return true;
+  }
 </script>
 
-<div class="theme-okr-tree">
+<div class="theme-okr-tree" class:tree-edit={mode === 'edit'}>
   {#each themes as theme (theme.id)}
-    <div class="tree-theme-item" style="--tree-theme-color: {theme.color};">
-      <div class="tree-item-header tree-theme-header">
-        {#if mode === 'select'}
+    {#if mode === 'select'}
+      <div class="tree-theme-item" style="--tree-theme-color: {theme.color};">
+        <div class="tree-item-header tree-theme-header">
           <label class="tree-checkbox-label">
             <input
               type="checkbox"
@@ -106,103 +141,140 @@
             <ThemeBadge color={theme.color} size="sm" />
             <span class="tree-item-name">{theme.name}</span>
           </label>
-        {:else}
-          <button
-            class="tree-expand-button"
-            onclick={() => toggleExpanded(theme.id)}
-            aria-expanded={expandedIds.has(theme.id)}
-          >
-            <span class="tree-expand-icon">{expandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
-          </button>
-          <ThemeBadge color={theme.color} size="sm" />
-          <span class="tree-item-name">{theme.name}</span>
+        </div>
+
+        {#if selectedThemeIds.includes(theme.id)}
+          <div class="tree-children">
+            {#each theme.objectives as objective (objective.id)}
+              {@render selectObjectiveNode(objective, theme.color, 0)}
+            {/each}
+          </div>
         {/if}
       </div>
+    {:else}
+      <div class="tree-theme-item tree-theme-edit"
+        class:tree-highlighted={highlightItemId === theme.id}
+        style="--tree-theme-color: {theme.color};">
+        {#if themeHeader}
+          {@render themeHeader(theme)}
+        {/if}
 
-      {#if (mode === 'select' && selectedThemeIds.includes(theme.id)) || (mode === 'edit' && expandedIds.has(theme.id))}
-        <div class="tree-children">
-          {#each theme.objectives as objective (objective.id)}
-            {@render objectiveNode(objective, theme.color, 0)}
-          {/each}
-        </div>
-      {/if}
-    </div>
+        {#if expandedIds?.has(theme.id)}
+          <div class="tree-children tree-children-edit">
+            {#if themeExtra}
+              {@render themeExtra(theme)}
+            {/if}
+            {#each theme.objectives as objective (objective.id)}
+              {@render editObjectiveNode(objective, theme.color, 0)}
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
   {/each}
 </div>
 
-{#snippet objectiveNode(objective: Objective, themeColor: string, depth: number)}
+{#snippet selectObjectiveNode(objective: Objective, themeColor: string, depth: number)}
   {#if objective.status !== 'archived'}
     <div class="tree-objective-item" style="padding-left: {depth * 1.5}rem;">
       <div class="tree-item-header">
-        {#if mode === 'select'}
-          <label class="tree-checkbox-label">
-            <input
-              type="checkbox"
-              checked={selectedOkrIds.includes(objective.id)}
-              onchange={() => handleOkrToggle(objective.id)}
-            />
-            <span class="tree-marker tree-marker-obj" style="background-color: {themeColor};"></span>
-            <span class="tree-item-name">{objective.title}</span>
-          </label>
-        {:else}
-          <button
-            class="tree-expand-button"
-            onclick={() => toggleExpanded(objective.id)}
-            aria-expanded={expandedIds.has(objective.id)}
-          >
-            <span class="tree-expand-icon">{expandedIds.has(objective.id) ? '\u25BC' : '\u25B6'}</span>
-          </button>
+        <label class="tree-checkbox-label">
+          <input
+            type="checkbox"
+            checked={selectedOkrIds.includes(objective.id)}
+            onchange={() => handleOkrToggle(objective.id)}
+          />
           <span class="tree-marker tree-marker-obj" style="background-color: {themeColor};"></span>
           <span class="tree-item-name">{objective.title}</span>
+        </label>
+      </div>
+      <div class="tree-children">
+        {#each objective.keyResults as kr (kr.id)}
+          {@render selectKeyResultNode(kr, themeColor, depth)}
+        {/each}
+        {#if objective.objectives}
+          {#each objective.objectives as child (child.id)}
+            {@render selectObjectiveNode(child, themeColor, depth + 1)}
+          {/each}
         {/if}
       </div>
-
-      {#if mode === 'select' || expandedIds.has(objective.id)}
-        <div class="tree-children" style="padding-left: {mode === 'select' ? 0 : 1.5}rem;">
-          {#each objective.keyResults as kr (kr.id)}
-            {@render keyResultNode(kr, themeColor, depth)}
-          {/each}
-          {#if objective.objectives}
-            {#each objective.objectives as child (child.id)}
-              {@render objectiveNode(child, themeColor, depth + 1)}
-            {/each}
-          {/if}
-        </div>
-      {/if}
     </div>
   {/if}
 {/snippet}
 
-{#snippet keyResultNode(kr: KeyResult, themeColor: string, depth: number)}
+{#snippet selectKeyResultNode(kr: KeyResult, themeColor: string, depth: number)}
   {#if kr.status !== 'archived'}
-    <div class="tree-kr-item" style="padding-left: {mode === 'select' ? (depth + 1) * 1.5 : 0}rem;">
+    <div class="tree-kr-item" style="padding-left: {(depth + 1) * 1.5}rem;">
       <div class="tree-item-header">
-        {#if mode === 'select'}
-          <label class="tree-checkbox-label">
-            <input
-              type="checkbox"
-              checked={selectedOkrIds.includes(kr.id)}
-              onchange={() => handleOkrToggle(kr.id)}
-            />
-            <span class="tree-marker tree-marker-kr" style="background-color: {themeColor};"></span>
-            <span class="tree-item-name">{kr.description}</span>
-          </label>
-        {:else}
+        <label class="tree-checkbox-label">
+          <input
+            type="checkbox"
+            checked={selectedOkrIds.includes(kr.id)}
+            onchange={() => handleOkrToggle(kr.id)}
+          />
           <span class="tree-marker tree-marker-kr" style="background-color: {themeColor};"></span>
           <span class="tree-item-name">{kr.description}</span>
-        {/if}
+        </label>
       </div>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet editObjectiveNode(objective: Objective, themeColor: string, depth: number)}
+  {#if shouldShowStatus(objective.status)}
+    <div class="tree-objective-item tree-objective-edit"
+      class:tree-highlighted={highlightItemId === objective.id}
+      style="margin-left: {depth > 0 ? 0.5 : 0}rem;">
+      {#if objectiveHeader}
+        {@render objectiveHeader(objective, themeColor)}
+      {/if}
+
+      {#if expandedIds?.has(objective.id)}
+        <div class="tree-children tree-children-edit" style="padding-left: 1.5rem;">
+          {#if objectiveExtra}
+            {@render objectiveExtra(objective)}
+          {/if}
+
+          {#if objective.objectives && objective.objectives.length > 0}
+            {#each objective.objectives as child (child.id)}
+              {@render editObjectiveNode(child, themeColor, depth + 1)}
+            {/each}
+          {/if}
+
+          {#each objective.keyResults as kr (kr.id)}
+            {#if shouldShowStatus(kr.status)}
+              <div class="tree-kr-item tree-kr-edit"
+                class:tree-highlighted={highlightItemId === kr.id}>
+                {#if keyResultItem}
+                  {@render keyResultItem(kr, themeColor)}
+                {/if}
+              </div>
+            {/if}
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 {/snippet}
 
 <style>
+  /* Base */
   .theme-okr-tree {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
   }
 
+  .theme-okr-tree.tree-edit {
+    gap: 0.5rem;
+  }
+
+  .tree-children {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Select mode */
   .tree-theme-item {
     border-left: 3px solid var(--tree-theme-color, var(--color-gray-300));
     padding-left: 0.5rem;
@@ -232,25 +304,6 @@
     font-size: 0.875rem;
   }
 
-  .tree-expand-button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-  }
-
-  .tree-expand-icon {
-    font-size: 0.625rem;
-    color: var(--color-gray-500);
-  }
-
-  .tree-children {
-    display: flex;
-    flex-direction: column;
-  }
-
   .tree-marker {
     border-radius: 50%;
     flex-shrink: 0;
@@ -265,5 +318,44 @@
     width: 6px;
     height: 6px;
     opacity: 0.6;
+  }
+
+  /* Edit mode containers */
+  .tree-theme-edit {
+    background: white;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    overflow: hidden;
+    border-left: 4px solid var(--tree-theme-color);
+    padding-left: 0;
+  }
+
+  .tree-children-edit {
+    padding-left: 2rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .tree-objective-edit {
+    border-left: 2px solid var(--color-gray-200);
+    margin-left: 0.5rem;
+  }
+
+  .tree-kr-edit {
+    border-left: 1px dashed var(--color-gray-300);
+    margin-left: 0.5rem;
+  }
+
+  .tree-highlighted {
+    background-color: var(--color-warning-100);
+    animation: tree-highlight-pulse 2s ease-out;
+  }
+
+  @keyframes tree-highlight-pulse {
+    0% {
+      background-color: #fde68a;
+    }
+    100% {
+      background-color: var(--color-warning-100);
+    }
   }
 </style>

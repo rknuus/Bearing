@@ -98,7 +98,7 @@ describe('OKRView', () => {
     const header = container.querySelector('.okr-header h1');
     expect(header?.textContent).toBe('Life Themes & OKRs');
 
-    const themeName = container.querySelector('.theme-item .item-name');
+    const themeName = container.querySelector('.tree-theme-item .item-name');
     expect(themeName?.textContent).toBe('Test Theme');
   });
 
@@ -132,7 +132,7 @@ describe('OKRView', () => {
     await expandThemeAndObjective();
 
     // Find the KR items and check the untracked one (third KR)
-    const krItems = container.querySelectorAll('.kr-item');
+    const krItems = container.querySelectorAll('.tree-kr-item');
     expect(krItems.length).toBe(3);
 
     const untrackedKR = krItems[2];
@@ -146,7 +146,7 @@ describe('OKRView', () => {
     await expandThemeAndObjective();
 
     // Click "+KR" button on the objective to open creation form
-    const addKRButton = container.querySelector<HTMLButtonElement>('.objective-item .btn-icon.icon-add[title="Add Key Result"]');
+    const addKRButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-add[title="Add Key Result"]');
     expect(addKRButton).toBeTruthy();
     addKRButton!.click();
     await tick();
@@ -169,7 +169,7 @@ describe('OKRView', () => {
     await expandThemeAndObjective();
 
     // Click edit button on the numeric KR (second KR item)
-    const krItems = container.querySelectorAll('.kr-item');
+    const krItems = container.querySelectorAll('.tree-kr-item');
     const numericKR = krItems[1];
     const editButton = numericKR.querySelector<HTMLButtonElement>('.btn-icon.icon-edit');
     expect(editButton).toBeTruthy();
@@ -196,7 +196,7 @@ describe('OKRView', () => {
     await renderView();
 
     // Theme and objective should be expanded, so KR items should be visible
-    const krItems = container.querySelectorAll('.kr-item');
+    const krItems = container.querySelectorAll('.tree-kr-item');
     expect(krItems.length).toBe(3);
   });
 
@@ -453,7 +453,7 @@ describe('OKRView', () => {
     it('shows all themes when no filter is active', async () => {
       await renderTaggedView();
 
-      const themeNames = container.querySelectorAll('.theme-item .item-name');
+      const themeNames = container.querySelectorAll('.tree-theme-item .item-name');
       expect(themeNames.length).toBe(3);
       expect(themeNames[0].textContent).toBe('Theme One');
       expect(themeNames[1].textContent).toBe('Theme Two');
@@ -471,7 +471,7 @@ describe('OKRView', () => {
       await tick();
 
       // Only Theme One should be visible (it has the "health" tagged objective)
-      const themeNames = container.querySelectorAll('.theme-item .item-name');
+      const themeNames = container.querySelectorAll('.tree-theme-item .item-name');
       expect(themeNames.length).toBe(1);
       expect(themeNames[0].textContent).toBe('Theme One');
     });
@@ -486,7 +486,7 @@ describe('OKRView', () => {
       await tick();
 
       // Only Theme Two should be visible
-      let themeNames = container.querySelectorAll('.theme-item .item-name');
+      let themeNames = container.querySelectorAll('.tree-theme-item .item-name');
       expect(themeNames.length).toBe(1);
 
       // Click "All" to clear
@@ -495,7 +495,7 @@ describe('OKRView', () => {
       await tick();
 
       // All themes restored
-      themeNames = container.querySelectorAll('.theme-item .item-name');
+      themeNames = container.querySelectorAll('.tree-theme-item .item-name');
       expect(themeNames.length).toBe(3);
     });
 
@@ -545,7 +545,7 @@ describe('OKRView', () => {
       await tick();
 
       // Theme should still be visible (ancestor of matching objective)
-      const themeNames = container.querySelectorAll('.theme-item .item-name');
+      const themeNames = container.querySelectorAll('.tree-theme-item .item-name');
       expect(themeNames.length).toBe(1);
       expect(themeNames[0].textContent).toBe('Nested Theme');
 
@@ -558,7 +558,7 @@ describe('OKRView', () => {
       await tick();
 
       // Parent objective should be visible as ancestor
-      const objectiveNames = container.querySelectorAll('.objective-item .item-name');
+      const objectiveNames = container.querySelectorAll('.tree-objective-item .item-name');
       expect(objectiveNames.length).toBeGreaterThanOrEqual(1);
 
       result.unmount();
