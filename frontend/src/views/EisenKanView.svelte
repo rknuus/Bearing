@@ -9,6 +9,7 @@
    */
 
   import { onMount, onDestroy, untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
@@ -75,6 +76,20 @@
   // Archive toggle state (persisted via navigation context)
   let showArchivedTasks = $state(false);
 
+  // Fold state (persisted via navigation context)
+  let collapsedSections = new SvelteSet<string>();
+  let collapsedColumns = new SvelteSet<string>();
+
+  function toggleSection(name: string) {
+    if (collapsedSections.has(name)) collapsedSections.delete(name);
+    else collapsedSections.add(name);
+  }
+
+  function toggleColumn(name: string) {
+    if (collapsedColumns.has(name)) collapsedColumns.delete(name);
+    else collapsedColumns.add(name);
+  }
+
   // Create task dialog state
   let showCreateDialog = $state(false);
 
@@ -132,6 +147,16 @@
 
   // Derive columns from board config
   const columns = $derived<ColumnDefinition[]>(boardConfig?.columnDefinitions ?? []);
+
+  // Dynamic grid template: 1fr for expanded columns, 48px for collapsed
+  // During drag, all columns expand so card width matches drop zone width
+  const gridTemplateCols = $derived.by(() => {
+    const cols = columns.map(c =>
+      (!isDragging && collapsedColumns.has(c.name)) ? '48px' : '1fr'
+    );
+    if (showArchivedTasks) cols.push('1fr');
+    return cols.join(' ');
+  });
 
   // Filter tasks based on props
   const filteredTasks = $derived.by(() => {
@@ -339,11 +364,13 @@
       themes = fetchedThemes;
       boardConfig = fetchedConfig;
 
-      // Load showArchivedTasks from navigation context
+      // Load persisted state from navigation context
       try {
         const navCtx = await getBindings().LoadNavigationContext();
         if (navCtx) {
           showArchivedTasks = navCtx.showArchivedTasks ?? false;
+          for (const s of navCtx.collapsedSections ?? []) collapsedSections.add(s);
+          for (const c of navCtx.collapsedColumns ?? []) collapsedColumns.add(c);
         }
       } catch {
         // Ignore errors loading nav context
@@ -373,6 +400,32 @@
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
           getBindings().SaveNavigationContext({ ...ctx, showArchivedTasks: sat });
+        }
+      }).catch(() => { /* ignore */ });
+    });
+  });
+
+  // Persist collapsedSections to NavigationContext
+  $effect(() => {
+    const _size = collapsedSections.size;
+    const sections = [...collapsedSections];
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, collapsedSections: sections });
+        }
+      }).catch(() => { /* ignore */ });
+    });
+  });
+
+  // Persist collapsedColumns to NavigationContext
+  $effect(() => {
+    const _size = collapsedColumns.size;
+    const cols = [...collapsedColumns];
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, collapsedColumns: cols });
         }
       }).catch(() => { /* ignore */ });
     });
@@ -889,15 +942,40 @@
         onTodayFocusToggle={onTagFocusToggle}
       />
     {/if}
-    <div class="kanban-board" style="grid-template-columns: repeat({columns.length + (showArchivedTasks ? 1 : 0)}, 1fr);">
+    <div class="kanban-board" style="grid-template-columns: {gridTemplateCols};">
       {#each columns as column (column.name)}
+        {@const columnCollapsed = collapsedColumns.has(column.name) && !isDragging}
         <div
           class="kanban-column"
+          class:collapsed-column={columnCollapsed}
           role="region"
           aria-label="{column.title} column"
         >
-          <div class="column-header">
-            <h2>{column.title}</h2>
+          {#if columnCollapsed}
+            <button
+              type="button"
+              class="collapsed-column-strip"
+              onclick={() => toggleColumn(column.name)}
+              aria-expanded="false"
+              aria-label="Expand {column.title}"
+            >
+              <span class="collapsed-column-title">{column.title}</span>
+              <span class="collapsed-column-count">{getColumnTaskCount(column.name)}</span>
+            </button>
+          {/if}
+          <div class="column-header" class:collapsed-column-hidden={columnCollapsed}>
+            <div class="column-header-left">
+              <button
+                type="button"
+                class="column-fold-btn"
+                onclick={() => toggleColumn(column.name)}
+                aria-expanded={!columnCollapsed}
+                aria-label="{columnCollapsed ? 'Expand' : 'Collapse'} {column.title}"
+              >
+                <span class="fold-icon">&#x25BC;</span>
+              </button>
+              <h2>{column.title}</h2>
+            </div>
             <div class="column-header-right">
               {#if column.type === 'done'}
                 <button
@@ -948,16 +1026,27 @@
 
           {#if column.sections && column.sections.length > 0}
             <!-- Sectioned column: render sections as separate groups -->
-            <div class="section-container">
+            <div class="section-container" class:collapsed-column-hidden={columnCollapsed}>
               {#each column.sections as section (section.name)}
                 {@const sectionTaskItems = sectionItems[section.name] ?? []}
+                {@const sectionCollapsed = collapsedSections.has(section.name) && !isDragging}
                 <div class="column-section" style="--section-color: {section.color};" data-testid="section-{section.name}">
                   <div class="section-header" style="background-color: {section.color};">
+                    <button
+                      type="button"
+                      class="section-fold-btn"
+                      onclick={() => toggleSection(section.name)}
+                      aria-expanded={!sectionCollapsed}
+                      aria-label="{sectionCollapsed ? 'Expand' : 'Collapse'} {section.title}"
+                    >
+                      <span class="fold-icon">{sectionCollapsed ? '\u25B6' : '\u25BC'}</span>
+                    </button>
                     <span class="section-title">{section.title}</span>
                     <span class="section-count">{sectionTaskItems.length}</span>
                   </div>
                   <div
                     class="column-content"
+                    class:collapsed-section={sectionCollapsed}
                     use:dndzone={{ items: sectionTaskItems, flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack || sectionTaskItems.length === 0 }}
                     onconsider={(e) => handleSectionDndConsider(section.name, e)}
                     onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
@@ -1008,6 +1097,7 @@
             <!-- Regular column: single drop zone -->
             <div
               class="column-content"
+              class:collapsed-column-hidden={columnCollapsed}
               use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack || (columnItems[column.name] ?? []).length === 0 }}
               onconsider={(e) => handleDndConsider(column.name, e)}
               onfinalize={(e) => handleDndFinalize(column.name, e)}
@@ -1257,12 +1347,81 @@
     transition: background-color 0.2s;
   }
 
+  .collapsed-column {
+    padding: 0.5rem 0;
+    align-items: center;
+  }
+
+  .collapsed-column-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .collapsed-column-title {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+  }
+
+  .collapsed-column-count {
+    background-color: var(--color-gray-400);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  /* !important needed to override inline min-height set by svelte-dnd-action */
+  .collapsed-column-hidden {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0;
+    gap: 0;
+    margin: 0;
+  }
+
+  .column-fold-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .column-fold-btn .fold-icon {
+    font-size: 0.625rem;
+    color: var(--color-gray-500);
+  }
+
   .column-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
     padding: 0 0.25rem;
+  }
+
+  .column-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
   }
 
   .column-header h2 {
@@ -1325,6 +1484,36 @@
     border-radius: 9999px;
     min-width: 1.25rem;
     text-align: center;
+  }
+
+  .section-fold-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .fold-icon {
+    font-size: 0.625rem;
+    color: white;
+  }
+
+  /* !important needed to override inline min-height set by svelte-dnd-action */
+  .collapsed-section {
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0;
+    gap: 0;
+  }
+
+  /* Remove bottom margin from section header when section is collapsed */
+  .column-section:has(> .collapsed-section) .section-header {
+    margin-bottom: -0.5rem;
+    border-radius: 6px;
   }
 
   .column-content {

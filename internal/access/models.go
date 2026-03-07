@@ -293,4 +293,6 @@ type NavigationContext struct {
 	FilterTagIDs      []string `json:"filterTagIds,omitempty"`
 	TodayFocusActive  *bool    `json:"todayFocusActive,omitempty"`
 	TagFocusActive    *bool    `json:"tagFocusActive,omitempty"`
+	CollapsedSections []string `json:"collapsedSections,omitempty"`
+	CollapsedColumns  []string `json:"collapsedColumns,omitempty"`
 }

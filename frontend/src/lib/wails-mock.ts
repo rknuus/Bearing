@@ -117,6 +117,8 @@ export interface NavigationContext {
   filterTagIds?: string[];
   todayFocusActive?: boolean;
   tagFocusActive?: boolean;
+  collapsedSections?: string[];
+  collapsedColumns?: string[];
 }
 
 // Type declarations for extended Window properties
