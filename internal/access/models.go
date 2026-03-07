@@ -54,7 +54,6 @@ type Task struct {
 	Title         string   `json:"title"`                    // Task title/description
 	Description   string   `json:"description,omitempty"`    // Detailed task description
 	ThemeID       string   `json:"themeId"`                  // Links to a LifeTheme.ID
-	DayDate       string   `json:"dayDate"`                  // Associated date in YYYY-MM-DD format
 	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, important-not-urgent, not-important-urgent
 	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
 	PromotionDate string   `json:"promotionDate,omitempty"`  // Date when priority should be promoted (YYYY-MM-DD)

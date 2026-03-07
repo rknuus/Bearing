@@ -126,7 +126,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 
 	// Step 3: Create a task "Go for a run" on January 15th
-	task, err := manager.CreateTask("Go for a run", theme.ID, "2026-01-15", "important-urgent", "", "", "")
+	task, err := manager.CreateTask("Go for a run", theme.ID, "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
@@ -138,10 +138,6 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	if task.ThemeID != theme.ID {
 		t.Errorf("Task theme ID mismatch: expected %s, got %s", theme.ID, task.ThemeID)
 	}
-	if task.DayDate != "2026-01-15" {
-		t.Errorf("Task day date mismatch: expected 2026-01-15, got %s", task.DayDate)
-	}
-
 	// Step 4: Verify color chain - all components can look up the theme color
 	themes, err := manager.GetThemes()
 	if err != nil {
@@ -276,7 +272,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
 
-	task, err := manager.CreateTask("Morning run", theme.ID, "2026-01-15", "important-urgent", "", "", "")
+	task, err := manager.CreateTask("Morning run", theme.ID, "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
@@ -360,7 +356,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 
 	// Create theme and task with all fields populated
 	theme, _ := manager.CreateTheme("Health", "#22c55e")
-	task, _ := manager.CreateTask("Complex task", theme.ID, "2026-01-20", "important-not-urgent", "", "", "")
+	task, _ := manager.CreateTask("Complex task", theme.ID, "important-not-urgent", "", "", "")
 
 	// Get original task details
 	originalTasks, _ := planAccess.GetTasksByStatus("todo")
@@ -399,9 +395,6 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 		if movedTask.ThemeID != originalTask.ThemeID {
 			t.Errorf("Task themeID changed after move to %s", status)
 		}
-		if movedTask.DayDate != originalTask.DayDate {
-			t.Errorf("Task dayDate changed after move to %s", status)
-		}
 		if movedTask.Priority != originalTask.Priority {
 			t.Errorf("Task priority changed after move to %s", status)
 		}
@@ -429,9 +422,9 @@ func TestIntegration_DataPersistence(t *testing.T) {
 
 	// Create all tasks in the same theme to avoid task ID collision issue
 	// (Task IDs are unique within a theme, but MoveTask searches across all themes)
-	_, _ = manager1.CreateTask("Morning run", theme1.ID, "2026-01-15", "important-urgent", "", "", "")
-	task2, _ := manager1.CreateTask("Update resume", theme1.ID, "2026-01-16", "important-not-urgent", "", "", "")
-	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "2026-01-16", "not-important-urgent", "", "", "")
+	_, _ = manager1.CreateTask("Morning run", theme1.ID, "important-urgent", "", "", "")
+	task2, _ := manager1.CreateTask("Update resume", theme1.ID, "important-not-urgent", "", "", "")
+	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "not-important-urgent", "", "", "")
 
 	// Move one task to doing
 	_, _ = manager1.MoveTask(task2.ID, "doing", nil)
@@ -604,8 +597,8 @@ func TestIntegration_DeleteTheme(t *testing.T) {
 	theme2, _ := manager.CreateTheme("Theme to Keep", "#00ff00")
 
 	// Create tasks under both themes
-	_, _ = manager.CreateTask("Task 1", theme1.ID, "2026-01-15", "important-urgent", "", "", "")
-	_, _ = manager.CreateTask("Task 2", theme2.ID, "2026-01-16", "important-urgent", "", "", "")
+	_, _ = manager.CreateTask("Task 1", theme1.ID, "important-urgent", "", "", "")
+	_, _ = manager.CreateTask("Task 2", theme2.ID, "important-urgent", "", "", "")
 
 	// Delete the first theme
 	err := manager.DeleteTheme(theme1.ID)
@@ -647,9 +640,9 @@ func TestIntegration_MultipleThemesAndTasks(t *testing.T) {
 
 	// Create tasks across themes
 	for i := 0; i < 5; i++ {
-		_, _ = manager.CreateTask("Health task", healthTheme.ID, "2026-01-15", "important-urgent", "", "", "")
-		_, _ = manager.CreateTask("Career task", careerTheme.ID, "2026-01-16", "important-not-urgent", "", "", "")
-		_, _ = manager.CreateTask("Family task", familyTheme.ID, "2026-01-17", "not-important-urgent", "", "", "")
+		_, _ = manager.CreateTask("Health task", healthTheme.ID, "important-urgent", "", "", "")
+		_, _ = manager.CreateTask("Career task", careerTheme.ID, "important-not-urgent", "", "", "")
+		_, _ = manager.CreateTask("Family task", familyTheme.ID, "not-important-urgent", "", "", "")
 	}
 
 	// Get all tasks
@@ -696,7 +689,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	theme, _ := manager.CreateTheme("Test Theme", "#ff0000")
 
 	// Create task
-	task, _ := manager.CreateTask("Test task", theme.ID, "2026-01-15", "important-urgent", "", "", "")
+	task, _ := manager.CreateTask("Test task", theme.ID, "important-urgent", "", "", "")
 
 	// Move task
 	_, _ = manager.MoveTask(task.ID, "doing", nil)
@@ -792,7 +785,7 @@ func TestIntegration_TaskIDGenerationMismatchedArchive(t *testing.T) {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
 
-	task1, err := manager.CreateTask("First task", theme.ID, "2026-01-15", "important-urgent", "", "", "")
+	task1, err := manager.CreateTask("First task", theme.ID, "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
@@ -831,7 +824,7 @@ func TestIntegration_TaskIDGenerationMismatchedArchive(t *testing.T) {
 		t.Fatalf("Failed to write modified task file: %v", err)
 	}
 
-	task2, err := manager.CreateTask("Second task", theme.ID, "2026-01-16", "important-urgent", "", "", "")
+	task2, err := manager.CreateTask("Second task", theme.ID, "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create second task: %v", err)
 	}
@@ -854,7 +847,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	theme, _ := manager.CreateTheme("Workflow Theme", "#ff0000")
 
 	// Create task
-	task, err := manager.CreateTask("Workflow task", theme.ID, "2026-01-15", "important-urgent", "", "", "")
+	task, err := manager.CreateTask("Workflow task", theme.ID, "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task: %v", err)
 	}
@@ -963,11 +956,11 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	}
 
 	// Step 2: Create tasks and move them to the custom column
-	task1, err := manager.CreateTask("Review PR", theme.ID, "2026-01-15", "important-urgent", "", "", "")
+	task1, err := manager.CreateTask("Review PR", theme.ID, "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task1: %v", err)
 	}
-	task2, err := manager.CreateTask("Review docs", theme.ID, "2026-01-15", "important-not-urgent", "", "", "")
+	task2, err := manager.CreateTask("Review docs", theme.ID, "important-not-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("Failed to create task2: %v", err)
 	}
