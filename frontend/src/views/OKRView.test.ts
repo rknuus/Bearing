@@ -358,4 +358,210 @@ describe('OKRView', () => {
     const warning = container.querySelector('.theme-header .color-warning');
     expect(warning).toBeNull();
   });
+
+  describe('tag filter bar', () => {
+    /** Build themes where objectives have tags for filter testing. */
+    function makeTaggedThemes(): LifeTheme[] {
+      return [
+        {
+          id: 'T1',
+          name: 'Theme One',
+          color: '#3b82f6',
+          objectives: [
+            {
+              id: 'T1-O1',
+              parentId: 'T1',
+              title: 'Tagged Objective',
+              tags: ['health'],
+              keyResults: [{ id: 'T1-KR1', parentId: 'T1-O1', description: 'KR1', startValue: 0, currentValue: 0, targetValue: 1 }],
+              objectives: [],
+            },
+            {
+              id: 'T1-O2',
+              parentId: 'T1',
+              title: 'Untagged Objective',
+              keyResults: [],
+              objectives: [],
+            },
+          ],
+        },
+        {
+          id: 'T2',
+          name: 'Theme Two',
+          color: '#10b981',
+          objectives: [
+            {
+              id: 'T2-O1',
+              parentId: 'T2',
+              title: 'Career Objective',
+              tags: ['career'],
+              keyResults: [],
+              objectives: [],
+            },
+          ],
+        },
+        {
+          id: 'T3',
+          name: 'Empty Theme',
+          color: '#f59e0b',
+          objectives: [
+            {
+              id: 'T3-O1',
+              parentId: 'T3',
+              title: 'No Tags Objective',
+              keyResults: [],
+              objectives: [],
+            },
+          ],
+        },
+      ];
+    }
+
+    async function renderTaggedView() {
+      mockBindings = makeMockBindings(makeTaggedThemes());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      const result = render(OKRView, { target: container });
+      await tick();
+      await vi.waitFor(() => {
+        if (container.querySelector('.loading')) throw new Error('still loading');
+      });
+      await tick();
+      return result;
+    }
+
+    it('shows TagFilterBar when objectives have tags', async () => {
+      await renderTaggedView();
+
+      const filterBar = container.querySelector('.tag-filter-bar');
+      expect(filterBar).toBeTruthy();
+
+      // Should have "All" pill plus pills for "career" and "health" (sorted)
+      const pills = container.querySelectorAll('.filter-pill');
+      expect(pills.length).toBe(3); // All + career + health
+      expect(pills[1].textContent).toContain('career');
+      expect(pills[2].textContent).toContain('health');
+    });
+
+    it('does not show TagFilterBar when no objectives have tags', async () => {
+      await renderView(); // uses makeTestThemes which has no tags
+
+      const filterBar = container.querySelector('.tag-filter-bar');
+      expect(filterBar).toBeNull();
+    });
+
+    it('shows all themes when no filter is active', async () => {
+      await renderTaggedView();
+
+      const themeNames = container.querySelectorAll('.theme-item .item-name');
+      expect(themeNames.length).toBe(3);
+      expect(themeNames[0].textContent).toBe('Theme One');
+      expect(themeNames[1].textContent).toBe('Theme Two');
+      expect(themeNames[2].textContent).toBe('Empty Theme');
+    });
+
+    it('filters themes by tag — hides themes with no matching objectives', async () => {
+      await renderTaggedView();
+
+      // Click the "health" tag pill
+      const pills = container.querySelectorAll<HTMLButtonElement>('.filter-pill.tag-pill');
+      const healthPill = Array.from(pills).find(p => p.textContent?.includes('health'));
+      expect(healthPill).toBeTruthy();
+      healthPill!.click();
+      await tick();
+
+      // Only Theme One should be visible (it has the "health" tagged objective)
+      const themeNames = container.querySelectorAll('.theme-item .item-name');
+      expect(themeNames.length).toBe(1);
+      expect(themeNames[0].textContent).toBe('Theme One');
+    });
+
+    it('clearing filter restores all themes', async () => {
+      await renderTaggedView();
+
+      // Activate a filter
+      const pills = container.querySelectorAll<HTMLButtonElement>('.filter-pill.tag-pill');
+      const careerPill = Array.from(pills).find(p => p.textContent?.includes('career'));
+      careerPill!.click();
+      await tick();
+
+      // Only Theme Two should be visible
+      let themeNames = container.querySelectorAll('.theme-item .item-name');
+      expect(themeNames.length).toBe(1);
+
+      // Click "All" to clear
+      const allPill = container.querySelector<HTMLButtonElement>('.filter-pill.all-pill');
+      allPill!.click();
+      await tick();
+
+      // All themes restored
+      themeNames = container.querySelectorAll('.theme-item .item-name');
+      expect(themeNames.length).toBe(3);
+    });
+
+    it('preserves ancestor theme when child objective matches', async () => {
+      // Create themes with nested objectives where only a child has the tag
+      const nestedThemes: LifeTheme[] = [
+        {
+          id: 'NT1',
+          name: 'Nested Theme',
+          color: '#3b82f6',
+          objectives: [
+            {
+              id: 'NT1-O1',
+              parentId: 'NT1',
+              title: 'Parent Objective',
+              keyResults: [],
+              objectives: [
+                {
+                  id: 'NT1-O1-C1',
+                  parentId: 'NT1-O1',
+                  title: 'Child With Tag',
+                  tags: ['deep'],
+                  keyResults: [{ id: 'NT1-KR1', parentId: 'NT1-O1-C1', description: 'Deep KR', startValue: 0, currentValue: 0, targetValue: 1 }],
+                  objectives: [],
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      mockBindings = makeMockBindings(nestedThemes);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      const result = render(OKRView, { target: container });
+      await tick();
+      await vi.waitFor(() => {
+        if (container.querySelector('.loading')) throw new Error('still loading');
+      });
+      await tick();
+
+      // Filter by "deep"
+      const deepPill = Array.from(container.querySelectorAll<HTMLButtonElement>('.filter-pill.tag-pill'))
+        .find(p => p.textContent?.includes('deep'));
+      expect(deepPill).toBeTruthy();
+      deepPill!.click();
+      await tick();
+
+      // Theme should still be visible (ancestor of matching objective)
+      const themeNames = container.querySelectorAll('.theme-item .item-name');
+      expect(themeNames.length).toBe(1);
+      expect(themeNames[0].textContent).toBe('Nested Theme');
+
+      // Expand the theme and parent objective to verify hierarchy is preserved
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click(); // expand theme
+      await tick();
+      const expandButtons2 = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons2[1]?.click(); // expand parent objective
+      await tick();
+
+      // Parent objective should be visible as ancestor
+      const objectiveNames = container.querySelectorAll('.objective-item .item-name');
+      expect(objectiveNames.length).toBeGreaterThanOrEqual(1);
+
+      result.unmount();
+    });
+  });
 });

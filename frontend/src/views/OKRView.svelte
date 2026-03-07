@@ -11,6 +11,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+  import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
 
@@ -95,6 +96,68 @@
   // View toggle state
   let showCompleted = $state(false);
   let showArchived = $state(false);
+
+  // Tag filter state (local only, not persisted)
+  let filterTagIds: string[] = $state([]);
+
+  /** Collect unique tags from all objectives across all themes. */
+  const availableObjectiveTags = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- local temporary set, not reactive state
+    const tags = new Set<string>();
+    function walkObjectiveTags(objectives: Objective[]) {
+      for (const obj of objectives) {
+        for (const tag of obj.tags ?? []) tags.add(tag);
+        walkObjectiveTags(obj.objectives ?? []);
+      }
+    }
+    for (const theme of themes) walkObjectiveTags(theme.objectives);
+    return [...tags].sort();
+  });
+
+  /** Recursively filter objectives: keep those matching tags, their ancestors, and their children. */
+  function filterObjectives(objectives: Objective[], activeTagIds: string[]): Objective[] {
+    const result: Objective[] = [];
+    for (const obj of objectives) {
+      const ownMatch = (obj.tags ?? []).some(t => activeTagIds.includes(t));
+      if (ownMatch) {
+        // Parent matches → show all children unchanged
+        result.push(obj);
+      } else {
+        // Check if any descendant matches
+        const filteredChildren = filterObjectives(obj.objectives ?? [], activeTagIds);
+        if (filteredChildren.length > 0) {
+          // Descendant matches → include this parent with filtered children, keep all KRs
+          result.push({ ...obj, objectives: filteredChildren });
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Themes with objectives filtered by active tags. */
+  const filteredThemes = $derived.by(() => {
+    if (filterTagIds.length === 0) return themes;
+    const result: LifeTheme[] = [];
+    for (const theme of themes) {
+      const filtered = filterObjectives(theme.objectives, filterTagIds);
+      if (filtered.length > 0) {
+        result.push({ ...theme, objectives: filtered });
+      }
+    }
+    return result;
+  });
+
+  function handleFilterTagToggle(tag: string) {
+    if (filterTagIds.includes(tag)) {
+      filterTagIds = filterTagIds.filter(t => t !== tag);
+    } else {
+      filterTagIds = [...filterTagIds, tag];
+    }
+  }
+
+  function handleFilterTagClear() {
+    filterTagIds = [];
+  }
 
   // Inline edit values
   let editThemeName = $state('');
@@ -893,6 +956,15 @@
   {#if loading}
     <div class="loading">Loading themes...</div>
   {:else}
+    {#if availableObjectiveTags.length > 0}
+      <TagFilterBar
+        availableTags={availableObjectiveTags}
+        activeTagIds={filterTagIds}
+        onToggle={handleFilterTagToggle}
+        onClear={handleFilterTagClear}
+      />
+    {/if}
+
     <!-- New Theme Form -->
     {#if showNewThemeForm}
       <div class="new-item-form theme-form">
@@ -929,7 +1001,7 @@
 
     <!-- Themes List -->
     <div class="themes-list">
-      {#each themes as theme (theme.id)}
+      {#each filteredThemes as theme (theme.id)}
         <div class="theme-item" class:highlighted={highlightItemId === theme.id} style="--theme-color: {theme.color};">
           <!-- Theme Header -->
           <div class="item-header theme-header">
