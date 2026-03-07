@@ -1489,9 +1489,9 @@
   }
 
   .collapsed-section {
-    height: 0;
-    min-height: 0;
-    overflow: hidden;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
     padding: 0;
     gap: 0;
   }
