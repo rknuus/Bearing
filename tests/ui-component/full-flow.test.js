@@ -76,41 +76,41 @@ export async function runTests() {
       await page.click('.theme-form .color-option:nth-child(2)')
       await page.click('.theme-form .btn-primary:has-text("Create")')
       await page.waitForSelector(
-        '.theme-item:last-child .item-name:has-text("E2E Flow")',
+        '.tree-theme-edit:last-child .item-name:has-text("E2E Flow")',
         { timeout: 5000 }
       )
 
       // Expand theme and add objective via empty-state link
-      await page.click('.theme-item:last-child .expand-button')
+      await page.click('.tree-theme-edit:last-child .expand-button')
       await page.waitForSelector(
-        '.theme-item:last-child .empty-state .link-button',
+        '.tree-theme-edit:last-child .empty-state .link-button',
         { timeout: 5000 }
       )
-      await page.click('.theme-item:last-child .empty-state .link-button')
-      await page.waitForSelector('.theme-item:last-child .objective-form', { timeout: 5000 })
+      await page.click('.tree-theme-edit:last-child .empty-state .link-button')
+      await page.waitForSelector('.tree-theme-edit:last-child .objective-form', { timeout: 5000 })
       await page.fill(
-        '.theme-item:last-child .objective-form input[type="text"]',
+        '.tree-theme-edit:last-child .objective-form input[type="text"]',
         'E2E Objective'
       )
-      await page.click('.theme-item:last-child .objective-form .btn-primary')
-      await page.waitForSelector('.theme-item:last-child .objective-item', { timeout: 5000 })
+      await page.click('.tree-theme-edit:last-child .objective-form .btn-primary')
+      await page.waitForSelector('.tree-theme-edit:last-child .tree-objective-edit', { timeout: 5000 })
 
       // Hover objective header to reveal action buttons, then add key result
-      await page.hover('.theme-item:last-child .objective-item .objective-header')
+      await page.hover('.tree-theme-edit:last-child .tree-objective-edit .objective-header')
       await page.click(
-        '.theme-item:last-child .objective-item button[title="Add Key Result"]'
+        '.tree-theme-edit:last-child .tree-objective-edit button[title="Add Key Result"]'
       )
-      await page.waitForSelector('.theme-item:last-child .kr-form', { timeout: 5000 })
+      await page.waitForSelector('.tree-theme-edit:last-child .kr-form', { timeout: 5000 })
       await page.fill(
-        '.theme-item:last-child .kr-form input[type="text"]',
+        '.tree-theme-edit:last-child .kr-form input[type="text"]',
         'E2E Key Result'
       )
-      await page.click('.theme-item:last-child .kr-form .btn-primary')
-      await page.waitForSelector('.theme-item:last-child .kr-item', { timeout: 5000 })
+      await page.click('.tree-theme-edit:last-child .kr-form .btn-primary')
+      await page.waitForSelector('.tree-theme-edit:last-child .tree-kr-edit', { timeout: 5000 })
 
       // Verify hierarchy text content
       const themeName = await page.$eval(
-        '.theme-item:last-child > .item-header .item-name',
+        '.tree-theme-edit:last-child > .item-header .item-name',
         el => el.textContent.trim()
       )
       if (themeName !== 'E2E Flow') {
@@ -118,7 +118,7 @@ export async function runTests() {
       }
 
       const objTitle = await page.$eval(
-        '.theme-item:last-child .objective-item .item-name',
+        '.tree-theme-edit:last-child .tree-objective-edit .item-name',
         el => el.textContent.trim()
       )
       if (objTitle !== 'E2E Objective') {
@@ -126,7 +126,7 @@ export async function runTests() {
       }
 
       const krDesc = await page.$eval(
-        '.theme-item:last-child .kr-item .item-name',
+        '.tree-theme-edit:last-child .tree-kr-edit .item-name',
         el => el.textContent.trim()
       )
       if (krDesc !== 'E2E Key Result') {
@@ -149,8 +149,8 @@ export async function runTests() {
       await page.click('.day-num')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
-      // Select "E2E Flow" theme (ID = "EF") and add text
-      await page.selectOption('#theme-select', 'EF')
+      // Select "E2E Flow" theme checkbox and add text
+      await page.click('.tree-theme-item:has-text("E2E Flow") input[type="checkbox"]')
       await page.fill('#text-input', 'E2E test day')
       await page.click('.dialog .btn-primary')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
@@ -440,8 +440,8 @@ export async function runTests() {
       })
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
-      // Clear theme and text
-      await page.selectOption('#theme-select', '')
+      // Uncheck the selected theme checkbox to clear theme
+      await page.click('.tree-theme-item:has-text("E2E Flow") input[type="checkbox"]')
       await page.fill('#text-input', '')
       await page.click('.dialog .btn-primary')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
@@ -473,32 +473,32 @@ export async function runTests() {
       page.on('dialog', acceptDialog)
 
       // Expand theme if collapsed
-      const themeExpanded = await page.$('.theme-item:last-child .objective-item')
+      const themeExpanded = await page.$('.tree-theme-edit:last-child .tree-objective-edit')
       if (!themeExpanded) {
-        await page.click('.theme-item:last-child .expand-button')
-        await page.waitForSelector('.theme-item:last-child .objective-item', { timeout: 5000 })
+        await page.click('.tree-theme-edit:last-child .expand-button')
+        await page.waitForSelector('.tree-theme-edit:last-child .tree-objective-edit', { timeout: 5000 })
       }
 
       // Expand objective if collapsed (to reveal KR)
-      const krVisible = await page.$('.theme-item:last-child .kr-item')
+      const krVisible = await page.$('.tree-theme-edit:last-child .tree-kr-edit')
       if (!krVisible) {
-        await page.click('.theme-item:last-child .objective-item .expand-button')
-        await page.waitForSelector('.theme-item:last-child .kr-item', { timeout: 5000 })
+        await page.click('.tree-theme-edit:last-child .tree-objective-edit .expand-button')
+        await page.waitForSelector('.tree-theme-edit:last-child .tree-kr-edit', { timeout: 5000 })
       }
 
       // Delete key result
-      await page.hover('.theme-item:last-child .kr-item .kr-header')
-      await page.click('.theme-item:last-child .kr-item button[title="Delete"]')
-      await page.waitForSelector('.theme-item:last-child .kr-item', { state: 'detached', timeout: 5000 })
+      await page.hover('.tree-theme-edit:last-child .tree-kr-edit .kr-header')
+      await page.click('.tree-theme-edit:last-child .tree-kr-edit button[title="Delete"]')
+      await page.waitForSelector('.tree-theme-edit:last-child .tree-kr-edit', { state: 'detached', timeout: 5000 })
 
       // Delete objective
-      await page.hover('.theme-item:last-child .objective-item .objective-header')
-      await page.click('.theme-item:last-child .objective-item button[title="Delete"]')
-      await page.waitForSelector('.theme-item:last-child .objective-item', { state: 'detached', timeout: 5000 })
+      await page.hover('.tree-theme-edit:last-child .tree-objective-edit .objective-header')
+      await page.click('.tree-theme-edit:last-child .tree-objective-edit button[title="Delete"]')
+      await page.waitForSelector('.tree-theme-edit:last-child .tree-objective-edit', { state: 'detached', timeout: 5000 })
 
       // Delete theme
-      await page.hover('.theme-item:last-child > .item-header')
-      await page.click('.theme-item:last-child > .item-header button[title="Delete"]')
+      await page.hover('.tree-theme-edit:last-child > .item-header')
+      await page.click('.tree-theme-edit:last-child > .item-header button[title="Delete"]')
 
       // Verify "E2E Flow" theme is gone
       await page.waitForFunction(() => {

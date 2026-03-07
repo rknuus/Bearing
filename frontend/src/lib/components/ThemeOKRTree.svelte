@@ -16,9 +16,11 @@
    */
 
   import type { Snippet } from 'svelte';
+  import { untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import type { LifeTheme, Objective, KeyResult } from '../../lib/wails-mock';
   import ThemeBadge from './ThemeBadge.svelte';
+  import TagBadges from './TagBadges.svelte';
 
   interface Props {
     themes: LifeTheme[];
@@ -63,7 +65,38 @@
   // Internal expand/collapse state (select mode only)
   let selectExpandedIds = new SvelteSet<string>();
 
+  // Auto-expand themes (and their objectives) that are initially selected
+  $effect(() => {
+    if (mode !== 'select') return;
+    const ids = selectedThemeIds;
+    untrack(() => {
+      for (const id of ids) {
+        expandThemeTree(id);
+      }
+    });
+  });
+
   // --- Select mode helpers ---
+
+  function collectObjectiveIds(objectives: Objective[]): string[] {
+    const ids: string[] = [];
+    for (const obj of objectives) {
+      if (obj.status === 'archived') continue;
+      ids.push(obj.id);
+      if (obj.objectives) ids.push(...collectObjectiveIds(obj.objectives));
+    }
+    return ids;
+  }
+
+  function expandThemeTree(themeId: string) {
+    selectExpandedIds.add(themeId);
+    const theme = themes.find(t => t.id === themeId);
+    if (theme) {
+      for (const id of collectObjectiveIds(theme.objectives)) {
+        selectExpandedIds.add(id);
+      }
+    }
+  }
 
   function collectOkrIds(theme: LifeTheme): string[] {
     const ids: string[] = [];
@@ -96,7 +129,7 @@
       selectExpandedIds.delete(themeId);
     } else {
       newThemeIds = [...selectedThemeIds, themeId];
-      selectExpandedIds.add(themeId);
+      expandThemeTree(themeId);
     }
 
     onThemeSelectionChange?.(newThemeIds);
@@ -132,21 +165,34 @@
     {#if mode === 'select'}
       <div class="tree-theme-item" style="--tree-theme-color: {theme.color};">
         <div class="tree-item-header tree-theme-header">
+          <button
+            class="tree-expand-button"
+            onclick={() => {
+              if (selectExpandedIds.has(theme.id)) selectExpandedIds.delete(theme.id);
+              else selectExpandedIds.add(theme.id);
+            }}
+            aria-expanded={selectExpandedIds.has(theme.id)}
+          >
+            <span class="tree-expand-icon">{selectExpandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
+          </button>
+          <ThemeBadge color={theme.color} size="sm" />
+          <span class="tree-item-name">{theme.name}</span>
+          <span class="tree-item-id">{theme.id}</span>
           <label class="tree-checkbox-label">
             <input
               type="checkbox"
               checked={selectedThemeIds.includes(theme.id)}
               onchange={() => handleThemeToggle(theme.id)}
             />
-            <ThemeBadge color={theme.color} size="sm" />
-            <span class="tree-item-name">{theme.name}</span>
           </label>
         </div>
 
-        {#if selectedThemeIds.includes(theme.id)}
+        {#if selectExpandedIds.has(theme.id)}
           <div class="tree-children">
             {#each theme.objectives as objective (objective.id)}
-              {@render selectObjectiveNode(objective, theme.color, 0)}
+              {#if objective.status !== 'archived'}
+                {@render selectObjectiveNode(objective, theme.color, 0)}
+              {/if}
             {/each}
           </div>
         {/if}
@@ -175,49 +221,71 @@
 </div>
 
 {#snippet selectObjectiveNode(objective: Objective, themeColor: string, depth: number)}
-  {#if objective.status !== 'archived'}
-    <div class="tree-objective-item" style="padding-left: {depth * 1.5}rem;">
-      <div class="tree-item-header">
-        <label class="tree-checkbox-label">
-          <input
-            type="checkbox"
-            checked={selectedOkrIds.includes(objective.id)}
-            onchange={() => handleOkrToggle(objective.id)}
-          />
-          <span class="tree-marker tree-marker-obj" style="background-color: {themeColor};"></span>
-          <span class="tree-item-name">{objective.title}</span>
-        </label>
-      </div>
+  {@const hasChildren = objective.keyResults.some(kr => kr.status !== 'archived') ||
+    (objective.objectives?.some(o => o.status !== 'archived') ?? false)}
+  <div class="tree-objective-item" style="padding-left: {depth * 1.5}rem;">
+    <div class="tree-item-header">
+      {#if hasChildren}
+        <button
+          class="tree-expand-button"
+          onclick={() => {
+            if (selectExpandedIds.has(objective.id)) selectExpandedIds.delete(objective.id);
+            else selectExpandedIds.add(objective.id);
+          }}
+          aria-expanded={selectExpandedIds.has(objective.id)}
+        >
+          <span class="tree-expand-icon">{selectExpandedIds.has(objective.id) ? '\u25BC' : '\u25B6'}</span>
+        </button>
+      {:else}
+        <span class="tree-expand-spacer"></span>
+      {/if}
+      <span class="tree-marker tree-marker-obj" style="background-color: {themeColor};"></span>
+      <span class="tree-item-name">{objective.title}</span>
+      <span class="tree-item-id">{objective.id}</span>
+      <TagBadges tags={objective.tags} />
+      <label class="tree-checkbox-label">
+        <input
+          type="checkbox"
+          checked={selectedOkrIds.includes(objective.id)}
+          onchange={() => handleOkrToggle(objective.id)}
+        />
+      </label>
+    </div>
+    {#if hasChildren && selectExpandedIds.has(objective.id)}
       <div class="tree-children">
         {#each objective.keyResults as kr (kr.id)}
-          {@render selectKeyResultNode(kr, themeColor, depth)}
+          {#if kr.status !== 'archived'}
+            {@render selectKeyResultNode(kr, themeColor, depth)}
+          {/if}
         {/each}
         {#if objective.objectives}
           {#each objective.objectives as child (child.id)}
-            {@render selectObjectiveNode(child, themeColor, depth + 1)}
+            {#if child.status !== 'archived'}
+              {@render selectObjectiveNode(child, themeColor, depth + 1)}
+            {/if}
           {/each}
         {/if}
       </div>
-    </div>
-  {/if}
+    {/if}
+  </div>
 {/snippet}
 
 {#snippet selectKeyResultNode(kr: KeyResult, themeColor: string, depth: number)}
-  {#if kr.status !== 'archived'}
-    <div class="tree-kr-item" style="padding-left: {(depth + 1) * 1.5}rem;">
-      <div class="tree-item-header">
-        <label class="tree-checkbox-label">
-          <input
-            type="checkbox"
-            checked={selectedOkrIds.includes(kr.id)}
-            onchange={() => handleOkrToggle(kr.id)}
-          />
-          <span class="tree-marker tree-marker-kr" style="background-color: {themeColor};"></span>
-          <span class="tree-item-name">{kr.description}</span>
-        </label>
-      </div>
+  <div class="tree-kr-item" style="padding-left: {(depth + 1) * 1.5}rem;">
+    <div class="tree-item-header">
+      <span class="tree-expand-spacer"></span>
+      <span class="tree-marker tree-marker-kr" style="background-color: {themeColor};"></span>
+      <span class="tree-item-name">{kr.description}</span>
+      <span class="tree-item-id">{kr.id}</span>
+      <label class="tree-checkbox-label">
+        <input
+          type="checkbox"
+          checked={selectedOkrIds.includes(kr.id)}
+          onchange={() => handleOkrToggle(kr.id)}
+        />
+      </label>
     </div>
-  {/if}
+  </div>
 {/snippet}
 
 {#snippet editObjectiveNode(objective: Objective, themeColor: string, depth: number)}
@@ -292,16 +360,40 @@
     font-weight: 500;
   }
 
-  .tree-checkbox-label {
+  .tree-expand-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    width: 1.25rem;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: center;
+    color: var(--color-gray-500);
+    font-size: 0.625rem;
+  }
+
+  .tree-expand-spacer {
+    width: 1.25rem;
+    flex-shrink: 0;
+  }
+
+  .tree-checkbox-label {
     cursor: pointer;
-    font-size: 0.875rem;
+    flex-shrink: 0;
   }
 
   .tree-item-name {
     font-size: 0.875rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .tree-item-id {
+    font-size: 0.75rem;
+    color: var(--color-gray-400);
+    flex-shrink: 0;
   }
 
   .tree-marker {
