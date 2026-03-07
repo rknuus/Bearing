@@ -33,10 +33,9 @@
     onDragEnd?: () => void;
     onTaskClick?: (task: PendingTask) => void;
     onTaskDelete?: (taskId: string) => void;
-    isStaging?: boolean;
   }
 
-  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, onTaskClick, onTaskDelete, isStaging = false }: Props = $props();
+  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, onTaskClick, onTaskDelete }: Props = $props();
 
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
 
@@ -56,7 +55,6 @@
 
 <div
   class="quadrant"
-  class:staging={isStaging}
   style="--quadrant-color: {color};"
   data-quadrant-id={quadrantId}
   data-testid="quadrant-{quadrantId}"
@@ -99,9 +97,6 @@
         <span class="task-title">{task.title}</span>
       </div>
     {/each}
-    {#if tasks.length === 0 && isStaging}
-      <div class="empty-hint">(New tasks appear here)</div>
-    {/if}
   </div>
 </div>
 
@@ -113,10 +108,6 @@
     border: 1px solid var(--color-gray-200);
     border-radius: 6px;
     min-height: 120px;
-  }
-
-  .quadrant.staging {
-    opacity: 0.75;
   }
 
   .quadrant-header {
@@ -218,13 +209,5 @@
     line-height: 1.3;
   }
 
-  .empty-hint {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    font-size: 0.75rem;
-    color: var(--color-gray-400);
-    font-style: italic;
-  }
+
 </style>
