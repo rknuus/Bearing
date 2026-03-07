@@ -1023,6 +1023,10 @@
                       <button type="button" class="column-menu-item" onclick={() => handleInsertColumn(column.name)}>
                         Insert right
                       </button>
+                    {:else if column.type === 'done'}
+                      <button type="button" class="column-menu-item" onclick={() => handleInsertColumnBefore(column.name)}>
+                        Insert left
+                      </button>
                     {/if}
                   </div>
                 {/if}
