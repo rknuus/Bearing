@@ -224,8 +224,7 @@
     return counts;
   });
 
-  // Tag filter pill counts: each tag count = tasks having that tag + active theme/date filters
-  // Untagged count uses the full base (not theme-filtered) so it stays stable across theme changes.
+  // Tag filter pill counts: per-tag counts apply theme filter; "All" uses themeCounts
   const tagCounts = $derived.by(() => {
     const base = countBaseTasks;
 
@@ -234,22 +233,19 @@
     }
 
     const counts: Record<string, number> = {};
-    let allCount = 0;
     let untaggedCount = 0;
     for (const t of base) {
-      const hasTags = t.tags && t.tags.length > 0;
-      if (!hasTags) {
-        untaggedCount++;
-      }
       if (!matchesTheme(t)) continue;
-      allCount++;
+      const hasTags = t.tags && t.tags.length > 0;
       if (hasTags) {
         for (const tag of t.tags!) {
           counts[tag] = (counts[tag] ?? 0) + 1;
         }
+      } else {
+        untaggedCount++;
       }
     }
-    counts['__all__'] = allCount;
+    counts['__all__'] = themeCounts['__all__'];
     counts[UNTAGGED_SENTINEL] = untaggedCount;
     return counts;
   });
