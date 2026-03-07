@@ -78,7 +78,8 @@
   async function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
     // Re-resolve today's focus in case the user just set it in Calendar
     todayFocusThemeId = await resolveTodayFocusThemeId(getBindings());
-    if (todayFocusActive && todayFocusThemeId && options?.themeId === undefined) {
+    if (todayFocusThemeId && options?.themeId === undefined) {
+      todayFocusActive = true;
       filterThemeIds = [todayFocusThemeId];
     }
     navigateTo('eisenkan', options);
