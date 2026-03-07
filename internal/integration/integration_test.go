@@ -433,7 +433,6 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	navCtx := managers.NavigationContext{
 		CurrentView:   "calendar",
 		FilterThemeID: theme1.ID,
-		FilterDate:    "2026-01-15",
 		LastAccessed:  "2026-01-31T10:00:00Z",
 	}
 	_ = manager1.SaveNavigationContext(navCtx)
@@ -536,7 +535,6 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 		CurrentView:    "eisenkan",
 		CurrentItem:    "task-123",
 		FilterThemeID:  theme.ID,
-		FilterDate:     "2026-02-15",
 		LastAccessed:   time.Now().Format(time.RFC3339),
 		ExpandedOkrIds: []string{"TST", "TST-O1", "TST-O2"},
 	}
@@ -568,9 +566,6 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	}
 	if loadedCtx.FilterThemeID != ctx.FilterThemeID {
 		t.Errorf("FilterThemeID mismatch: expected %s, got %s", ctx.FilterThemeID, loadedCtx.FilterThemeID)
-	}
-	if loadedCtx.FilterDate != ctx.FilterDate {
-		t.Errorf("FilterDate mismatch: expected %s, got %s", ctx.FilterDate, loadedCtx.FilterDate)
 	}
 	if len(loadedCtx.ExpandedOkrIds) != len(ctx.ExpandedOkrIds) {
 		t.Errorf("ExpandedOkrIds length mismatch: expected %d, got %d", len(ctx.ExpandedOkrIds), len(loadedCtx.ExpandedOkrIds))

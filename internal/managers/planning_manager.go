@@ -26,7 +26,6 @@ type NavigationContext struct {
 	CurrentView       string   `json:"currentView"`
 	CurrentItem       string   `json:"currentItem"`
 	FilterThemeID     string   `json:"filterThemeId"`
-	FilterDate        string   `json:"filterDate"`
 	LastAccessed      string   `json:"lastAccessed"`
 	ShowCompleted     bool     `json:"showCompleted,omitempty"`
 	ShowArchived      bool     `json:"showArchived,omitempty"`
@@ -1608,7 +1607,6 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		CurrentView:       ctx.CurrentView,
 		CurrentItem:       ctx.CurrentItem,
 		FilterThemeID:     ctx.FilterThemeID,
-		FilterDate:        ctx.FilterDate,
 		LastAccessed:      ctx.LastAccessed,
 		ShowCompleted:     ctx.ShowCompleted,
 		ShowArchived:      ctx.ShowArchived,
@@ -1624,7 +1622,6 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		CurrentView:       ctx.CurrentView,
 		CurrentItem:       ctx.CurrentItem,
 		FilterThemeID:     ctx.FilterThemeID,
-		FilterDate:        ctx.FilterDate,
 		LastAccessed:      ctx.LastAccessed,
 		ShowCompleted:     ctx.ShowCompleted,
 		ShowArchived:      ctx.ShowArchived,

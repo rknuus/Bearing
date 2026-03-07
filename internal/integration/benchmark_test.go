@@ -185,7 +185,6 @@ func TestPerformance_NavigationContextLoad(t *testing.T) {
 		CurrentView:   "eisenkan",
 		CurrentItem:   "task-123",
 		FilterThemeID: "THEME-01",
-		FilterDate:    "2026-01-15",
 		LastAccessed:  time.Now().Format(time.RFC3339),
 	}
 	_ = manager.SaveNavigationContext(ctx)
@@ -355,7 +354,6 @@ func BenchmarkNavigationContextRoundTrip(b *testing.B) {
 		CurrentView:   "eisenkan",
 		CurrentItem:   "task-123",
 		FilterThemeID: "THEME-01",
-		FilterDate:    "2026-01-15",
 		LastAccessed:  time.Now().Format(time.RFC3339),
 	}
 
