@@ -3,9 +3,9 @@
    * CreateTaskDialog Component
    *
    * A dialog for batch-creating tasks using an Eisenhower matrix.
-   * Tasks are entered into a staging quadrant (Q4) and dragged to priority
-   * quadrants before committing. Only Q1/Q2/Q3 tasks are created via the API;
-   * Q4 (staging) tasks persist as drafts across dialog close and app restart.
+   * Tasks are added directly to a priority quadrant via color-coded buttons.
+   * All quadrant tasks are created via the API on commit; unsaved tasks
+   * persist as drafts across dialog close and app restart.
    */
 
   import { onMount, onDestroy, untrack } from 'svelte';
@@ -13,9 +13,10 @@
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
+  import { priorityLabels } from '../lib/constants/priorities';
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
-  type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent' | 'staging';
+  type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent';
 
   interface Props {
     open: boolean;
@@ -29,11 +30,10 @@
   let { open, themes, availableTags = [], onDone, onClose, createTask }: Props = $props();
 
   // Quadrant configuration
-  const quadrants: { id: QuadrantId; title: string; color: string; priority: string; isStaging: boolean }[] = [
-    { id: 'important-urgent', title: 'Important & Urgent', color: '#ef4444', priority: 'important-urgent', isStaging: false },
-    { id: 'not-important-urgent', title: 'Not Important & Urgent', color: '#f59e0b', priority: 'not-important-urgent', isStaging: false },
-    { id: 'important-not-urgent', title: 'Important & Not Urgent', color: '#3b82f6', priority: 'important-not-urgent', isStaging: false },
-    { id: 'staging', title: 'Q4 - Staging', color: '#6b7280', priority: '', isStaging: true },
+  const quadrants: { id: QuadrantId; title: string; color: string; priority: string }[] = [
+    { id: 'important-urgent', title: 'Important & Urgent', color: '#ef4444', priority: 'important-urgent' },
+    { id: 'not-important-urgent', title: 'Not Important & Urgent', color: '#f59e0b', priority: 'not-important-urgent' },
+    { id: 'important-not-urgent', title: 'Important & Not Urgent', color: '#3b82f6', priority: 'important-not-urgent' },
   ];
 
   // State
@@ -41,7 +41,6 @@
     'important-urgent': [],
     'important-not-urgent': [],
     'not-important-urgent': [],
-    'staging': [],
   });
   let newTaskTitle = $state('');
   let newTaskDescription = $state('');
@@ -62,7 +61,6 @@
     'important-urgent': [],
     'important-not-urgent': [],
     'not-important-urgent': [],
-    'staging': [],
   };
 
   // Derive nextId from the highest pending-N id across all quadrants
@@ -108,7 +106,6 @@
       'important-urgent': [...tasksByQuadrant['important-urgent']],
       'important-not-urgent': [...tasksByQuadrant['important-not-urgent']],
       'not-important-urgent': [...tasksByQuadrant['not-important-urgent']],
-      'staging': [...tasksByQuadrant.staging],
     };
   }
 
@@ -173,14 +170,14 @@
     }
   });
 
-  // Total tasks across Q1/Q2/Q3 (non-staging)
+  // Total tasks across all priority quadrants
   const creatableTaskCount = $derived(
     tasksByQuadrant['important-urgent'].length +
     tasksByQuadrant['important-not-urgent'].length +
     tasksByQuadrant['not-important-urgent'].length
   );
 
-  function handleAddTask() {
+  function handleAddTask(quadrantId: QuadrantId) {
     const title = newTaskTitle.trim();
     if (!title) return;
 
@@ -194,7 +191,7 @@
     nextId++;
     tasksByQuadrant = {
       ...tasksByQuadrant,
-      staging: [...tasksByQuadrant.staging, task],
+      [quadrantId]: [...tasksByQuadrant[quadrantId], task],
     };
     newTaskTitle = '';
     newTaskDescription = '';
@@ -218,8 +215,6 @@
 
     try {
       for (const quadrant of quadrants) {
-        if (quadrant.isStaging) continue;
-
         const tasks = tasksByQuadrant[quadrant.id];
         const remaining: PendingTask[] = [];
         for (const task of tasks) {
@@ -298,11 +293,6 @@
     await saveDrafts();
   }
 
-  async function handleClearStaging() {
-    tasksByQuadrant = { ...tasksByQuadrant, staging: [] };
-    await saveDrafts();
-  }
-
   async function handleClearPrioritized() {
     tasksByQuadrant = {
       ...tasksByQuadrant,
@@ -313,7 +303,6 @@
     await saveDrafts();
   }
 
-  const stagingCount = $derived(tasksByQuadrant.staging.length);
 </script>
 
 {#if open}
@@ -341,57 +330,36 @@
           onTagsChange={(t) => newTaskTags = t}
         />
       </div>
-      <button
-        type="button"
-        class="btn-add"
-        onclick={handleAddTask}
-        disabled={isSubmitting || !newTaskTitle.trim()}
-      >Stage Task to Q4</button>
+      <div class="add-buttons">
+        {#each quadrants as q (q.id)}
+          <button
+            type="button"
+            class="btn-add"
+            style="background-color: {q.color};"
+            onclick={() => handleAddTask(q.id)}
+            disabled={isSubmitting || !newTaskTitle.trim()}
+          >{priorityLabels[q.id]}</button>
+        {/each}
+      </div>
     </fieldset>
 
     <!-- Eisenhower grid -->
-    <div class="eisenhower-grid" data-testid="eisenhower-grid">
-      <div class="grid-row">
-        {#each quadrants.slice(0, 2) as q (q.id)}
-          <EisenhowerQuadrant
-            quadrantId={q.id}
-            title={q.title}
-            color={q.color}
-            tasks={tasksByQuadrant[q.id]}
-            {themes}
-            onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onTaskClick={handlePendingTaskClick}
-            onTaskDelete={(taskId) => handlePendingTaskDelete(q.id, taskId)}
-            isStaging={q.isStaging}
-          />
-        {/each}
-      </div>
-      <div class="grid-row">
-        {#each quadrants.slice(2, 4) as q (q.id)}
-          <EisenhowerQuadrant
-            quadrantId={q.id}
-            title={q.title}
-            color={q.color}
-            tasks={tasksByQuadrant[q.id]}
-            {themes}
-            onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onTaskClick={handlePendingTaskClick}
-            onTaskDelete={(taskId) => handlePendingTaskDelete(q.id, taskId)}
-            isStaging={q.isStaging}
-          />
-        {/each}
-      </div>
+    <div class="eisenhower-grid">
+      {#each quadrants as q (q.id)}
+        <EisenhowerQuadrant
+          quadrantId={q.id}
+          title={q.title}
+          color={q.color}
+          tasks={tasksByQuadrant[q.id]}
+          {themes}
+          onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onTaskClick={handlePendingTaskClick}
+          onTaskDelete={(taskId) => handlePendingTaskDelete(q.id, taskId)}
+        />
+      {/each}
     </div>
-
-    {#if tasksByQuadrant.staging.length > 0}
-      <p class="staging-hint">
-        Tasks in staging (Q4) are saved as drafts but won't be committed. Drag them to a priority quadrant to include them.
-      </p>
-    {/if}
 
     {#if editingPendingTask}
       <Dialog title="Edit Task" id="edit-pending-dialog-title" onclose={handlePendingTaskEditCancel}>
@@ -428,11 +396,8 @@
 
     {#snippet actions()}
       <div class="actions-left">
-        <Button variant="danger" onclick={handleClearStaging} disabled={isSubmitting || stagingCount === 0}>
-          Clear Staging
-        </Button>
         <Button variant="secondary" onclick={handleClearPrioritized} disabled={isSubmitting || creatableTaskCount === 0}>
-          Clear Prioritized
+          Clear All
         </Button>
       </div>
       <Button variant="secondary" onclick={handleClose} disabled={isSubmitting}>
@@ -464,48 +429,37 @@
     padding: 0 0.25rem;
   }
 
+  .add-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   .btn-add {
+    flex: 1;
     padding: 0.5rem 1rem;
-    background-color: var(--color-success-600);
     color: white;
     border: none;
     border-radius: 6px;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: opacity 0.2s;
   }
 
   .btn-add:hover:not(:disabled) {
-    background-color: #047857;
+    opacity: 0.85;
   }
 
   .btn-add:disabled {
-    background-color: #6ee7b7;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   .eisenhower-grid {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 0.5rem;
     margin-bottom: 1rem;
-  }
-
-  .grid-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
-  }
-
-  .staging-hint {
-    margin: 0 0 1rem 0;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.75rem;
-    color: #92400e;
-    background-color: var(--color-warning-100);
-    border: 1px solid var(--color-warning-400);
-    border-radius: 4px;
   }
 
   .form-group {

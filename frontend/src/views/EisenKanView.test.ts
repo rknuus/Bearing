@@ -1192,7 +1192,7 @@ describe('EisenKanView', () => {
       await tick();
       await tick(); // Wait for LoadTaskDrafts async resolution
 
-      // Type task title and click Add to stage the task to Q4
+      // Type task title and click I&U button to add directly to Q1
       const titleInput = container.querySelector<HTMLInputElement>('#new-task-title');
       expect(titleInput).toBeTruthy();
       await fireEvent.input(titleInput!, { target: { value: 'New task' } });
@@ -1201,21 +1201,6 @@ describe('EisenKanView', () => {
       const addBtn = container.querySelector<HTMLButtonElement>('.btn-add');
       expect(addBtn).toBeTruthy();
       await fireEvent.click(addBtn!);
-      await tick();
-
-      // Simulate DnD: move staged task from Q4 (staging) to Q1 (important-urgent)
-      const stagingZone = container.querySelector('[data-quadrant-id="staging"] .task-list');
-      const q1Zone = container.querySelector('[data-quadrant-id="important-urgent"] .task-list');
-      expect(stagingZone).toBeTruthy();
-      expect(q1Zone).toBeTruthy();
-
-      const pendingTask = { id: 'pending-1', title: 'New task', themeId: 'HF' };
-      stagingZone!.dispatchEvent(new CustomEvent('finalize', {
-        detail: { items: [], info: { id: 'dnd-test', source: 'pointer', trigger: 'droppedIntoZone' } },
-      }));
-      q1Zone!.dispatchEvent(new CustomEvent('finalize', {
-        detail: { items: [pendingTask], info: { id: 'dnd-test', source: 'pointer', trigger: 'droppedIntoZone' } },
-      }));
       await tick();
 
       // Click "Commit to Todo" to create the task (triggers handleDone → createTask → handleCreateDone → verifyTaskState)
