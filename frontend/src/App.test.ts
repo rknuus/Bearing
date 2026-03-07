@@ -257,4 +257,118 @@ describe('App', () => {
 
   });
 
+  describe('Today\'s Focus', () => {
+    /** Build a date string matching the format used by resolveTodayFocusThemeId */
+    function todayDateString(): string {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function setupTodayFocusMocks() {
+      mockBindings.GetYearFocus.mockResolvedValue([
+        { date: todayDateString(), themeId: 'HF', notes: '', text: '' },
+      ]);
+      // Provide themes so ThemeFilterBar renders in EisenKanView
+      mockBindings.GetThemes.mockResolvedValue([
+        { id: 'HF', name: 'Health & Fitness', color: '#22c55e', objectives: [] },
+      ]);
+    }
+
+    it('activates by default when no saved theme filter', async () => {
+      setupTodayFocusMocks();
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'eisenkan',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+      });
+
+      await renderApp();
+
+      // Trigger a view switch to force SaveNavigationContext
+      mockBindings.SaveNavigationContext.mockClear();
+      const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+        .find(l => l.textContent?.trim() === 'Tasks');
+      taskLink!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        const saveCalls = mockBindings.SaveNavigationContext.mock.calls;
+        const hasFocusFilter = saveCalls.some(
+          (call: unknown[]) => {
+            const ctx = call[0] as { filterThemeIds?: string[]; todayFocusActive?: boolean };
+            return ctx.todayFocusActive === true &&
+              ctx.filterThemeIds?.includes('HF');
+          }
+        );
+        if (!hasFocusFilter) throw new Error('Expected SaveNavigationContext with todayFocusActive and HF filter');
+      });
+    });
+
+    it('respects saved todayFocusActive: false', async () => {
+      setupTodayFocusMocks();
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'eisenkan',
+        currentItem: '',
+        filterThemeId: '',
+        filterThemeIds: [],
+        todayFocusActive: false,
+        lastAccessed: '',
+      });
+
+      await renderApp();
+
+      // Trigger a save by navigating to Tasks (re-entering same view)
+      mockBindings.SaveNavigationContext.mockClear();
+      const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+        .find(l => l.textContent?.trim() === 'Tasks');
+      taskLink!.click();
+      await tick();
+
+      // todayFocusActive=false serialises as undefined
+      await vi.waitFor(() => {
+        const saveCalls = mockBindings.SaveNavigationContext.mock.calls;
+        const hasNoFocusActive = saveCalls.some(
+          (call: unknown[]) => {
+            const ctx = call[0] as { todayFocusActive?: boolean; filterThemeIds?: string[] };
+            // When todayFocusActive is false, it is saved as undefined and filterThemeIds empty
+            return ctx.todayFocusActive === undefined &&
+              (ctx.filterThemeIds === undefined || ctx.filterThemeIds.length === 0);
+          }
+        );
+        if (!hasNoFocusActive) throw new Error('Expected SaveNavigationContext with todayFocusActive=undefined (false)');
+      });
+    });
+
+    it('todayFocusActive is persisted in navigation context', async () => {
+      setupTodayFocusMocks();
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'eisenkan',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+      });
+
+      await renderApp();
+
+      // Trigger a save by clicking the Tasks nav link
+      mockBindings.SaveNavigationContext.mockClear();
+      const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+        .find(l => l.textContent?.trim() === 'Tasks');
+      taskLink!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        const saveCalls = mockBindings.SaveNavigationContext.mock.calls;
+        const hasTodayFocus = saveCalls.some(
+          (call: unknown[]) => {
+            const ctx = call[0] as { todayFocusActive?: boolean };
+            return ctx.todayFocusActive === true;
+          }
+        );
+        if (!hasTodayFocus) throw new Error('Expected SaveNavigationContext with todayFocusActive');
+      });
+    });
+  });
+
 });

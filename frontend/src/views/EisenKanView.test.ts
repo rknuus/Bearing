@@ -1267,4 +1267,39 @@ describe('EisenKanView', () => {
       // Restoring early would re-expose our wrapper to late async console.error calls.
     });
   });
+
+  describe('Today\'s Focus pass-through', () => {
+    it('passes Today\'s Focus props to ThemeFilterBar', async () => {
+      const onFilterThemeToggle = vi.fn();
+      const onFilterThemeClear = vi.fn();
+      const onTodayFocusToggle = vi.fn();
+
+      await renderView({
+        onFilterThemeToggle,
+        onFilterThemeClear,
+        todayFocusThemeId: 'HF',
+        todayFocusActive: true,
+        onTodayFocusToggle,
+      });
+
+      // ThemeFilterBar should render the today-focus-pill button
+      const chip = container.querySelector('.today-focus-pill');
+      expect(chip).not.toBeNull();
+      expect(chip?.textContent?.trim()).toBe("Today's Focus");
+      expect(chip?.classList.contains('active')).toBe(true);
+    });
+
+    it('does not render Today\'s Focus chip when onTodayFocusToggle not provided', async () => {
+      const onFilterThemeToggle = vi.fn();
+      const onFilterThemeClear = vi.fn();
+
+      await renderView({
+        onFilterThemeToggle,
+        onFilterThemeClear,
+      });
+
+      const chip = container.querySelector('.today-focus-pill');
+      expect(chip).toBeNull();
+    });
+  });
 });
