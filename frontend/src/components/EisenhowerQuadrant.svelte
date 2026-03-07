@@ -93,7 +93,7 @@
               class="delete-btn"
               onclick={(e) => { e.stopPropagation(); onTaskDelete(task.id); }}
               aria-label="Remove task"
-            >&times;</button>
+            >🗑️</button>
           {/if}
         </div>
         <span class="task-title">{task.title}</span>
@@ -198,7 +198,7 @@
     background: none;
     border: none;
     color: var(--color-gray-400);
-    font-size: 1rem;
+    font-size: 0.875rem;
     line-height: 1;
     cursor: pointer;
     padding: 0 0.25rem;
