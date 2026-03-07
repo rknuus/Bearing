@@ -1,5 +1,5 @@
 /**
- * E2E Tests for Full User Flow
+ * UI Component Tests for Full User Flow
  * Tests the complete Bearing journey: OKR creation -> calendar assignment ->
  * batch task creation -> mixed kanban transitions -> cross-view navigation.
  *
@@ -17,7 +17,7 @@ import {
 const reporter = new TestReporter('Full Flow Tests')
 
 export async function runTests() {
-  console.log('Starting Full Flow E2E Tests...\n')
+  console.log('Starting Full Flow Tests...\n')
 
   let browser
   const pageErrors = []

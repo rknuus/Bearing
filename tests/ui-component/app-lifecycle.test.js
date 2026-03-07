@@ -1,5 +1,5 @@
 /**
- * E2E Tests for Application Lifecycle
+ * UI Component Tests for Application Lifecycle
  * Tests: app loads without errors, default view renders, navigation works
  *
  * Runs against Vite dev server (localhost:5173) with mock Wails bindings.
@@ -15,7 +15,7 @@ import {
 const reporter = new TestReporter('App Lifecycle Tests')
 
 export async function runTests() {
-  console.log('Starting App Lifecycle E2E Tests...\n')
+  console.log('Starting App Lifecycle Tests...\n')
 
   let browser
   const pageErrors = []
