@@ -40,6 +40,8 @@ export interface DayFocus {
   themeId: string;
   notes: string;
   text: string;
+  okrIds?: string[];
+  tags?: string[];
 }
 
 export interface Task {

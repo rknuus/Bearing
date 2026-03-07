@@ -47,6 +47,7 @@ describe('CalendarView', () => {
         const idx = currentYearFocus.findIndex(e => e.date === date);
         if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeId: '' };
       }),
+      GetTasks: vi.fn().mockResolvedValue([]),
       LogFrontend: vi.fn(),
       LoadNavigationContext: vi.fn().mockResolvedValue({
         currentView: 'calendar',
@@ -230,8 +231,9 @@ describe('CalendarView', () => {
     await tick();
     expect(container.querySelector('.dialog')).toBeTruthy();
 
-    // Click cancel
-    const cancelButton = container.querySelector<HTMLButtonElement>('.btn-secondary');
+    // Click cancel (find by text to avoid matching the Add button)
+    const cancelButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
+      .find(btn => btn.textContent?.trim() === 'Cancel');
     cancelButton!.click();
     await tick();
 
@@ -383,6 +385,252 @@ describe('CalendarView', () => {
       // Verify console.warn was called with [state-check] prefix
       const warnings = warnSpy.mock.calls.filter((c: unknown[]) => String(c[0]).includes('[state-check]'));
       expect(warnings.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('OKR picker', () => {
+    function themesWithOkrs(): LifeTheme[] {
+      return [
+        {
+          id: 'HF',
+          name: 'Health & Fitness',
+          color: '#22c55e',
+          objectives: [
+            {
+              id: 'HF-O1', parentId: 'HF', title: 'Run marathon', status: 'active',
+              keyResults: [
+                { id: 'HF-KR1', parentId: 'HF-O1', description: 'Complete 5K' },
+              ],
+            },
+            {
+              id: 'HF-O2', parentId: 'HF', title: 'Archived goal', status: 'archived',
+              keyResults: [],
+            },
+          ],
+        },
+        { id: 'CG', name: 'Career Growth', color: '#3b82f6', objectives: [] },
+      ];
+    }
+
+    async function openDialogWithTheme(themeId: string) {
+      mockBindings = makeMockBindings(themesWithOkrs(), [
+        { date: '2025-01-01', themeId, notes: '', text: '' },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      // Click Jan 1 cell
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      // Wait for GetTasks to resolve
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+    }
+
+    it('shows OKR picker when theme with objectives is selected', async () => {
+      await openDialogWithTheme('HF');
+
+      const okrPicker = container.querySelector('.okr-picker');
+      expect(okrPicker).toBeTruthy();
+
+      const items = container.querySelectorAll('.okr-item');
+      expect(items.length).toBe(2); // O1 + KR1 (O2 is archived)
+    });
+
+    it('shows type badges [O] and [KR]', async () => {
+      await openDialogWithTheme('HF');
+
+      const badges = container.querySelectorAll('.okr-type-badge');
+      const badgeTexts = Array.from(badges).map(b => b.textContent);
+      expect(badgeTexts).toContain('[O]');
+      expect(badgeTexts).toContain('[KR]');
+    });
+
+    it('hides OKR picker when no theme is selected', async () => {
+      await openDialogWithTheme('');
+
+      const okrPicker = container.querySelector('.okr-picker');
+      expect(okrPicker).toBeNull();
+    });
+
+    it('toggles OKR item selection', async () => {
+      await openDialogWithTheme('HF');
+
+      const checkboxes = container.querySelectorAll<HTMLInputElement>('.okr-item input[type="checkbox"]');
+      expect(checkboxes.length).toBe(2);
+      expect(checkboxes[0].checked).toBe(false);
+
+      checkboxes[0].click();
+      await tick();
+      expect(checkboxes[0].checked).toBe(true);
+
+      checkboxes[0].click();
+      await tick();
+      expect(checkboxes[0].checked).toBe(false);
+    });
+
+    it('saves selected OKR IDs with day focus', async () => {
+      await openDialogWithTheme('HF');
+
+      // Select the first OKR item
+      const checkbox = container.querySelector<HTMLInputElement>('.okr-item input[type="checkbox"]');
+      checkbox!.click();
+      await tick();
+
+      // Click Save
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({ okrIds: ['HF-O1'] })
+        );
+      });
+    });
+
+    it('warns when changing theme with existing OKR refs', async () => {
+      mockBindings = makeMockBindings(themesWithOkrs(), [
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: '', okrIds: ['HF-O1'] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Confirm should be called when changing theme
+      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      const themeSelect = container.querySelector<HTMLSelectElement>('#theme-select');
+      await fireEvent.change(themeSelect!, { target: { value: 'CG' } });
+      await tick();
+
+      expect(confirmSpy).toHaveBeenCalled();
+      confirmSpy.mockRestore();
+    });
+  });
+
+  describe('tag picker', () => {
+    it('shows tags from tasks as toggleable pills', async () => {
+      mockBindings = makeMockBindings();
+      mockBindings.GetTasks.mockResolvedValue([
+        { id: 'T1', title: 'Task 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'] },
+        { id: 'T2', title: 'Task 2', themeId: 'CG', priority: 'important-urgent', status: 'todo', tags: ['frontend'] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+      dayCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      const tagPills = container.querySelectorAll('.tag-pill');
+      expect(tagPills.length).toBe(3); // api, backend, frontend (sorted)
+      const tagTexts = Array.from(tagPills).map(p => p.textContent?.trim());
+      expect(tagTexts).toEqual(['api', 'backend', 'frontend']);
+    });
+
+    it('toggles tag selection', async () => {
+      mockBindings = makeMockBindings();
+      mockBindings.GetTasks.mockResolvedValue([
+        { id: 'T1', title: 'Task 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['review'] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+      dayCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      const tagPill = container.querySelector<HTMLButtonElement>('.tag-pill');
+      expect(tagPill?.classList.contains('active')).toBe(false);
+
+      tagPill!.click();
+      await tick();
+      expect(tagPill?.classList.contains('active')).toBe(true);
+
+      tagPill!.click();
+      await tick();
+      expect(tagPill?.classList.contains('active')).toBe(false);
+    });
+
+    it('saves selected tags with day focus', async () => {
+      mockBindings = makeMockBindings();
+      mockBindings.GetTasks.mockResolvedValue([
+        { id: 'T1', title: 'Task 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['review'] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+      dayCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Select the tag
+      const tagPill = container.querySelector<HTMLButtonElement>('.tag-pill');
+      tagPill!.click();
+      await tick();
+
+      // Save
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({ tags: ['review'] })
+        );
+      });
+    });
+
+    it('creates new tags via text input', async () => {
+      mockBindings = makeMockBindings();
+      mockBindings.GetTasks.mockResolvedValue([]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+      dayCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Type a new tag
+      const tagInput = container.querySelector<HTMLInputElement>('.tag-input');
+      expect(tagInput).toBeTruthy();
+      await fireEvent.input(tagInput!, { target: { value: 'deep-work' } });
+      await fireEvent.keyDown(tagInput!, { key: 'Enter' });
+      await tick();
+
+      // New tag should appear as active pill
+      const activePills = container.querySelectorAll('.tag-pill.active');
+      expect(activePills.length).toBe(1);
+      expect(activePills[0].textContent?.trim()).toBe('deep-work');
     });
   });
 });
