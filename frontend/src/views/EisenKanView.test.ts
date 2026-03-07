@@ -1259,4 +1259,100 @@ describe('EisenKanView', () => {
       expect(chip).toBeNull();
     });
   });
+
+  describe('section folding', () => {
+    it('renders fold arrow buttons on section headers', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll('.section-fold-btn');
+      // 3 sections in the TODO column
+      expect(foldBtns.length).toBe(3);
+    });
+
+    it('sections start expanded by default', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll('.section-fold-btn');
+      for (const btn of foldBtns) {
+        expect(btn.getAttribute('aria-expanded')).toBe('true');
+      }
+    });
+
+    it('clicking fold arrow collapses section content', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll<HTMLButtonElement>('.section-fold-btn');
+      // Collapse first section (important-urgent)
+      await fireEvent.click(foldBtns[0]);
+      await tick();
+
+      const sections = container.querySelectorAll('[data-testid^="section-"]');
+      const firstSectionContent = sections[0].querySelector('.column-content');
+      expect(firstSectionContent?.classList.contains('collapsed-section')).toBe(true);
+
+      // Other sections remain expanded
+      const secondSectionContent = sections[1].querySelector('.column-content');
+      expect(secondSectionContent?.classList.contains('collapsed-section')).toBe(false);
+    });
+
+    it('clicking fold arrow again expands section', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll<HTMLButtonElement>('.section-fold-btn');
+      // Collapse then expand
+      await fireEvent.click(foldBtns[0]);
+      await tick();
+      await fireEvent.click(foldBtns[0]);
+      await tick();
+
+      const sections = container.querySelectorAll('[data-testid^="section-"]');
+      const firstSectionContent = sections[0].querySelector('.column-content');
+      expect(firstSectionContent?.classList.contains('collapsed-section')).toBe(false);
+    });
+
+    it('collapsed section still shows title and count', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll<HTMLButtonElement>('.section-fold-btn');
+      await fireEvent.click(foldBtns[0]);
+      await tick();
+
+      const section = container.querySelector('[data-testid="section-important-urgent"]')!;
+      const header = section.querySelector('.section-header')!;
+      expect(header.querySelector('.section-title')?.textContent).toBe('Important & Urgent');
+      expect(header.querySelector('.section-count')?.textContent).toBe('1');
+    });
+
+    it('persists collapsed sections to NavigationContext', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll<HTMLButtonElement>('.section-fold-btn');
+      await fireEvent.click(foldBtns[0]);
+      await tick();
+
+      // Wait for $effect persistence
+      await vi.waitFor(() => {
+        const calls = mockSaveNavigationContext.mock.calls;
+        const lastCall = calls[calls.length - 1];
+        expect(lastCall?.[0]?.collapsedSections).toContain('important-urgent');
+      });
+    });
+
+    it('restores collapsed sections from NavigationContext on mount', async () => {
+      mockLoadNavigationContext.mockResolvedValue({
+        currentView: 'eisenkan',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+        collapsedSections: ['important-urgent', 'not-important-urgent'],
+      });
+
+      await renderView();
+
+      const sections = container.querySelectorAll('[data-testid^="section-"]');
+      expect(sections[0].querySelector('.column-content')?.classList.contains('collapsed-section')).toBe(true);
+      expect(sections[1].querySelector('.column-content')?.classList.contains('collapsed-section')).toBe(true);
+      expect(sections[2].querySelector('.column-content')?.classList.contains('collapsed-section')).toBe(false);
+    });
+  });
 });

@@ -9,6 +9,7 @@
    */
 
   import { onMount, onDestroy, untrack } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
@@ -74,6 +75,17 @@
 
   // Archive toggle state (persisted via navigation context)
   let showArchivedTasks = $state(false);
+
+  // Fold state (persisted via navigation context)
+  let collapsedSections = new SvelteSet<string>();
+  let collapsedColumns = new SvelteSet<string>();
+
+  function toggleSection(name: string) {
+    if (collapsedSections.has(name)) collapsedSections.delete(name);
+    else collapsedSections.add(name);
+  }
+
+
 
   // Create task dialog state
   let showCreateDialog = $state(false);
@@ -339,11 +351,13 @@
       themes = fetchedThemes;
       boardConfig = fetchedConfig;
 
-      // Load showArchivedTasks from navigation context
+      // Load persisted state from navigation context
       try {
         const navCtx = await getBindings().LoadNavigationContext();
         if (navCtx) {
           showArchivedTasks = navCtx.showArchivedTasks ?? false;
+          for (const s of navCtx.collapsedSections ?? []) collapsedSections.add(s);
+          for (const c of navCtx.collapsedColumns ?? []) collapsedColumns.add(c);
         }
       } catch {
         // Ignore errors loading nav context
@@ -373,6 +387,32 @@
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
           getBindings().SaveNavigationContext({ ...ctx, showArchivedTasks: sat });
+        }
+      }).catch(() => { /* ignore */ });
+    });
+  });
+
+  // Persist collapsedSections to NavigationContext
+  $effect(() => {
+    const _size = collapsedSections.size;
+    const sections = [...collapsedSections];
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, collapsedSections: sections });
+        }
+      }).catch(() => { /* ignore */ });
+    });
+  });
+
+  // Persist collapsedColumns to NavigationContext
+  $effect(() => {
+    const _size = collapsedColumns.size;
+    const cols = [...collapsedColumns];
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, collapsedColumns: cols });
         }
       }).catch(() => { /* ignore */ });
     });
@@ -951,13 +991,24 @@
             <div class="section-container">
               {#each column.sections as section (section.name)}
                 {@const sectionTaskItems = sectionItems[section.name] ?? []}
+                {@const sectionCollapsed = collapsedSections.has(section.name)}
                 <div class="column-section" style="--section-color: {section.color};" data-testid="section-{section.name}">
                   <div class="section-header" style="background-color: {section.color};">
+                    <button
+                      type="button"
+                      class="section-fold-btn"
+                      onclick={() => toggleSection(section.name)}
+                      aria-expanded={!sectionCollapsed}
+                      aria-label="{sectionCollapsed ? 'Expand' : 'Collapse'} {section.title}"
+                    >
+                      <span class="fold-icon">{sectionCollapsed ? '\u25B6' : '\u25BC'}</span>
+                    </button>
                     <span class="section-title">{section.title}</span>
                     <span class="section-count">{sectionTaskItems.length}</span>
                   </div>
                   <div
                     class="column-content"
+                    class:collapsed-section={sectionCollapsed}
                     use:dndzone={{ items: sectionTaskItems, flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack || sectionTaskItems.length === 0 }}
                     onconsider={(e) => handleSectionDndConsider(section.name, e)}
                     onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
@@ -1325,6 +1376,35 @@
     border-radius: 9999px;
     min-width: 1.25rem;
     text-align: center;
+  }
+
+  .section-fold-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .fold-icon {
+    font-size: 0.625rem;
+    color: white;
+  }
+
+  .collapsed-section {
+    height: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0;
+    gap: 0;
+  }
+
+  /* Remove bottom margin from section header when section is collapsed */
+  .column-section:has(> .collapsed-section) .section-header {
+    margin-bottom: -0.5rem;
+    border-radius: 6px;
   }
 
   .column-content {
