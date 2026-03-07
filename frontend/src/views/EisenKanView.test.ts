@@ -536,6 +536,19 @@ describe('EisenKanView', () => {
     expect(untaggedBadge?.textContent).toBe('1');
   });
 
+  it('Untagged pill visible with stable count when theme filter excludes all untagged tasks', async () => {
+    const onFilterTagToggle = vi.fn();
+    const onFilterTagClear = vi.fn();
+    // Filter to CG theme: T2 (tags: backend) and T3 (tags: api) — no untagged tasks for CG
+    // But T4 (HF, no tags) exists globally, so Untagged pill should be visible with count 1
+    await renderView({ filterThemeIds: ['CG'], onFilterTagToggle, onFilterTagClear });
+
+    const untaggedPill = container.querySelector('.untagged-pill');
+    expect(untaggedPill).not.toBeNull();
+    // Count reflects total untagged tasks, not theme-filtered count
+    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('1');
+  });
+
   it('count badges exclude archived tasks by default', async () => {
     // Add an archived task
     currentTasks.push({ id: 'T5', title: 'Archived', themeId: 'HF', priority: 'important-urgent', status: 'archived' });
