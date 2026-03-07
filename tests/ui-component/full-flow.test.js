@@ -371,7 +371,6 @@ export async function runTests() {
           ...taskA,
           description: 'E2E description to clear',
           tags: ['e2e-tag'],
-          promotionDate: '2026-06-15',
         })
       })
 
@@ -394,15 +393,9 @@ export async function runTests() {
       if (hasActiveTag !== 'e2e-tag') {
         throw new Error(`Expected active tag pill "e2e-tag", got "${hasActiveTag}"`)
       }
-      const promo = await page.$eval('#edit-task-promotion-date', el => el.value)
-      if (promo !== '2026-06-15') {
-        throw new Error(`Expected promotion date "2026-06-15", got "${promo}"`)
-      }
-
       // Clear all optional fields
       await page.fill('#edit-task-description', '')
       await page.click('[role="dialog"] .tag-pill.active')
-      await page.fill('#edit-task-promotion-date', '')
 
       // Save
       await page.click('[role="dialog"] .btn-primary')

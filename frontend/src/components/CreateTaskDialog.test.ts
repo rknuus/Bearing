@@ -24,7 +24,7 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeCreateTaskMock() {
   let callCount = 0;
-  return vi.fn<(title: string, themeId: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>>(
+  return vi.fn<(title: string, themeId: string, priority: string, description: string, tags: string) => Promise<Task>>(
     async (title, themeId, priority) => {
       callCount++;
       return {
@@ -56,7 +56,7 @@ describe('CreateTaskDialog', () => {
     themes: LifeTheme[];
     onDone: () => void;
     onClose: () => void;
-    createTask: (title: string, themeId: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, priority: string, description: string, tags: string) => Promise<Task>;
   }> = {}) {
     const result = render(CreateTaskDialog, {
       target: container,
@@ -240,8 +240,6 @@ describe('CreateTaskDialog', () => {
     expect(container.querySelector('#new-task-description')).toBeTruthy();
     // Tags are now rendered via TagEditor (pill toggles + text input)
     expect(container.querySelector('.tag-editor')).toBeTruthy();
-    // Promotion date is not shown in the create dialog
-    expect(container.querySelector('#new-task-promotion-date')).toBeNull();
   });
 
   it('optional fields default to empty', async () => {

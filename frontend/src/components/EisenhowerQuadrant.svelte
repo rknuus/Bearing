@@ -11,7 +11,7 @@
   import type { LifeTheme } from '../lib/wails-mock';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
-  import { formatDate } from '../lib/utils/date-format';
+
 
   /** Pending task not yet saved to the backend. */
   export interface PendingTask {
@@ -20,7 +20,6 @@
     themeId?: string;
     description?: string;
     tags?: string;
-    promotionDate?: string;
   }
 
   interface Props {
@@ -86,11 +85,6 @@
           {/if}
         </div>
         <span class="task-title">{task.title}</span>
-        {#if task.promotionDate}
-          <div class="task-footer">
-            <span class="task-date">{formatDate(task.promotionDate)}</span>
-          </div>
-        {/if}
       </div>
     {/each}
     {#if tasks.length === 0 && isStaging}
@@ -192,15 +186,6 @@
     font-weight: 500;
     color: var(--color-gray-800);
     line-height: 1.3;
-  }
-
-  .task-footer {
-    margin-top: 0.375rem;
-  }
-
-  .task-date {
-    font-size: 0.7rem;
-    color: var(--color-gray-400);
   }
 
   .empty-hint {

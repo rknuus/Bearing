@@ -271,8 +271,8 @@
     return getBindings().GetBoardConfiguration();
   }
 
-  async function apiCreateTask(title: string, themeId: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
-    return getBindings().CreateTask(title, themeId, priority, description, tags, promotionDate);
+  async function apiCreateTask(title: string, themeId: string, priority: string, description: string = '', tags: string = ''): Promise<Task> {
+    return getBindings().CreateTask(title, themeId, priority, description, tags, '');
   }
 
   async function apiMoveTask(taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> {
@@ -307,7 +307,7 @@
     await getBindings().RestoreTask(taskId);
   }
 
-  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'promotionDate', 'description', 'status'];
+  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'description', 'status'];
 
   const taskDropZone = (t: Record<string, unknown>) =>
     t.status === 'todo' ? (String(t.priority) || 'todo') : String(t.status);
@@ -383,8 +383,8 @@
     showCreateDialog = true;
   }
 
-  async function apiCreateTaskAndInsert(title: string, themeId: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
-    const task = await apiCreateTask(title, themeId, priority, description, tags, promotionDate);
+  async function apiCreateTaskAndInsert(title: string, themeId: string, priority: string, description: string = '', tags: string = ''): Promise<Task> {
+    const task = await apiCreateTask(title, themeId, priority, description, tags);
     tasks = [...tasks, { ...task, status: 'todo' } as TaskWithStatus];
     return task;
   }

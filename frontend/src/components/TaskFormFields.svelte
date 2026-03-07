@@ -3,7 +3,7 @@
    * TaskFormFields Component
    *
    * Shared form fields used by both CreateTaskDialog and EditTaskDialog.
-   * Renders title, theme, description, and promotion date fields.
+   * Renders title, theme, and description fields.
    * Tags are handled separately via the TagEditor component.
    */
 
@@ -13,7 +13,6 @@
     title: string;
     themeId: string;
     description: string;
-    promotionDate?: string;
     themes: LifeTheme[];
     disabled?: boolean;
     idPrefix?: string;
@@ -23,7 +22,6 @@
     title = $bindable(),
     themeId = $bindable(),
     description = $bindable(),
-    promotionDate = $bindable(undefined),
     themes,
     disabled = false,
     idPrefix = '',
@@ -60,18 +58,6 @@
     {disabled}
   ></textarea>
 </div>
-{#if promotionDate !== undefined}
-  <div class="form-group">
-    <label for="{prefix}promotion-date">Promotion Date</label>
-    <input
-      id="{prefix}promotion-date"
-      type="date"
-      bind:value={promotionDate}
-      {disabled}
-    />
-  </div>
-{/if}
-
 <style>
   .form-group {
     margin-bottom: 1rem;
@@ -86,7 +72,6 @@
   }
 
   .form-group input[type="text"],
-  .form-group input[type="date"],
   .form-group textarea,
   .form-group select {
     width: 100%;
@@ -100,7 +85,6 @@
   }
 
   .form-group input[type="text"]:focus,
-  .form-group input[type="date"]:focus,
   .form-group textarea:focus,
   .form-group select:focus {
     outline: none;
