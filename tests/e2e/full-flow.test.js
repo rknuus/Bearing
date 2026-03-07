@@ -256,7 +256,7 @@ export async function runTests() {
       // quadrant is unreliable in Playwright)
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Task A', tid, '2026-03-01', 'important-urgent', '', '', '')
+        await app.CreateTask('E2E Task A', tid, 'important-urgent', '', '', '')
       }, themeId)
 
       // Verify task file
@@ -294,7 +294,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Task B', tid, '2026-03-01', 'not-important-urgent', '', '', '')
+        await app.CreateTask('E2E Task B', tid, 'not-important-urgent', '', '', '')
       }, themeId)
 
       const todoFiles = getTaskFiles(DATA_DIR, 'todo')
@@ -679,7 +679,7 @@ export async function runTests() {
 
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.CreateTask('E2E Column Task', tid, '2026-03-01', 'important-urgent', '', '', '')
+        await app.CreateTask('E2E Column Task', tid, 'important-urgent', '', '', '')
       }, colThemeId)
 
       expectedCommits++
