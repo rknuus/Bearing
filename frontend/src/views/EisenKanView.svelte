@@ -85,7 +85,10 @@
     else collapsedSections.add(name);
   }
 
-
+  function toggleColumn(name: string) {
+    if (collapsedColumns.has(name)) collapsedColumns.delete(name);
+    else collapsedColumns.add(name);
+  }
 
   // Create task dialog state
   let showCreateDialog = $state(false);
@@ -144,6 +147,13 @@
 
   // Derive columns from board config
   const columns = $derived<ColumnDefinition[]>(boardConfig?.columnDefinitions ?? []);
+
+  // Dynamic grid template: 1fr for expanded columns, 48px for collapsed
+  const gridTemplateCols = $derived.by(() => {
+    const cols = columns.map(c => collapsedColumns.has(c.name) ? '48px' : '1fr');
+    if (showArchivedTasks) cols.push('1fr');
+    return cols.join(' ');
+  });
 
   // Filter tasks based on props
   const filteredTasks = $derived.by(() => {
@@ -929,15 +939,40 @@
         onTodayFocusToggle={onTagFocusToggle}
       />
     {/if}
-    <div class="kanban-board" style="grid-template-columns: repeat({columns.length + (showArchivedTasks ? 1 : 0)}, 1fr);">
+    <div class="kanban-board" style="grid-template-columns: {gridTemplateCols};">
       {#each columns as column (column.name)}
+        {@const columnCollapsed = collapsedColumns.has(column.name)}
         <div
           class="kanban-column"
+          class:collapsed-column={columnCollapsed}
           role="region"
           aria-label="{column.title} column"
         >
+          {#if columnCollapsed}
+            <button
+              type="button"
+              class="collapsed-column-strip"
+              onclick={() => toggleColumn(column.name)}
+              aria-expanded="false"
+              aria-label="Expand {column.title}"
+            >
+              <span class="collapsed-column-title">{column.title}</span>
+              <span class="collapsed-column-count">{getColumnTaskCount(column.name)}</span>
+            </button>
+          {:else}
           <div class="column-header">
-            <h2>{column.title}</h2>
+            <div class="column-header-left">
+              <button
+                type="button"
+                class="column-fold-btn"
+                onclick={() => toggleColumn(column.name)}
+                aria-expanded="true"
+                aria-label="Collapse {column.title}"
+              >
+                <span class="fold-icon">&#x25BC;</span>
+              </button>
+              <h2>{column.title}</h2>
+            </div>
             <div class="column-header-right">
               {#if column.type === 'done'}
                 <button
@@ -1119,6 +1154,7 @@
                 </div>
               {/if}
             </div>
+          {/if}
           {/if}
         </div>
       {/each}
@@ -1308,12 +1344,71 @@
     transition: background-color 0.2s;
   }
 
+  .collapsed-column {
+    padding: 0.5rem 0;
+    align-items: center;
+  }
+
+  .collapsed-column-strip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .collapsed-column-title {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex: 1;
+  }
+
+  .collapsed-column-count {
+    background-color: var(--color-gray-400);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.125rem 0.5rem;
+    border-radius: 9999px;
+  }
+
+  .column-fold-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    line-height: 1;
+  }
+
+  .column-fold-btn .fold-icon {
+    font-size: 0.625rem;
+    color: var(--color-gray-500);
+  }
+
   .column-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.75rem;
     padding: 0 0.25rem;
+  }
+
+  .column-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
   }
 
   .column-header h2 {
