@@ -822,6 +822,27 @@ describe('CalendarView', () => {
       expect(getTextInputValue()).toBe('demo');
     });
 
+    it('auto-derives text after user clears custom text and adds tags', async () => {
+      await openDayDialog([
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: 'custom note', tags: ['demo'] },
+      ]);
+      // Tag section auto-expands when day has existing tags
+      await tick();
+
+      // Clear the text field
+      const textInput = container.querySelector<HTMLInputElement>('#text-input')!;
+      await fireEvent.input(textInput, { target: { value: '' } });
+      await tick();
+
+      // Add a new tag — text should auto-derive since it's now empty
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const reviewPill = Array.from(pills).find(p => p.textContent?.trim() === 'review');
+      reviewPill!.click();
+      await tick();
+
+      expect(getTextInputValue()).toBe('demo, review');
+    });
+
     it('clears text when all tags removed and text matched derived', async () => {
       await openDayDialog([
         { date: '2025-01-01', themeId: 'HF', notes: '', text: 'demo', tags: ['demo'] },

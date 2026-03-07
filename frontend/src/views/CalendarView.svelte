@@ -464,7 +464,7 @@
             {availableTags}
             onTagsChange={(newTags) => {
               const newDerived = newTags.join(', ');
-              if (editText === prevDerivedText) {
+              if (editText === prevDerivedText || editText === '') {
                 editText = newDerived;
               }
               prevDerivedText = newDerived;
