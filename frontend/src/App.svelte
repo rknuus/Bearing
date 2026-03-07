@@ -218,7 +218,9 @@
     try {
       const bindings = getBindings();
       if (bindings?.SaveNavigationContext) {
+        const existing = await bindings.LoadNavigationContext?.() ?? {};
         await bindings.SaveNavigationContext({
+          ...existing,
           currentView,
           currentItem: currentItemId,
           filterThemeId: filterThemeIds.length === 1 ? filterThemeIds[0] : '',

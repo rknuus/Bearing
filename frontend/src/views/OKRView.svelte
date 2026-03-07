@@ -73,6 +73,7 @@
 
   // Unified expansion state for themes and objectives at any depth
   let expandedIds = new SvelteSet<string>();
+  let contextLoaded = false;
 
   // Editing state
   let editingThemeId = $state<string | null>(null);
@@ -573,6 +574,7 @@
     } catch {
       // Ignore errors loading nav context
     }
+    contextLoaded = true;
     loadThemes();
   });
 
@@ -580,6 +582,7 @@
   $effect(() => {
     const sc = showCompleted;
     const sa = showArchived;
+    if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
@@ -593,6 +596,7 @@
   $effect(() => {
     const _size = expandedIds.size;
     const ids = [...expandedIds];
+    if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {

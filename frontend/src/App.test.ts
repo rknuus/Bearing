@@ -201,6 +201,49 @@ describe('App', () => {
     });
   });
 
+  it('preserves view-specific NavigationContext fields when switching views', async () => {
+    // LoadNavigationContext returns context with OKR and EisenKan fields
+    mockBindings.LoadNavigationContext.mockResolvedValue({
+      currentView: 'okr',
+      currentItem: '',
+      filterThemeId: '',
+      lastAccessed: '',
+      expandedOkrIds: ['T1', 'T1-O1'],
+      showCompleted: true,
+      showArchived: false,
+      showArchivedTasks: true,
+      collapsedSections: ['todo-iu'],
+      collapsedColumns: ['done'],
+    });
+
+    await renderApp();
+    mockBindings.SaveNavigationContext.mockClear();
+
+    // Switch to Calendar view
+    const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
+      .find(l => l.textContent?.trim() === 'Calendar');
+    calLink!.click();
+    await tick();
+
+    await vi.waitFor(() => {
+      const saveCalls = mockBindings.SaveNavigationContext.mock.calls;
+      const calSave = saveCalls.find(
+        (call: unknown[]) => {
+          const ctx = call[0] as { currentView?: string };
+          return ctx.currentView === 'calendar';
+        }
+      );
+      if (!calSave) throw new Error('SaveNavigationContext not called with calendar view');
+      const ctx = calSave[0] as Record<string, unknown>;
+      // View-specific fields must be preserved
+      expect(ctx.expandedOkrIds).toEqual(['T1', 'T1-O1']);
+      expect(ctx.showCompleted).toBe(true);
+      expect(ctx.showArchivedTasks).toBe(true);
+      expect(ctx.collapsedSections).toEqual(['todo-iu']);
+      expect(ctx.collapsedColumns).toEqual(['done']);
+    });
+  });
+
   it('renders navigation bar with all nav links', async () => {
     await renderApp();
 
