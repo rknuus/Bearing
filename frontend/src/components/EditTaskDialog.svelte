@@ -66,7 +66,7 @@
 </script>
 
 {#if task}
-  <Dialog title="Edit Task" id="edit-dialog-title" onclose={onCancel}>
+  <Dialog title="Edit Task" id="edit-dialog-title" maxWidth="700px" onclose={onCancel}>
     {#if errorMessage}
       <ErrorBanner message={errorMessage} dismissable={false} />
     {/if}
