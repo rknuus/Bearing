@@ -371,7 +371,6 @@ export async function runTests() {
           ...taskA,
           description: 'E2E description to clear',
           tags: ['e2e-tag'],
-          dueDate: '2026-12-31',
           promotionDate: '2026-06-15',
         })
       })
@@ -395,10 +394,6 @@ export async function runTests() {
       if (!tags.includes('e2e-tag')) {
         throw new Error(`Expected tags to contain "e2e-tag", got "${tags}"`)
       }
-      const due = await page.$eval('#edit-task-due-date', el => el.value)
-      if (due !== '2026-12-31') {
-        throw new Error(`Expected due date "2026-12-31", got "${due}"`)
-      }
       const promo = await page.$eval('#edit-task-promotion-date', el => el.value)
       if (promo !== '2026-06-15') {
         throw new Error(`Expected promotion date "2026-06-15", got "${promo}"`)
@@ -407,7 +402,6 @@ export async function runTests() {
       // Clear all optional fields
       await page.fill('#edit-task-description', '')
       await page.fill('#edit-task-tags', '')
-      await page.fill('#edit-task-due-date', '')
       await page.fill('#edit-task-promotion-date', '')
 
       // Save

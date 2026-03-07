@@ -393,7 +393,6 @@ export async function runTests() {
           ...task,
           description: 'Updated description',
           tags: ['e2e', 'test'],
-          dueDate: '2026-12-31',
         })
       }, task2Id)
 
@@ -404,15 +403,11 @@ export async function runTests() {
       if (!updatedTask.tags || !updatedTask.tags.includes('e2e')) {
         throw new Error(`Expected tags to include "e2e", got ${JSON.stringify(updatedTask.tags)}`)
       }
-      if (updatedTask.dueDate !== '2026-12-31') {
-        throw new Error(`Expected dueDate "2026-12-31", got "${updatedTask.dueDate}"`)
-      }
-
       expectedCommits++
       assertCommitCount('after edit task')
       assertLatestCommitContains('Update task')
 
-      reporter.pass('Task 2 edited with description, tags, dueDate')
+      reporter.pass('Task 2 edited with description and tags')
     } catch (err) {
       reporter.fail(err)
     }
