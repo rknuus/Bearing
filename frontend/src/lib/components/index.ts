@@ -9,3 +9,4 @@ export { default as TagBadges } from './TagBadges.svelte';
 export { default as TagEditor } from './TagEditor.svelte';
 export { default as ThemeBadge } from './ThemeBadge.svelte';
 export { default as ThemedContainer } from './ThemedContainer.svelte';
+export { default as ThemeOKRTree } from './ThemeOKRTree.svelte';

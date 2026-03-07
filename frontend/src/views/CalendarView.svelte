@@ -8,8 +8,8 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus, type Objective } from '../lib/wails-mock';
-  import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
+  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
@@ -36,10 +36,8 @@
   let editText = $state('');
   let editOkrIds = $state<string[]>([]);
   let editTags = $state<string[]>([]);
-  let prevThemeId = $state('');
   let prevDerivedText = $state('');
   let availableTags = $state<string[]>([]);
-  let okrSectionOpen = $state(false);
   let tagSectionOpen = $state(false);
 
   // Full month names for headers and dialog
@@ -206,21 +204,16 @@
     }
   }
 
-  // Get the selected theme's objectives for the OKR picker
-  const editTheme = $derived(themes.find(t => t.id === editThemeId));
-
   async function handleDayClick(month: number, day: number) {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
 
     editingDay = { date: dateStr, month, day };
     editThemeId = focus?.themeId ?? '';
-    prevThemeId = editThemeId;
     editText = focus?.text ?? '';
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
     prevDerivedText = editTags.join(', ');
-    okrSectionOpen = (focus?.okrIds?.length ?? 0) > 0;
     tagSectionOpen = (focus?.tags?.length ?? 0) > 0;
 
     // Fetch available tags from tasks
@@ -232,26 +225,6 @@
     }
   }
 
-  function handleThemeChange(event: Event) {
-    const newThemeId = (event.target as HTMLSelectElement).value;
-    if (editOkrIds.length > 0 && newThemeId !== prevThemeId) {
-      if (!confirm('Changing the theme will clear your OKR references. Continue?')) {
-        editThemeId = prevThemeId;
-        return;
-      }
-      editOkrIds = [];
-    }
-    editThemeId = newThemeId;
-    prevThemeId = newThemeId;
-  }
-
-  function toggleOkrId(id: string) {
-    if (editOkrIds.includes(id)) {
-      editOkrIds = editOkrIds.filter(x => x !== id);
-    } else {
-      editOkrIds = [...editOkrIds, id];
-    }
-  }
 
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
 
@@ -420,34 +393,18 @@
   {#if editingDay}
     <Dialog title={displayDate(editingDay.month, editingDay.day)} id="dialog-title" onclose={cancelEdit}>
       <div class="form-group">
-        <label for="theme-select">Theme</label>
-        <select id="theme-select" value={editThemeId} onchange={handleThemeChange}>
-          <option value="">No theme</option>
-          {#each themes as theme (theme.id)}
-            <option value={theme.id}>{theme.name}</option>
-          {/each}
-        </select>
+        <span class="form-label">Theme & OKR References</span>
+        <ThemeOKRTree
+          {themes}
+          mode="select"
+          selectedThemeIds={editThemeId ? [editThemeId] : []}
+          selectedOkrIds={editOkrIds}
+          onThemeSelectionChange={(ids) => {
+            editThemeId = ids.length > 0 ? ids[ids.length - 1] : '';
+          }}
+          onOkrSelectionChange={(ids) => { editOkrIds = ids; }}
+        />
       </div>
-
-      {#if editThemeId && editTheme && editTheme.objectives.length > 0}
-        <div class="form-group">
-          <button
-            class="collapsible-header"
-            onclick={() => okrSectionOpen = !okrSectionOpen}
-            aria-expanded={okrSectionOpen}
-          >
-            <span class="expand-icon">{okrSectionOpen ? '\u25BC' : '\u25B6'}</span>
-            <span class="form-label">OKR References</span>
-          </button>
-          {#if okrSectionOpen}
-            <div class="okr-picker">
-              {#each editTheme.objectives as obj (obj.id)}
-                {@render okrNode(obj, editTheme.color, 0)}
-              {/each}
-            </div>
-          {/if}
-        </div>
-      {/if}
 
       <div class="form-group">
         <button
@@ -491,37 +448,6 @@
     </Dialog>
   {/if}
 
-  {#snippet okrNode(objective: Objective, themeColor: string, depth: number)}
-    {#if objective.status !== 'archived'}
-      <label class="okr-item" style="padding-left: {depth * 2}rem;">
-        <input
-          type="checkbox"
-          checked={editOkrIds.includes(objective.id)}
-          onchange={() => toggleOkrId(objective.id)}
-        />
-        <span class="okr-marker-obj" style="background-color: {themeColor};"></span>
-        {objective.title}
-      </label>
-      {#each objective.keyResults as kr (kr.id)}
-        {#if kr.status !== 'archived'}
-          <label class="okr-item" style="padding-left: {(depth + 1) * 2}rem;">
-            <input
-              type="checkbox"
-              checked={editOkrIds.includes(kr.id)}
-              onchange={() => toggleOkrId(kr.id)}
-            />
-            <span class="okr-marker-kr" style="background-color: {themeColor};"></span>
-            {kr.description}
-          </label>
-        {/if}
-      {/each}
-      {#if objective.objectives}
-        {#each objective.objectives as child (child.id)}
-          {@render okrNode(child, themeColor, depth + 1)}
-        {/each}
-      {/if}
-    {/if}
-  {/snippet}
 </div>
 
 <style>
@@ -776,7 +702,6 @@
     margin-bottom: 0.375rem;
   }
 
-  .form-group select,
   .form-group input[type="text"] {
     width: 100%;
     padding: 0.5rem;
@@ -786,7 +711,6 @@
     font-family: inherit;
   }
 
-  .form-group select:focus,
   .form-group input[type="text"]:focus {
     outline: none;
     border-color: var(--color-primary-600);
@@ -816,37 +740,5 @@
     margin-bottom: 0;
   }
 
-  /* OKR Picker */
-  .okr-picker {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .okr-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0;
-    font-size: 0.875rem;
-    cursor: pointer;
-  }
-
-  .okr-marker-obj {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
-
-  .okr-marker-kr {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    opacity: 0.6;
-  }
 
 </style>
