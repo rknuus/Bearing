@@ -21,6 +21,8 @@
   let filterTagIds = $state<string[]>([]);
   let todayFocusActive = $state(true);
   let todayFocusThemeId = $state<string | null>(null);
+  let tagFocusActive = $state(true);
+  let todayFocusTags = $state<string[]>([]);
 
   // Build breadcrumb path including view context
   let breadcrumbPath = $derived.by(() => {
@@ -47,7 +49,9 @@
     } else if (filterThemeIds.length > 1) {
       parts.push({ id: 'FILTER:themes', label: `Themes: ${filterThemeIds.join(', ')}` });
     }
-    if (filterTagIds.length > 0) {
+    if (tagFocusActive && todayFocusTags.length > 0) {
+      parts.push({ id: 'FILTER:tagfocus', label: `Today's Tags: ${todayFocusTags.join(', ')}` });
+    } else if (filterTagIds.length > 0) {
       const displayTags = filterTagIds.map(t => t === UNTAGGED_SENTINEL ? 'Untagged' : t);
       parts.push({ id: 'FILTER:tags', label: `Tags: ${displayTags.join(', ')}` });
     }
@@ -77,10 +81,16 @@
 
   async function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
     // Re-resolve today's focus in case the user just set it in Calendar
-    todayFocusThemeId = await resolveTodayFocusThemeId(getBindings());
+    const focus = await resolveTodayFocus(getBindings());
+    todayFocusThemeId = focus.themeId;
+    todayFocusTags = focus.tags;
     if (todayFocusThemeId && options?.themeId === undefined) {
       todayFocusActive = true;
       filterThemeIds = [todayFocusThemeId];
+    }
+    if (todayFocusTags.length > 0) {
+      tagFocusActive = true;
+      filterTagIds = [...todayFocusTags];
     }
     navigateTo('eisenkan', options);
   }
@@ -143,6 +153,7 @@
 
   // Tag filter handlers for TagFilterBar
   function handleFilterTagToggle(tag: string) {
+    tagFocusActive = false;
     if (filterTagIds.includes(tag)) {
       filterTagIds = filterTagIds.filter(t => t !== tag);
     } else {
@@ -152,7 +163,18 @@
   }
 
   function handleFilterTagClear() {
-    filterTagIds = [];
+    tagFocusActive = true;
+    filterTagIds = todayFocusTags.length > 0 ? [...todayFocusTags] : [];
+    saveNavigationContext();
+  }
+
+  function handleTagFocusToggle() {
+    tagFocusActive = !tagFocusActive;
+    if (tagFocusActive && todayFocusTags.length > 0) {
+      filterTagIds = [...todayFocusTags];
+    } else {
+      filterTagIds = [];
+    }
     saveNavigationContext();
   }
 
@@ -203,6 +225,7 @@
           filterThemeIds: filterThemeIds.length > 0 ? filterThemeIds : undefined,
           filterTagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
           todayFocusActive: todayFocusActive || undefined,
+          tagFocusActive: tagFocusActive || undefined,
           lastAccessed: new Date().toISOString()
         });
       }
@@ -224,14 +247,14 @@
             : 'okr';
           currentItemId = ctx.currentItem ?? '';
 
-          // Resolve today's focus theme
-          todayFocusThemeId = await resolveTodayFocusThemeId(bindings);
+          // Resolve today's focus (theme + tags)
+          const focus = await resolveTodayFocus(bindings);
+          todayFocusThemeId = focus.themeId;
+          todayFocusTags = focus.tags;
 
-          // Determine Today's Focus state
+          // Determine Today's Focus state (theme)
           if (ctx.todayFocusActive === false) {
-            // Explicitly saved as inactive
             todayFocusActive = false;
-            // Load manual theme filter
             if (ctx.filterThemeIds && ctx.filterThemeIds.length > 0) {
               filterThemeIds = ctx.filterThemeIds;
             } else if (ctx.filterThemeId) {
@@ -240,13 +263,21 @@
               filterThemeIds = [];
             }
           } else {
-            // Default: Today's Focus active
             todayFocusActive = true;
             filterThemeIds = todayFocusThemeId ? [todayFocusThemeId] : [];
           }
 
-          if (ctx.filterTagIds && ctx.filterTagIds.length > 0) {
-            filterTagIds = ctx.filterTagIds;
+          // Determine Today's Focus state (tags)
+          if (ctx.tagFocusActive === false) {
+            tagFocusActive = false;
+            if (ctx.filterTagIds && ctx.filterTagIds.length > 0) {
+              filterTagIds = ctx.filterTagIds;
+            } else {
+              filterTagIds = [];
+            }
+          } else {
+            tagFocusActive = true;
+            filterTagIds = todayFocusTags.length > 0 ? [...todayFocusTags] : [];
           }
         }
       }
@@ -255,21 +286,22 @@
     }
   }
 
-  // Resolve today's DayFocus theme ID from the calendar
-  async function resolveTodayFocusThemeId(bindings: ReturnType<typeof getBindings>): Promise<string | null> {
+  // Resolve today's DayFocus from the calendar (theme ID + tags)
+  async function resolveTodayFocus(bindings: ReturnType<typeof getBindings>): Promise<{ themeId: string | null; tags: string[] }> {
     try {
-      if (!bindings?.GetYearFocus) return null;
+      if (!bindings?.GetYearFocus) return { themeId: null, tags: [] };
       const today = new Date();
       const yearFocus = await bindings.GetYearFocus(today.getFullYear());
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       const todayFocus = yearFocus.find((d: { date: string }) => d.date === todayStr);
-      if (todayFocus?.themeId) {
-        return todayFocus.themeId;
-      }
+      return {
+        themeId: todayFocus?.themeId || null,
+        tags: todayFocus?.tags ?? [],
+      };
     } catch {
-      // Non-critical: fall through to null
+      // Non-critical: fall through to defaults
     }
-    return null;
+    return { themeId: null, tags: [] };
   }
 
   // Initialize locale from OS detection
@@ -390,6 +422,9 @@
         {todayFocusThemeId}
         {todayFocusActive}
         onTodayFocusToggle={handleTodayFocusToggle}
+        {todayFocusTags}
+        {tagFocusActive}
+        onTagFocusToggle={handleTagFocusToggle}
       />
     {/if}
   </main>

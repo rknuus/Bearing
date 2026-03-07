@@ -118,6 +118,7 @@ export interface NavigationContext {
   expandedOkrIds?: string[];
   filterTagIds?: string[];
   todayFocusActive?: boolean;
+  tagFocusActive?: boolean;
 }
 
 // Type declarations for extended Window properties

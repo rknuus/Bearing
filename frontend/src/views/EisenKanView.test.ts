@@ -457,6 +457,42 @@ describe('EisenKanView', () => {
     expect(titles).toContain('Done task');
   });
 
+  // Tag focus (Today's Focus) filtering tests
+  it('tagFocusActive filters tasks by OR of todayFocusTags', async () => {
+    await renderView({ tagFocusActive: true, todayFocusTags: ['api'] });
+
+    // T1 (tags: ['backend', 'api']) and T3 (tags: ['api']) have 'api'
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(2);
+
+    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+    expect(titles).toContain('Exercise');
+    expect(titles).toContain('Emails');
+  });
+
+  it('tagFocusActive with multiple tags uses OR logic', async () => {
+    await renderView({ tagFocusActive: true, todayFocusTags: ['api', 'backend'] });
+
+    // T1 (backend, api), T2 (backend), T3 (api) all match; T4 (no tags) doesn't
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(3);
+
+    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+    expect(titles).not.toContain('Done task');
+  });
+
+  it('tag filter uses normal filterTagIds when tagFocusActive is false', async () => {
+    await renderView({ tagFocusActive: false, todayFocusTags: ['api'], filterTagIds: ['backend'] });
+
+    // Normal AND filter: T1 (backend, api) and T2 (backend)
+    const cards = container.querySelectorAll('.task-card');
+    expect(cards.length).toBe(2);
+
+    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+    expect(titles).toContain('Exercise');
+    expect(titles).toContain('Study');
+  });
+
   it('shows theme count badges on filter pills', async () => {
     const onFilterThemeToggle = vi.fn();
     const onFilterThemeClear = vi.fn();
