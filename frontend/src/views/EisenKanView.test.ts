@@ -543,17 +543,29 @@ describe('EisenKanView', () => {
     expect(untaggedBadge?.textContent).toBe('1');
   });
 
-  it('Untagged pill visible with stable count when theme filter excludes all untagged tasks', async () => {
+  it('Untagged pill visible with zero count when theme filter excludes all untagged tasks', async () => {
     const onFilterTagToggle = vi.fn();
     const onFilterTagClear = vi.fn();
     // Filter to CG theme: T2 (tags: backend) and T3 (tags: api) — no untagged tasks for CG
-    // But T4 (HF, no tags) exists globally, so Untagged pill should be visible with count 1
+    // Pill is still visible (hasUntaggedTasks uses full base) but count is 0
     await renderView({ filterThemeIds: ['CG'], onFilterTagToggle, onFilterTagClear });
 
     const untaggedPill = container.querySelector('.untagged-pill');
     expect(untaggedPill).not.toBeNull();
-    // Count reflects total untagged tasks, not theme-filtered count
-    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('1');
+    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('0');
+  });
+
+  it('tag All count matches theme All count', async () => {
+    const onFilterTagToggle = vi.fn();
+    const onFilterTagClear = vi.fn();
+    const onFilterThemeToggle = vi.fn();
+    const onFilterThemeClear = vi.fn();
+    // Filter to HF theme — tag "All" should equal theme "All" (both = 4, no tag filter active)
+    await renderView({ filterThemeIds: ['HF'], onFilterTagToggle, onFilterTagClear, onFilterThemeToggle, onFilterThemeClear });
+
+    const themeAllBadge = container.querySelector('.theme-filter-bar .all-pill .count-badge');
+    const tagAllBadge = container.querySelector('.tag-filter-bar .all-pill .count-badge');
+    expect(tagAllBadge?.textContent).toBe(themeAllBadge?.textContent);
   });
 
   it('count badges exclude archived tasks by default', async () => {
