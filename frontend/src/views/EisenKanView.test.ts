@@ -40,15 +40,6 @@ function makeTestBoardConfig(): BoardConfiguration {
   };
 }
 
-function makeTasksWithSubtasks(): TaskWithStatus[] {
-  return [
-    { id: 'T1', title: 'Parent task', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
-    { id: 'T1-S1', title: 'Subtask 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', parentTaskId: 'T1' },
-    { id: 'T1-S2', title: 'Subtask 2', themeId: 'HF', priority: 'important-urgent', status: 'todo', parentTaskId: 'T1' },
-    { id: 'T2', title: 'Standalone task', themeId: 'CG', priority: 'important-not-urgent', status: 'doing' },
-  ];
-}
-
 // Mock the wails-mock module since EisenKanView uses mockAppBindings directly
 const mockGetTasks = vi.fn<() => Promise<TaskWithStatus[]>>();
 const mockGetThemes = vi.fn<() => Promise<LifeTheme[]>>();
@@ -556,76 +547,6 @@ describe('EisenKanView', () => {
     const themePills = container.querySelectorAll('.theme-filter-bar .theme-pill');
     const hfBadge = Array.from(themePills).find(p => p.textContent?.includes('Health'))?.querySelector('.count-badge');
     expect(hfBadge?.textContent).toBe('2');
-  });
-
-  // Subtask nesting tests
-  describe('subtask nesting', () => {
-    beforeEach(() => {
-      currentTasks = JSON.parse(JSON.stringify(makeTasksWithSubtasks()));
-    });
-
-    it('renders only top-level tasks as primary cards in non-sectioned columns', async () => {
-      await renderView();
-
-      const columns = container.querySelectorAll('.kanban-column');
-      // Doing column (non-sectioned): should show T2 as top-level card only
-      const doingCards = columns[1].querySelectorAll('.task-card:not(.subtask-card)');
-      expect(doingCards.length).toBe(1);
-      expect(doingCards[0].querySelector('.task-title')?.textContent).toBe('Standalone task');
-    });
-
-    it('renders subtasks as indented cards under parent', async () => {
-      await renderView();
-
-      const subtaskCards = container.querySelectorAll('.subtask-card');
-      expect(subtaskCards.length).toBe(2);
-    });
-
-    it('shows toggle button on parent tasks with subtasks', async () => {
-      await renderView();
-
-      const toggleBtns = container.querySelectorAll('.toggle-btn');
-      expect(toggleBtns.length).toBeGreaterThanOrEqual(1);
-    });
-
-    it('collapses subtasks when toggle is clicked and shows count', async () => {
-      await renderView();
-
-      // Initially subtasks are visible (expanded)
-      let subtaskCards = container.querySelectorAll('.subtask-card');
-      expect(subtaskCards.length).toBe(2);
-
-      // Click toggle to collapse
-      const toggleBtn = container.querySelector<HTMLButtonElement>('.toggle-btn');
-      expect(toggleBtn).toBeTruthy();
-      toggleBtn!.click();
-      await tick();
-
-      // Subtasks should be hidden
-      subtaskCards = container.querySelectorAll('.subtask-card');
-      expect(subtaskCards.length).toBe(0);
-
-      // Subtask count should be shown
-      const subtaskCount = container.querySelector('.subtask-count');
-      expect(subtaskCount).toBeTruthy();
-      expect(subtaskCount?.textContent).toBe('2');
-    });
-
-    it('expands subtasks when toggle is clicked again', async () => {
-      await renderView();
-
-      const toggleBtn = container.querySelector<HTMLButtonElement>('.toggle-btn');
-
-      // Collapse
-      toggleBtn!.click();
-      await tick();
-      expect(container.querySelectorAll('.subtask-card').length).toBe(0);
-
-      // Expand
-      toggleBtn!.click();
-      await tick();
-      expect(container.querySelectorAll('.subtask-card').length).toBe(2);
-    });
   });
 
   // Cross-column and cross-section DnD position preservation tests

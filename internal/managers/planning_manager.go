@@ -17,8 +17,7 @@ import (
 // TaskWithStatus represents a task with its current status.
 type TaskWithStatus struct {
 	access.Task
-	Status     string   `json:"status"`
-	SubtaskIDs []string `json:"subtaskIds,omitempty"`
+	Status string `json:"status"`
 }
 
 // NavigationContext stores the user's navigation state for persistence.
@@ -726,7 +725,6 @@ func todoSlugFromConfig(config *access.BoardConfiguration) string {
 
 // GetTasks returns all tasks with their status across all themes.
 // Tasks are sorted by persisted order from task_order.json within each drop zone.
-// SubtaskIDs are computed at runtime by scanning for tasks with matching ParentTaskID.
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	var allTasks []TaskWithStatus
 
@@ -795,19 +793,6 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 		})
 	}
 
-	// Compute SubtaskIDs: for each task, find children whose ParentTaskID matches
-	parentToChildren := make(map[string][]string)
-	for _, t := range allTasks {
-		if t.ParentTaskID != nil && *t.ParentTaskID != "" {
-			parentToChildren[*t.ParentTaskID] = append(parentToChildren[*t.ParentTaskID], t.ID)
-		}
-	}
-	for i := range allTasks {
-		if children, ok := parentToChildren[allTasks[i].ID]; ok {
-			allTasks[i].SubtaskIDs = children
-		}
-	}
-
 	return allTasks, nil
 }
 
@@ -822,10 +807,9 @@ func (m *PlanningManager) buildTaskInfoList() ([]rule_engine.TaskInfo, error) {
 		infos[i] = rule_engine.TaskInfo{
 			ID:           t.ID,
 			Title:        t.Title,
-			Status:       t.Status,
-			Priority:     t.Priority,
-			ParentTaskID: t.ParentTaskID,
-			CreatedAt:    t.CreatedAt,
+			Status:    t.Status,
+			Priority:  t.Priority,
+			CreatedAt: t.CreatedAt,
 		}
 	}
 	return infos, nil
@@ -962,10 +946,9 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		taskInfos[i] = rule_engine.TaskInfo{
 			ID:           t.ID,
 			Title:        t.Title,
-			Status:       t.Status,
-			Priority:     t.Priority,
-			ParentTaskID: t.ParentTaskID,
-			CreatedAt:    t.CreatedAt,
+			Status:    t.Status,
+			Priority:  t.Priority,
+			CreatedAt: t.CreatedAt,
 		}
 	}
 
@@ -1011,26 +994,6 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	}
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
 		return nil, fmt.Errorf("failed to save task order: %w", err)
-	}
-
-	// Subtask cascade: parent auto-moves to "doing" when first child starts
-	if newStatus == string(access.TaskStatusDoing) && movingTask.ParentTaskID != nil && *movingTask.ParentTaskID != "" {
-		parentID := *movingTask.ParentTaskID
-		for _, t := range allTasks {
-			if t.ID == parentID && t.Status == string(access.TaskStatusTodo) {
-				_ = m.planAccess.MoveTask(parentID, string(access.TaskStatusDoing))
-				break
-			}
-		}
-	}
-
-	// Subtask cascade: parent completion cascades children to "done"
-	if newStatus == string(access.TaskStatusDone) {
-		for _, t := range allTasks {
-			if t.ParentTaskID != nil && *t.ParentTaskID == taskId && t.Status != string(access.TaskStatusDone) {
-				_ = m.planAccess.MoveTask(t.ID, string(access.TaskStatusDone))
-			}
-		}
 	}
 
 	return &MoveTaskResult{Success: true, Positions: orderMap}, nil
@@ -1122,7 +1085,7 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 	return nil
 }
 
-// ArchiveTask archives a done task and all its subtasks.
+// ArchiveTask archives a done task.
 func (m *PlanningManager) ArchiveTask(taskId string) error {
 	if taskId == "" {
 		return fmt.Errorf("task ID cannot be empty")
@@ -1148,45 +1111,27 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("task can only be archived when done")
 	}
 
-	// Collect all subtask IDs (any status) recursively, then prepend parent
-	toArchive := append([]string{taskId}, collectDescendantIDs(taskId, allTasks)...)
-
-	for _, id := range toArchive {
-		if err := m.planAccess.ArchiveTask(id); err != nil {
-			return fmt.Errorf("failed to archive task %s: %w", id, err)
-		}
+	if err := m.planAccess.ArchiveTask(taskId); err != nil {
+		return fmt.Errorf("failed to archive task %s: %w", taskId, err)
 	}
 
-	// Remove archived task IDs from task order
-	if err := m.removeFromTaskOrder(toArchive); err != nil {
+	if err := m.removeFromTaskOrder([]string{taskId}); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
 	return nil
 }
 
-// ArchiveAllDoneTasks archives all root-level done tasks and their subtasks.
+// ArchiveAllDoneTasks archives all done tasks.
 func (m *PlanningManager) ArchiveAllDoneTasks() error {
 	allTasks, err := m.GetTasks()
 	if err != nil {
 		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
-	// Build set of done task IDs
-	doneSet := make(map[string]bool)
-	for _, t := range allTasks {
-		if t.Status == string(access.TaskStatusDone) {
-			doneSet[t.ID] = true
-		}
-	}
-
-	// Find root-level done tasks (no parent, or parent is not done)
 	for _, t := range allTasks {
 		if t.Status != string(access.TaskStatusDone) {
 			continue
-		}
-		if t.ParentTaskID != nil && *t.ParentTaskID != "" && doneSet[*t.ParentTaskID] {
-			continue // Parent is also done — parent's cascade will handle this
 		}
 		if err := m.ArchiveTask(t.ID); err != nil {
 			return fmt.Errorf("%w", err)
@@ -1196,7 +1141,7 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 	return nil
 }
 
-// RestoreTask restores an archived task and all its archived subtasks to done.
+// RestoreTask restores an archived task to done.
 func (m *PlanningManager) RestoreTask(taskId string) error {
 	if taskId == "" {
 		return fmt.Errorf("task ID cannot be empty")
@@ -1222,40 +1167,11 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("task can only be restored from archive")
 	}
 
-	// Collect archived subtask IDs recursively, then prepend parent
-	toRestore := append([]string{taskId}, collectArchivedDescendantIDs(taskId, allTasks)...)
-
-	for _, id := range toRestore {
-		if err := m.planAccess.RestoreTask(id); err != nil {
-			return fmt.Errorf("failed to restore task %s: %w", id, err)
-		}
+	if err := m.planAccess.RestoreTask(taskId); err != nil {
+		return fmt.Errorf("failed to restore task %s: %w", taskId, err)
 	}
 
 	return nil
-}
-
-// collectDescendantIDs returns all descendant task IDs for a parent, regardless of status.
-func collectDescendantIDs(parentID string, allTasks []TaskWithStatus) []string {
-	var result []string
-	for _, t := range allTasks {
-		if t.ParentTaskID != nil && *t.ParentTaskID == parentID {
-			result = append(result, t.ID)
-			result = append(result, collectDescendantIDs(t.ID, allTasks)...)
-		}
-	}
-	return result
-}
-
-// collectArchivedDescendantIDs returns archived descendant task IDs for a parent.
-func collectArchivedDescendantIDs(parentID string, allTasks []TaskWithStatus) []string {
-	var result []string
-	for _, t := range allTasks {
-		if t.ParentTaskID != nil && *t.ParentTaskID == parentID && t.Status == string(access.TaskStatusArchived) {
-			result = append(result, t.ID)
-			result = append(result, collectArchivedDescendantIDs(t.ID, allTasks)...)
-		}
-	}
-	return result
 }
 
 // removeFromTaskOrder removes the given task IDs from all drop zones in the task order.

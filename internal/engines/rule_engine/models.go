@@ -1,6 +1,6 @@
 // Package rule_engine provides Engine layer components implementing the iDesign methodology.
 // It evaluates business rules for task operations including WIP limits,
-// allowed transitions, required fields, and subtask hierarchy constraints.
+// allowed transitions, and required fields.
 package rule_engine
 
 import (
@@ -30,12 +30,11 @@ type TaskEvent struct {
 
 // TaskInfo is a lightweight task representation with status for rule context.
 type TaskInfo struct {
-	ID           string  `json:"id"`
-	Title        string  `json:"title"`
-	Status       string  `json:"status"`
-	Priority     string  `json:"priority"`
-	ParentTaskID *string `json:"parentTaskId,omitempty"`
-	CreatedAt    string  `json:"createdAt,omitempty"`
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Status    string `json:"status"`
+	Priority  string `json:"priority"`
+	CreatedAt string `json:"createdAt,omitempty"`
 }
 
 // RuleViolation represents a single rule violation found during evaluation.

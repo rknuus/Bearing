@@ -1933,86 +1933,6 @@ func TestGetBoardConfiguration(t *testing.T) {
 }
 
 // =============================================================================
-// SubtaskIDs Computation Tests
-// =============================================================================
-
-func TestGetTasksSubtaskIDs(t *testing.T) {
-	t.Run("computes subtask IDs for parent tasks", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		// Create a parent task
-		parent, _ := manager.CreateTask("Parent Task", "T", "important-urgent", "", "", "")
-
-		// Manually add subtasks with ParentTaskID set
-		parentID := parent.ID
-		subtask1 := access.Task{
-			ID:           "T-T2",
-			Title:        "Subtask 1",
-			ThemeID:      "T",
-			Priority:     "important-urgent",
-			ParentTaskID: &parentID,
-		}
-		subtask2 := access.Task{
-			ID:           "T-T3",
-			Title:        "Subtask 2",
-			ThemeID:      "T",
-			Priority:     "important-not-urgent",
-			ParentTaskID: &parentID,
-		}
-		mockAccess.tasks["todo"] = append(mockAccess.tasks["todo"], subtask1, subtask2)
-
-		tasks, err := manager.GetTasks()
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		// Find the parent task and check SubtaskIDs
-		for _, task := range tasks {
-			if task.ID == parent.ID {
-				if len(task.SubtaskIDs) != 2 {
-					t.Errorf("expected 2 subtask IDs, got %d", len(task.SubtaskIDs))
-				}
-				// Check that subtask IDs are present
-				foundSub1, foundSub2 := false, false
-				for _, id := range task.SubtaskIDs {
-					if id == "T-T2" {
-						foundSub1 = true
-					}
-					if id == "T-T3" {
-						foundSub2 = true
-					}
-				}
-				if !foundSub1 {
-					t.Error("expected T-T2 in subtask IDs")
-				}
-				if !foundSub2 {
-					t.Error("expected T-T3 in subtask IDs")
-				}
-			}
-		}
-	})
-
-	t.Run("tasks without subtasks have nil SubtaskIDs", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		_, _ = manager.CreateTask("Solo Task", "T", "important-urgent", "", "", "")
-
-		tasks, err := manager.GetTasks()
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		for _, task := range tasks {
-			if task.SubtaskIDs != nil {
-				t.Errorf("expected nil SubtaskIDs for task without subtasks, got %v", task.SubtaskIDs)
-			}
-		}
-	})
-}
-
-// =============================================================================
 // Batch Task Creation Tests
 // =============================================================================
 
@@ -2130,37 +2050,6 @@ func TestArchiveTask(t *testing.T) {
 		}
 	})
 
-	t.Run("cascades to subtasks", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		parent, _ := manager.CreateTask("Parent", "T", "important-urgent", "", "", "")
-		sub, _ := manager.CreateTask("Subtask", "T", "important-urgent", "", "", "")
-
-		// Set subtask relationship
-		parentID := parent.ID
-		sub.ParentTaskID = &parentID
-		_ = mockAccess.SaveTask(*sub)
-
-		// Move parent to done
-		_, _ = manager.MoveTask(parent.ID, "done", nil)
-
-		err := manager.ArchiveTask(parent.ID)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		// Verify both are archived
-		tasks, _ := manager.GetTasks()
-		for _, tw := range tasks {
-			if tw.ID == parent.ID || tw.ID == sub.ID {
-				if tw.Status != "archived" {
-					t.Errorf("task %s expected status 'archived', got '%s'", tw.ID, tw.Status)
-				}
-			}
-		}
-	})
-
 	t.Run("returns error for empty ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
@@ -2262,35 +2151,6 @@ func TestRestoreTask(t *testing.T) {
 		err := manager.RestoreTask(task.ID)
 		if err == nil {
 			t.Fatal("expected error for non-archived task")
-		}
-	})
-
-	t.Run("cascades to archived subtasks", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		parent, _ := manager.CreateTask("Parent", "T", "important-urgent", "", "", "")
-		sub, _ := manager.CreateTask("Subtask", "T", "important-urgent", "", "", "")
-
-		parentID := parent.ID
-		sub.ParentTaskID = &parentID
-		_ = mockAccess.SaveTask(*sub)
-
-		_, _ = manager.MoveTask(parent.ID, "done", nil)
-		_ = manager.ArchiveTask(parent.ID)
-
-		err := manager.RestoreTask(parent.ID)
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-
-		tasks, _ := manager.GetTasks()
-		for _, tw := range tasks {
-			if tw.ID == parent.ID || tw.ID == sub.ID {
-				if tw.Status != "done" {
-					t.Errorf("task %s expected status 'done', got '%s'", tw.ID, tw.Status)
-				}
-			}
 		}
 	})
 

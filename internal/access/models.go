@@ -60,24 +60,9 @@ type Task struct {
 	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, important-not-urgent, not-important-urgent
 	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
 	PromotionDate string   `json:"promotionDate,omitempty"`  // Date when priority should be promoted (YYYY-MM-DD)
-	ParentTaskID  *string  `json:"parentTaskId,omitempty"`   // ID of parent task for subtask hierarchy
 	CreatedAt     string   `json:"createdAt,omitempty"`      // ISO 8601 creation timestamp
 	UpdatedAt     string   `json:"updatedAt,omitempty"`      // ISO 8601 last-update timestamp
 }
-
-// CascadePolicy defines how parent task operations affect subtasks.
-type CascadePolicy string
-
-const (
-	// CascadePolicyNoAction leaves subtasks unchanged
-	CascadePolicyNoAction CascadePolicy = "no_action"
-	// CascadePolicyArchive archives subtasks along with the parent
-	CascadePolicyArchive CascadePolicy = "archive"
-	// CascadePolicyDelete deletes subtasks along with the parent
-	CascadePolicyDelete CascadePolicy = "delete"
-	// CascadePolicyPromote promotes subtasks to top-level tasks
-	CascadePolicyPromote CascadePolicy = "promote"
-)
 
 // ColumnType represents the semantic type of a board column.
 type ColumnType string
@@ -148,7 +133,6 @@ type QueryCriteria struct {
 	Sections       []string `json:"sections,omitempty"`       // Filter by priority section names
 	Priority       string   `json:"priority,omitempty"`       // Filter by priority value
 	Tags           []string `json:"tags,omitempty"`           // Filter by tags (any match)
-	HierarchyLevel string   `json:"hierarchyLevel,omitempty"` // "top" for root tasks, "sub" for subtasks, empty for all
 }
 
 // TaskStatus represents the kanban column status for tasks

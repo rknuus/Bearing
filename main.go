@@ -215,7 +215,6 @@ type Task struct {
 	Priority      string   `json:"priority"`
 	Tags          []string `json:"tags,omitempty"`
 	PromotionDate string   `json:"promotionDate,omitempty"`
-	ParentTaskID  *string  `json:"parentTaskId,omitempty"`
 	CreatedAt     string   `json:"createdAt,omitempty"`
 	UpdatedAt     string   `json:"updatedAt,omitempty"`
 }
@@ -223,8 +222,7 @@ type Task struct {
 // TaskWithStatus represents a task with its kanban column status (for Wails binding)
 type TaskWithStatus struct {
 	Task
-	Status     string   `json:"status"`
-	SubtaskIDs []string `json:"subtaskIds,omitempty"`
+	Status string `json:"status"`
 }
 
 // SectionDefinition defines a priority section within a column (for Wails binding)
@@ -673,12 +671,10 @@ func (a *App) GetTasks() ([]TaskWithStatus, error) {
 				Priority:      t.Priority,
 				Tags:          t.Tags,
 				PromotionDate: t.PromotionDate,
-				ParentTaskID:  t.ParentTaskID,
 				CreatedAt:     t.CreatedAt,
 				UpdatedAt:     t.UpdatedAt,
 			},
-			Status:     t.Status,
-			SubtaskIDs: t.SubtaskIDs,
+			Status: t.Status,
 		}
 	}
 	return result, nil
@@ -705,7 +701,6 @@ func (a *App) CreateTask(title, themeId, priority, description, tags, promotionD
 		Priority:      task.Priority,
 		Tags:          task.Tags,
 		PromotionDate: task.PromotionDate,
-		ParentTaskID:  task.ParentTaskID,
 		CreatedAt:     task.CreatedAt,
 		UpdatedAt:     task.UpdatedAt,
 	}, nil
@@ -726,7 +721,6 @@ func (a *App) UpdateTask(task Task) error {
 		Priority:      task.Priority,
 		Tags:          task.Tags,
 		PromotionDate: task.PromotionDate,
-		ParentTaskID:  task.ParentTaskID,
 		CreatedAt:     task.CreatedAt,
 		UpdatedAt:     task.UpdatedAt,
 	})
@@ -836,7 +830,7 @@ func (a *App) DeleteTask(taskId string) error {
 	return err
 }
 
-// ArchiveTask archives a done task and all its subtasks
+// ArchiveTask archives a done task
 func (a *App) ArchiveTask(taskId string) error {
 	if a.planningManager == nil {
 		slog.Warn("ArchiveTask: planning manager not initialized")
@@ -850,7 +844,7 @@ func (a *App) ArchiveTask(taskId string) error {
 	return err
 }
 
-// ArchiveAllDoneTasks archives all done tasks and their subtasks
+// ArchiveAllDoneTasks archives all done tasks
 func (a *App) ArchiveAllDoneTasks() error {
 	if a.planningManager == nil {
 		slog.Warn("ArchiveAllDoneTasks: planning manager not initialized")
@@ -864,7 +858,7 @@ func (a *App) ArchiveAllDoneTasks() error {
 	return err
 }
 
-// RestoreTask restores an archived task and its archived subtasks to done
+// RestoreTask restores an archived task to done
 func (a *App) RestoreTask(taskId string) error {
 	if a.planningManager == nil {
 		slog.Warn("RestoreTask: planning manager not initialized")
