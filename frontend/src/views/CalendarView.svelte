@@ -39,6 +39,8 @@
   let prevThemeId = $state('');
   let availableTags = $state<string[]>([]);
   let newTagInput = $state('');
+  let okrSectionOpen = $state(false);
+  let tagSectionOpen = $state(false);
 
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
@@ -204,30 +206,8 @@
     }
   }
 
-  // Flatten a theme's OKR hierarchy into a selectable list
-  interface OkrItem { id: string; type: 'O' | 'KR'; title: string }
-
-  function flattenOkrItems(themeId: string): OkrItem[] {
-    const theme = themes.find(t => t.id === themeId);
-    if (!theme) return [];
-    const items: OkrItem[] = [];
-    function walkObjectives(objectives: Objective[]) {
-      for (const obj of objectives) {
-        if (obj.status === 'archived') continue;
-        items.push({ id: obj.id, type: 'O', title: obj.title });
-        for (const kr of obj.keyResults) {
-          if (kr.status === 'archived') continue;
-          items.push({ id: kr.id, type: 'KR', title: kr.description });
-        }
-        if (obj.objectives) walkObjectives(obj.objectives);
-      }
-    }
-    walkObjectives(theme.objectives);
-    return items;
-  }
-
-  // Derive OKR items for the currently selected theme in the editor
-  const editOkrItems = $derived(editThemeId ? flattenOkrItems(editThemeId) : []);
+  // Get the selected theme's objectives for the OKR picker
+  const editTheme = $derived(themes.find(t => t.id === editThemeId));
 
   async function handleDayClick(month: number, day: number) {
     const dateStr = formatDate(month, day);
@@ -240,6 +220,8 @@
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
     newTagInput = '';
+    okrSectionOpen = (focus?.okrIds?.length ?? 0) > 0;
+    tagSectionOpen = (focus?.tags?.length ?? 0) > 0;
 
     // Fetch available tags from tasks
     try {
@@ -279,6 +261,25 @@
     }
   }
 
+  // Tag autocomplete state
+  let tagSuggestions = $state<string[]>([]);
+  let showTagSuggestions = $state(false);
+  let tagHighlightedIndex = $state(-1);
+
+  function computeTagSuggestions(input: string): string[] {
+    const query = input.trim().toLowerCase();
+    if (!query) return [];
+    return availableTags.filter(tag =>
+      tag.toLowerCase().includes(query) && !editTags.includes(tag)
+    );
+  }
+
+  function handleTagInput() {
+    tagSuggestions = computeTagSuggestions(newTagInput);
+    showTagSuggestions = tagSuggestions.length > 0;
+    tagHighlightedIndex = -1;
+  }
+
   function addNewTag() {
     const tag = newTagInput.trim();
     if (tag && !editTags.includes(tag)) {
@@ -288,13 +289,46 @@
       }
     }
     newTagInput = '';
+    showTagSuggestions = false;
+    tagHighlightedIndex = -1;
+  }
+
+  function selectTagSuggestion(tag: string) {
+    if (!editTags.includes(tag)) {
+      editTags = [...editTags, tag];
+    }
+    newTagInput = '';
+    showTagSuggestions = false;
+    tagHighlightedIndex = -1;
   }
 
   function handleNewTagKeydown(event: KeyboardEvent) {
+    if (showTagSuggestions && tagSuggestions.length > 0) {
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        tagHighlightedIndex = (tagHighlightedIndex + 1) % tagSuggestions.length;
+        return;
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        tagHighlightedIndex = tagHighlightedIndex <= 0 ? tagSuggestions.length - 1 : tagHighlightedIndex - 1;
+        return;
+      } else if ((event.key === 'Enter' || event.key === 'Tab') && tagHighlightedIndex >= 0) {
+        event.preventDefault();
+        selectTagSuggestion(tagSuggestions[tagHighlightedIndex]);
+        return;
+      } else if (event.key === 'Escape') {
+        showTagSuggestions = false;
+        return;
+      }
+    }
     if (event.key === 'Enter') {
       event.preventDefault();
       addNewTag();
     }
+  }
+
+  function handleTagBlur() {
+    setTimeout(() => { showTagSuggestions = false; }, 150);
   }
 
   const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
@@ -473,58 +507,96 @@
         </select>
       </div>
 
-      {#if editThemeId && editOkrItems.length > 0}
+      {#if editThemeId && editTheme && editTheme.objectives.length > 0}
         <div class="form-group">
-          <span class="form-label">OKR References</span>
-          <div class="okr-picker">
-            {#each editOkrItems as item (item.id)}
-              <label class="okr-item">
-                <input
-                  type="checkbox"
-                  checked={editOkrIds.includes(item.id)}
-                  onchange={() => toggleOkrId(item.id)}
-                />
-                <span class="okr-type-badge">[{item.type}]</span>
-                {item.title}
-              </label>
-            {/each}
-          </div>
+          <button
+            class="collapsible-header"
+            onclick={() => okrSectionOpen = !okrSectionOpen}
+            aria-expanded={okrSectionOpen}
+          >
+            <span class="expand-icon">{okrSectionOpen ? '\u25BC' : '\u25B6'}</span>
+            <span class="form-label">OKR References</span>
+          </button>
+          {#if okrSectionOpen}
+            <div class="okr-picker">
+              {#each editTheme.objectives as obj (obj.id)}
+                {@render okrNode(obj, editTheme.color, 0)}
+              {/each}
+            </div>
+          {/if}
         </div>
       {/if}
 
       <div class="form-group">
-        <span class="form-label">Tags</span>
-        <div class="tag-picker">
-          {#each availableTags as tag (tag)}
-            <button
-              type="button"
-              class="tag-pill"
-              class:active={editTags.includes(tag)}
-              onclick={() => toggleTag(tag)}
-            >
-              {tag}
-            </button>
-          {/each}
-          {#each editTags.filter(t => !availableTags.includes(t)) as tag (tag)}
-            <button
-              type="button"
-              class="tag-pill active"
-              onclick={() => toggleTag(tag)}
-            >
-              {tag}
-            </button>
-          {/each}
-        </div>
-        <div class="tag-input-row">
-          <input
-            type="text"
-            bind:value={newTagInput}
-            onkeydown={handleNewTagKeydown}
-            placeholder="Add new tag..."
-            class="tag-input"
-          />
-          <Button variant="secondary" onclick={addNewTag} disabled={!newTagInput.trim()}>Add</Button>
-        </div>
+        <button
+          class="collapsible-header"
+          onclick={() => tagSectionOpen = !tagSectionOpen}
+          aria-expanded={tagSectionOpen}
+        >
+          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
+          <span class="form-label">Tags</span>
+        </button>
+        {#if tagSectionOpen}
+          <div class="tag-picker">
+            {#each availableTags as tag (tag)}
+              <button
+                type="button"
+                class="tag-pill"
+                class:active={editTags.includes(tag)}
+                onclick={() => toggleTag(tag)}
+              >
+                {tag}
+              </button>
+            {/each}
+            {#each editTags.filter(t => !availableTags.includes(t)) as tag (tag)}
+              <button
+                type="button"
+                class="tag-pill active"
+                onclick={() => toggleTag(tag)}
+              >
+                {tag}
+              </button>
+            {/each}
+          </div>
+          <div class="tag-input-wrapper">
+            <input
+              type="text"
+              bind:value={newTagInput}
+              oninput={handleTagInput}
+              onkeydown={handleNewTagKeydown}
+              onblur={handleTagBlur}
+              placeholder="Add new tag..."
+              class="tag-input"
+              role="combobox"
+              aria-expanded={showTagSuggestions}
+              aria-controls="tag-suggestions-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={tagHighlightedIndex >= 0 ? `tag-option-${tagHighlightedIndex}` : undefined}
+              autocomplete="off"
+            />
+            {#if showTagSuggestions && tagSuggestions.length > 0}
+              <ul
+                class="tag-suggestions-dropdown"
+                id="tag-suggestions-listbox"
+                role="listbox"
+                aria-label="Tag suggestions"
+              >
+                {#each tagSuggestions as suggestion, i (suggestion)}
+                  <li
+                    id="tag-option-{i}"
+                    class="tag-suggestion-item"
+                    class:highlighted={i === tagHighlightedIndex}
+                    role="option"
+                    aria-selected={i === tagHighlightedIndex}
+                    onmousedown={() => selectTagSuggestion(suggestion)}
+                  >
+                    {suggestion}
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
       </div>
 
       <div class="form-group">
@@ -543,6 +615,38 @@
       {/snippet}
     </Dialog>
   {/if}
+
+  {#snippet okrNode(objective: Objective, themeColor: string, depth: number)}
+    {#if objective.status !== 'archived'}
+      <label class="okr-item" style="padding-left: {depth * 2}rem;">
+        <input
+          type="checkbox"
+          checked={editOkrIds.includes(objective.id)}
+          onchange={() => toggleOkrId(objective.id)}
+        />
+        <span class="okr-marker-obj" style="background-color: {themeColor};"></span>
+        {objective.title}
+      </label>
+      {#each objective.keyResults as kr (kr.id)}
+        {#if kr.status !== 'archived'}
+          <label class="okr-item" style="padding-left: {(depth + 1) * 2}rem;">
+            <input
+              type="checkbox"
+              checked={editOkrIds.includes(kr.id)}
+              onchange={() => toggleOkrId(kr.id)}
+            />
+            <span class="okr-marker-kr" style="background-color: {themeColor};"></span>
+            {kr.description}
+          </label>
+        {/if}
+      {/each}
+      {#if objective.objectives}
+        {#each objective.objectives as child (child.id)}
+          {@render okrNode(child, themeColor, depth + 1)}
+        {/each}
+      {/if}
+    {/if}
+  {/snippet}
 </div>
 
 <style>
@@ -814,6 +918,29 @@
     box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
   }
 
+  /* Collapsible Sections */
+  .collapsible-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    width: 100%;
+    padding: 0;
+    margin-bottom: 0.375rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .collapsible-header .expand-icon {
+    font-size: 0.625rem;
+    color: var(--color-gray-500);
+  }
+
+  .collapsible-header .form-label {
+    margin-bottom: 0;
+  }
+
   /* OKR Picker */
   .okr-picker {
     display: flex;
@@ -832,11 +959,19 @@
     cursor: pointer;
   }
 
-  .okr-type-badge {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-gray-500);
+  .okr-marker-obj {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
     flex-shrink: 0;
+  }
+
+  .okr-marker-kr {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    opacity: 0.6;
   }
 
   /* Tag Picker */
@@ -874,14 +1009,54 @@
     border-color: var(--color-primary-700);
   }
 
-  .tag-input-row {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+  .tag-input-wrapper {
+    position: relative;
   }
 
   .tag-input {
-    flex: 1;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+
+  .tag-input:focus {
+    outline: none;
+    border-color: var(--color-primary-600);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  }
+
+  .tag-suggestions-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin: 0;
+    padding: 0.25rem 0;
+    list-style: none;
+    background: white;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .tag-suggestion-item {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+    cursor: pointer;
+  }
+
+  .tag-suggestion-item:hover,
+  .tag-suggestion-item.highlighted {
+    background-color: var(--color-primary-50, #eff6ff);
+    color: var(--color-primary-700, #1d4ed8);
   }
 
 </style>
