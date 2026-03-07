@@ -906,7 +906,7 @@
                   onclick={handleArchiveAllDone}
                   title="Archive all done tasks"
                 >
-                  Archive all
+                  Archive all ✅
                 </button>
               {/if}
               <span class="task-count">{getColumnTaskCount(column.name)}</span>
@@ -917,7 +917,7 @@
                   onclick={(e) => { e.stopPropagation(); toggleColumnMenu(column.name); }}
                   aria-label="Column options for {column.title}"
                 >
-                  &#x22EF;
+                  ⋯
                 </button>
                 {#if columnMenuSlug === column.name}
                   <div class="column-menu-overlay" onclick={closeColumnMenu} role="presentation"></div>
@@ -995,7 +995,7 @@
                             onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                             aria-label="Delete task"
                           >
-                            x
+                            🗑️
                           </button>
                         </div>
                       </div>
@@ -1047,7 +1047,7 @@
                         aria-label="Archive task"
                         title="Archive task"
                       >
-                        &#x2713;
+                        ✅
                       </button>
                     {/if}
                     <button
@@ -1056,7 +1056,7 @@
                       onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                       aria-label="Delete task"
                     >
-                      x
+                      🗑️
                     </button>
                   </div>
                 </div>

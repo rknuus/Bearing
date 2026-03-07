@@ -313,11 +313,11 @@
   <!-- Header -->
   <div class="calendar-header">
     <button class="nav-button" onclick={prevYear} aria-label="Previous year">
-      &lt;
+      ⬅️
     </button>
     <h1 class="year-title">{year}</h1>
     <button class="nav-button" onclick={nextYear} aria-label="Next year">
-      &gt;
+      ➡️
     </button>
     <button class="today-button" onclick={goToCurrentYear}>
       Today

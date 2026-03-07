@@ -864,7 +864,7 @@ describe('EisenKanView', () => {
 
       const archiveAllBtns = container.querySelectorAll('.archive-all-btn');
       expect(archiveAllBtns.length).toBe(1);
-      expect(archiveAllBtns[0].textContent).toBe('Archive all');
+      expect(archiveAllBtns[0].textContent).toBe('Archive all ✅');
     });
 
     it('archive button calls ArchiveTask and refreshes tasks', async () => {
