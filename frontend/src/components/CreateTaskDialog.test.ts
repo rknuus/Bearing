@@ -24,7 +24,7 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeCreateTaskMock() {
   let callCount = 0;
-  return vi.fn<(title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>>(
+  return vi.fn<(title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>>(
     async (title, themeId, dayDate, priority) => {
       callCount++;
       return {
@@ -57,7 +57,7 @@ describe('CreateTaskDialog', () => {
     themes: LifeTheme[];
     onDone: () => void;
     onClose: () => void;
-    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>;
   }> = {}) {
     const result = render(CreateTaskDialog, {
       target: container,
@@ -240,7 +240,6 @@ describe('CreateTaskDialog', () => {
 
     expect(container.querySelector('#new-task-description')).toBeTruthy();
     expect(container.querySelector('#new-task-tags')).toBeTruthy();
-    expect(container.querySelector('#new-task-due-date')).toBeTruthy();
     expect(container.querySelector('#new-task-promotion-date')).toBeTruthy();
   });
 
@@ -249,12 +248,10 @@ describe('CreateTaskDialog', () => {
 
     const desc = container.querySelector<HTMLTextAreaElement>('#new-task-description');
     const tags = container.querySelector<HTMLInputElement>('#new-task-tags');
-    const dueDate = container.querySelector<HTMLInputElement>('#new-task-due-date');
     const promotionDate = container.querySelector<HTMLInputElement>('#new-task-promotion-date');
 
     expect(desc!.value).toBe('');
     expect(tags!.value).toBe('');
-    expect(dueDate!.value).toBe('');
     expect(promotionDate!.value).toBe('');
   });
 

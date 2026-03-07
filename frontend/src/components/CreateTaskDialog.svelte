@@ -23,7 +23,7 @@
     availableTags?: string[];
     onDone: () => void;
     onClose: () => void;
-    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, dueDate: string, promotionDate: string) => Promise<Task>;
+    createTask: (title: string, themeId: string, dayDate: string, priority: string, description: string, tags: string, promotionDate: string) => Promise<Task>;
   }
 
   let { open, themes, availableTags = [], onDone, onClose, createTask }: Props = $props();
@@ -46,7 +46,6 @@
   let newTaskTitle = $state('');
   let newTaskDescription = $state('');
   let newTaskTags = $state('');
-  let newTaskDueDate = $state('');
   let newTaskPromotionDate = $state('');
   let selectedThemeId = $state('');
   let isSubmitting = $state(false);
@@ -146,7 +145,6 @@
         newTaskTitle = '';
         newTaskDescription = '';
         newTaskTags = '';
-        newTaskDueDate = '';
         newTaskPromotionDate = '';
         isSubmitting = false;
         error = null;
@@ -187,7 +185,6 @@
       themeId: selectedThemeId,
       description: newTaskDescription.trim() || undefined,
       tags: newTaskTags.trim() || undefined,
-      dueDate: newTaskDueDate || undefined,
       promotionDate: newTaskPromotionDate || undefined,
     };
     nextId++;
@@ -198,7 +195,6 @@
     newTaskTitle = '';
     newTaskDescription = '';
     newTaskTags = '';
-    newTaskDueDate = '';
     newTaskPromotionDate = '';
   }
 
@@ -227,7 +223,7 @@
         for (const task of tasks) {
           total++;
           try {
-            await createTask(task.title, task.themeId ?? selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.dueDate ?? '', task.promotionDate ?? '');
+            await createTask(task.title, task.themeId ?? selectedThemeId, today, quadrant.priority, task.description ?? '', task.tags ?? '', task.promotionDate ?? '');
             created++;
           } catch {
             remaining.push(task);
@@ -287,7 +283,6 @@
         bind:themeId={selectedThemeId}
         bind:description={newTaskDescription}
         bind:tags={newTaskTags}
-        bind:dueDate={newTaskDueDate}
         bind:promotionDate={newTaskPromotionDate}
         {themes}
         {availableTags}

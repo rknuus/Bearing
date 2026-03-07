@@ -1339,7 +1339,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1358,7 +1358,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
+		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "important-not-urgent", "", "", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1371,7 +1371,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "not-important-urgent", "", "", "", "")
+		task, err := manager.CreateTask("Test Task", "T", "2026-01-31", "not-important-urgent", "", "", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1384,7 +1384,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateTask("Test Task", "T", "2026-01-31", "not-important-not-urgent", "", "", "", "")
+		_, err := manager.CreateTask("Test Task", "T", "2026-01-31", "not-important-not-urgent", "", "", "")
 		if err == nil {
 			t.Fatal("expected error for Q4 priority")
 		}
@@ -1394,7 +1394,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateTask("Test Task", "T", "2026-01-31", "invalid-priority", "", "", "", "")
+		_, err := manager.CreateTask("Test Task", "T", "2026-01-31", "invalid-priority", "", "", "")
 		if err == nil {
 			t.Fatal("expected error for invalid priority")
 		}
@@ -1404,7 +1404,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Task With Desc", "T", "2026-01-31", "important-urgent", "A detailed description", "", "", "")
+		task, err := manager.CreateTask("Task With Desc", "T", "2026-01-31", "important-urgent", "A detailed description", "", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1417,7 +1417,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Task With Tags", "T", "2026-01-31", "important-urgent", "", "frontend, backend , api", "", "")
+		task, err := manager.CreateTask("Task With Tags", "T", "2026-01-31", "important-urgent", "", "frontend, backend , api", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1436,7 +1436,7 @@ func TestCreateTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Task Trailing", "T", "2026-01-31", "important-urgent", "", "frontend, backend, ", "", "")
+		task, err := manager.CreateTask("Task Trailing", "T", "2026-01-31", "important-urgent", "", "frontend, backend, ", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1451,24 +1451,11 @@ func TestCreateTask(t *testing.T) {
 		}
 	})
 
-	t.Run("creates task with dueDate", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		task, err := manager.CreateTask("Task With Due", "T", "2026-01-31", "important-urgent", "", "", "2026-03-15", "")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if task.DueDate != "2026-03-15" {
-			t.Errorf("expected dueDate '2026-03-15', got '%s'", task.DueDate)
-		}
-	})
-
 	t.Run("creates task with promotionDate", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, err := manager.CreateTask("Task With Promo", "T", "2026-01-31", "important-not-urgent", "", "", "", "2026-02-28")
+		task, err := manager.CreateTask("Task With Promo", "T", "2026-01-31", "important-not-urgent", "", "", "2026-02-28")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1477,21 +1464,11 @@ func TestCreateTask(t *testing.T) {
 		}
 	})
 
-	t.Run("rejects invalid dueDate format", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		_, err := manager.CreateTask("Task", "T", "2026-01-31", "important-urgent", "", "", "not-a-date", "")
-		if err == nil {
-			t.Fatal("expected error for invalid dueDate format")
-		}
-	})
-
 	t.Run("rejects invalid promotionDate format", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateTask("Task", "T", "2026-01-31", "important-urgent", "", "", "", "31/01/2026")
+		_, err := manager.CreateTask("Task", "T", "2026-01-31", "important-urgent", "", "", "31/01/2026")
 		if err == nil {
 			t.Fatal("expected error for invalid promotionDate format")
 		}
@@ -1504,7 +1481,7 @@ func TestMoveTask(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create a task first
-		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		// Move to doing
 		result, err := manager.MoveTask(task.ID, "doing", nil)
@@ -1533,8 +1510,8 @@ func TestGetTasks(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create tasks
-		_, _ = manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "")
+		_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "")
 
 		tasks, err := manager.GetTasks()
 		if err != nil {
@@ -1559,7 +1536,7 @@ func TestDeleteTask(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create a task
-		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		// Delete it
 		err := manager.DeleteTask(task.ID)
@@ -1645,8 +1622,8 @@ func TestGetTasks_OrderedByPersistedOrder(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create tasks — they end up in todo with same priority
-		_, _ = manager.CreateTask("First", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		_, _ = manager.CreateTask("Second", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("First", "T", "2026-01-31", "important-urgent", "", "", "")
+		_, _ = manager.CreateTask("Second", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		// Reorder: Second before First
 		_, _ = manager.ReorderTasks(map[string][]string{
@@ -1665,7 +1642,7 @@ func TestGetTasks_OrderedByPersistedOrder(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// No task order set — should still return tasks
-		_, _ = manager.CreateTask("Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		tasks, err := manager.GetTasks()
 		if err != nil {
@@ -1724,7 +1701,7 @@ func TestMoveTask_UpdatesOrder(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		result, err := manager.MoveTask(task.ID, "doing", nil)
 		if err != nil {
@@ -1756,7 +1733,7 @@ func TestDeleteTask_CleansUpOrder(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		err := manager.DeleteTask(task.ID)
 		if err != nil {
@@ -1779,7 +1756,7 @@ func TestCreateTask_AppendsToOrder(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		stored, _ := mockAccess.LoadTaskOrder()
 		zone := stored["important-urgent"]
@@ -1842,7 +1819,7 @@ func TestGetTasksSubtaskIDs(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		// Create a parent task
-		parent, _ := manager.CreateTask("Parent Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		parent, _ := manager.CreateTask("Parent Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		// Manually add subtasks with ParentTaskID set
 		parentID := parent.ID
@@ -1899,7 +1876,7 @@ func TestGetTasksSubtaskIDs(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, _ = manager.CreateTask("Solo Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Solo Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		tasks, err := manager.GetTasks()
 		if err != nil {
@@ -1940,7 +1917,7 @@ func TestUnit_CreateTask_BatchSequential(t *testing.T) {
 
 		createdIDs := make([]string, 0, len(specs))
 		for _, spec := range specs {
-			task, err := manager.CreateTask(spec.title, "T", "2026-01-01", spec.priority, "", "", "", "")
+			task, err := manager.CreateTask(spec.title, "T", "2026-01-01", spec.priority, "", "", "")
 			if err != nil {
 				t.Fatalf("CreateTask(%q) returned error: %v", spec.title, err)
 			}
@@ -1999,7 +1976,7 @@ func TestArchiveTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 		_, _ = manager.MoveTask(task.ID, "done", nil)
 
 		err := manager.ArchiveTask(task.ID)
@@ -2024,7 +2001,7 @@ func TestArchiveTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		err := manager.ArchiveTask(task.ID)
 		if err == nil {
@@ -2036,8 +2013,8 @@ func TestArchiveTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateTask("Parent", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		sub, _ := manager.CreateTask("Subtask", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		parent, _ := manager.CreateTask("Parent", "T", "2026-01-31", "important-urgent", "", "", "")
+		sub, _ := manager.CreateTask("Subtask", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		// Set subtask relationship
 		parentID := parent.ID
@@ -2079,9 +2056,9 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		t2, _ := manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
-		_, _ = manager.CreateTask("Task 3", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "")
+		t2, _ := manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "")
+		_, _ = manager.CreateTask("Task 3", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		_, _ = manager.MoveTask(t1.ID, "done", nil)
 		_, _ = manager.MoveTask(t2.ID, "done", nil)
@@ -2115,7 +2092,7 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, _ = manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		_, _ = manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		err := manager.ArchiveAllDoneTasks()
 		if err != nil {
@@ -2134,7 +2111,7 @@ func TestRestoreTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 		_, _ = manager.MoveTask(task.ID, "done", nil)
 		_ = manager.ArchiveTask(task.ID)
 
@@ -2159,7 +2136,7 @@ func TestRestoreTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		task, _ := manager.CreateTask("Test Task", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		err := manager.RestoreTask(task.ID)
 		if err == nil {
@@ -2171,8 +2148,8 @@ func TestRestoreTask(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		parent, _ := manager.CreateTask("Parent", "T", "2026-01-31", "important-urgent", "", "", "", "")
-		sub, _ := manager.CreateTask("Subtask", "T", "2026-01-31", "important-urgent", "", "", "", "")
+		parent, _ := manager.CreateTask("Parent", "T", "2026-01-31", "important-urgent", "", "", "")
+		sub, _ := manager.CreateTask("Subtask", "T", "2026-01-31", "important-urgent", "", "", "")
 
 		parentID := parent.ID
 		sub.ParentTaskID = &parentID
@@ -2211,8 +2188,8 @@ func TestGetTasks_IncludesArchived(t *testing.T) {
 	mockAccess := newMockPlanAccess()
 	manager, _ := NewPlanningManager(mockAccess)
 
-	t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
-	_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "", "")
+	t1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "")
+	_, _ = manager.CreateTask("Task 2", "T", "2026-01-31", "important-not-urgent", "", "", "")
 
 	_, _ = manager.MoveTask(t1.ID, "done", nil)
 	_ = manager.ArchiveTask(t1.ID)
@@ -2243,12 +2220,12 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 	manager, _ := NewPlanningManager(mockAccess)
 
 	// Create a task, move to done, then archive it
-	task1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "", "")
+	task1, _ := manager.CreateTask("Task 1", "T", "2026-01-31", "important-urgent", "", "", "")
 	_, _ = manager.MoveTask(task1.ID, "done", nil)
 	_ = manager.ArchiveTask(task1.ID)
 
 	// Create a new task (ID must not collide with the archived one)
-	task2, err := manager.CreateTask("Task 2", "T", "2026-01-31", "important-urgent", "", "", "", "")
+	task2, err := manager.CreateTask("Task 2", "T", "2026-01-31", "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("expected no error creating task after archive, got %v", err)
 	}
@@ -2481,7 +2458,7 @@ func TestUnit_MoveTask_CustomColumn(t *testing.T) {
 	_, _ = manager.AddColumn("Review", "doing")
 
 	// Create a task
-	task, err := manager.CreateTask("Test task", "T", "2026-01-01", "important-urgent", "", "", "", "")
+	task, err := manager.CreateTask("Test task", "T", "2026-01-01", "important-urgent", "", "", "")
 	if err != nil {
 		t.Fatalf("CreateTask failed: %v", err)
 	}

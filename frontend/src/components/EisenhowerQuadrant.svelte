@@ -20,7 +20,6 @@
     themeId?: string;
     description?: string;
     tags?: string;
-    dueDate?: string;
     promotionDate?: string;
   }
 

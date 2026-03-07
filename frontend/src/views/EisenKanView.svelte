@@ -309,8 +309,8 @@
     return getBindings().GetBoardConfiguration();
   }
 
-  async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> {
-    return getBindings().CreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate);
+  async function apiCreateTask(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
+    return getBindings().CreateTask(title, themeId, dayDate, priority, description, tags, promotionDate);
   }
 
   async function apiMoveTask(taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> {
@@ -345,7 +345,7 @@
     await getBindings().RestoreTask(taskId);
   }
 
-  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'dueDate', 'promotionDate', 'description', 'parentTaskId', 'status'];
+  const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'promotionDate', 'description', 'parentTaskId', 'status'];
 
   const taskDropZone = (t: Record<string, unknown>) =>
     t.status === 'todo' ? (String(t.priority) || 'todo') : String(t.status);
@@ -421,8 +421,8 @@
     showCreateDialog = true;
   }
 
-  async function apiCreateTaskAndInsert(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', dueDate: string = '', promotionDate: string = ''): Promise<Task> {
-    const task = await apiCreateTask(title, themeId, dayDate, priority, description, tags, dueDate, promotionDate);
+  async function apiCreateTaskAndInsert(title: string, themeId: string, dayDate: string, priority: string, description: string = '', tags: string = '', promotionDate: string = ''): Promise<Task> {
+    const task = await apiCreateTask(title, themeId, dayDate, priority, description, tags, promotionDate);
     tasks = [...tasks, { ...task, status: 'todo' } as TaskWithStatus];
     return task;
   }

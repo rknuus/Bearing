@@ -3,7 +3,7 @@
    * TaskFormFields Component
    *
    * Shared form fields used by both CreateTaskDialog and EditTaskDialog.
-   * Renders title, theme, description, tags, due date, and promotion date fields.
+   * Renders title, theme, description, tags, and promotion date fields.
    * Tags input includes auto-completion from existing tags when availableTags is provided.
    */
 
@@ -14,7 +14,6 @@
     themeId: string;
     description: string;
     tags: string;
-    dueDate: string;
     promotionDate: string;
     themes: LifeTheme[];
     availableTags?: string[];
@@ -27,7 +26,6 @@
     themeId = $bindable(),
     description = $bindable(),
     tags = $bindable(),
-    dueDate = $bindable(),
     promotionDate = $bindable(),
     themes,
     availableTags = [],
@@ -192,25 +190,14 @@
     {/if}
   </div>
 </div>
-<div class="form-row">
-  <div class="form-group">
-    <label for="{prefix}due-date">Due Date</label>
-    <input
-      id="{prefix}due-date"
-      type="date"
-      bind:value={dueDate}
-      {disabled}
-    />
-  </div>
-  <div class="form-group">
-    <label for="{prefix}promotion-date">Promotion Date</label>
-    <input
-      id="{prefix}promotion-date"
-      type="date"
-      bind:value={promotionDate}
-      {disabled}
-    />
-  </div>
+<div class="form-group">
+  <label for="{prefix}promotion-date">Promotion Date</label>
+  <input
+    id="{prefix}promotion-date"
+    type="date"
+    bind:value={promotionDate}
+    {disabled}
+  />
 </div>
 
 <style>
@@ -251,12 +238,6 @@
 
   .form-group textarea {
     resize: vertical;
-  }
-
-  .form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
   }
 
   /* Tag autocomplete styles */

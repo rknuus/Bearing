@@ -18,7 +18,6 @@ describe('TaskFormFields tag autocomplete', () => {
       themeId: 'HF',
       description: '',
       tags: '',
-      dueDate: '',
       promotionDate: '',
       themes,
       availableTags,
