@@ -1029,7 +1029,7 @@
             <div class="section-container" class:collapsed-column-hidden={columnCollapsed}>
               {#each column.sections as section (section.name)}
                 {@const sectionTaskItems = sectionItems[section.name] ?? []}
-                {@const sectionCollapsed = collapsedSections.has(section.name)}
+                {@const sectionCollapsed = collapsedSections.has(section.name) && !isDragging}
                 <div class="column-section" style="--section-color: {section.color};" data-testid="section-{section.name}">
                   <div class="section-header" style="background-color: {section.color};">
                     <button
