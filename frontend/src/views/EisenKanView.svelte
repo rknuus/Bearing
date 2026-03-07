@@ -917,7 +917,7 @@
                   onclick={(e) => { e.stopPropagation(); toggleColumnMenu(column.name); }}
                   aria-label="Column options for {column.title}"
                 >
-                  &#x22EF;
+                  ⋯
                 </button>
                 {#if columnMenuSlug === column.name}
                   <div class="column-menu-overlay" onclick={closeColumnMenu} role="presentation"></div>
@@ -1047,7 +1047,7 @@
                         aria-label="Archive task"
                         title="Archive task"
                       >
-                        &#x2713;
+                        ✅
                       </button>
                     {/if}
                     <button
