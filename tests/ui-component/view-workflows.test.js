@@ -101,7 +101,7 @@ export async function runTests() {
       }
 
       // Cancel the dialog
-      await page.click('.btn-secondary')
+      await page.click('.btn-secondary:has-text("Cancel")')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
       reporter.pass('Calendar view loads and day editor works')
