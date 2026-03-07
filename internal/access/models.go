@@ -41,10 +41,12 @@ type KeyResult struct {
 // DayFocus represents the daily focus on a specific life theme.
 // It links a calendar date to a life theme with optional notes.
 type DayFocus struct {
-	Date    string `json:"date"`    // Date in YYYY-MM-DD format
-	ThemeID string `json:"themeId"` // Links to a LifeTheme.ID
-	Notes   string `json:"notes"`   // Optional daily notes
-	Text    string `json:"text"`    // Free-text content for the day
+	Date    string   `json:"date"`              // Date in YYYY-MM-DD format
+	ThemeID string   `json:"themeId"`           // Links to a LifeTheme.ID
+	Notes   string   `json:"notes"`             // Optional daily notes
+	Text    string   `json:"text"`              // Free-text content for the day
+	OkrIDs  []string `json:"okrIds,omitempty"`  // Optional OKR item references (Objective/KR IDs)
+	Tags    []string `json:"tags,omitempty"`    // Optional day-level tags
 }
 
 // Task represents a single actionable item linked to a life theme.

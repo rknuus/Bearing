@@ -197,10 +197,12 @@ type LifeTheme struct {
 
 // DayFocus represents a daily focus entry (for Wails binding)
 type DayFocus struct {
-	Date    string `json:"date"`
-	ThemeID string `json:"themeId"`
-	Notes   string `json:"notes"`
-	Text    string `json:"text"`
+	Date    string   `json:"date"`
+	ThemeID string   `json:"themeId"`
+	Notes   string   `json:"notes"`
+	Text    string   `json:"text"`
+	OkrIDs  []string `json:"okrIds,omitempty"`
+	Tags    []string `json:"tags,omitempty"`
 }
 
 // Task represents a single actionable item (for Wails binding)
@@ -602,6 +604,8 @@ func (a *App) GetYearFocus(year int) ([]DayFocus, error) {
 			ThemeID: e.ThemeID,
 			Notes:   e.Notes,
 			Text:    e.Text,
+			OkrIDs:  e.OkrIDs,
+			Tags:    e.Tags,
 		}
 	}
 	return result, nil
@@ -619,6 +623,8 @@ func (a *App) SaveDayFocus(day DayFocus) error {
 		ThemeID: day.ThemeID,
 		Notes:   day.Notes,
 		Text:    day.Text,
+		OkrIDs:  day.OkrIDs,
+		Tags:    day.Tags,
 	})
 	if err != nil {
 		slog.Error("SaveDayFocus failed", "error", err, "date", day.Date)

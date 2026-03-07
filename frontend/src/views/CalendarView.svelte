@@ -208,7 +208,7 @@
     editText = focus?.text ?? '';
   }
 
-  const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text'];
+  const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
 
   async function verifyCalendarState() {
     const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
