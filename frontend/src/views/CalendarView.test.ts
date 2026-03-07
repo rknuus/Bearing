@@ -691,6 +691,154 @@ describe('CalendarView', () => {
     });
   });
 
+  describe('tag-to-text auto-derivation', () => {
+    function expandTagSection() {
+      const headers = container.querySelectorAll<HTMLButtonElement>('.collapsible-header');
+      const tagHeader = Array.from(headers).find(h => h.textContent?.includes('Tags'));
+      tagHeader?.click();
+    }
+
+    async function openDayDialog(yearFocus: DayFocus[] = [], taskTags: string[] = ['review', 'meeting', 'demo']) {
+      mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
+      mockBindings.GetTasks.mockResolvedValue(
+        taskTags.map((tag, i) => ({ id: `T${i}`, title: `Task ${i}`, themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: [tag] }))
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dateStr = formatDateLocale('2025-01-01');
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(dateStr));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+    }
+
+    function getTextInputValue(): string {
+      return container.querySelector<HTMLInputElement>('#text-input')!.value;
+    }
+
+    it('auto-populates text when adding a tag to empty text', async () => {
+      await openDayDialog();
+      expandTagSection();
+      await tick();
+
+      // Click 'demo' tag pill
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const demoPill = Array.from(pills).find(p => p.textContent?.trim() === 'demo');
+      demoPill!.click();
+      await tick();
+
+      expect(getTextInputValue()).toBe('demo');
+    });
+
+    it('auto-updates text when adding second tag', async () => {
+      await openDayDialog();
+      expandTagSection();
+      await tick();
+
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const demoPill = Array.from(pills).find(p => p.textContent?.trim() === 'demo');
+      const reviewPill = Array.from(pills).find(p => p.textContent?.trim() === 'review');
+
+      demoPill!.click();
+      await tick();
+      expect(getTextInputValue()).toBe('demo');
+
+      reviewPill!.click();
+      await tick();
+      expect(getTextInputValue()).toBe('demo, review');
+    });
+
+    it('auto-updates text when removing a tag', async () => {
+      await openDayDialog([
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: 'demo, review', tags: ['demo', 'review'] },
+      ]);
+      // Tag section auto-expands when day has existing tags — don't toggle it
+      await tick();
+
+      // Remove 'review' by clicking its active pill
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const reviewPill = Array.from(pills).find(p => p.textContent?.trim() === 'review');
+      reviewPill!.click();
+      await tick();
+
+      expect(getTextInputValue()).toBe('demo');
+    });
+
+    it('preserves user-edited text when tags change', async () => {
+      await openDayDialog();
+      expandTagSection();
+      await tick();
+
+      // Manually type custom text
+      const textInput = container.querySelector<HTMLInputElement>('#text-input')!;
+      await fireEvent.input(textInput, { target: { value: 'My custom note' } });
+      await tick();
+
+      // Add a tag — text should NOT change
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const demoPill = Array.from(pills).find(p => p.textContent?.trim() === 'demo');
+      demoPill!.click();
+      await tick();
+
+      expect(getTextInputValue()).toBe('My custom note');
+    });
+
+    it('resumes auto-updating when text is edited back to match derived', async () => {
+      await openDayDialog();
+      expandTagSection();
+      await tick();
+
+      // Add a tag to get derived text
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const demoPill = Array.from(pills).find(p => p.textContent?.trim() === 'demo');
+      const reviewPill = Array.from(pills).find(p => p.textContent?.trim() === 'review');
+
+      demoPill!.click();
+      await tick();
+      expect(getTextInputValue()).toBe('demo');
+
+      // Edit text to something custom
+      const textInput = container.querySelector<HTMLInputElement>('#text-input')!;
+      await fireEvent.input(textInput, { target: { value: 'custom' } });
+      await tick();
+
+      // Add another tag — text preserved
+      reviewPill!.click();
+      await tick();
+      expect(getTextInputValue()).toBe('custom');
+
+      // Edit text back to match current derived value
+      await fireEvent.input(textInput, { target: { value: 'demo, review' } });
+      await tick();
+
+      // Remove review — should auto-update since text matches
+      reviewPill!.click();
+      await tick();
+      expect(getTextInputValue()).toBe('demo');
+    });
+
+    it('clears text when all tags removed and text matched derived', async () => {
+      await openDayDialog([
+        { date: '2025-01-01', themeId: 'HF', notes: '', text: 'demo', tags: ['demo'] },
+      ]);
+      // Tag section auto-expands when day has existing tags — don't toggle it
+      await tick();
+
+      // Remove the only tag
+      const pills = container.querySelectorAll<HTMLButtonElement>('.tag-pill');
+      const demoPill = Array.from(pills).find(p => p.textContent?.trim() === 'demo');
+      demoPill!.click();
+      await tick();
+
+      expect(getTextInputValue()).toBe('');
+    });
+  });
+
   describe('collapsible sections', () => {
     it('OKR section defaults to collapsed when no OKR refs exist', async () => {
       const themes: LifeTheme[] = [{

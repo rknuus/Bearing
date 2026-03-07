@@ -37,6 +37,7 @@
   let editOkrIds = $state<string[]>([]);
   let editTags = $state<string[]>([]);
   let prevThemeId = $state('');
+  let prevDerivedText = $state('');
   let availableTags = $state<string[]>([]);
   let okrSectionOpen = $state(false);
   let tagSectionOpen = $state(false);
@@ -218,6 +219,7 @@
     editText = focus?.text ?? '';
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
+    prevDerivedText = editTags.join(', ');
     okrSectionOpen = (focus?.okrIds?.length ?? 0) > 0;
     tagSectionOpen = (focus?.tags?.length ?? 0) > 0;
 
@@ -460,7 +462,14 @@
           <TagEditor
             tags={editTags}
             {availableTags}
-            onTagsChange={(newTags) => { editTags = newTags; }}
+            onTagsChange={(newTags) => {
+              const newDerived = newTags.join(', ');
+              if (editText === prevDerivedText) {
+                editText = newDerived;
+              }
+              prevDerivedText = newDerived;
+              editTags = newTags;
+            }}
           />
         {/if}
       </div>
