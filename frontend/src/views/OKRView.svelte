@@ -676,7 +676,7 @@
           {/each}
           <label class="color-input-wrapper">
             <span class="color-input-icon">➕</span>
-            <input type="color" class="color-input" bind:value={newThemeColor} aria-label="Custom color" />
+            <input type="color" class="color-input" bind:value={newThemeColor} onchange={(e) => { newThemeColor = e.currentTarget.value; }} aria-label="Custom color" />
           </label>
         </div>
         {#if getColorConflicts(newThemeColor).length > 0}
@@ -728,7 +728,7 @@
               {/each}
               <label class="color-input-wrapper small">
                 <span class="color-input-icon">➕</span>
-                <input type="color" class="color-input" bind:value={editThemeColor} aria-label="Custom color" />
+                <input type="color" class="color-input" bind:value={editThemeColor} onchange={(e) => { editThemeColor = e.currentTarget.value; }} aria-label="Custom color" />
               </label>
             </div>
             {@const editConflicts = getColorConflicts(editThemeColor, theme.id)}

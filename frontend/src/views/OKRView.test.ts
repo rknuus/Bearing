@@ -345,6 +345,27 @@ describe('OKRView', () => {
     expect(warning).toBeNull();
   });
 
+  it('custom color via change event updates color state (WebView compat)', async () => {
+    await renderView();
+
+    // Click "+ Add Theme" button — default color is #3b82f6, same as Test Theme
+    const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+    addThemeBtn!.click();
+    await tick();
+
+    // Verify warning is present initially (default color conflicts)
+    expect(container.querySelector('.theme-form .color-warning')).toBeTruthy();
+
+    // Fire change event (not input) to simulate WebView behavior
+    const colorInput = container.querySelector<HTMLInputElement>('.theme-form input[type="color"]');
+    expect(colorInput).toBeTruthy();
+    await fireEvent.change(colorInput!, { target: { value: '#000000' } });
+    await tick();
+
+    // Warning should disappear — proves change event updated the color state
+    expect(container.querySelector('.theme-form .color-warning')).toBeNull();
+  });
+
   it('duplicate warning excludes the theme being edited (no self-conflict)', async () => {
     await renderView();
 
