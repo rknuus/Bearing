@@ -134,6 +134,22 @@ describe('ThemeFilterBar', () => {
     expect(chip).toBeNull();
   });
 
+  it('pills are not locked when todayFocusThemeId is null even if todayFocusActive', async () => {
+    await renderBar({
+      todayFocusThemeId: null,
+      todayFocusActive: true,
+      onTodayFocusToggle: () => {},
+    });
+
+    const allPill = container.querySelector('.all-pill');
+    expect(allPill?.classList.contains('pills-locked')).toBe(false);
+
+    const themePills = container.querySelectorAll('.theme-pill');
+    for (const pill of themePills) {
+      expect(pill.classList.contains('pills-locked')).toBe(false);
+    }
+  });
+
   it('pills are not locked when Today\'s Focus is inactive', async () => {
     await renderBar({
       todayFocusThemeId: 'HF',

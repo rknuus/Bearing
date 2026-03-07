@@ -24,6 +24,7 @@
 
   const allActive = $derived(activeThemeIds.length === 0);
   const todayFocusDisabled = $derived(!todayFocusThemeId);
+  const pillsLocked = $derived(todayFocusActive && !todayFocusDisabled);
 </script>
 
 <div class="theme-filter-bar">
@@ -43,7 +44,7 @@
   <button
     class="filter-pill all-pill"
     class:active={allActive}
-    class:pills-locked={todayFocusActive}
+    class:pills-locked={pillsLocked}
     onclick={onClear}
     type="button"
   >
@@ -55,7 +56,7 @@
     <button
       class="filter-pill theme-pill"
       class:active={isActive}
-      class:pills-locked={todayFocusActive}
+      class:pills-locked={pillsLocked}
       style="
         --pill-color: {theme.color};
         {isActive
