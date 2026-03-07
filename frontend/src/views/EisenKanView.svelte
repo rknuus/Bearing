@@ -75,6 +75,7 @@
 
   // Archive toggle state (persisted via navigation context)
   let showArchivedTasks = $state(false);
+  let contextLoaded = false;
 
   // Fold state (persisted via navigation context)
   let collapsedSections = new SvelteSet<string>();
@@ -390,6 +391,7 @@
       } catch {
         // Ignore errors loading nav context
       }
+      contextLoaded = true;
 
       // Process priority promotions on startup and refresh if any promoted
       try {
@@ -411,6 +413,7 @@
   // Persist showArchivedTasks to NavigationContext
   $effect(() => {
     const sat = showArchivedTasks;
+    if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
@@ -424,6 +427,7 @@
   $effect(() => {
     const _size = collapsedSections.size;
     const sections = [...collapsedSections];
+    if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
@@ -437,6 +441,7 @@
   $effect(() => {
     const _size = collapsedColumns.size;
     const cols = [...collapsedColumns];
+    if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
