@@ -32,7 +32,7 @@
 
   // Day editor dialog state
   let editingDay = $state<{ date: string; month: number; day: number } | null>(null);
-  let editThemeId = $state('');
+  let editThemeIds = $state<string[]>([]);
   let editText = $state('');
   let editOkrIds = $state<string[]>([]);
   let editTags = $state<string[]>([]);
@@ -105,12 +105,36 @@
     return formatDateLocale(formatDate(month, day));
   }
 
-  function getThemeColor(month: number, day: number): string | null {
+  function getThemeColors(month: number, day: number): string[] {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
-    if (!focus?.themeId) return null;
-    const theme = themes.find(t => t.id === focus.themeId);
-    return theme?.color ?? null;
+    if (!focus?.themeIds || focus.themeIds.length === 0) return [];
+    const colors: string[] = [];
+    for (const tid of focus.themeIds) {
+      const theme = themes.find(t => t.id === tid);
+      if (theme) colors.push(theme.color);
+    }
+    return colors;
+  }
+
+  /** Convert an array of theme colors to a CSS background value. */
+  function themeColorsToBackground(colors: string[]): string {
+    if (colors.length === 0) return '';
+    if (colors.length === 1) return `${colors[0]}20`;
+    // Build vertical stripes with ~2px gradient transitions
+    const n = colors.length;
+    const stops: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const start = `${(i * 100) / n}%`;
+      const solidEnd = `calc(${((i + 1) * 100) / n}% - 2px)`;
+      const end = `${((i + 1) * 100) / n}%`;
+      stops.push(`${colors[i]}20 ${start}`);
+      stops.push(`${colors[i]}20 ${solidEnd}`);
+      if (i < n - 1) {
+        stops.push(`${colors[i + 1]}20 ${end}`);
+      }
+    }
+    return `linear-gradient(to right, ${stops.join(', ')})`;
   }
 
   function getDayText(month: number, day: number): string {
@@ -123,7 +147,7 @@
     month: number;
     day: number;
     row: number; // 0-indexed grid row (day - 1)
-    color: string | null;
+    colors: string[];
     text: string;
     today: boolean;
     sunday: boolean;
@@ -139,7 +163,7 @@
           month: m,
           day: d,
           row: d - 1,
-          color: getThemeColor(m, d),
+          colors: getThemeColors(m, d),
           text: getDayText(m, d),
           today: isToday(m, d),
           sunday: isSundayDate(year, m, d),
@@ -172,7 +196,7 @@
     const focus = yearFocus.get(dateStr);
 
     editingDay = { date: dateStr, month, day };
-    editThemeId = focus?.themeId ?? '';
+    editThemeIds = focus?.themeIds ? [...focus.themeIds] : [];
     editText = focus?.text ?? '';
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
@@ -189,7 +213,7 @@
   }
 
 
-  const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
+  const DAY_FOCUS_FIELDS = ['date', 'themeIds', 'notes', 'text', 'okrIds', 'tags'];
 
   async function verifyCalendarState() {
     const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
@@ -211,7 +235,7 @@
       const existing = yearFocus.get(editingDay.date);
       const dayFocus: DayFocus = {
         date: editingDay.date,
-        themeId: editThemeId,
+        themeIds: editThemeIds.length > 0 ? editThemeIds : undefined,
         notes: existing?.notes ?? '',
         text: editText,
         okrIds: editOkrIds.length > 0 ? editOkrIds : undefined,
@@ -285,7 +309,8 @@
             {@const numCol = 2 + monthIdx * 3}
             {@const textCol = 3 + monthIdx * 3}
             {@const gridRow = cell.row + 2}
-            {@const cellBg = cell.color ? `background-color: ${cell.color}20;` : (cell.sunday ? 'background-color: #eef2ff;' : '')}
+            {@const bgValue = themeColorsToBackground(cell.colors)}
+            {@const cellBg = bgValue ? (bgValue.startsWith('linear-gradient') ? `background: ${bgValue};` : `background-color: ${bgValue};`) : (cell.sunday ? 'background-color: #eef2ff;' : '')}
 
             <!-- Weekday abbreviation cell -->
             <div
@@ -346,10 +371,10 @@
         <ThemeOKRTree
           {themes}
           mode="select"
-          selectedThemeIds={editThemeId ? [editThemeId] : []}
+          selectedThemeIds={editThemeIds}
           selectedOkrIds={editOkrIds}
           onThemeSelectionChange={(ids) => {
-            editThemeId = ids.length > 0 ? ids[ids.length - 1] : '';
+            editThemeIds = ids;
           }}
           onOkrSelectionChange={(ids) => { editOkrIds = ids; }}
         />

@@ -38,7 +38,7 @@ export interface LifeTheme {
 
 export interface DayFocus {
   date: string;
-  themeId: string;
+  themeIds?: string[];
   notes: string;
   text: string;
   okrIds?: string[];
@@ -650,8 +650,8 @@ export const mockAppBindings = {
 
     const index = entries.findIndex(e => e.date === date);
     if (index >= 0) {
-      // Clear the theme but preserve notes and text
-      entries[index] = { ...entries[index], themeId: '' };
+      // Clear the themes but preserve notes and text
+      entries[index] = { ...entries[index], themeIds: undefined };
     }
 
     mockYearFocus.set(year, entries);
@@ -916,7 +916,7 @@ export const mockAppBindings = {
   // Get days in calendar that use a specific theme
   GetDaysWithTheme: async (themeId: string, year: number): Promise<DayFocus[]> => {
     const yearFocus = mockYearFocus.get(year) || [];
-    return yearFocus.filter(d => d.themeId === themeId);
+    return yearFocus.filter(d => d.themeIds?.includes(themeId));
   },
 
   // Frontend logging
