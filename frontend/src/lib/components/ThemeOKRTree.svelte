@@ -16,7 +16,6 @@
    */
 
   import type { Snippet } from 'svelte';
-  import { untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import type { LifeTheme, Objective, KeyResult } from '../../lib/wails-mock';
   import ThemeBadge from './ThemeBadge.svelte';
@@ -31,6 +30,8 @@
     selectedOkrIds?: string[];
     onThemeSelectionChange?: (themeIds: string[]) => void;
     onOkrSelectionChange?: (okrIds: string[]) => void;
+    initialSelectExpandedIds?: string[];
+    onSelectExpandedIdsChange?: (ids: string[]) => void;
 
     // Edit mode
     expandedIds?: SvelteSet<string>;
@@ -51,6 +52,8 @@
     selectedOkrIds = [],
     onThemeSelectionChange,
     onOkrSelectionChange,
+    initialSelectExpandedIds,
+    onSelectExpandedIdsChange,
     expandedIds,
     showCompleted = false,
     showArchived = false,
@@ -63,39 +66,14 @@
   }: Props = $props();
 
   // Internal expand/collapse state (select mode only)
-  let selectExpandedIds = new SvelteSet<string>();
-
-  // Auto-expand themes (and their objectives) that are initially selected
-  $effect(() => {
-    if (mode !== 'select') return;
-    const ids = selectedThemeIds;
-    untrack(() => {
-      for (const id of ids) {
-        expandThemeTree(id);
-      }
-    });
-  });
+  let selectExpandedIds = new SvelteSet<string>(initialSelectExpandedIds ?? []);
 
   // --- Select mode helpers ---
 
-  function collectObjectiveIds(objectives: Objective[]): string[] {
-    const ids: string[] = [];
-    for (const obj of objectives) {
-      if (obj.status === 'archived') continue;
-      ids.push(obj.id);
-      if (obj.objectives) ids.push(...collectObjectiveIds(obj.objectives));
-    }
-    return ids;
-  }
-
-  function expandThemeTree(themeId: string) {
-    selectExpandedIds.add(themeId);
-    const theme = themes.find(t => t.id === themeId);
-    if (theme) {
-      for (const id of collectObjectiveIds(theme.objectives)) {
-        selectExpandedIds.add(id);
-      }
-    }
+  function toggleSelectExpanded(id: string) {
+    if (selectExpandedIds.has(id)) selectExpandedIds.delete(id);
+    else selectExpandedIds.add(id);
+    onSelectExpandedIdsChange?.([...selectExpandedIds]);
   }
 
   function collectOkrIds(theme: LifeTheme): string[] {
@@ -126,10 +104,8 @@
         const themeOkrIds = new Set(collectOkrIds(theme));
         newOkrIds = newOkrIds.filter(id => !themeOkrIds.has(id));
       }
-      selectExpandedIds.delete(themeId);
     } else {
       newThemeIds = [...selectedThemeIds, themeId];
-      expandThemeTree(themeId);
     }
 
     onThemeSelectionChange?.(newThemeIds);
@@ -167,10 +143,7 @@
         <div class="tree-item-header tree-theme-header">
           <button
             class="tree-expand-button"
-            onclick={() => {
-              if (selectExpandedIds.has(theme.id)) selectExpandedIds.delete(theme.id);
-              else selectExpandedIds.add(theme.id);
-            }}
+            onclick={() => toggleSelectExpanded(theme.id)}
             aria-expanded={selectExpandedIds.has(theme.id)}
           >
             <span class="tree-expand-icon">{selectExpandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
@@ -228,10 +201,7 @@
       {#if hasChildren}
         <button
           class="tree-expand-button"
-          onclick={() => {
-            if (selectExpandedIds.has(objective.id)) selectExpandedIds.delete(objective.id);
-            else selectExpandedIds.add(objective.id);
-          }}
+          onclick={() => toggleSelectExpanded(objective.id)}
           aria-expanded={selectExpandedIds.has(objective.id)}
         >
           <span class="tree-expand-icon">{selectExpandedIds.has(objective.id) ? '\u25BC' : '\u25B6'}</span>
