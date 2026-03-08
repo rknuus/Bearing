@@ -114,11 +114,45 @@
     }
   }
 
+  function findAncestors(okrId: string): { themeId: string; ancestorOkrIds: string[] } | null {
+    for (const theme of themes) {
+      const path: string[] = [];
+      function walk(objectives: Objective[]): boolean {
+        for (const obj of objectives) {
+          if (obj.id === okrId) return true;
+          path.push(obj.id);
+          for (const kr of obj.keyResults) {
+            if (kr.id === okrId) return true;
+          }
+          if (obj.objectives && walk(obj.objectives)) return true;
+          path.pop();
+        }
+        return false;
+      }
+      if (walk(theme.objectives)) {
+        return { themeId: theme.id, ancestorOkrIds: [...path] };
+      }
+    }
+    return null;
+  }
+
   function handleOkrToggle(id: string) {
     const isSelected = selectedOkrIds.includes(id);
-    const newOkrIds = isSelected
-      ? selectedOkrIds.filter(x => x !== id)
-      : [...selectedOkrIds, id];
+    if (isSelected) {
+      onOkrSelectionChange?.(selectedOkrIds.filter(x => x !== id));
+      return;
+    }
+
+    const ancestors = findAncestors(id);
+    const newOkrIds = [...selectedOkrIds, id];
+    if (ancestors) {
+      for (const aid of ancestors.ancestorOkrIds) {
+        if (!newOkrIds.includes(aid)) newOkrIds.push(aid);
+      }
+      if (!selectedThemeIds.includes(ancestors.themeId)) {
+        onThemeSelectionChange?.([...selectedThemeIds, ancestors.themeId]);
+      }
+    }
     onOkrSelectionChange?.(newOkrIds);
   }
 
