@@ -117,23 +117,19 @@
     return colors;
   }
 
+  /** Convert hex color to rgba with given alpha. */
+  function hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   /** Convert an array of theme colors to a CSS background value. */
   function themeColorsToBackground(colors: string[]): string {
     if (colors.length === 0) return '';
-    if (colors.length === 1) return `${colors[0]}20`;
-    // Build vertical stripes with ~2px gradient transitions
-    const n = colors.length;
-    const stops: string[] = [];
-    for (let i = 0; i < n; i++) {
-      const start = `${(i * 100) / n}%`;
-      const solidEnd = `calc(${((i + 1) * 100) / n}% - 2px)`;
-      const end = `${((i + 1) * 100) / n}%`;
-      stops.push(`${colors[i]}20 ${start}`);
-      stops.push(`${colors[i]}20 ${solidEnd}`);
-      if (i < n - 1) {
-        stops.push(`${colors[i + 1]}20 ${end}`);
-      }
-    }
+    if (colors.length === 1) return hexToRgba(colors[0], 0.125);
+    const stops = colors.map((c, i) => `${hexToRgba(c, 0.2)} ${(i * 100) / (colors.length - 1)}%`);
     return `linear-gradient(to right, ${stops.join(', ')})`;
   }
 
@@ -310,12 +306,13 @@
             {@const textCol = 3 + monthIdx * 3}
             {@const gridRow = cell.row + 2}
             {@const bgValue = themeColorsToBackground(cell.colors)}
-            {@const cellBg = bgValue ? (bgValue.startsWith('linear-gradient') ? `background: ${bgValue};` : `background-color: ${bgValue};`) : (cell.sunday ? 'background-color: #eef2ff;' : '')}
+            {@const textBg = bgValue ? (bgValue.startsWith('linear-gradient') ? `background: ${bgValue};` : `background-color: ${bgValue};`) : ''}
+            {@const sundayBg = cell.sunday ? 'background-color: #eef2ff;' : ''}
 
             <!-- Weekday abbreviation cell -->
             <div
               class="day-weekday"
-              style="grid-row: {gridRow}; grid-column: {wdayCol}; {cellBg}"
+              style="grid-row: {gridRow}; grid-column: {wdayCol}; {sundayBg}"
             >
               {cell.weekdayName}
             </div>
@@ -324,7 +321,7 @@
             <button
               class="day-num"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {numCol}; {cellBg}"
+              style="grid-row: {gridRow}; grid-column: {numCol}; {sundayBg}"
               onclick={() => handleDayClick(cell.month, cell.day)}
               title={displayDate(cell.month, cell.day)}
             >
@@ -335,7 +332,7 @@
             <button
               class="day-text"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {textCol}; {cellBg}"
+              style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg}"
               onclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >
@@ -531,7 +528,7 @@
     text-align: right;
     font-size: 0.7rem;
     color: var(--color-gray-500);
-    background: white;
+    background-color: white;
     border: none;
     cursor: pointer;
     display: flex;
@@ -545,7 +542,7 @@
     padding: 0 2px;
     font-size: 0.65rem;
     color: var(--color-gray-400);
-    background: white;
+    background-color: white;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -567,7 +564,7 @@
     padding: 0 4px;
     font-size: 0.7rem;
     color: var(--color-gray-700);
-    background: white;
+    background-color: white;
     border: none;
     cursor: pointer;
     overflow: hidden;
