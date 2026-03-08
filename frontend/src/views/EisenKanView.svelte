@@ -12,7 +12,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner, TagBadges } from '../lib/components';
-  import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
@@ -1170,7 +1170,7 @@
                         aria-label="{task.title}"
                       >
                         <div class="task-header">
-                          <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
+
                           <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                             {priorityLabels[task.priority]}
                           </span>
@@ -1221,7 +1221,7 @@
                   aria-label="{task.title}"
                 >
                   <div class="task-header">
-                    <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
+
                     <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                       {priorityLabels[task.priority]}
                     </span>
@@ -1292,7 +1292,7 @@
                 aria-label="{task.title}"
               >
                 <div class="task-header">
-                  <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
+
                   <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                     {priorityLabels[task.priority]}
                   </span>
