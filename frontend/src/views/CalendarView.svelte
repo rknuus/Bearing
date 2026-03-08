@@ -2,8 +2,8 @@
   /**
    * CalendarView Component
    *
-   * Displays a weekday-aligned yearly calendar for mid-term planning.
-   * Rows are weekdays (Mon–Sun), columns are 12 months × 3 (day number + text + week number).
+   * Displays a day-of-month-aligned yearly calendar for mid-term planning.
+   * Rows are days 1–31, columns are 12 months × 3 (day number + weekday + text).
    * Users can assign each day to a Life Theme and enter free text.
    */
 
@@ -43,7 +43,6 @@
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
 
-  const weekdayNames = Array.from({ length: 7 }, (_, i) => formatWeekdayShort(i));
 
   // Load data on mount and reload when year changes
   $effect(() => {
@@ -78,35 +77,17 @@
 
   // --- Date computation helpers ---
 
-  // Returns 0-6 (Mon=0, Tue=1, ..., Sun=6) for the 1st of the given month
-  function getMonthStartWeekday(y: number, month: number): number {
-    const jsDay = new Date(y, month, 1).getDay(); // 0=Sun, 1=Mon, ...
-    return jsDay === 0 ? 6 : jsDay - 1;
-  }
-
   function getDaysInMonth(y: number, month: number): number {
     return new Date(y, month + 1, 0).getDate();
   }
 
-  // Max calendar weeks any month spans in the given year
-  function getMaxWeeks(y: number): number {
-    let max = 0;
-    for (let m = 0; m < 12; m++) {
-      const start = getMonthStartWeekday(y, m);
-      const days = getDaysInMonth(y, m);
-      const weeks = Math.ceil((start + days) / 7);
-      if (weeks > max) max = weeks;
-    }
-    return max;
+  function isSundayDate(y: number, month: number, day: number): boolean {
+    return new Date(y, month, day).getDay() === 0;
   }
 
-  // Grid row for a given day (0-indexed)
-  function getDayRow(y: number, month: number, day: number): number {
-    return getMonthStartWeekday(y, month) + day - 1;
-  }
-
-  function isSunday(row: number): boolean {
-    return row % 7 === 6;
+  function getWeekdayName(y: number, month: number, day: number): string {
+    const jsDay = new Date(y, month, day).getDay();
+    return formatWeekdayShort((jsDay + 6) % 7);
   }
 
   function isToday(month: number, day: number): boolean {
@@ -124,17 +105,6 @@
     return formatDateLocale(formatDate(month, day));
   }
 
-  // ISO week number (ISO 8601)
-  /* eslint-disable svelte/prefer-svelte-reactivity -- pure computation, not reactive state */
-  function getISOWeekNumber(y: number, month: number, day: number): number {
-    const date = new Date(y, month, day);
-    const dayOfWeek = date.getDay() || 7; // Mon=1 ... Sun=7
-    date.setDate(date.getDate() + 4 - dayOfWeek); // nearest Thursday
-    const yearStart = new Date(date.getFullYear(), 0, 1);
-    return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
-  }
-  /* eslint-enable svelte/prefer-svelte-reactivity */
-
   function getThemeColor(month: number, day: number): string | null {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
@@ -148,21 +118,16 @@
     return yearFocus.get(dateStr)?.text ?? '';
   }
 
-  // Derived: total rows and grid data
-  let maxWeeks = $derived(getMaxWeeks(year));
-  let totalRows = $derived(maxWeeks * 7);
-
   // Build grid cells for each month
   interface CellData {
     month: number;
     day: number;
-    row: number; // 0-indexed grid row (excluding header)
+    row: number; // 0-indexed grid row (day - 1)
     color: string | null;
     text: string;
     today: boolean;
     sunday: boolean;
-    monday: boolean;
-    weekNumber: number;
+    weekdayName: string;
   }
 
   let gridCells = $derived.by(() => {
@@ -170,17 +135,15 @@
     for (let m = 0; m < 12; m++) {
       const days = getDaysInMonth(year, m);
       for (let d = 1; d <= days; d++) {
-        const row = getDayRow(year, m, d);
         cells.push({
           month: m,
           day: d,
-          row,
+          row: d - 1,
           color: getThemeColor(m, d),
           text: getDayText(m, d),
           today: isToday(m, d),
-          sunday: isSunday(row),
-          monday: row % 7 === 0,
-          weekNumber: getISOWeekNumber(year, m, d),
+          sunday: isSundayDate(year, m, d),
+          weekdayName: getWeekdayName(year, m, d),
         });
       }
     }
@@ -308,33 +271,29 @@
     <div class="calendar-container">
       <div
         class="calendar-grid"
-        style="grid-template-rows: auto repeat({totalRows}, 1.5rem);"
+        style="grid-template-rows: auto repeat(31, 1.5rem);"
       >
-        <!-- Header row: weekday label corner + month names spanning 3 cols each -->
-        <div class="header-cell weekday-header"></div>
+        <!-- Header row: month names spanning 3 cols each -->
         {#each monthNames as name (name)}
           <div class="header-cell month-header">{name}</div>
         {/each}
 
-        <!-- Weekday labels (left column) -->
-        {#each Array(totalRows) as _, rowIdx (rowIdx)}
-          <div
-            class="weekday-label"
-            class:sunday-bg={rowIdx % 7 === 6}
-            style="grid-row: {rowIdx + 2}; grid-column: 1;"
-          >
-            {weekdayNames[rowIdx % 7]}
-          </div>
-        {/each}
-
         <!-- Day cells for each month -->
         {#each cellsByMonth as monthCells, monthIdx (monthIdx)}
-          {#each monthCells as cell (cell.row + '-' + monthIdx)}
+          {#each monthCells as cell (cell.day + '-' + monthIdx)}
+            {@const wdayCol = 1 + monthIdx * 3}
             {@const numCol = 2 + monthIdx * 3}
             {@const textCol = 3 + monthIdx * 3}
-            {@const weekCol = 4 + monthIdx * 3}
             {@const gridRow = cell.row + 2}
             {@const cellBg = cell.color ? `background-color: ${cell.color}20;` : (cell.sunday ? 'background-color: #eef2ff;' : '')}
+
+            <!-- Weekday abbreviation cell -->
+            <div
+              class="day-weekday"
+              style="grid-row: {gridRow}; grid-column: {wdayCol}; {cellBg}"
+            >
+              {cell.weekdayName}
+            </div>
 
             <!-- Day number cell -->
             <button
@@ -357,16 +316,6 @@
             >
               {cell.text}
             </button>
-
-            <!-- Week number cell (Monday rows only) -->
-            {#if cell.monday}
-              <div
-                class="week-num"
-                style="grid-row: {gridRow}; grid-column: {weekCol};"
-              >
-                {cell.weekNumber}
-              </div>
-            {/if}
           {/each}
         {/each}
       </div>
@@ -528,7 +477,7 @@
   /* Calendar Grid */
   .calendar-grid {
     display: grid;
-    grid-template-columns: 50px repeat(12, 24px 1fr 24px);
+    grid-template-columns: repeat(12, 24px 24px 1fr);
     gap: 1px;
     background: var(--color-gray-200);
     font-size: 0.7rem;
@@ -547,32 +496,8 @@
     z-index: 10;
   }
 
-  .weekday-header {
-    position: sticky;
-    left: 0;
-    z-index: 20;
-  }
-
   .month-header {
     grid-column: span 3;
-  }
-
-  /* Weekday label column */
-  .weekday-label {
-    background: var(--color-gray-50);
-    padding: 0 4px;
-    font-weight: 500;
-    color: var(--color-gray-500);
-    position: sticky;
-    left: 0;
-    z-index: 5;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Sunday background */
-  .sunday-bg {
-    background-color: #eef2ff;
   }
 
   /* Day number cells */
@@ -590,12 +515,12 @@
     transition: background-color 0.1s;
   }
 
-  /* Week number cells */
-  .week-num {
-    padding: 0 4px;
+  /* Weekday abbreviation cells */
+  .day-weekday {
+    padding: 0 2px;
     font-size: 0.65rem;
     color: var(--color-gray-400);
-    background: var(--color-gray-50);
+    background: white;
     display: flex;
     align-items: center;
     justify-content: center;

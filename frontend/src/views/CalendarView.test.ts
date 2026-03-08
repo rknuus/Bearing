@@ -3,7 +3,7 @@ import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { LifeTheme, DayFocus } from '../lib/wails-mock';
 import CalendarView from './CalendarView.svelte';
-import { formatDate as formatDateLocale, formatMonthName } from '../lib/utils/date-format';
+import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
 function makeTestThemes(): LifeTheme[] {
   return [
@@ -108,6 +108,30 @@ describe('CalendarView', () => {
     expect(monthHeaders.length).toBe(12);
     expect(monthHeaders[0].textContent).toBe(formatMonthName(0));
     expect(monthHeaders[11].textContent).toBe(formatMonthName(11));
+  });
+
+  it('renders weekday abbreviation cells for each month', async () => {
+    await renderView();
+
+    const weekdayCells = container.querySelectorAll('.day-weekday');
+    // 365 days in 2025
+    expect(weekdayCells.length).toBe(365);
+
+    // Jan 1 2025 is a Wednesday
+    const jsDay = new Date(2025, 0, 1).getDay();
+    const expectedName = formatWeekdayShort((jsDay + 6) % 7);
+    expect(weekdayCells[0].textContent?.trim()).toBe(expectedName);
+  });
+
+  it('applies Sunday tint to individual Sunday cells', async () => {
+    await renderView();
+
+    // Jan 5 2025 is a Sunday — find its day-num cell by title
+    const sundayDate = formatDateLocale('2025-01-05');
+    const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+    const sundayCell = Array.from(dayCells).find(c => c.title?.includes(sundayDate));
+    expect(sundayCell).toBeTruthy();
+    expect(sundayCell!.style.backgroundColor).toBe('rgb(238, 242, 255)');
   });
 
   it('renders theme legend with theme names and colors', async () => {
