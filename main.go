@@ -198,12 +198,12 @@ type LifeTheme struct {
 
 // DayFocus represents a daily focus entry (for Wails binding)
 type DayFocus struct {
-	Date    string   `json:"date"`
-	ThemeID string   `json:"themeId"`
-	Notes   string   `json:"notes"`
-	Text    string   `json:"text"`
-	OkrIDs  []string `json:"okrIds,omitempty"`
-	Tags    []string `json:"tags,omitempty"`
+	Date     string   `json:"date"`
+	ThemeIDs []string `json:"themeIds,omitempty"`
+	Notes    string   `json:"notes"`
+	Text     string   `json:"text"`
+	OkrIDs   []string `json:"okrIds,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
 }
 
 // Task represents a single actionable item (for Wails binding)
@@ -601,12 +601,12 @@ func (a *App) GetYearFocus(year int) ([]DayFocus, error) {
 	result := make([]DayFocus, len(entries))
 	for i, e := range entries {
 		result[i] = DayFocus{
-			Date:    e.Date,
-			ThemeID: e.ThemeID,
-			Notes:   e.Notes,
-			Text:    e.Text,
-			OkrIDs:  e.OkrIDs,
-			Tags:    e.Tags,
+			Date:     e.Date,
+			ThemeIDs: e.ThemeIDs,
+			Notes:    e.Notes,
+			Text:     e.Text,
+			OkrIDs:   e.OkrIDs,
+			Tags:     e.Tags,
 		}
 	}
 	return result, nil
@@ -620,12 +620,12 @@ func (a *App) SaveDayFocus(day DayFocus) error {
 	}
 
 	err := a.planningManager.SaveDayFocus(access.DayFocus{
-		Date:    day.Date,
-		ThemeID: day.ThemeID,
-		Notes:   day.Notes,
-		Text:    day.Text,
-		OkrIDs:  day.OkrIDs,
-		Tags:    day.Tags,
+		Date:     day.Date,
+		ThemeIDs: day.ThemeIDs,
+		Notes:    day.Notes,
+		Text:     day.Text,
+		OkrIDs:   day.OkrIDs,
+		Tags:     day.Tags,
 	})
 	if err != nil {
 		slog.Error("SaveDayFocus failed", "error", err, "date", day.Date)

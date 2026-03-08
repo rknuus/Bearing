@@ -80,9 +80,9 @@ func TestPerformance_CalendarYearLoad(t *testing.T) {
 	for i := 0; i < 365; i++ {
 		date := startDate.AddDate(0, 0, i).Format("2006-01-02")
 		_ = manager.SaveDayFocus(access.DayFocus{
-			Date:    date,
-			ThemeID: theme.ID,
-			Notes:   "Daily focus note",
+			Date:     date,
+			ThemeIDs: []string{theme.ID},
+			Notes:    "Daily focus note",
 		})
 	}
 
@@ -225,9 +225,9 @@ func BenchmarkCalendarYearLoad(b *testing.B) {
 	for i := 0; i < 365; i++ {
 		date := startDate.AddDate(0, 0, i).Format("2006-01-02")
 		_ = manager.SaveDayFocus(access.DayFocus{
-			Date:    date,
-			ThemeID: theme.ID,
-			Notes:   "Daily focus note",
+			Date:     date,
+			ThemeIDs: []string{theme.ID},
+			Notes:    "Daily focus note",
 		})
 	}
 
@@ -382,9 +382,9 @@ func BenchmarkDayFocusSave(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		date := baseDate.AddDate(0, 0, i).Format("2006-01-02")
 		err := manager.SaveDayFocus(access.DayFocus{
-			Date:    date,
-			ThemeID: theme.ID,
-			Notes:   "Benchmark note",
+			Date:     date,
+			ThemeIDs: []string{theme.ID},
+			Notes:    "Benchmark note",
 		})
 		if err != nil {
 			b.Fatalf("SaveDayFocus failed: %v", err)

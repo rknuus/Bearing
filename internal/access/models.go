@@ -39,15 +39,15 @@ type KeyResult struct {
 	TargetValue  int    `json:"targetValue,omitempty"`  // Target value (0 = untracked, 1 = binary)
 }
 
-// DayFocus represents the daily focus on a specific life theme.
-// It links a calendar date to a life theme with optional notes.
+// DayFocus represents the daily focus on one or more life themes.
+// It links a calendar date to life themes with optional notes.
 type DayFocus struct {
-	Date    string   `json:"date"`              // Date in YYYY-MM-DD format
-	ThemeID string   `json:"themeId"`           // Links to a LifeTheme.ID
-	Notes   string   `json:"notes"`             // Optional daily notes
-	Text    string   `json:"text"`              // Free-text content for the day
-	OkrIDs  []string `json:"okrIds,omitempty"`  // Optional OKR item references (Objective/KR IDs)
-	Tags    []string `json:"tags,omitempty"`    // Optional day-level tags
+	Date     string   `json:"date"`              // Date in YYYY-MM-DD format
+	ThemeIDs []string `json:"themeIds,omitempty"` // Links to LifeTheme.IDs
+	Notes    string   `json:"notes"`              // Optional daily notes
+	Text     string   `json:"text"`               // Free-text content for the day
+	OkrIDs   []string `json:"okrIds,omitempty"`   // Optional OKR item references (Objective/KR IDs)
+	Tags     []string `json:"tags,omitempty"`     // Optional day-level tags
 }
 
 // Task represents a single actionable item linked to a life theme.

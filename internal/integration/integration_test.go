@@ -105,15 +105,15 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 
 	// Step 2: Assign January 15th to theme "Health"
 	dayFocus := access.DayFocus{
-		Date:    "2026-01-15",
-		ThemeID: theme.ID,
-		Notes:   "Focus on health today",
+		Date:     "2026-01-15",
+		ThemeIDs: []string{theme.ID},
+		Notes:    "Focus on health today",
 	}
 	if err := manager.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("Failed to save day focus: %v", err)
 	}
 
-	// Verify day focus was saved with correct theme ID
+	// Verify day focus was saved with correct theme IDs
 	savedDayFocus, err := planAccess.GetDayFocus("2026-01-15")
 	if err != nil {
 		t.Fatalf("Failed to get day focus: %v", err)
@@ -121,8 +121,8 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	if savedDayFocus == nil {
 		t.Fatal("Day focus not found")
 	}
-	if savedDayFocus.ThemeID != theme.ID {
-		t.Errorf("Day focus theme ID mismatch: expected %s, got %s", theme.ID, savedDayFocus.ThemeID)
+	if len(savedDayFocus.ThemeIDs) != 1 || savedDayFocus.ThemeIDs[0] != theme.ID {
+		t.Errorf("Day focus theme IDs mismatch: expected [%s], got %v", theme.ID, savedDayFocus.ThemeIDs)
 	}
 
 	// Step 3: Create a task "Go for a run" on January 15th
@@ -417,8 +417,8 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	_, _ = manager1.CreateObjective(theme1.ID, "Fitness Goals")
 	_, _ = manager1.CreateObjective(theme2.ID, "Career Growth")
 
-	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-15", ThemeID: theme1.ID, Notes: "Health day"})
-	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-16", ThemeID: theme2.ID, Notes: "Career day"})
+	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-15", ThemeIDs: []string{theme1.ID}, Notes: "Health day"})
+	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-16", ThemeIDs: []string{theme2.ID}, Notes: "Career day"})
 
 	// Create all tasks in the same theme to avoid task ID collision issue
 	// (Task IDs are unique within a theme, but MoveTask searches across all themes)
@@ -745,9 +745,9 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 		for day := 1; day <= m.days; day++ {
 			date := time.Date(2026, time.Month(m.month), day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 			_ = manager.SaveDayFocus(access.DayFocus{
-				Date:    date,
-				ThemeID: theme.ID,
-				Notes:   "Daily focus",
+				Date:     date,
+				ThemeIDs: []string{theme.ID},
+				Notes:    "Daily focus",
 			})
 			totalDays++
 		}
@@ -763,10 +763,10 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 		t.Errorf("Expected %d day focuses, got %d", totalDays, len(yearFocus))
 	}
 
-	// Verify all entries have correct theme ID
+	// Verify all entries have correct theme IDs
 	for _, df := range yearFocus {
-		if df.ThemeID != theme.ID {
-			t.Errorf("Day focus %s has wrong theme ID: %s", df.Date, df.ThemeID)
+		if len(df.ThemeIDs) != 1 || df.ThemeIDs[0] != theme.ID {
+			t.Errorf("Day focus %s has wrong theme IDs: %v", df.Date, df.ThemeIDs)
 		}
 	}
 }
