@@ -1177,4 +1177,258 @@ describe('CalendarView', () => {
       });
     });
   });
+
+  describe('cell selection and copy/paste', () => {
+    it('single-click selects text cell', async () => {
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      textCells[0].click();
+      await tick();
+
+      expect(textCells[0].classList.contains('selected')).toBe(true);
+    });
+
+    it('clicking another cell moves selection', async () => {
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      textCells[0].click();
+      await tick();
+      expect(textCells[0].classList.contains('selected')).toBe(true);
+
+      textCells[1].click();
+      await tick();
+      expect(textCells[0].classList.contains('selected')).toBe(false);
+      expect(textCells[1].classList.contains('selected')).toBe(true);
+    });
+
+    it('shift+click extends selection within month', async () => {
+      await renderView();
+
+      // All text cells in month 0 (January) are the first 31
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      // Click day 1 (index 0)
+      textCells[0].click();
+      await tick();
+
+      // Shift+click day 3 (index 2) — same month
+      textCells[2].dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true }));
+      await tick();
+
+      expect(textCells[0].classList.contains('selected')).toBe(true);
+      expect(textCells[1].classList.contains('selected')).toBe(true);
+      expect(textCells[2].classList.contains('selected')).toBe(true);
+    });
+
+    it('shift+click across months does nothing special', async () => {
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      // Click day 1 of January (index 0)
+      textCells[0].click();
+      await tick();
+
+      // Shift+click day 1 of February (index 31, since January has 31 days)
+      textCells[31].dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true }));
+      await tick();
+
+      // Since months differ, shift+click acts as a single click on the new cell
+      expect(textCells[0].classList.contains('selected')).toBe(false);
+      expect(textCells[31].classList.contains('selected')).toBe(true);
+    });
+
+    it('ctrl+C copies focus data and ctrl+V pastes to target', async () => {
+      // Set up data: Jan 15 has focus data
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      // Find Jan 15 text cell (index 14 since Jan day 1 = index 0)
+      textCells[14].click();
+      await tick();
+
+      // Copy with Ctrl+C
+      const calendarView = container.querySelector('.calendar-view')!;
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      // Select an empty cell (Jan 20, index 19)
+      textCells[19].click();
+      await tick();
+
+      // Paste with Ctrl+V
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({
+            date: '2025-01-20',
+            themeIds: ['HF'],
+            text: 'Gym day',
+          })
+        );
+      });
+    });
+
+    it('paste single day preserves target notes', async () => {
+      // Target day has existing notes
+      const yearFocus: DayFocus[] = [
+        { date: '2025-01-15', themeIds: ['HF'], notes: '', text: 'Gym day', okrIds: ['O1'], tags: ['fitness'] },
+        { date: '2025-01-20', themeIds: undefined, notes: 'important note', text: '' },
+      ];
+      mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+
+      // Select and copy Jan 15
+      textCells[14].click();
+      await tick();
+      const calendarView = container.querySelector('.calendar-view')!;
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      // Select and paste to Jan 20
+      textCells[19].click();
+      await tick();
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({
+            date: '2025-01-20',
+            themeIds: ['HF'],
+            text: 'Gym day',
+            notes: 'important note',
+            okrIds: ['O1'],
+            tags: ['fitness'],
+          })
+        );
+      });
+    });
+
+    it('paste multi-day range clamped to month', async () => {
+      // Set up 3 days of data in January
+      const yearFocus: DayFocus[] = [
+        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'Day 1' },
+        { date: '2025-01-02', themeIds: ['CG'], notes: '', text: 'Day 2' },
+        { date: '2025-01-03', themeIds: undefined, notes: '', text: 'Day 3' },
+      ];
+      mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+
+      // Select days 1-3 using click + shift+click
+      textCells[0].click();
+      await tick();
+      textCells[2].dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true }));
+      await tick();
+
+      // Copy
+      const calendarView = container.querySelector('.calendar-view')!;
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      // Select day 30 of January (index 29) — only 31 days in Jan, so only 2 should paste
+      textCells[29].click();
+      await tick();
+
+      // Paste
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      await vi.waitFor(() => {
+        // Day 30 and 31 should be pasted, day 32 would exceed month
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({ date: '2025-01-30', text: 'Day 1' })
+        );
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({ date: '2025-01-31', text: 'Day 2' })
+        );
+        // Should NOT have pasted a 3rd day (Feb 1 would be day 32)
+        const calls = mockBindings.SaveDayFocus.mock.calls;
+        const pastedDates = calls.map((c: unknown[]) => (c[0] as DayFocus).date);
+        expect(pastedDates).not.toContain('2025-02-01');
+      });
+    });
+
+    it('paste overwrites existing data', async () => {
+      const yearFocus: DayFocus[] = [
+        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'Source' },
+        { date: '2025-01-10', themeIds: ['CG'], notes: 'keep notes', text: 'Old target text' },
+      ];
+      mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+
+      // Copy day 1
+      textCells[0].click();
+      await tick();
+      const calendarView = container.querySelector('.calendar-view')!;
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'c', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      // Paste to day 10
+      textCells[9].click();
+      await tick();
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', ctrlKey: true, bubbles: true }));
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
+          expect.objectContaining({
+            date: '2025-01-10',
+            themeIds: ['HF'],
+            text: 'Source',
+            notes: 'keep notes', // notes preserved from existing
+          })
+        );
+      });
+    });
+
+    it('escape clears selection', async () => {
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      textCells[0].click();
+      await tick();
+      expect(textCells[0].classList.contains('selected')).toBe(true);
+
+      const calendarView = container.querySelector('.calendar-view')!;
+      calendarView.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await tick();
+
+      expect(textCells[0].classList.contains('selected')).toBe(false);
+      const selectedCount = container.querySelectorAll('.day-text.selected').length;
+      expect(selectedCount).toBe(0);
+    });
+
+    it('click outside grid clears selection', async () => {
+      await renderView();
+
+      const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
+      textCells[0].click();
+      await tick();
+      expect(textCells[0].classList.contains('selected')).toBe(true);
+
+      // Click the header area (outside the grid)
+      const header = container.querySelector<HTMLElement>('.calendar-header')!;
+      header.click();
+      await tick();
+
+      expect(textCells[0].classList.contains('selected')).toBe(false);
+      const selectedCount = container.querySelectorAll('.day-text.selected').length;
+      expect(selectedCount).toBe(0);
+    });
+  });
 });
