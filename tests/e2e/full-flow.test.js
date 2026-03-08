@@ -245,6 +245,119 @@ export async function runTests() {
       reporter.fail(err)
     }
 
+    // ---- 2b: Create second theme and assign multi-theme day focus ----
+    // First, create a second theme via UI
+    let theme2Id = 'UNKNOWN'
+    reporter.startTest('Phase 2b: Create second theme for multi-theme test')
+    try {
+      await page.click('.nav-link:has-text("OKRs")')
+      await page.waitForSelector('.okr-header', { timeout: 10000 })
+
+      await page.click('.btn-primary:has-text("+ Add Theme")')
+      await page.waitForSelector('.theme-form', { timeout: 5000 })
+      await page.fill('.theme-form input[type="text"]', 'E2E Theme 2')
+      await page.click('.theme-form .color-option:nth-child(5)')
+      await page.click('.theme-form .btn-primary:has-text("Create")')
+      await page.waitForSelector('.item-name:has-text("E2E Theme 2")', { timeout: 5000 })
+
+      const themesAfter2 = readThemes(DATA_DIR)
+      const theme2 = themesAfter2.find(t => t.name === 'E2E Theme 2')
+      if (!theme2) throw new Error('Theme "E2E Theme 2" not found in themes.json')
+      theme2Id = theme2.id
+
+      expectedCommits++
+      assertCommitCount('after create second theme')
+
+      reporter.pass(`Second theme created: id=${theme2Id}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    reporter.startTest('Phase 2c: Assign multi-theme day focus and verify files')
+    try {
+      // Navigate to Calendar
+      await page.keyboard.press('Control+2')
+      await page.waitForSelector('.calendar-view', { timeout: 5000 })
+
+      // Click second day cell (day 2 of first month)
+      await page.locator('.day-num').nth(1).click()
+      await page.waitForSelector('.dialog', { timeout: 5000 })
+
+      // Select both theme checkboxes
+      await page.click('.tree-theme-item:has-text("E2E Theme 2") input[type="checkbox"]')
+      // "E2E Theme" checkbox — use first tree-theme-item that has exact "E2E Theme" text but not "E2E Theme 2"
+      await page.locator('.tree-theme-item').filter({ hasText: 'E2E Theme' }).filter({ hasNotText: 'E2E Theme 2' }).locator('input[type="checkbox"]').click()
+      await page.fill('#text-input', 'Multi-theme day')
+      await page.click('.dialog .btn-primary')
+      await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
+
+      // Verify files
+      const year = new Date().getFullYear()
+      const calData = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entries = calData.entries || calData
+      const multiDay = (Array.isArray(entries) ? entries : []).find(
+        e => e.text === 'Multi-theme day'
+      )
+      if (!multiDay) throw new Error('No calendar entry with text "Multi-theme day"')
+      if (!multiDay.themeIds || !Array.isArray(multiDay.themeIds)) {
+        throw new Error(`Expected themeIds to be an array, got ${JSON.stringify(multiDay.themeIds)}`)
+      }
+      if (multiDay.themeIds.length !== 2) {
+        throw new Error(`Expected 2 themeIds, got ${multiDay.themeIds.length}: ${JSON.stringify(multiDay.themeIds)}`)
+      }
+      if (!multiDay.themeIds.includes(themeId)) {
+        throw new Error(`themeIds does not contain first theme ${themeId}`)
+      }
+      if (!multiDay.themeIds.includes(theme2Id)) {
+        throw new Error(`themeIds does not contain second theme ${theme2Id}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after save multi-theme day focus')
+
+      reporter.pass(`Multi-theme day focus assigned: date=${multiDay.date}, themeIds=${JSON.stringify(multiDay.themeIds)}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 2d: Clear multi-theme day focus ----
+    reporter.startTest('Phase 2d: Clear multi-theme day focus and verify files')
+    try {
+      // Reopen the same day (second day cell)
+      await page.locator('.day-num').nth(1).click()
+      await page.waitForSelector('.dialog', { timeout: 5000 })
+
+      // Uncheck both theme checkboxes (they should be checked from Phase 2c)
+      await page.click('.tree-theme-item:has-text("E2E Theme 2") input[type="checkbox"]')
+      await page.locator('.tree-theme-item').filter({ hasText: 'E2E Theme' }).filter({ hasNotText: 'E2E Theme 2' }).locator('input[type="checkbox"]').click()
+
+      // Clear text
+      await page.fill('#text-input', '')
+      await page.click('.dialog .btn-primary')
+      await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
+
+      // Verify files
+      const year = new Date().getFullYear()
+      const calData = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entries = calData.entries || calData
+      // Find the entry for this day — it should have empty/no themeIds
+      const multiDayAfter = (Array.isArray(entries) ? entries : []).find(
+        e => e.text === 'Multi-theme day'
+      )
+      // The entry should either not exist, or have empty themeIds
+      if (multiDayAfter && multiDayAfter.themeIds && multiDayAfter.themeIds.length > 0) {
+        throw new Error(`Expected themeIds to be empty/cleared, got ${JSON.stringify(multiDayAfter.themeIds)}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after clear multi-theme day focus')
+      assertLatestCommitContains('Update day focus')
+
+      reporter.pass('Multi-theme day focus cleared')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
     // ================================================================
     // Phase 3: Task Execution
     // ================================================================
@@ -579,6 +692,28 @@ export async function runTests() {
       assertLatestCommitContains('Delete theme')
 
       reporter.pass(`Theme deleted: ${themeId}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 5d2: Delete second theme ----
+    reporter.startTest('Phase 5d2: Delete second theme and verify files')
+    try {
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.DeleteTheme(id)
+      }, theme2Id)
+
+      const themesAfterTheme2Del = readThemes(DATA_DIR)
+      const deletedTheme2 = themesAfterTheme2Del.find(t => t.name === 'E2E Theme 2')
+      if (deletedTheme2) {
+        throw new Error('Theme "E2E Theme 2" still exists after deletion')
+      }
+
+      expectedCommits++
+      assertCommitCount('after delete second theme')
+
+      reporter.pass(`Second theme deleted: ${theme2Id}`)
     } catch (err) {
       reporter.fail(err)
     }

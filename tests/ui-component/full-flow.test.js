@@ -188,15 +188,15 @@ export async function runTests() {
 
       // Verify each task appears in correct priority section
       await page.waitForSelector(
-        '[data-testid="section-important-urgent"] .task-title:has-text("Task A")',
+        '.section-important-urgent .task-title:has-text("Task A")',
         { timeout: 5000 }
       )
       await page.waitForSelector(
-        '[data-testid="section-important-not-urgent"] .task-title:has-text("Task B")',
+        '.section-important-not-urgent .task-title:has-text("Task B")',
         { timeout: 5000 }
       )
       await page.waitForSelector(
-        '[data-testid="section-not-important-urgent"] .task-title:has-text("Task C")',
+        '.section-not-important-urgent .task-title:has-text("Task C")',
         { timeout: 5000 }
       )
 
@@ -223,7 +223,7 @@ export async function runTests() {
 
       // Verify Task A appears before Task D in Important & Urgent
       const iuTasks = await page.$$eval(
-        '[data-testid="section-important-urgent"] .task-title',
+        '.section-important-urgent .task-title',
         els => els.map(el => el.textContent.trim())
       )
       const idxA = iuTasks.indexOf('Task A')
@@ -237,7 +237,7 @@ export async function runTests() {
 
       // Verify Task B appears before Task E in Important & Not Urgent
       const inuTasks = await page.$$eval(
-        '[data-testid="section-important-not-urgent"] .task-title',
+        '.section-important-not-urgent .task-title',
         els => els.map(el => el.textContent.trim())
       )
       const idxB = inuTasks.indexOf('Task B')
