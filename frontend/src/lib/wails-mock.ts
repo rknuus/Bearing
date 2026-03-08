@@ -119,6 +119,8 @@ export interface NavigationContext {
   tagFocusActive?: boolean;
   collapsedSections?: string[];
   collapsedColumns?: string[];
+  calendarDayEditorDate?: string;
+  calendarDayEditorExpandedIds?: string[];
 }
 
 // Type declarations for extended Window properties
