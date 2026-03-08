@@ -39,7 +39,7 @@ Development:
   make setup              Setup project (install all dependencies)
   make dev                Run Wails app in development mode with hot reload
   make frontend-dev       Run Vite dev server only (for browser testing)
-  make stop-dev           Stop any running dev servers
+  make stop               Stop any running dev/test server processes
 
 Build:
   make build              Build Wails desktop application
