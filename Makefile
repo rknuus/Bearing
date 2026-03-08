@@ -57,10 +57,11 @@ dev: generate frontend-lint ## Run Wails app in development mode with hot reload
 frontend-dev: ## Run Vite dev server only (for browser testing with mock bindings)
 	@$(MAKE) --no-print-directory -C frontend dev
 
-.PHONY: stop-dev
-stop-dev: ## Stop any running dev servers
-	@echo "Stopping any process on port 5173..."
+.PHONY: stop
+stop: ## Stop any running dev/test server processes (ports 5173, 34115)
+	@echo "Stopping server processes..."
 	@-lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:34115 | xargs kill -9 2>/dev/null || true
 	@echo "Done."
 
 ##@ Build
