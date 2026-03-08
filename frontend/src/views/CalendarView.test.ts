@@ -199,6 +199,9 @@ describe('CalendarView', () => {
     expect(dayCell).toBeTruthy();
     dayCell!.click();
     await tick();
+    await vi.waitFor(() => {
+      if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+    });
 
     const dialog = container.querySelector('.dialog');
     expect(dialog).toBeTruthy();
@@ -220,6 +223,9 @@ describe('CalendarView', () => {
     const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
     dayCell!.click();
     await tick();
+    await vi.waitFor(() => {
+      if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+    });
 
     // Fill in the form — select theme via checkbox
     const themeCheckboxes = container.querySelectorAll<HTMLInputElement>('.tree-theme-item .tree-checkbox-label input[type="checkbox"]');
@@ -263,6 +269,9 @@ describe('CalendarView', () => {
     expect(targetCell).toBeTruthy();
     targetCell!.click();
     await tick();
+    await vi.waitFor(() => {
+      if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+    });
 
     // Uncheck the theme to clear it
     const themeCheckbox = container.querySelector<HTMLInputElement>('.tree-theme-item .tree-checkbox-label input[type="checkbox"]:checked');
@@ -301,7 +310,9 @@ describe('CalendarView', () => {
     const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
     dayCell!.click();
     await tick();
-    expect(container.querySelector('.dialog')).toBeTruthy();
+    await vi.waitFor(() => {
+      if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+    });
 
     // Click cancel (find by text to avoid matching the Add button)
     const cancelButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
@@ -416,6 +427,9 @@ describe('CalendarView', () => {
       expect(targetCell).toBeTruthy();
       targetCell!.click();
       await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
 
       // Set theme to CG via checkbox
       const themeCheckboxes = container.querySelectorAll<HTMLInputElement>('.tree-theme-item .tree-checkbox-label input[type="checkbox"]');
@@ -489,6 +503,25 @@ describe('CalendarView', () => {
       mockBindings = makeMockBindings(themesWithOkrs(), [
         { date: '2025-01-01', themeIds: themeId ? [themeId] : undefined, notes: '', text: '', okrIds },
       ]);
+      // Mock saved fold state so themes and objectives are expanded for OKR picker tests
+      if (themeId) {
+        const themes = themesWithOkrs();
+        const theme = themes.find(t => t.id === themeId);
+        const expandedIds = [themeId];
+        if (theme) {
+          for (const obj of theme.objectives) {
+            if (obj.status !== 'archived') expandedIds.push(obj.id);
+          }
+        }
+        mockBindings.LoadNavigationContext.mockResolvedValue({
+          currentView: 'calendar',
+          currentItem: '',
+          filterThemeId: '',
+          lastAccessed: '',
+          calendarDayEditorDate: '2025-01-01',
+          calendarDayEditorExpandedIds: expandedIds,
+        });
+      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
       await renderView();
@@ -920,7 +953,7 @@ describe('CalendarView', () => {
   });
 
   describe('theme-okr tree in dialog', () => {
-    it('shows objectives when theme is selected for a day', async () => {
+    it('starts collapsed when theme is selected but no saved fold state', async () => {
       const themes: LifeTheme[] = [{
         id: 'HF', name: 'Health', color: '#22c55e',
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
@@ -940,13 +973,13 @@ describe('CalendarView', () => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
 
-      // Theme checkbox should be checked and objectives auto-expanded
+      // Theme checkbox should be checked but objectives collapsed (no saved fold state)
       const themeCheckbox = container.querySelector('.tree-theme-item input[type="checkbox"]') as HTMLInputElement;
       expect(themeCheckbox.checked).toBe(true);
-      expect(container.querySelector('.tree-objective-item')).toBeTruthy();
+      expect(container.querySelector('.tree-objective-item')).toBeNull();
     });
 
-    it('shows checked OKR when day has existing OKR refs', async () => {
+    it('shows checked OKR when day has existing OKR refs and saved fold state', async () => {
       const themes: LifeTheme[] = [{
         id: 'HF', name: 'Health', color: '#22c55e',
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
@@ -954,6 +987,15 @@ describe('CalendarView', () => {
       mockBindings = makeMockBindings(themes, [
         { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', okrIds: ['HF-O1'] },
       ]);
+      // Mock saved fold state for this day with HF expanded
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'calendar',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+        calendarDayEditorDate: '2025-01-01',
+        calendarDayEditorExpandedIds: ['HF'],
+      });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
       await renderView();
@@ -966,7 +1008,7 @@ describe('CalendarView', () => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
 
-      // Objective checkbox should be checked
+      // Objective checkbox should be checked and visible (fold state restored)
       const objCheckbox = container.querySelector('.tree-objective-item input[type="checkbox"]') as HTMLInputElement;
       expect(objCheckbox.checked).toBe(true);
     });
@@ -1006,6 +1048,133 @@ describe('CalendarView', () => {
       await tick();
 
       expect(container.querySelector('.tree-objective-item')).toBeNull();
+    });
+  });
+
+  describe('fold state persistence', () => {
+    it('starts collapsed for a new day (no saved fold state)', async () => {
+      const themes: LifeTheme[] = [{
+        id: 'HF', name: 'Health', color: '#22c55e',
+        objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
+      }];
+      mockBindings = makeMockBindings(themes, [
+        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '' },
+      ]);
+      // NavigationContext has fold state for a different day
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'calendar',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+        calendarDayEditorDate: '2025-01-02',
+        calendarDayEditorExpandedIds: ['HF'],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Objectives should not be visible (collapsed)
+      expect(container.querySelector('.tree-objective-item')).toBeNull();
+    });
+
+    it('restores fold state for the same day', async () => {
+      const themes: LifeTheme[] = [{
+        id: 'HF', name: 'Health', color: '#22c55e',
+        objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
+      }];
+      mockBindings = makeMockBindings(themes, [
+        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '' },
+      ]);
+      // NavigationContext has fold state for this exact day
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'calendar',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+        calendarDayEditorDate: '2025-01-01',
+        calendarDayEditorExpandedIds: ['HF'],
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
+      targetCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Objectives should be visible (fold state restored)
+      expect(container.querySelector('.tree-objective-item')).toBeTruthy();
+    });
+
+    it('persists fold state on save', async () => {
+      await renderView();
+
+      // Open a day dialog
+      const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+      dayCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Click save
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+      });
+
+      // Wait for the async NavigationContext persistence
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveNavigationContext).toHaveBeenCalledWith(
+          expect.objectContaining({
+            calendarDayEditorDate: expect.any(String),
+            calendarDayEditorExpandedIds: expect.any(Array),
+          })
+        );
+      });
+    });
+
+    it('persists fold state on cancel', async () => {
+      await renderView();
+
+      // Open a day dialog
+      const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+      dayCell!.click();
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Click cancel
+      const cancelButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-secondary'))
+        .find(btn => btn.textContent?.trim() === 'Cancel');
+      cancelButton!.click();
+      await tick();
+
+      // Wait for the async NavigationContext persistence
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveNavigationContext).toHaveBeenCalledWith(
+          expect.objectContaining({
+            calendarDayEditorDate: expect.any(String),
+            calendarDayEditorExpandedIds: expect.any(Array),
+          })
+        );
+      });
     });
   });
 });

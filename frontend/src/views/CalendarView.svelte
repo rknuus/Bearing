@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus, type Objective } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -188,36 +188,31 @@
     }
   }
 
-  function computeExpandedIds(themeIds: string[]): string[] {
-    const ids: string[] = [];
-    for (const tid of themeIds) {
-      const theme = themes.find(t => t.id === tid);
-      if (!theme) continue;
-      ids.push(tid);
-      function walkObjectives(objectives: Objective[]) {
-        for (const obj of objectives) {
-          if (obj.status === 'archived') continue;
-          ids.push(obj.id);
-          if (obj.objectives) walkObjectives(obj.objectives);
-        }
-      }
-      walkObjectives(theme.objectives);
-    }
-    return ids;
-  }
-
   async function handleDayClick(month: number, day: number) {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
 
-    editingDay = { date: dateStr, month, day };
     editThemeIds = focus?.themeIds ? [...focus.themeIds] : [];
     editText = focus?.text ?? '';
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
     prevDerivedText = editTags.join(', ');
     tagSectionOpen = (focus?.tags?.length ?? 0) > 0;
-    editSelectExpandedIds = computeExpandedIds(editThemeIds);
+
+    // Restore fold state if this is the same day as last edited
+    try {
+      const ctx = await getBindings().LoadNavigationContext();
+      if (ctx?.calendarDayEditorDate === dateStr && ctx.calendarDayEditorExpandedIds) {
+        editSelectExpandedIds = [...ctx.calendarDayEditorExpandedIds];
+      } else {
+        editSelectExpandedIds = [];
+      }
+    } catch {
+      editSelectExpandedIds = [];
+    }
+
+    // Set editingDay last so the dialog renders with correct fold state
+    editingDay = { date: dateStr, month, day };
 
     // Fetch available tags from tasks
     try {
@@ -247,6 +242,7 @@
 
     try {
       const bindings = getBindings();
+      const dateForCtx = editingDay.date;
 
       const existing = yearFocus.get(editingDay.date);
       const dayFocus: DayFocus = {
@@ -261,6 +257,18 @@
       yearFocus.set(editingDay.date, dayFocus);
 
       await verifyCalendarState();
+
+      // Persist fold state
+      bindings.LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          bindings.SaveNavigationContext({
+            ...ctx,
+            calendarDayEditorDate: dateForCtx,
+            calendarDayEditorExpandedIds: editSelectExpandedIds,
+          });
+        }
+      }).catch(() => { /* ignore */ });
+
       editingDay = null;
     } catch (e) {
       console.error('CalendarView: Failed to save day focus', e);
@@ -269,6 +277,18 @@
   }
 
   function cancelEdit() {
+    if (editingDay) {
+      const dateForCtx = editingDay.date;
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({
+            ...ctx,
+            calendarDayEditorDate: dateForCtx,
+            calendarDayEditorExpandedIds: editSelectExpandedIds,
+          });
+        }
+      }).catch(() => { /* ignore */ });
+    }
     editingDay = null;
   }
 
