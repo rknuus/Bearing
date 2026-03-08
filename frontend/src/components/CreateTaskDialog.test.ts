@@ -438,7 +438,7 @@ describe('CreateTaskDialog', () => {
   describe('edit pending task', () => {
     it('clicking a pending task card opens edit modal with pre-populated fields', async () => {
       mockDraftsData = JSON.stringify({
-        'important-urgent': [{ id: 'pending-1', title: 'My task', themeId: 'CG', description: 'A description', tags: 'tag1, tag2' }],
+        'important-urgent': [{ id: 'pending-1', title: 'My task', themeId: 'CG', description: 'A description', tags: ['tag1', 'tag2'] }],
       });
 
       await renderDialog();
@@ -687,6 +687,92 @@ describe('CreateTaskDialog', () => {
 
       // LoadTaskDrafts should NOT have been called again
       expect(mockLoadTaskDrafts.mock.calls.length).toBe(loadCallsBefore);
+    });
+  });
+
+  describe('tags round-trip', () => {
+    it('tags survive edit round-trip (stage -> click -> edit -> save)', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'Tagged task', tags: ['bug', 'urgent'] }],
+      });
+
+      await renderDialog();
+      mockSaveTaskDrafts.mockClear();
+
+      // Click the task to open edit
+      const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
+      await fireEvent.click(taskCard!);
+      await tick();
+
+      // TagEditor should show active pills for the tags
+      const editDialog = container.querySelector('#edit-pending-dialog-title');
+      expect(editDialog).toBeTruthy();
+
+      // Save without changing anything
+      const saveBtn = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-primary'))
+        .find(b => b.textContent?.trim() === 'Save');
+      await fireEvent.click(saveBtn!);
+      await tick();
+
+      // Verify tags are preserved in saved drafts
+      await vi.waitFor(() => expect(mockSaveTaskDrafts).toHaveBeenCalled());
+      const saved = JSON.parse(mockSaveTaskDrafts.mock.calls[0][0]);
+      expect(saved['important-urgent'][0].tags).toEqual(['bug', 'urgent']);
+    });
+
+    it('passes tags as comma-separated string to createTask API', async () => {
+      const createTask = makeCreateTaskMock();
+      const onDone = vi.fn();
+
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'API task', tags: ['backend', 'api'] }],
+      });
+
+      await renderDialog({ createTask, onDone });
+
+      const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
+      await fireEvent.click(doneBtn!);
+      await tick();
+      await vi.waitFor(() => expect(onDone).toHaveBeenCalledOnce());
+
+      expect(createTask).toHaveBeenCalledWith(
+        'API task',
+        expect.any(String),
+        'important-urgent',
+        '',
+        'backend, api',
+      );
+    });
+  });
+
+  describe('draft migration', () => {
+    it('migrates legacy string tags to string[] on load', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'Old draft', tags: 'legacy, tags' }],
+      });
+
+      await renderDialog();
+
+      // Tags should be rendered as badges (proves they were migrated to array)
+      const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
+      const badges = q1!.querySelectorAll('.tag-badge');
+      expect(badges.length).toBe(2);
+      expect(badges[0].textContent).toBe('#legacy');
+      expect(badges[1].textContent).toBe('#tags');
+    });
+
+    it('leaves array tags unchanged during migration', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'New draft', tags: ['already', 'array'] }],
+      });
+
+      await renderDialog();
+
+      const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
+      const badges = q1!.querySelectorAll('.tag-badge');
+      expect(badges.length).toBe(2);
+      expect(badges[0].textContent).toBe('#already');
+      expect(badges[1].textContent).toBe('#array');
     });
   });
 });

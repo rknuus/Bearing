@@ -7,6 +7,7 @@
    */
 
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
+  import TagBadges from '../lib/components/TagBadges.svelte';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import type { LifeTheme } from '../lib/wails-mock';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
@@ -19,7 +20,7 @@
     title: string;
     themeId?: string;
     description?: string;
-    tags?: string;
+    tags?: string[];
   }
 
   interface Props {
@@ -95,6 +96,7 @@
           {/if}
         </div>
         <span class="task-title">{task.title}</span>
+        <TagBadges tags={task.tags} />
       </div>
     {/each}
   </div>
