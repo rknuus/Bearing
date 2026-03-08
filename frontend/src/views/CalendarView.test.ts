@@ -971,7 +971,7 @@ describe('CalendarView', () => {
       expect(objCheckbox.checked).toBe(true);
     });
 
-    it('toggling theme checkbox shows and hides objectives', async () => {
+    it('toggling expand button shows and hides objectives', async () => {
       const themes: LifeTheme[] = [{
         id: 'HF', name: 'Health', color: '#22c55e',
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
@@ -991,18 +991,18 @@ describe('CalendarView', () => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
       });
 
-      // No theme selected — objectives not shown
+      // No theme expanded — objectives not shown
       expect(container.querySelector('.tree-objective-item')).toBeNull();
 
-      // Check theme to expand
-      const themeCheckbox = container.querySelector('.tree-theme-item input[type="checkbox"]') as HTMLInputElement;
-      themeCheckbox.click();
+      // Click expand button to show objectives
+      const expandBtn = container.querySelector<HTMLButtonElement>('.tree-expand-button');
+      expandBtn!.click();
       await tick();
 
       expect(container.querySelector('.tree-objective-item')).toBeTruthy();
 
-      // Uncheck theme to collapse
-      themeCheckbox.click();
+      // Click expand button again to collapse
+      expandBtn!.click();
       await tick();
 
       expect(container.querySelector('.tree-objective-item')).toBeNull();

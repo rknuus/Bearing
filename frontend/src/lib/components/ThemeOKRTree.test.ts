@@ -76,24 +76,79 @@ describe('ThemeOKRTree', () => {
       expect(onThemeChange).toHaveBeenCalledWith(['T1']);
     });
 
-    it('auto-expands theme to show objectives when checked', async () => {
+    it('theme checkbox toggle does not expand tree', async () => {
       const onThemeChange = vi.fn();
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,
-        selectedThemeIds: ['T1'],
         onThemeSelectionChange: onThemeChange,
+      }});
+      await tick();
+
+      const checkbox = container.querySelector<HTMLInputElement>('.tree-theme-item input[type="checkbox"]');
+      checkbox!.click();
+      await tick();
+
+      const objectives = container.querySelectorAll('.tree-objective-item');
+      expect(objectives.length).toBe(0);
+    });
+
+    it('initialSelectExpandedIds prop is respected', async () => {
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
       }});
       await tick();
 
       const objectives = container.querySelectorAll('.tree-objective-item');
       expect(objectives.length).toBeGreaterThan(0);
       expect(container.querySelector('.tree-objective-item .tree-item-name')?.textContent).toBe('Exercise');
+      const krNames = container.querySelectorAll('.tree-kr-item .tree-item-name');
+      expect(krNames.length).toBe(1);
+      expect(krNames[0]?.textContent).toBe('Run 3x/week');
+    });
+
+    it('onSelectExpandedIdsChange fires on expand click', async () => {
+      const onExpandChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        onSelectExpandedIdsChange: onExpandChange,
+      }});
+      await tick();
+
+      const expandBtn = container.querySelector<HTMLButtonElement>('.tree-expand-button');
+      expandBtn!.click();
+      await tick();
+
+      expect(onExpandChange).toHaveBeenCalledOnce();
+      expect(onExpandChange).toHaveBeenCalledWith(['T1']);
+    });
+
+    it('OKR checkbox toggle does not affect fold state', async () => {
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
+      }});
+      await tick();
+
+      // Verify tree is expanded before toggling OKR
+      const objectivesBefore = container.querySelectorAll('.tree-objective-item');
+      expect(objectivesBefore.length).toBeGreaterThan(0);
+
+      const objCheckbox = container.querySelector<HTMLInputElement>('.tree-objective-item input[type="checkbox"]');
+      objCheckbox!.click();
+      await tick();
+
+      // Tree should still be expanded
+      const objectivesAfter = container.querySelectorAll('.tree-objective-item');
+      expect(objectivesAfter.length).toBe(objectivesBefore.length);
+      const krNames = container.querySelectorAll('.tree-kr-item .tree-item-name');
+      expect(krNames.length).toBe(1);
     });
 
     it('hides archived objectives', async () => {
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,
-        selectedThemeIds: ['T1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
       }});
       await tick();
 
@@ -103,10 +158,10 @@ describe('ThemeOKRTree', () => {
       expect(names).not.toContain('Archived Goal');
     });
 
-    it('renders KR checkboxes under selected theme', async () => {
+    it('renders KR checkboxes under expanded theme', async () => {
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,
-        selectedThemeIds: ['T1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
       }});
       await tick();
 
@@ -119,7 +174,7 @@ describe('ThemeOKRTree', () => {
       const onOkrChange = vi.fn();
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,
-        selectedThemeIds: ['T1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
         onOkrSelectionChange: onOkrChange,
       }});
       await tick();
@@ -138,6 +193,7 @@ describe('ThemeOKRTree', () => {
         themes: makeThemes(), mode: 'select' as const,
         selectedThemeIds: ['T1'],
         selectedOkrIds: ['T1-O1', 'T1-O1-KR1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
         onThemeSelectionChange: onThemeChange,
         onOkrSelectionChange: onOkrChange,
       }});
@@ -154,7 +210,7 @@ describe('ThemeOKRTree', () => {
     it('renders recursive child objectives', async () => {
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,
-        selectedThemeIds: ['T1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
       }});
       await tick();
 

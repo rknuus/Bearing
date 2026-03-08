@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type Objective } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -39,6 +39,7 @@
   let prevDerivedText = $state('');
   let availableTags = $state<string[]>([]);
   let tagSectionOpen = $state(false);
+  let editSelectExpandedIds = $state<string[]>([]);
 
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
@@ -187,6 +188,24 @@
     }
   }
 
+  function computeExpandedIds(themeIds: string[]): string[] {
+    const ids: string[] = [];
+    for (const tid of themeIds) {
+      const theme = themes.find(t => t.id === tid);
+      if (!theme) continue;
+      ids.push(tid);
+      function walkObjectives(objectives: Objective[]) {
+        for (const obj of objectives) {
+          if (obj.status === 'archived') continue;
+          ids.push(obj.id);
+          if (obj.objectives) walkObjectives(obj.objectives);
+        }
+      }
+      walkObjectives(theme.objectives);
+    }
+    return ids;
+  }
+
   async function handleDayClick(month: number, day: number) {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
@@ -198,6 +217,7 @@
     editTags = focus?.tags ? [...focus.tags] : [];
     prevDerivedText = editTags.join(', ');
     tagSectionOpen = (focus?.tags?.length ?? 0) > 0;
+    editSelectExpandedIds = computeExpandedIds(editThemeIds);
 
     // Fetch available tags from tasks
     try {
@@ -370,10 +390,12 @@
           mode="select"
           selectedThemeIds={editThemeIds}
           selectedOkrIds={editOkrIds}
+          initialSelectExpandedIds={editSelectExpandedIds}
           onThemeSelectionChange={(ids) => {
             editThemeIds = ids;
           }}
           onOkrSelectionChange={(ids) => { editOkrIds = ids; }}
+          onSelectExpandedIdsChange={(ids) => { editSelectExpandedIds = ids; }}
         />
       </div>
 
