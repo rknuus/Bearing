@@ -148,12 +148,16 @@ export function getTaskFiles(dataDir, status) {
 }
 
 /**
- * Check if git working tree is clean (no unstaged changes)
+ * Check if git working tree is clean (no unstaged changes).
+ * Excludes ephemeral files that are not versioned business data:
+ * - bearing.log / wails-dev.log: runtime logs
+ * - navigation_context.json: UI state (may become tracked via CommitAll side effects)
+ * - tasks/drafts.json: ephemeral draft data, explicitly not git-versioned
  */
 export function isWorkingTreeClean(dataDir) {
   try {
-    // Only check tracked files (ignore untracked like .gitignore, navigation_context.json)
-    const output = execSync('git diff --name-only -- ":!bearing.log" && git diff --cached --name-only -- ":!bearing.log"', { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
+    const excludes = '":!bearing.log" ":!wails-dev.log" ":!navigation_context.json" ":!tasks/drafts.json"'
+    const output = execSync(`git diff --name-only -- ${excludes} && git diff --cached --name-only -- ${excludes}`, { cwd: dataDir, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], shell: true })
     return output.trim() === ''
   } catch {
     return true

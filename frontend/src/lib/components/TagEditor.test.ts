@@ -313,4 +313,179 @@ describe('TagEditor', () => {
     // onTagsChange should not be called since tag already exists
     expect(onTagsChange).not.toHaveBeenCalled();
   });
+
+  // --- Blur commit tests ---
+
+  it('blur with text commits tag', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'newtag';
+    await fireEvent.input(input);
+    await tick();
+
+    await fireEvent.blur(input);
+    await tick();
+
+    expect(onTagsChange).toHaveBeenCalledWith(['newtag']);
+  });
+
+  it('blur with empty input is no-op', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    await fireEvent.blur(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+  });
+
+  it('blur with whitespace-only input is no-op', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = '   ';
+    await fireEvent.input(input);
+    await tick();
+
+    await fireEvent.blur(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+  });
+
+  it('blur does not add duplicate tag', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: ['existing'],
+      availableTags: ['existing'],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'existing';
+    await fireEvent.input(input);
+    await tick();
+
+    await fireEvent.blur(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+  });
+
+  // --- Comma trigger tests ---
+
+  it('typing comma creates tag from text before comma', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'health,';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(onTagsChange).toHaveBeenCalledWith(['health']);
+  });
+
+  it('comma with whitespace trims tag', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = ' health ,';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(onTagsChange).toHaveBeenCalledWith(['health']);
+  });
+
+  it('typing just comma is no-op', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = ',';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+  });
+
+  it('comma does not add duplicate tag', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: ['health'],
+      availableTags: ['health'],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'health,';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+  });
+
+  it('new tag from comma appears as pill', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'newtag,';
+    await fireEvent.input(input);
+    await tick();
+
+    const pills = getAllPills();
+    const pillTexts = pills.map(p => p.textContent?.trim());
+    expect(pillTexts).toContain('newtag');
+  });
+
+  it('text after comma remains in input', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'health, fit';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(onTagsChange).toHaveBeenCalledWith(['health']);
+    expect(input.value).toBe('fit');
+  });
 });
