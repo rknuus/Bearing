@@ -126,11 +126,21 @@
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 
+  /** Return 'white' or 'black' for best contrast against the given hex color. */
+  function textColorForBg(hex: string): string {
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const toLinear = (c: number) => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    const luminance = 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+    return luminance > 0.179 ? 'black' : 'white';
+  }
+
   /** Convert an array of theme colors to a CSS background value. */
   function themeColorsToBackground(colors: string[]): string {
     if (colors.length === 0) return '';
-    if (colors.length === 1) return hexToRgba(colors[0], 0.125);
-    const stops = colors.map((c, i) => `${hexToRgba(c, 0.2)} ${(i * 100) / (colors.length - 1)}%`);
+    if (colors.length === 1) return hexToRgba(colors[0], 1);
+    const stops = colors.map((c, i) => `${hexToRgba(c, 1)} ${(i * 100) / (colors.length - 1)}%`);
     return `linear-gradient(to right, ${stops.join(', ')})`;
   }
 
@@ -347,6 +357,7 @@
             {@const gridRow = cell.row + 2}
             {@const bgValue = themeColorsToBackground(cell.colors)}
             {@const textBg = bgValue ? (bgValue.startsWith('linear-gradient') ? `background: ${bgValue};` : `background-color: ${bgValue};`) : ''}
+            {@const textColor = cell.colors.length > 0 ? `color: ${textColorForBg(cell.colors[0])};` : ''}
             {@const sundayBg = cell.sunday ? 'background-color: #eef2ff;' : ''}
 
             <!-- Weekday abbreviation cell -->
@@ -372,7 +383,7 @@
             <button
               class="day-text"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg}"
+              style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg} {textColor}"
               onclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >

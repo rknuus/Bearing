@@ -10,7 +10,7 @@ function makeTestThemes(): LifeTheme[] {
     {
       id: 'TST',
       name: 'Test Theme',
-      color: '#3b82f6',
+      color: '#dc2626',
       objectives: [
         {
           id: 'TST-O1',
@@ -291,7 +291,7 @@ describe('OKRView', () => {
   it('duplicate warning appears when selecting a color used by another theme', async () => {
     await renderView();
 
-    // Click "+ Add Theme" button — default color is #3b82f6, same as Test Theme
+    // Click "+ Add Theme" button — default color is #dc2626, same as Test Theme
     const addThemeBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
     addThemeBtn!.click();
     await tick();
@@ -312,7 +312,7 @@ describe('OKRView', () => {
 
     // Click a palette color that isn't used by any theme
     const colorButtons = container.querySelectorAll<HTMLButtonElement>('.theme-form .color-option');
-    // Pick the last palette color (unlikely to be #3b82f6)
+    // Pick the last palette color (unlikely to be #dc2626)
     colorButtons[colorButtons.length - 1].click();
     await tick();
 
@@ -323,7 +323,7 @@ describe('OKRView', () => {
   it('duplicate warning excludes the theme being edited (no self-conflict)', async () => {
     await renderView();
 
-    // Click edit button on the theme (its color is #3b82f6)
+    // Click edit button on the theme (its color is #dc2626)
     const editButton = container.querySelector<HTMLButtonElement>('.theme-header .btn-icon.icon-edit');
     expect(editButton).toBeTruthy();
     editButton!.click();
@@ -341,7 +341,7 @@ describe('OKRView', () => {
         {
           id: 'T1',
           name: 'Theme One',
-          color: '#3b82f6',
+          color: '#dc2626',
           objectives: [
             {
               id: 'T1-O1',
@@ -480,7 +480,7 @@ describe('OKRView', () => {
         {
           id: 'NT1',
           name: 'Nested Theme',
-          color: '#3b82f6',
+          color: '#dc2626',
           objectives: [
             {
               id: 'NT1-O1',

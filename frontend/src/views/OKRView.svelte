@@ -54,16 +54,14 @@
 
   // Predefined color palette for theme selection
   const COLOR_PALETTE = [
-    '#3b82f6', // Blue
-    '#10b981', // Emerald
-    '#f59e0b', // Amber
-    '#ef4444', // Red
-    '#8b5cf6', // Violet
-    '#ec4899', // Pink
-    '#06b6d4', // Cyan
-    '#84cc16', // Lime
+    '#dc2626', // Red
     '#f97316', // Orange
-    '#6366f1', // Indigo
+    '#eab308', // Yellow
+    '#15803d', // Green
+    '#06b6d4', // Cyan
+    '#2563eb', // Blue
+    '#7c3aed', // Purple
+    '#f472b6', // Pink
   ];
 
   // State
