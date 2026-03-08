@@ -664,7 +664,7 @@ describe('EisenKanView', () => {
 
 
       // Get the important-not-urgent section's DnD zone
-      const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
+      const targetSection = container.querySelector('.section-important-not-urgent .column-content')!;
 
       // Simulate dropping IU1 into important-not-urgent at position 1 (before INU1)
       const dndItems: TaskWithStatus[] = [
@@ -677,7 +677,7 @@ describe('EisenKanView', () => {
       await tick();
 
       // Verify important-not-urgent section has tasks in the correct order
-      const sectionCards = container.querySelector('[data-testid="section-important-not-urgent"]')!.querySelectorAll('.task-card');
+      const sectionCards = container.querySelector('.section-important-not-urgent')!.querySelectorAll('.task-card');
       const titles = Array.from(sectionCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(titles).toEqual(['Urgent One', 'Not Urgent One']);
     });
@@ -694,7 +694,7 @@ describe('EisenKanView', () => {
 
 
       // Get the important-not-urgent section's DnD zone
-      const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
+      const targetSection = container.querySelector('.section-important-not-urgent .column-content')!;
 
       // Simulate dropping IU1 into important-not-urgent (before INU1)
       const dndItems: TaskWithStatus[] = [
@@ -735,7 +735,7 @@ describe('EisenKanView', () => {
 
       await renderView();
 
-      const targetSection = container.querySelector('[data-testid="section-important-not-urgent"] .column-content')!;
+      const targetSection = container.querySelector('.section-important-not-urgent .column-content')!;
 
       const dndItems: TaskWithStatus[] = [
         { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
@@ -761,7 +761,7 @@ describe('EisenKanView', () => {
       });
 
       // Task should roll back to original section (important-urgent)
-      const urgentSection = container.querySelector('[data-testid="section-important-urgent"]')!;
+      const urgentSection = container.querySelector('.section-important-urgent')!;
       const urgentCards = urgentSection.querySelectorAll('.task-card');
       const urgentTitles = Array.from(urgentCards).map(c => c.querySelector('.task-title')?.textContent);
       expect(urgentTitles).toContain('Urgent One');
@@ -1117,7 +1117,7 @@ describe('EisenKanView', () => {
       await renderView();
 
 
-      const sectionZone = container.querySelector('[data-testid="section-important-urgent"] .column-content')!;
+      const sectionZone = container.querySelector('.section-important-urgent .column-content')!;
 
       // Simulate drag start via consider event on section zone
       dispatchDndConsider(sectionZone, [
@@ -1303,7 +1303,7 @@ describe('EisenKanView', () => {
       await fireEvent.click(foldBtns[0]);
       await tick();
 
-      const sections = container.querySelectorAll('[data-testid^="section-"]');
+      const sections = container.querySelectorAll('.column-section');
       const firstSectionContent = sections[0].querySelector('.column-content');
       expect(firstSectionContent?.classList.contains('collapsed-section')).toBe(true);
 
@@ -1322,7 +1322,7 @@ describe('EisenKanView', () => {
       await fireEvent.click(foldBtns[0]);
       await tick();
 
-      const sections = container.querySelectorAll('[data-testid^="section-"]');
+      const sections = container.querySelectorAll('.column-section');
       const firstSectionContent = sections[0].querySelector('.column-content');
       expect(firstSectionContent?.classList.contains('collapsed-section')).toBe(false);
     });
@@ -1334,7 +1334,7 @@ describe('EisenKanView', () => {
       await fireEvent.click(foldBtns[0]);
       await tick();
 
-      const section = container.querySelector('[data-testid="section-important-urgent"]')!;
+      const section = container.querySelector('.section-important-urgent')!;
       const header = section.querySelector('.section-header')!;
       expect(header.querySelector('.section-title')?.textContent).toBe('Important & Urgent');
       expect(header.querySelector('.section-count')?.textContent).toBe('1');
@@ -1366,7 +1366,7 @@ describe('EisenKanView', () => {
 
       await renderView();
 
-      const sections = container.querySelectorAll('[data-testid^="section-"]');
+      const sections = container.querySelectorAll('.column-section');
       expect(sections[0].querySelector('.column-content')?.classList.contains('collapsed-section')).toBe(true);
       expect(sections[1].querySelector('.column-content')?.classList.contains('collapsed-section')).toBe(true);
       expect(sections[2].querySelector('.column-content')?.classList.contains('collapsed-section')).toBe(false);

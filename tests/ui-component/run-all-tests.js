@@ -13,6 +13,7 @@ const TEST_SUITES = [
   { name: 'App Lifecycle', file: 'app-lifecycle.test.js', enabled: true },
   { name: 'View Workflows', file: 'view-workflows.test.js', enabled: true },
   { name: 'Full Flow', file: 'full-flow.test.js', enabled: true },
+  { name: 'View Interactions', file: 'view-interactions.test.js', enabled: true },
 ]
 
 const enabledSuites = TEST_SUITES.filter(suite => suite.enabled)

@@ -1138,7 +1138,7 @@
               {#each column.sections as section (section.name)}
                 {@const sectionTaskItems = sectionItems[section.name] ?? []}
                 {@const sectionCollapsed = collapsedSections.has(section.name) && !isDragging}
-                <div class="column-section" style="--section-color: {section.color};" data-testid="section-{section.name}">
+                <div class="column-section section-{section.name}" style="--section-color: {section.color};">
                   <div class="section-header" style="background-color: {section.color};">
                     <button
                       type="button"
