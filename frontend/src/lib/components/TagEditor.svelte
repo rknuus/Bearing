@@ -55,6 +55,14 @@
   }
 
   function handleInput() {
+    const commaIdx = inputValue.indexOf(',');
+    if (commaIdx !== -1) {
+      const before = inputValue.slice(0, commaIdx);
+      const after = inputValue.slice(commaIdx + 1);
+      inputValue = before;
+      addNewTag();
+      inputValue = after.trimStart();
+    }
     suggestions = computeSuggestions(inputValue);
     showSuggestions = suggestions.length > 0;
     highlightedIndex = -1;
@@ -108,6 +116,7 @@
   }
 
   function handleBlur() {
+    addNewTag();
     setTimeout(() => { showSuggestions = false; }, 150);
   }
 </script>
