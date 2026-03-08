@@ -1,7 +1,7 @@
 /**
  * Shared test utilities for Bearing true E2E tests
  *
- * Tests run against Wails dev server at http://localhost:34115 with a real Go
+ * Tests run against Wails dev server at http://localhost:34215 with a real Go
  * backend. File verification reads JSON files and git history from the data
  * directory specified by BEARING_DATA_DIR.
  */
@@ -11,7 +11,7 @@ import path from 'path'
 import { execSync } from 'child_process'
 
 export const TEST_CONFIG = {
-  WAILS_DEV_URL: process.env.WAILS_DEV_URL || 'http://localhost:34115',
+  WAILS_DEV_URL: process.env.WAILS_DEV_URL || 'http://localhost:34215',
   TIMEOUT: 60000,
   HEADLESS: process.env.HEADLESS === 'true',
   SLOW_MO: 50,

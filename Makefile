@@ -58,10 +58,12 @@ frontend-dev: ## Run Vite dev server only (for browser testing with mock binding
 	@$(MAKE) --no-print-directory -C frontend dev
 
 .PHONY: stop
-stop: ## Stop any running dev/test server processes (ports 5173, 34115)
+stop: ## Stop any running dev/test server processes (ports 5173, 5174, 34115, 34215)
 	@echo "Stopping server processes..."
 	@-lsof -ti:5173 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:5174 | xargs kill -9 2>/dev/null || true
 	@-lsof -ti:34115 | xargs kill -9 2>/dev/null || true
+	@-lsof -ti:34215 | xargs kill -9 2>/dev/null || true
 	@echo "Done."
 
 ##@ Build
