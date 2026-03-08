@@ -7,8 +7,8 @@
 - See [README](README.md) for background about the project.
 - To build, test, etc. use `make` commands. Do not come up with own commands. If a `make` command you need is missing, tell the user.
 - Cover new/changed code by tests, unless coverage is not possible: in this case confirm with the user.
-- Always lint code before committing and only disable rules for genuine false positives, not for non-idiomatic code.
-- Always run tests before committing.
+- Always lint code before committing and only disable rules for genuine false positives, not for non-idiomatic code: `make lint` in the project root
+- Always run all tests before committing: `make test && make test-ui-component-headless && make test-e2e-headless` in the project root
 - For Svelte 5 questions, fetch and use: https://svelte.dev/llms-full.txt
 - For svelte-dnd-actions, refer to the local README snapshot at `tmp/docs/svelte-dnd-action/README.md`
 - For Wails v2, refer to the local docs snapshot at `tmp/docs/wails/`
