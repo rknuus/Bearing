@@ -155,14 +155,14 @@ export async function runTests() {
       await page.click('.dialog .btn-primary')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
-      // Verify at least one day cell now has the emerald theme color
-      // Browser may normalize #10b98120 to rgba(16, 185, 129, ...) in style
+      // Verify at least one text cell now has the emerald theme color
+      // (theme coloring applies only to text cells, not day-num or weekday)
       await page.waitForFunction(() => {
-        const cells = document.querySelectorAll('.day-num')
+        const cells = document.querySelectorAll('.day-text')
         return Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
         })
       }, { timeout: 5000 })
 
@@ -336,11 +336,11 @@ export async function runTests() {
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
       await page.waitForFunction(() => {
-        const cells = document.querySelectorAll('.day-num')
+        const cells = document.querySelectorAll('.day-text')
         return Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
         })
       }, { timeout: 5000 })
 
@@ -420,21 +420,21 @@ export async function runTests() {
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
-      // Find and click the themed day cell (has emerald color)
+      // Find and click the themed day text cell (has emerald color)
       await page.waitForFunction(() => {
-        const cells = document.querySelectorAll('.day-num')
+        const cells = document.querySelectorAll('.day-text')
         return Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
         })
       }, { timeout: 5000 })
       await page.evaluate(() => {
-        const cells = document.querySelectorAll('.day-num')
+        const cells = document.querySelectorAll('.day-text')
         const themed = Array.from(cells).find(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
         })
         if (themed) themed.click()
       })
@@ -448,11 +448,11 @@ export async function runTests() {
 
       // Wait for calendar to re-render without emerald theme color
       await page.waitForFunction(() => {
-        const cells = document.querySelectorAll('.day-num')
+        const cells = document.querySelectorAll('.day-text')
         return !Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('#10b981') || bg.includes('16, 185, 129')
+          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
         })
       }, { timeout: 5000 })
 

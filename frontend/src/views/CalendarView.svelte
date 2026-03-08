@@ -32,7 +32,7 @@
 
   // Day editor dialog state
   let editingDay = $state<{ date: string; month: number; day: number } | null>(null);
-  let editThemeId = $state('');
+  let editThemeIds = $state<string[]>([]);
   let editText = $state('');
   let editOkrIds = $state<string[]>([]);
   let editTags = $state<string[]>([]);
@@ -105,12 +105,32 @@
     return formatDateLocale(formatDate(month, day));
   }
 
-  function getThemeColor(month: number, day: number): string | null {
+  function getThemeColors(month: number, day: number): string[] {
     const dateStr = formatDate(month, day);
     const focus = yearFocus.get(dateStr);
-    if (!focus?.themeId) return null;
-    const theme = themes.find(t => t.id === focus.themeId);
-    return theme?.color ?? null;
+    if (!focus?.themeIds || focus.themeIds.length === 0) return [];
+    const colors: string[] = [];
+    for (const tid of focus.themeIds) {
+      const theme = themes.find(t => t.id === tid);
+      if (theme) colors.push(theme.color);
+    }
+    return colors;
+  }
+
+  /** Convert hex color to rgba with given alpha. */
+  function hexToRgba(hex: string, alpha: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  /** Convert an array of theme colors to a CSS background value. */
+  function themeColorsToBackground(colors: string[]): string {
+    if (colors.length === 0) return '';
+    if (colors.length === 1) return hexToRgba(colors[0], 0.125);
+    const stops = colors.map((c, i) => `${hexToRgba(c, 0.2)} ${(i * 100) / (colors.length - 1)}%`);
+    return `linear-gradient(to right, ${stops.join(', ')})`;
   }
 
   function getDayText(month: number, day: number): string {
@@ -123,7 +143,7 @@
     month: number;
     day: number;
     row: number; // 0-indexed grid row (day - 1)
-    color: string | null;
+    colors: string[];
     text: string;
     today: boolean;
     sunday: boolean;
@@ -139,7 +159,7 @@
           month: m,
           day: d,
           row: d - 1,
-          color: getThemeColor(m, d),
+          colors: getThemeColors(m, d),
           text: getDayText(m, d),
           today: isToday(m, d),
           sunday: isSundayDate(year, m, d),
@@ -172,7 +192,7 @@
     const focus = yearFocus.get(dateStr);
 
     editingDay = { date: dateStr, month, day };
-    editThemeId = focus?.themeId ?? '';
+    editThemeIds = focus?.themeIds ? [...focus.themeIds] : [];
     editText = focus?.text ?? '';
     editOkrIds = focus?.okrIds ? [...focus.okrIds] : [];
     editTags = focus?.tags ? [...focus.tags] : [];
@@ -189,7 +209,7 @@
   }
 
 
-  const DAY_FOCUS_FIELDS = ['date', 'themeId', 'notes', 'text', 'okrIds', 'tags'];
+  const DAY_FOCUS_FIELDS = ['date', 'themeIds', 'notes', 'text', 'okrIds', 'tags'];
 
   async function verifyCalendarState() {
     const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
@@ -211,7 +231,7 @@
       const existing = yearFocus.get(editingDay.date);
       const dayFocus: DayFocus = {
         date: editingDay.date,
-        themeId: editThemeId,
+        themeIds: editThemeIds.length > 0 ? editThemeIds : undefined,
         notes: existing?.notes ?? '',
         text: editText,
         okrIds: editOkrIds.length > 0 ? editOkrIds : undefined,
@@ -285,12 +305,14 @@
             {@const numCol = 2 + monthIdx * 3}
             {@const textCol = 3 + monthIdx * 3}
             {@const gridRow = cell.row + 2}
-            {@const cellBg = cell.color ? `background-color: ${cell.color}20;` : (cell.sunday ? 'background-color: #eef2ff;' : '')}
+            {@const bgValue = themeColorsToBackground(cell.colors)}
+            {@const textBg = bgValue ? (bgValue.startsWith('linear-gradient') ? `background: ${bgValue};` : `background-color: ${bgValue};`) : ''}
+            {@const sundayBg = cell.sunday ? 'background-color: #eef2ff;' : ''}
 
             <!-- Weekday abbreviation cell -->
             <div
               class="day-weekday"
-              style="grid-row: {gridRow}; grid-column: {wdayCol}; {cellBg}"
+              style="grid-row: {gridRow}; grid-column: {wdayCol}; {sundayBg}"
             >
               {cell.weekdayName}
             </div>
@@ -299,7 +321,7 @@
             <button
               class="day-num"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {numCol}; {cellBg}"
+              style="grid-row: {gridRow}; grid-column: {numCol}; {sundayBg}"
               onclick={() => handleDayClick(cell.month, cell.day)}
               title={displayDate(cell.month, cell.day)}
             >
@@ -310,7 +332,7 @@
             <button
               class="day-text"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {textCol}; {cellBg}"
+              style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg}"
               onclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >
@@ -346,10 +368,10 @@
         <ThemeOKRTree
           {themes}
           mode="select"
-          selectedThemeIds={editThemeId ? [editThemeId] : []}
+          selectedThemeIds={editThemeIds}
           selectedOkrIds={editOkrIds}
           onThemeSelectionChange={(ids) => {
-            editThemeId = ids.length > 0 ? ids[ids.length - 1] : '';
+            editThemeIds = ids;
           }}
           onOkrSelectionChange={(ids) => { editOkrIds = ids; }}
         />
@@ -506,7 +528,7 @@
     text-align: right;
     font-size: 0.7rem;
     color: var(--color-gray-500);
-    background: white;
+    background-color: white;
     border: none;
     cursor: pointer;
     display: flex;
@@ -520,7 +542,7 @@
     padding: 0 2px;
     font-size: 0.65rem;
     color: var(--color-gray-400);
-    background: white;
+    background-color: white;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -542,7 +564,7 @@
     padding: 0 4px;
     font-size: 0.7rem;
     color: var(--color-gray-700);
-    background: white;
+    background-color: white;
     border: none;
     cursor: pointer;
     overflow: hidden;

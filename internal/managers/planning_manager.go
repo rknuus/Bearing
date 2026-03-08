@@ -669,7 +669,7 @@ func (m *PlanningManager) SaveDayFocus(day access.DayFocus) error {
 	return nil
 }
 
-// ClearDayFocus removes a day focus entry by setting empty theme ID.
+// ClearDayFocus removes a day focus entry by clearing theme IDs.
 func (m *PlanningManager) ClearDayFocus(date string) error {
 	if date == "" {
 		return fmt.Errorf("date cannot be empty")
@@ -686,12 +686,12 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 		return nil
 	}
 
-	// Save with empty theme ID to clear it
+	// Save with nil theme IDs to clear it
 	cleared := access.DayFocus{
-		Date:    date,
-		ThemeID: "",
-		Notes:   existing.Notes, // Preserve notes
-		Text:    existing.Text,  // Preserve text
+		Date:     date,
+		ThemeIDs: nil,
+		Notes:    existing.Notes, // Preserve notes
+		Text:     existing.Text,  // Preserve text
 	}
 
 	if err := m.planAccess.SaveDayFocus(cleared); err != nil {

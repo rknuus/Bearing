@@ -230,9 +230,9 @@ export async function runTests() {
       const calData = readJSON(DATA_DIR, `calendar/${year}.json`)
       const entries = calData.entries || calData
       const dayEntry = (Array.isArray(entries) ? entries : []).find(
-        e => e.themeId === themeId
+        e => e.themeIds && e.themeIds.includes(themeId)
       )
-      if (!dayEntry) throw new Error(`No calendar entry with themeId=${themeId}`)
+      if (!dayEntry) throw new Error(`No calendar entry with themeIds containing ${themeId}`)
       if (dayEntry.text !== 'E2E test day') {
         throw new Error(`Expected text "E2E test day", got "${dayEntry.text}"`)
       }
@@ -450,7 +450,7 @@ export async function runTests() {
       const calBefore = readJSON(DATA_DIR, `calendar/${year}.json`)
       const entriesBefore = calBefore.entries || calBefore
       const existingDay = (Array.isArray(entriesBefore) ? entriesBefore : []).find(
-        e => e.themeId === themeId
+        e => e.themeIds && e.themeIds.includes(themeId)
       )
       if (!existingDay) throw new Error('No existing day entry found')
 
@@ -458,7 +458,7 @@ export async function runTests() {
         const app = window.go.main.App
         await app.SaveDayFocus({
           date: day.date,
-          themeId: day.themeId,
+          themeIds: day.themeIds,
           notes: day.notes,
           text: 'Updated E2E text',
         })
@@ -602,10 +602,10 @@ export async function runTests() {
       const calAfterClear = readJSON(DATA_DIR, `calendar/${year}.json`)
       const entriesAfterClear = calAfterClear.entries || calAfterClear
       const clearedDay = (Array.isArray(entriesAfterClear) ? entriesAfterClear : []).find(
-        e => e.date === dayToClear.date && e.themeId !== ''
+        e => e.date === dayToClear.date && e.themeIds && e.themeIds.length > 0
       )
       if (clearedDay) {
-        throw new Error(`Day focus still has themeId after clearing: ${clearedDay.themeId}`)
+        throw new Error(`Day focus still has themeIds after clearing: ${JSON.stringify(clearedDay.themeIds)}`)
       }
 
       expectedCommits++

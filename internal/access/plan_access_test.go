@@ -398,9 +398,9 @@ func TestSaveDayFocus(t *testing.T) {
 
 	// Save day focus
 	dayFocus := DayFocus{
-		Date:    "2026-01-15",
-		ThemeID: "H",
-		Notes:   "Focus on morning exercise",
+		Date:     "2026-01-15",
+		ThemeIDs: []string{"H"},
+		Notes:    "Focus on morning exercise",
 	}
 
 	err := pa.SaveDayFocus(dayFocus)
@@ -421,8 +421,8 @@ func TestSaveDayFocus(t *testing.T) {
 	if retrieved.Date != "2026-01-15" {
 		t.Errorf("Expected date 2026-01-15, got %s", retrieved.Date)
 	}
-	if retrieved.ThemeID != "H" {
-		t.Errorf("Expected themeID H, got %s", retrieved.ThemeID)
+	if len(retrieved.ThemeIDs) != 1 || retrieved.ThemeIDs[0] != "H" {
+		t.Errorf("Expected themeIDs [H], got %v", retrieved.ThemeIDs)
 	}
 	if retrieved.Notes != "Focus on morning exercise" {
 		t.Errorf("Expected notes, got %s", retrieved.Notes)
@@ -435,9 +435,9 @@ func TestSaveDayFocus_Update(t *testing.T) {
 
 	// Save initial day focus
 	dayFocus := DayFocus{
-		Date:    "2026-01-15",
-		ThemeID: "H",
-		Notes:   "Initial notes",
+		Date:     "2026-01-15",
+		ThemeIDs: []string{"H"},
+		Notes:    "Initial notes",
 	}
 
 	if err := pa.SaveDayFocus(dayFocus); err != nil {
@@ -467,9 +467,9 @@ func TestGetYearFocus(t *testing.T) {
 
 	// Save multiple day focuses
 	days := []DayFocus{
-		{Date: "2026-01-15", ThemeID: "H", Notes: "Day 1"},
-		{Date: "2026-01-16", ThemeID: "H", Notes: "Day 2"},
-		{Date: "2026-02-01", ThemeID: "C", Notes: "Day 3"},
+		{Date: "2026-01-15", ThemeIDs: []string{"H"}, Notes: "Day 1"},
+		{Date: "2026-01-16", ThemeIDs: []string{"H"}, Notes: "Day 2"},
+		{Date: "2026-02-01", ThemeIDs: []string{"C"}, Notes: "Day 3"},
 	}
 
 	for _, day := range days {
@@ -991,7 +991,7 @@ func TestFileStructure(t *testing.T) {
 	}
 
 	// Save day focus and verify calendar structure
-	dayFocus := DayFocus{Date: "2026-01-15", ThemeID: "H", Notes: "Test"}
+	dayFocus := DayFocus{Date: "2026-01-15", ThemeIDs: []string{"H"}, Notes: "Test"}
 	if err := pa.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("SaveDayFocus failed: %v", err)
 	}

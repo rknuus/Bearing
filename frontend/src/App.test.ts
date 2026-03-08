@@ -309,7 +309,7 @@ describe('App', () => {
 
     function setupTodayFocusMocks() {
       mockBindings.GetYearFocus.mockResolvedValue([
-        { date: todayDateString(), themeId: 'HF', notes: '', text: '' },
+        { date: todayDateString(), themeIds: ['HF'], notes: '', text: '' },
       ]);
       // Provide themes so ThemeFilterBar renders in EisenKanView
       mockBindings.GetThemes.mockResolvedValue([

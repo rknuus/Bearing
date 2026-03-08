@@ -20,9 +20,12 @@
   let filterThemeIds = $state<string[]>([]);
   let filterTagIds = $state<string[]>([]);
   let todayFocusActive = $state(true);
-  let todayFocusThemeId = $state<string | null>(null);
+  let todayFocusThemeIds = $state<string[]>([]);
   let tagFocusActive = $state(true);
   let todayFocusTags = $state<string[]>([]);
+
+  // Derived single-theme ID for backward compat with child components (ThemeFilterBar, EisenKanView)
+  let todayFocusThemeId = $derived(todayFocusThemeIds.length > 0 ? todayFocusThemeIds[0] : null);
 
   // Build breadcrumb path including view context
   let breadcrumbPath = $derived.by(() => {
@@ -42,8 +45,8 @@
     }
 
     // Add filter context if present
-    if (todayFocusActive && todayFocusThemeId) {
-      parts.push({ id: 'FILTER:todayfocus', label: `Today's Focus: ${todayFocusThemeId}` });
+    if (todayFocusActive && todayFocusThemeIds.length > 0) {
+      parts.push({ id: 'FILTER:todayfocus', label: `Today's Focus: ${todayFocusThemeIds.join(', ')}` });
     } else if (filterThemeIds.length === 1) {
       parts.push({ id: `FILTER:theme:${filterThemeIds[0]}`, label: `Theme: ${filterThemeIds[0]}` });
     } else if (filterThemeIds.length > 1) {
@@ -82,11 +85,11 @@
   async function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
     // Re-resolve today's focus in case the user just set it in Calendar
     const focus = await resolveTodayFocus(getBindings());
-    todayFocusThemeId = focus.themeId;
+    todayFocusThemeIds = focus.themeIds;
     todayFocusTags = focus.tags;
-    if (todayFocusThemeId && options?.themeId === undefined) {
+    if (todayFocusThemeIds.length > 0 && options?.themeId === undefined) {
       todayFocusActive = true;
-      filterThemeIds = [todayFocusThemeId];
+      filterThemeIds = [...todayFocusThemeIds];
     }
     if (todayFocusTags.length > 0) {
       tagFocusActive = true;
@@ -137,14 +140,14 @@
 
   function handleFilterThemeClear() {
     todayFocusActive = true;
-    filterThemeIds = todayFocusThemeId ? [todayFocusThemeId] : [];
+    filterThemeIds = todayFocusThemeIds.length > 0 ? [...todayFocusThemeIds] : [];
     saveNavigationContext();
   }
 
   function handleTodayFocusToggle() {
     todayFocusActive = !todayFocusActive;
-    if (todayFocusActive && todayFocusThemeId) {
-      filterThemeIds = [todayFocusThemeId];
+    if (todayFocusActive && todayFocusThemeIds.length > 0) {
+      filterThemeIds = [...todayFocusThemeIds];
     } else {
       filterThemeIds = [];
     }
@@ -251,7 +254,7 @@
 
           // Resolve today's focus (theme + tags)
           const focus = await resolveTodayFocus(bindings);
-          todayFocusThemeId = focus.themeId;
+          todayFocusThemeIds = focus.themeIds;
           todayFocusTags = focus.tags;
 
           // Determine Today's Focus state (theme)
@@ -266,7 +269,7 @@
             }
           } else {
             todayFocusActive = true;
-            filterThemeIds = todayFocusThemeId ? [todayFocusThemeId] : [];
+            filterThemeIds = todayFocusThemeIds.length > 0 ? [...todayFocusThemeIds] : [];
           }
 
           // Determine Today's Focus state (tags)
@@ -288,22 +291,22 @@
     }
   }
 
-  // Resolve today's DayFocus from the calendar (theme ID + tags)
-  async function resolveTodayFocus(bindings: ReturnType<typeof getBindings>): Promise<{ themeId: string | null; tags: string[] }> {
+  // Resolve today's DayFocus from the calendar (theme IDs + tags)
+  async function resolveTodayFocus(bindings: ReturnType<typeof getBindings>): Promise<{ themeIds: string[]; tags: string[] }> {
     try {
-      if (!bindings?.GetYearFocus) return { themeId: null, tags: [] };
+      if (!bindings?.GetYearFocus) return { themeIds: [], tags: [] };
       const today = new Date();
       const yearFocus = await bindings.GetYearFocus(today.getFullYear());
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
       const todayFocus = yearFocus.find((d: { date: string }) => d.date === todayStr);
       return {
-        themeId: todayFocus?.themeId || null,
+        themeIds: todayFocus?.themeIds ?? [],
         tags: todayFocus?.tags ?? [],
       };
     } catch {
       // Non-critical: fall through to defaults
     }
-    return { themeId: null, tags: [] };
+    return { themeIds: [], tags: [] };
   }
 
   // Initialize locale from OS detection
