@@ -13,7 +13,7 @@
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
-  import { priorityLabels } from '../lib/constants/priorities';
+
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
   type QuadrantId = 'important-urgent' | 'important-not-urgent' | 'not-important-urgent';
@@ -338,7 +338,7 @@
             style="background-color: {q.color};"
             onclick={() => handleAddTask(q.id)}
             disabled={isSubmitting || !newTaskTitle.trim()}
-          >{priorityLabels[q.id]}</button>
+          >Stage to <span class="nowrap">{q.title}</span></button>
         {/each}
       </div>
     </fieldset>
@@ -444,6 +444,10 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.2s;
+  }
+
+  .nowrap {
+    white-space: nowrap;
   }
 
   .btn-add:hover:not(:disabled) {
