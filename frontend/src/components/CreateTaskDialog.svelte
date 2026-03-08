@@ -157,6 +157,14 @@
         getBindings().LoadTaskDrafts().then((data: string) => {
           try {
             const parsed = JSON.parse(data);
+            // Migrate legacy drafts where tags was a comma-separated string
+            for (const tasks of Object.values(parsed) as PendingTask[][]) {
+              for (const t of tasks) {
+                if (typeof t.tags === 'string') {
+                  t.tags = (t.tags as string).split(', ').filter(Boolean);
+                }
+              }
+            }
             tasksByQuadrant = { ...emptyQuadrants, ...parsed };
           } catch {
             tasksByQuadrant = { ...emptyQuadrants };
@@ -186,7 +194,7 @@
       title,
       themeId: selectedThemeId,
       description: newTaskDescription.trim() || undefined,
-      tags: newTaskTags.length > 0 ? newTaskTags.join(', ') : undefined,
+      tags: newTaskTags.length > 0 ? [...newTaskTags] : undefined,
     };
     nextId++;
     tasksByQuadrant = {
@@ -220,7 +228,7 @@
         for (const task of tasks) {
           total++;
           try {
-            await createTask(task.title, task.themeId ?? selectedThemeId, quadrant.priority, task.description ?? '', task.tags ?? '');
+            await createTask(task.title, task.themeId ?? selectedThemeId, quadrant.priority, task.description ?? '', task.tags ? task.tags.join(', ') : '');
             created++;
           } catch {
             remaining.push(task);
@@ -255,7 +263,7 @@
     editTitle = task.title;
     editThemeId = task.themeId ?? (themes.length > 0 ? themes[0].id : '');
     editDescription = task.description ?? '';
-    editTags = task.tags ? task.tags.split(', ').filter(Boolean) : [];
+    editTags = task.tags ? [...task.tags] : [];
   }
 
   async function handlePendingTaskEditSave() {
@@ -265,7 +273,7 @@
       title: editTitle.trim(),
       themeId: editThemeId,
       description: editDescription.trim() || undefined,
-      tags: editTags.length > 0 ? editTags.join(', ') : undefined,
+      tags: editTags.length > 0 ? [...editTags] : undefined,
     };
     for (const qId of Object.keys(tasksByQuadrant) as QuadrantId[]) {
       const idx = tasksByQuadrant[qId].findIndex(t => t.id === updatedTask.id);
