@@ -334,7 +334,7 @@ export async function runTests() {
     reporter.startTest('202c: Auto-ancestor OKR selection in day editor')
     try {
       // Click a day to open the editor
-      await page.click('.day-num.today')
+      await page.dblclick('.day-num.today')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Expand HF theme in the tree
@@ -404,7 +404,7 @@ export async function runTests() {
     reporter.startTest('202d: Day editor fold state persists across reopens')
     try {
       // Open the day editor
-      await page.click('.day-num.today')
+      await page.dblclick('.day-num.today')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Expand HF theme
@@ -420,7 +420,7 @@ export async function runTests() {
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
       // Reopen the same day
-      await page.click('.day-num.today')
+      await page.dblclick('.day-num.today')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Verify HF theme is still expanded (fold state persisted)

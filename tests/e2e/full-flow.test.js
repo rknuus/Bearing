@@ -214,8 +214,8 @@ export async function runTests() {
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
-      // Click first day cell
-      await page.click('.day-num')
+      // Double-click first day cell
+      await page.dblclick('.day-num')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Select theme checkbox and add text
@@ -279,8 +279,8 @@ export async function runTests() {
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
-      // Click second day cell (day 2 of first month)
-      await page.locator('.day-num').nth(1).click()
+      // Double-click second day cell (day 2 of first month)
+      await page.locator('.day-num').nth(1).dblclick()
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Select both theme checkboxes
@@ -324,7 +324,7 @@ export async function runTests() {
     reporter.startTest('Phase 2d: Clear multi-theme day focus and verify files')
     try {
       // Reopen the same day (second day cell)
-      await page.locator('.day-num').nth(1).click()
+      await page.locator('.day-num').nth(1).dblclick()
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Uncheck both theme checkboxes (they should be checked from Phase 2c)

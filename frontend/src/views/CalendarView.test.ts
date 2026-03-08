@@ -191,13 +191,13 @@ describe('CalendarView', () => {
     expect(style).toBeTruthy();
   });
 
-  it('opens edit dialog when clicking a day cell', async () => {
+  it('opens edit dialog when double-clicking a day cell', async () => {
     await renderView();
 
     // Click the first day-num cell
     const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
     expect(dayCell).toBeTruthy();
-    dayCell!.click();
+    dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     await tick();
     await vi.waitFor(() => {
       if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -221,7 +221,7 @@ describe('CalendarView', () => {
 
     // Click a day cell to open dialog
     const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-    dayCell!.click();
+    dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     await tick();
     await vi.waitFor(() => {
       if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -267,7 +267,7 @@ describe('CalendarView', () => {
       }
     }
     expect(targetCell).toBeTruthy();
-    targetCell!.click();
+    targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     await tick();
     await vi.waitFor(() => {
       if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -308,7 +308,7 @@ describe('CalendarView', () => {
 
     // Open dialog
     const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-    dayCell!.click();
+    dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     await tick();
     await vi.waitFor(() => {
       if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -425,7 +425,7 @@ describe('CalendarView', () => {
         }
       }
       expect(targetCell).toBeTruthy();
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -529,7 +529,7 @@ describe('CalendarView', () => {
       // Click Jan 1 cell
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       // Wait for GetTasks to resolve
       await vi.waitFor(() => {
@@ -646,7 +646,7 @@ describe('CalendarView', () => {
       await renderView();
 
       const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-      dayCell!.click();
+      dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -671,7 +671,7 @@ describe('CalendarView', () => {
       await renderView();
 
       const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-      dayCell!.click();
+      dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -702,7 +702,7 @@ describe('CalendarView', () => {
       await renderView();
 
       const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-      dayCell!.click();
+      dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -736,7 +736,7 @@ describe('CalendarView', () => {
       await renderView();
 
       const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-      dayCell!.click();
+      dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -771,7 +771,7 @@ describe('CalendarView', () => {
 
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -802,7 +802,7 @@ describe('CalendarView', () => {
       const dateStr = formatDateLocale('2025-01-01');
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(dateStr));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -967,7 +967,7 @@ describe('CalendarView', () => {
 
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -1002,7 +1002,7 @@ describe('CalendarView', () => {
 
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -1027,7 +1027,7 @@ describe('CalendarView', () => {
 
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -1075,7 +1075,7 @@ describe('CalendarView', () => {
 
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -1108,7 +1108,7 @@ describe('CalendarView', () => {
 
       const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
       const targetCell = Array.from(dayCells).find(c => c.title?.includes(formatDateLocale('2025-01-01')));
-      targetCell!.click();
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -1123,7 +1123,7 @@ describe('CalendarView', () => {
 
       // Open a day dialog
       const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-      dayCell!.click();
+      dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');
@@ -1154,7 +1154,7 @@ describe('CalendarView', () => {
 
       // Open a day dialog
       const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
-      dayCell!.click();
+      dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
       await vi.waitFor(() => {
         if (!container.querySelector('.dialog')) throw new Error('dialog not open');

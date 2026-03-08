@@ -89,8 +89,8 @@ export async function runTests() {
         throw new Error(`Expected 12 month headers, got ${monthHeaders.length}`)
       }
 
-      // Click a day cell to open editor
-      await page.click('.day-num')
+      // Double-click a day cell to open editor
+      await page.dblclick('.day-num')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Verify dialog has theme tree and text input

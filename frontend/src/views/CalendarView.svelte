@@ -373,7 +373,7 @@
               class="day-num"
               class:today={cell.today}
               style="grid-row: {gridRow}; grid-column: {numCol}; {sundayBg}"
-              onclick={() => handleDayClick(cell.month, cell.day)}
+              ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={displayDate(cell.month, cell.day)}
             >
               {cell.day}
@@ -384,7 +384,7 @@
               class="day-text"
               class:today={cell.today}
               style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg} {textColor}"
-              onclick={() => handleDayClick(cell.month, cell.day)}
+              ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >
               {cell.text}

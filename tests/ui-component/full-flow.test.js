@@ -145,8 +145,8 @@ export async function runTests() {
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
-      // Click first day cell to open editor dialog
-      await page.click('.day-num')
+      // Double-click first day cell to open editor dialog
+      await page.dblclick('.day-num')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Select "E2E Flow" theme checkbox and add text
@@ -436,7 +436,7 @@ export async function runTests() {
           const bg = window.getComputedStyle(c).backgroundColor || ''
           return attr.includes('249, 115, 22') || bg.includes('249, 115, 22')
         })
-        if (themed) themed.click()
+        if (themed) themed.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
       })
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
