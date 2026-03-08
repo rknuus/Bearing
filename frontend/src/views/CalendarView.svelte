@@ -41,6 +41,14 @@
   let tagSectionOpen = $state(false);
   let editSelectExpandedIds = $state<string[]>([]);
 
+  // Selection state
+  let selectedCells = $state<Array<{month: number; day: number}>>([]);
+  let anchorCell = $state<{month: number; day: number} | null>(null);
+
+  // Clipboard (persists across year navigation)
+  interface ClipboardEntry { themeIds?: string[]; text: string; okrIds?: string[]; tags?: string[] }
+  let clipboard = $state<ClipboardEntry[]>([]);
+
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
 
@@ -302,6 +310,107 @@
     editingDay = null;
   }
 
+  // --- Selection helpers ---
+
+  function isCellSelected(month: number, day: number): boolean {
+    return selectedCells.some(c => c.month === month && c.day === day);
+  }
+
+  function handleTextCellClick(month: number, day: number, event: MouseEvent) {
+    if (event.shiftKey && anchorCell && anchorCell.month === month) {
+      const minDay = Math.min(anchorCell.day, day);
+      const maxDay = Math.max(anchorCell.day, day);
+      selectedCells = Array.from({length: maxDay - minDay + 1}, (_, i) => ({month, day: minDay + i}));
+    } else {
+      selectedCells = [{month, day}];
+      anchorCell = {month, day};
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent) {
+    // Don't handle shortcuts when edit dialog is open
+    if (editingDay) return;
+
+    const mod = event.metaKey || event.ctrlKey;
+
+    if (event.key === 'Escape') {
+      selectedCells = [];
+      anchorCell = null;
+      return;
+    }
+
+    if (mod && event.key === 'c') {
+      handleCopy();
+      event.preventDefault();
+      return;
+    }
+
+    if (mod && event.key === 'v') {
+      handlePaste();
+      event.preventDefault();
+      return;
+    }
+  }
+
+  function handleCopy() {
+    if (selectedCells.length === 0) return;
+    const sorted = [...selectedCells].sort((a, b) => a.day - b.day);
+    clipboard = sorted.map(c => {
+      const focus = yearFocus.get(formatDate(c.month, c.day));
+      return {
+        themeIds: focus?.themeIds ? [...focus.themeIds] : undefined,
+        text: focus?.text ?? '',
+        okrIds: focus?.okrIds ? [...focus.okrIds] : undefined,
+        tags: focus?.tags ? [...focus.tags] : undefined,
+      };
+    });
+  }
+
+  async function handlePaste() {
+    if (clipboard.length === 0 || selectedCells.length === 0) return;
+
+    const sorted = [...selectedCells].sort((a, b) => a.day - b.day);
+    const startMonth = sorted[0].month;
+    const startDay = sorted[0].day;
+    const maxDay = getDaysInMonth(year, startMonth);
+    const bindings = getBindings();
+
+    try {
+      for (let i = 0; i < clipboard.length; i++) {
+        const targetDay = startDay + i;
+        if (targetDay > maxDay) break;
+
+        const dateStr = formatDate(startMonth, targetDay);
+        const existing = yearFocus.get(dateStr);
+        const entry = clipboard[i];
+
+        const dayFocus: DayFocus = {
+          date: dateStr,
+          themeIds: entry.themeIds,
+          notes: existing?.notes ?? '',
+          text: entry.text,
+          okrIds: entry.okrIds,
+          tags: entry.tags,
+        };
+
+        await bindings.SaveDayFocus(dayFocus);
+        yearFocus.set(dateStr, dayFocus);
+      }
+
+      await verifyCalendarState();
+    } catch (e) {
+      error = 'Failed to paste: ' + extractError(e);
+    }
+  }
+
+  function handleViewClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.calendar-grid')) {
+      selectedCells = [];
+      anchorCell = null;
+    }
+  }
+
   function prevYear() {
     year = year - 1;
   }
@@ -315,7 +424,7 @@
   }
 </script>
 
-<div class="calendar-view">
+<div class="calendar-view" onkeydown={handleKeyDown} onclick={handleViewClick} tabindex="-1" role="application">
   <!-- Header -->
   <div class="calendar-header">
     <button class="nav-button" onclick={prevYear} aria-label="Previous year">
@@ -363,6 +472,7 @@
             <!-- Weekday abbreviation cell -->
             <div
               class="day-weekday"
+              class:today={cell.today}
               style="grid-row: {gridRow}; grid-column: {wdayCol}; {sundayBg}"
             >
               {cell.weekdayName}
@@ -382,8 +492,9 @@
             <!-- Text cell -->
             <button
               class="day-text"
-              class:today={cell.today}
+              class:selected={isCellSelected(cell.month, cell.day)}
               style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg} {textColor}"
+              onclick={(e: MouseEvent) => handleTextCellClick(cell.month, cell.day, e)}
               ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >
@@ -606,10 +717,16 @@
   }
 
   .day-num.today {
-    outline: 2px solid var(--color-primary-600);
+    outline: 2px solid var(--color-gray-400);
     outline-offset: -2px;
     font-weight: bold;
     color: var(--color-gray-800);
+  }
+
+  .day-weekday.today {
+    outline: 2px solid var(--color-gray-400);
+    outline-offset: -2px;
+    font-weight: bold;
   }
 
   /* Text cells */
@@ -633,7 +750,7 @@
     background-color: var(--color-gray-100);
   }
 
-  .day-text.today {
+  .day-text.selected {
     outline: 2px solid var(--color-primary-600);
     outline-offset: -2px;
   }
