@@ -69,7 +69,7 @@ export async function runTests() {
       await page.click('.nav-link:has-text("OKRs")')
       await page.waitForSelector('.okr-header', { timeout: 5000 })
 
-      // Create theme "E2E Flow" with emerald color
+      // Create theme "E2E Flow" with orange color
       await page.click('.btn-primary:has-text("+ Add Theme")')
       await page.waitForSelector('.theme-form', { timeout: 5000 })
       await page.fill('.theme-form input[type="text"]', 'E2E Flow')
@@ -155,14 +155,14 @@ export async function runTests() {
       await page.click('.dialog .btn-primary')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
-      // Verify at least one text cell now has the emerald theme color
+      // Verify at least one text cell now has the orange theme color
       // (theme coloring applies only to text cells, not day-num or weekday)
       await page.waitForFunction(() => {
         const cells = document.querySelectorAll('.day-text')
         return Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
+          return attr.includes('249, 115, 22') || bg.includes('249, 115, 22')
         })
       }, { timeout: 5000 })
 
@@ -340,7 +340,7 @@ export async function runTests() {
         return Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
+          return attr.includes('249, 115, 22') || bg.includes('249, 115, 22')
         })
       }, { timeout: 5000 })
 
@@ -420,13 +420,13 @@ export async function runTests() {
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
-      // Find and click the themed day text cell (has emerald color)
+      // Find and click the themed day text cell (has orange color)
       await page.waitForFunction(() => {
         const cells = document.querySelectorAll('.day-text')
         return Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
+          return attr.includes('249, 115, 22') || bg.includes('249, 115, 22')
         })
       }, { timeout: 5000 })
       await page.evaluate(() => {
@@ -434,7 +434,7 @@ export async function runTests() {
         const themed = Array.from(cells).find(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
+          return attr.includes('249, 115, 22') || bg.includes('249, 115, 22')
         })
         if (themed) themed.click()
       })
@@ -446,13 +446,13 @@ export async function runTests() {
       await page.click('.dialog .btn-primary')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
-      // Wait for calendar to re-render without emerald theme color
+      // Wait for calendar to re-render without orange theme color
       await page.waitForFunction(() => {
         const cells = document.querySelectorAll('.day-text')
         return !Array.from(cells).some(c => {
           const attr = c.getAttribute('style') || ''
           const bg = window.getComputedStyle(c).backgroundColor || ''
-          return attr.includes('16, 185, 129') || bg.includes('16, 185, 129')
+          return attr.includes('249, 115, 22') || bg.includes('249, 115, 22')
         })
       }, { timeout: 5000 })
 
