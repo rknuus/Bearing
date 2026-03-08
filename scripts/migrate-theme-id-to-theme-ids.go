@@ -31,7 +31,7 @@ func run() error {
 		return fmt.Errorf("cannot determine home directory: %w", err)
 	}
 
-	dataPath := filepath.Join(homeDir, ".bearing", "data")
+	dataPath := filepath.Join(homeDir, ".bearing")
 	calendarDir := filepath.Join(dataPath, "calendar")
 
 	// Check if calendar directory exists
