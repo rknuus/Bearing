@@ -207,6 +207,106 @@ describe('ThemeOKRTree', () => {
       expect(onOkrChange).toHaveBeenCalledWith([]);
     });
 
+    it('auto-selects parent objective and theme when checking a KR', async () => {
+      const onThemeChange = vi.fn();
+      const onOkrChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
+        onThemeSelectionChange: onThemeChange,
+        onOkrSelectionChange: onOkrChange,
+      }});
+      await tick();
+
+      const krCheckbox = container.querySelector<HTMLInputElement>('.tree-kr-item input[type="checkbox"]');
+      krCheckbox!.click();
+      await tick();
+
+      expect(onOkrChange).toHaveBeenCalledWith(['T1-O1-KR1', 'T1-O1']);
+      expect(onThemeChange).toHaveBeenCalledWith(['T1']);
+    });
+
+    it('auto-selects ancestor objectives and theme when checking a nested objective', async () => {
+      const onThemeChange = vi.fn();
+      const onOkrChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
+        onThemeSelectionChange: onThemeChange,
+        onOkrSelectionChange: onOkrChange,
+      }});
+      await tick();
+
+      // Find the Child Objective checkbox using direct child selector to skip KR checkboxes
+      const objCheckboxes = container.querySelectorAll<HTMLInputElement>('.tree-objective-item > .tree-item-header > .tree-checkbox-label > input[type="checkbox"]');
+      // First is Exercise (T1-O1), second is Child Objective (T1-O1-C1)
+      objCheckboxes[1]!.click();
+      await tick();
+
+      expect(onOkrChange).toHaveBeenCalledWith(['T1-O1-C1', 'T1-O1']);
+      expect(onThemeChange).toHaveBeenCalledWith(['T1']);
+    });
+
+    it('does not duplicate already-selected ancestors when checking a KR', async () => {
+      const onThemeChange = vi.fn();
+      const onOkrChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        selectedThemeIds: ['T1'],
+        selectedOkrIds: ['T1-O1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
+        onThemeSelectionChange: onThemeChange,
+        onOkrSelectionChange: onOkrChange,
+      }});
+      await tick();
+
+      const krCheckbox = container.querySelector<HTMLInputElement>('.tree-kr-item input[type="checkbox"]');
+      krCheckbox!.click();
+      await tick();
+
+      expect(onOkrChange).toHaveBeenCalledWith(['T1-O1', 'T1-O1-KR1']);
+      expect(onThemeChange).not.toHaveBeenCalled();
+    });
+
+    it('unchecking a KR leaves ancestors selected', async () => {
+      const onThemeChange = vi.fn();
+      const onOkrChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        selectedThemeIds: ['T1'],
+        selectedOkrIds: ['T1-O1', 'T1-O1-KR1'],
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
+        onThemeSelectionChange: onThemeChange,
+        onOkrSelectionChange: onOkrChange,
+      }});
+      await tick();
+
+      const krCheckbox = container.querySelector<HTMLInputElement>('.tree-kr-item input[type="checkbox"]');
+      krCheckbox!.click();
+      await tick();
+
+      expect(onOkrChange).toHaveBeenCalledWith(['T1-O1']);
+      expect(onThemeChange).not.toHaveBeenCalled();
+    });
+
+    it('checking a theme does not auto-select children', async () => {
+      const onThemeChange = vi.fn();
+      const onOkrChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        onThemeSelectionChange: onThemeChange,
+        onOkrSelectionChange: onOkrChange,
+      }});
+      await tick();
+
+      const themeCheckbox = container.querySelector<HTMLInputElement>('.tree-theme-item input[type="checkbox"]');
+      themeCheckbox!.click();
+      await tick();
+
+      expect(onThemeChange).toHaveBeenCalledWith(['T1']);
+      expect(onOkrChange).not.toHaveBeenCalled();
+    });
+
     it('renders recursive child objectives', async () => {
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,
