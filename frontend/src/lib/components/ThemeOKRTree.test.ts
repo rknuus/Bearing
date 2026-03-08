@@ -158,6 +158,61 @@ describe('ThemeOKRTree', () => {
       expect(names).not.toContain('Archived Goal');
     });
 
+    it('hides completed objectives', async () => {
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        initialSelectExpandedIds: ['T2'],
+      }});
+      await tick();
+
+      const names = Array.from(container.querySelectorAll('.tree-objective-item .tree-item-name'))
+        .map(el => el.textContent);
+      expect(names).not.toContain('Promotion');
+    });
+
+    it('hides completed key results', async () => {
+      const themes = makeThemes();
+      // Add a completed KR under an active objective
+      themes[0].objectives[0].keyResults.push({
+        id: 'T1-O1-KR2', parentId: 'T1-O1', description: 'Completed KR', status: 'completed',
+      });
+      render(ThemeOKRTree, { target: container, props: {
+        themes, mode: 'select' as const,
+        initialSelectExpandedIds: ['T1', 'T1-O1'],
+      }});
+      await tick();
+
+      const krNames = Array.from(container.querySelectorAll('.tree-kr-item .tree-item-name'))
+        .map(el => el.textContent);
+      expect(krNames).toContain('Run 3x/week');
+      expect(krNames).not.toContain('Completed KR');
+    });
+
+    it('excludes completed OKRs from collectOkrIds when unchecking theme', async () => {
+      const onThemeChange = vi.fn();
+      const onOkrChange = vi.fn();
+      render(ThemeOKRTree, { target: container, props: {
+        themes: makeThemes(), mode: 'select' as const,
+        selectedThemeIds: ['T2'],
+        selectedOkrIds: ['T2-O1'],
+        onThemeSelectionChange: onThemeChange,
+        onOkrSelectionChange: onOkrChange,
+      }});
+      await tick();
+
+      // Uncheck theme T2 — completed OKRs should not be in collectOkrIds,
+      // so selectedOkrIds should remain unchanged (T2-O1 is completed, not collected)
+      const themeCheckboxes = container.querySelectorAll<HTMLInputElement>('.tree-theme-item input[type="checkbox"]');
+      // T2 is the second theme
+      themeCheckboxes[1]!.click();
+      await tick();
+
+      expect(onThemeChange).toHaveBeenCalledWith([]);
+      // T2-O1 is completed so collectOkrIds won't include it — selectedOkrIds stays ['T2-O1']
+      // Since no OKR ids were removed, onOkrChange should not be called
+      expect(onOkrChange).not.toHaveBeenCalled();
+    });
+
     it('renders KR checkboxes under expanded theme', async () => {
       render(ThemeOKRTree, { target: container, props: {
         themes: makeThemes(), mode: 'select' as const,

@@ -80,10 +80,10 @@
     const ids: string[] = [];
     function walkObjectives(objectives: Objective[]) {
       for (const obj of objectives) {
-        if (obj.status === 'archived') continue;
+        if (!isActiveStatus(obj.status)) continue;
         ids.push(obj.id);
         for (const kr of obj.keyResults) {
-          if (kr.status !== 'archived') ids.push(kr.id);
+          if (isActiveStatus(kr.status)) ids.push(kr.id);
         }
         if (obj.objectives) walkObjectives(obj.objectives);
       }
@@ -197,7 +197,7 @@
         {#if selectExpandedIds.has(theme.id)}
           <div class="tree-children">
             {#each theme.objectives as objective (objective.id)}
-              {#if objective.status !== 'archived'}
+              {#if isActiveStatus(objective.status)}
                 {@render selectObjectiveNode(objective, theme.color, 0)}
               {/if}
             {/each}
@@ -228,8 +228,8 @@
 </div>
 
 {#snippet selectObjectiveNode(objective: Objective, themeColor: string, depth: number)}
-  {@const hasChildren = objective.keyResults.some(kr => kr.status !== 'archived') ||
-    (objective.objectives?.some(o => o.status !== 'archived') ?? false)}
+  {@const hasChildren = objective.keyResults.some(kr => isActiveStatus(kr.status)) ||
+    (objective.objectives?.some(o => isActiveStatus(o.status)) ?? false)}
   <div class="tree-objective-item" style="padding-left: {depth * 1.5}rem;">
     <div class="tree-item-header">
       {#if hasChildren}
@@ -258,13 +258,13 @@
     {#if hasChildren && selectExpandedIds.has(objective.id)}
       <div class="tree-children">
         {#each objective.keyResults as kr (kr.id)}
-          {#if kr.status !== 'archived'}
+          {#if isActiveStatus(kr.status)}
             {@render selectKeyResultNode(kr, themeColor, depth)}
           {/if}
         {/each}
         {#if objective.objectives}
           {#each objective.objectives as child (child.id)}
-            {#if child.status !== 'archived'}
+            {#if isActiveStatus(child.status)}
               {@render selectObjectiveNode(child, themeColor, depth + 1)}
             {/if}
           {/each}

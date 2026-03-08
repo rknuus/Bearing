@@ -351,7 +351,8 @@ export async function runTests() {
           await page.waitForSelector('.tree-kr-item', { timeout: 5000 })
 
           // Check a KR checkbox (should auto-select parent objective and theme)
-          const krCheckbox = await page.$('.tree-kr-item:has(.tree-item-name:has-text("Run 5K")) input[type="checkbox"]')
+          // Use an active KR — completed KRs are hidden in select mode
+          const krCheckbox = await page.$('.tree-kr-item:has(.tree-item-name:has-text("Exercise 4 times")) input[type="checkbox"]')
           if (krCheckbox) {
             await krCheckbox.click()
 
