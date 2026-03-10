@@ -62,6 +62,10 @@ type IPlanAccess interface {
 	LoadNavigationContext() (*NavigationContext, error)
 	SaveNavigationContext(ctx NavigationContext) error
 
+	// Vision
+	LoadVision() (*PersonalVision, error)
+	SaveVision(vision *PersonalVision) error
+
 	// Task Drafts
 	LoadTaskDrafts() (json.RawMessage, error)
 	SaveTaskDrafts(data json.RawMessage) error
@@ -1211,5 +1215,45 @@ func (pa *PlanAccess) SaveTaskDrafts(data json.RawMessage) error {
 	if err := os.WriteFile(pa.taskDraftsFilePath(), data, 0644); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTaskDrafts: %w", err)
 	}
+	return nil
+}
+
+// visionFilePath returns the path to the vision.json file.
+func (pa *PlanAccess) visionFilePath() string {
+	return filepath.Join(pa.dataPath, "vision.json")
+}
+
+// LoadVision retrieves the saved personal vision.
+// Returns an empty PersonalVision (not error) if the file doesn't exist.
+func (pa *PlanAccess) LoadVision() (*PersonalVision, error) {
+	filePath := pa.visionFilePath()
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &PersonalVision{}, nil
+		}
+		return nil, fmt.Errorf("PlanAccess.LoadVision: failed to read file: %w", err)
+	}
+
+	var vision PersonalVision
+	if err := json.Unmarshal(data, &vision); err != nil {
+		return nil, fmt.Errorf("PlanAccess.LoadVision: failed to parse file: %w", err)
+	}
+
+	return &vision, nil
+}
+
+// SaveVision persists the personal vision and commits via git.
+func (pa *PlanAccess) SaveVision(vision *PersonalVision) error {
+	filePath := pa.visionFilePath()
+	if err := writeJSON(filePath, vision); err != nil {
+		return fmt.Errorf("PlanAccess.SaveVision: %w", err)
+	}
+
+	if err := pa.commitFiles([]string{filePath}, "Update personal vision"); err != nil {
+		return fmt.Errorf("PlanAccess.SaveVision: %w", err)
+	}
+
 	return nil
 }

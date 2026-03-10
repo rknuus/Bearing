@@ -31,6 +31,7 @@ type NavigationContext struct {
 	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
 	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
 	FilterTagIDs      []string `json:"filterTagIds,omitempty"`
+	VisionCollapsed   *bool    `json:"visionCollapsed,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -48,7 +49,7 @@ type IPlanningManager interface {
 	DeleteObjective(objectiveId string) error
 
 	// Key Results — parentObjectiveId / keyResultId found by tree-walking
-	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error)
+	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int, krType string) (*access.KeyResult, error)
 	UpdateKeyResult(keyResultId, description string) error
 	UpdateKeyResultProgress(keyResultId string, currentValue int) error
 	DeleteKeyResult(keyResultId string) error
@@ -56,6 +57,10 @@ type IPlanningManager interface {
 	// OKR Status — set lifecycle status (active/completed/archived)
 	SetObjectiveStatus(objectiveId, status string) error
 	SetKeyResultStatus(keyResultId, status string) error
+
+	// Objective Closing Workflow
+	CloseObjective(objectiveId, closingStatus, closingNotes string) error
+	ReopenObjective(objectiveId string) error
 
 	// Calendar
 	GetYearFocus(year int) ([]access.DayFocus, error)
@@ -89,6 +94,18 @@ type IPlanningManager interface {
 	// Task Drafts
 	LoadTaskDrafts() (json.RawMessage, error)
 	SaveTaskDrafts(data json.RawMessage) error
+
+	// Routines — ongoing health metrics per theme
+	AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*access.Routine, error)
+	UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error
+	DeleteRoutine(routineId string) error
+
+	// Vision
+	GetPersonalVision() (*access.PersonalVision, error)
+	SavePersonalVision(mission, vision string) error
+
+	// Progress Rollup
+	GetAllThemeProgress() ([]ThemeProgress, error)
 }
 
 // MoveTaskResult contains the result of a MoveTask operation,
@@ -111,6 +128,19 @@ type PromotedTask struct {
 	Title       string `json:"title"`
 	OldPriority string `json:"oldPriority"`
 	NewPriority string `json:"newPriority"`
+}
+
+// ObjectiveProgress represents the computed progress of an objective.
+type ObjectiveProgress struct {
+	ObjectiveID string  `json:"objectiveId"`
+	Progress    float64 `json:"progress"` // 0-100, or -1 if no data
+}
+
+// ThemeProgress represents computed progress for a theme and its objectives.
+type ThemeProgress struct {
+	ThemeID    string              `json:"themeId"`
+	Progress   float64             `json:"progress"` // 0-100, average of objective progresses
+	Objectives []ObjectiveProgress `json:"objectives"`
 }
 
 // PlanningManager implements IPlanningManager with business logic.
@@ -413,12 +443,22 @@ func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 
 // CreateKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
-func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error) {
+// krType must be "" (defaults to metric), "metric", or "binary".
+// When type is "binary", startValue and targetValue are forced to 0 and 1.
+func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int, krType string) (*access.KeyResult, error) {
 	if parentObjectiveId == "" {
 		return nil, fmt.Errorf("parentObjectiveId cannot be empty")
 	}
 	if description == "" {
 		return nil, fmt.Errorf("description cannot be empty")
+	}
+	if !access.IsValidKRType(krType) {
+		return nil, fmt.Errorf("invalid key result type: %s", krType)
+	}
+
+	if krType == access.KRTypeBinary {
+		startValue = 0
+		targetValue = 1
 	}
 
 	themes, err := m.planAccess.GetThemes()
@@ -430,7 +470,7 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, parentObjectiveId); obj != nil {
 			targetTheme = &themes[i]
-			obj.KeyResults = append(obj.KeyResults, access.KeyResult{Description: description, StartValue: startValue, TargetValue: targetValue})
+			obj.KeyResults = append(obj.KeyResults, access.KeyResult{Description: description, Type: krType, StartValue: startValue, TargetValue: targetValue})
 			break
 		}
 	}
@@ -535,6 +575,143 @@ func (m *PlanningManager) DeleteKeyResult(keyResultId string) error {
 	}
 
 	return fmt.Errorf("key result with ID %s not found", keyResultId)
+}
+
+// getMaxRoutineNum returns the highest routine number in a theme's routines.
+func getMaxRoutineNum(theme access.LifeTheme) int {
+	max := 0
+	prefix := theme.ID + "-R"
+	for _, routine := range theme.Routines {
+		if strings.HasPrefix(routine.ID, prefix) {
+			var n int
+			if _, err := fmt.Sscanf(routine.ID, theme.ID+"-R%d", &n); err == nil && n > max {
+				max = n
+			}
+		}
+	}
+	return max
+}
+
+// findThemeForRoutine finds the theme containing the routine with the given ID.
+// Routine IDs are prefixed with the theme ID, e.g. "HF-R1".
+func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.LifeTheme, int) {
+	for i := range themes {
+		for j := range themes[i].Routines {
+			if themes[i].Routines[j].ID == routineId {
+				return &themes[i], j
+			}
+		}
+	}
+	return nil, -1
+}
+
+// AddRoutine creates a new routine under the specified theme.
+func (m *PlanningManager) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*access.Routine, error) {
+	if themeId == "" {
+		return nil, fmt.Errorf("themeId cannot be empty")
+	}
+	if strings.TrimSpace(description) == "" {
+		return nil, fmt.Errorf("description cannot be empty")
+	}
+	if !access.IsValidRoutineTargetType(targetType) {
+		return nil, fmt.Errorf("invalid target type: %s", targetType)
+	}
+	if targetValue <= 0 {
+		return nil, fmt.Errorf("targetValue must be positive")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	var targetTheme *access.LifeTheme
+	for i := range themes {
+		if themes[i].ID == themeId {
+			targetTheme = &themes[i]
+			break
+		}
+	}
+	if targetTheme == nil {
+		return nil, fmt.Errorf("theme with ID %s not found", themeId)
+	}
+
+	maxNum := getMaxRoutineNum(*targetTheme)
+	routine := access.Routine{
+		ID:          fmt.Sprintf("%s-R%d", themeId, maxNum+1),
+		Description: strings.TrimSpace(description),
+		TargetValue: targetValue,
+		TargetType:  targetType,
+		Unit:        strings.TrimSpace(unit),
+	}
+	targetTheme.Routines = append(targetTheme.Routines, routine)
+
+	if err := m.planAccess.SaveTheme(*targetTheme); err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
+	return &routine, nil
+}
+
+// UpdateRoutine updates all fields of an existing routine.
+func (m *PlanningManager) UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error {
+	if routineId == "" {
+		return fmt.Errorf("routineId cannot be empty")
+	}
+	if strings.TrimSpace(description) == "" {
+		return fmt.Errorf("description cannot be empty")
+	}
+	if !access.IsValidRoutineTargetType(targetType) {
+		return fmt.Errorf("invalid target type: %s", targetType)
+	}
+	if targetValue <= 0 {
+		return fmt.Errorf("targetValue must be positive")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	theme, idx := findThemeForRoutine(themes, routineId)
+	if theme == nil {
+		return fmt.Errorf("routine with ID %s not found", routineId)
+	}
+
+	theme.Routines[idx].Description = strings.TrimSpace(description)
+	theme.Routines[idx].CurrentValue = currentValue
+	theme.Routines[idx].TargetValue = targetValue
+	theme.Routines[idx].TargetType = targetType
+	theme.Routines[idx].Unit = strings.TrimSpace(unit)
+
+	if err := m.planAccess.SaveTheme(*theme); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
+}
+
+// DeleteRoutine removes a routine by ID.
+func (m *PlanningManager) DeleteRoutine(routineId string) error {
+	if routineId == "" {
+		return fmt.Errorf("routineId cannot be empty")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	theme, idx := findThemeForRoutine(themes, routineId)
+	if theme == nil {
+		return fmt.Errorf("routine with ID %s not found", routineId)
+	}
+
+	theme.Routines = append(theme.Routines[:idx], theme.Routines[idx+1:]...)
+
+	if err := m.planAccess.SaveTheme(*theme); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	return nil
 }
 
 // validateOKRStatusTransition checks whether a status transition is allowed.
@@ -644,6 +821,91 @@ func (m *PlanningManager) SetKeyResultStatus(keyResultId, status string) error {
 	}
 
 	return fmt.Errorf("key result with ID %s not found", keyResultId)
+}
+
+// CloseObjective performs a structured close of an objective with a closing status and optional notes.
+// Unlike SetObjectiveStatus, this method actively closes all active child KRs as part of the operation.
+func (m *PlanningManager) CloseObjective(objectiveId, closingStatus, closingNotes string) error {
+	if objectiveId == "" {
+		return fmt.Errorf("objectiveId cannot be empty")
+	}
+	if !access.IsValidClosingStatus(closingStatus) {
+		return fmt.Errorf("invalid closing status %q", closingStatus)
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	for i := range themes {
+		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
+			// Must be active to close
+			if access.EffectiveOKRStatus(obj.Status) != string(access.OKRStatusActive) {
+				return fmt.Errorf("cannot close: objective is not active (current status: %s)", access.EffectiveOKRStatus(obj.Status))
+			}
+
+			obj.Status = string(access.OKRStatusCompleted)
+			obj.ClosingStatus = closingStatus
+			obj.ClosingNotes = closingNotes
+			obj.ClosedAt = time.Now().UTC().Format(time.RFC3339)
+
+			// Close all active direct child KRs
+			for j := range obj.KeyResults {
+				if access.EffectiveOKRStatus(obj.KeyResults[j].Status) == string(access.OKRStatusActive) {
+					obj.KeyResults[j].Status = string(access.OKRStatusCompleted)
+				}
+			}
+
+			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("objective with ID %s not found", objectiveId)
+}
+
+// ReopenObjective reopens a closed/completed objective, clearing all closing metadata.
+// Also reopens all direct child KRs that were completed.
+func (m *PlanningManager) ReopenObjective(objectiveId string) error {
+	if objectiveId == "" {
+		return fmt.Errorf("objectiveId cannot be empty")
+	}
+
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	for i := range themes {
+		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
+			// Must be completed to reopen
+			if access.EffectiveOKRStatus(obj.Status) != string(access.OKRStatusCompleted) {
+				return fmt.Errorf("cannot reopen: objective is not completed (current status: %s)", access.EffectiveOKRStatus(obj.Status))
+			}
+
+			obj.Status = ""
+			obj.ClosingStatus = ""
+			obj.ClosingNotes = ""
+			obj.ClosedAt = ""
+
+			// Reopen all completed direct child KRs
+			for j := range obj.KeyResults {
+				if obj.KeyResults[j].Status == string(access.OKRStatusCompleted) {
+					obj.KeyResults[j].Status = ""
+				}
+			}
+
+			if err := m.planAccess.SaveTheme(themes[i]); err != nil {
+				return fmt.Errorf("%w", err)
+			}
+			return nil
+		}
+	}
+
+	return fmt.Errorf("objective with ID %s not found", objectiveId)
 }
 
 // GetYearFocus returns all day focus entries for a specific year.
@@ -1552,6 +1814,7 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		ShowArchivedTasks: ctx.ShowArchivedTasks,
 		ExpandedOkrIds:    ctx.ExpandedOkrIds,
 		FilterTagIDs:      ctx.FilterTagIDs,
+		VisionCollapsed:   ctx.VisionCollapsed,
 	}, nil
 }
 
@@ -1567,6 +1830,7 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		ShowArchivedTasks: ctx.ShowArchivedTasks,
 		ExpandedOkrIds:    ctx.ExpandedOkrIds,
 		FilterTagIDs:      ctx.FilterTagIDs,
+		VisionCollapsed:   ctx.VisionCollapsed,
 	}
 
 	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {
@@ -1585,4 +1849,140 @@ func (m *PlanningManager) LoadTaskDrafts() (json.RawMessage, error) {
 // SaveTaskDrafts persists task drafts.
 func (m *PlanningManager) SaveTaskDrafts(data json.RawMessage) error {
 	return m.planAccess.SaveTaskDrafts(data)
+}
+
+// GetPersonalVision retrieves the saved personal vision.
+func (m *PlanningManager) GetPersonalVision() (*access.PersonalVision, error) {
+	return m.planAccess.LoadVision()
+}
+
+// SavePersonalVision saves the personal mission and vision statements.
+func (m *PlanningManager) SavePersonalVision(mission, vision string) error {
+	v := &access.PersonalVision{
+		Mission:   mission,
+		Vision:    vision,
+		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+	}
+	return m.planAccess.SaveVision(v)
+}
+
+// computeKRProgress computes the progress percentage of a single key result.
+// Returns -1 if the KR is untracked (targetValue == 0).
+func computeKRProgress(kr access.KeyResult) float64 {
+	if kr.TargetValue == 0 {
+		return -1
+	}
+	rangeVal := float64(kr.TargetValue - kr.StartValue)
+	if rangeVal == 0 {
+		return 0
+	}
+	progress := float64(kr.CurrentValue-kr.StartValue) / rangeVal * 100
+	if progress < 0 {
+		return 0
+	}
+	if progress > 100 {
+		return 100
+	}
+	return progress
+}
+
+// isActiveOKRStatus returns true if the status is active (empty or "active").
+func isActiveOKRStatus(status string) bool {
+	return status == "" || status == "active"
+}
+
+// computeObjectiveProgress recursively computes progress for an objective
+// and collects all nested objective progress entries.
+func computeObjectiveProgress(obj access.Objective) (float64, []ObjectiveProgress) {
+	var allObjProgress []ObjectiveProgress
+	var progressValues []float64
+
+	// Collect progress from active, tracked KRs
+	for _, kr := range obj.KeyResults {
+		if !isActiveOKRStatus(kr.Status) {
+			continue
+		}
+		p := computeKRProgress(kr)
+		if p >= 0 {
+			progressValues = append(progressValues, p)
+		}
+	}
+
+	// Collect progress from active child objectives
+	for _, child := range obj.Objectives {
+		if !isActiveOKRStatus(child.Status) {
+			continue
+		}
+		childProgress, childObjProgress := computeObjectiveProgress(child)
+		allObjProgress = append(allObjProgress, childObjProgress...)
+		if childProgress >= 0 {
+			progressValues = append(progressValues, childProgress)
+		}
+	}
+
+	var progress float64
+	if len(progressValues) == 0 {
+		progress = -1
+	} else {
+		var sum float64
+		for _, v := range progressValues {
+			sum += v
+		}
+		progress = sum / float64(len(progressValues))
+	}
+
+	allObjProgress = append(allObjProgress, ObjectiveProgress{
+		ObjectiveID: obj.ID,
+		Progress:    progress,
+	})
+
+	return progress, allObjProgress
+}
+
+// GetAllThemeProgress computes progress for all themes and their objectives.
+func (m *PlanningManager) GetAllThemeProgress() ([]ThemeProgress, error) {
+	themes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]ThemeProgress, 0, len(themes))
+	for _, theme := range themes {
+		var themeObjProgress []ObjectiveProgress
+		var topLevelProgressValues []float64
+
+		for _, obj := range theme.Objectives {
+			if !isActiveOKRStatus(obj.Status) {
+				continue
+			}
+			objProgress, nested := computeObjectiveProgress(obj)
+			themeObjProgress = append(themeObjProgress, nested...)
+			if objProgress >= 0 {
+				topLevelProgressValues = append(topLevelProgressValues, objProgress)
+			}
+		}
+
+		var themeProgress float64
+		if len(topLevelProgressValues) == 0 {
+			themeProgress = -1
+		} else {
+			var sum float64
+			for _, v := range topLevelProgressValues {
+				sum += v
+			}
+			themeProgress = sum / float64(len(topLevelProgressValues))
+		}
+
+		if themeObjProgress == nil {
+			themeObjProgress = []ObjectiveProgress{}
+		}
+
+		result = append(result, ThemeProgress{
+			ThemeID:    theme.ID,
+			Progress:   themeProgress,
+			Objectives: themeObjProgress,
+		})
+	}
+
+	return result, nil
 }

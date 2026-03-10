@@ -13,6 +13,7 @@ export interface KeyResult {
   id: string;
   parentId?: string;
   description: string;
+  type?: string;
   status?: string;
   startValue?: number;
   currentValue?: number;
@@ -25,8 +26,20 @@ export interface Objective {
   title: string;
   status?: string;
   tags?: string[];
+  closingStatus?: string;
+  closingNotes?: string;
+  closedAt?: string;
   keyResults: KeyResult[];
   objectives?: Objective[];
+}
+
+export interface Routine {
+  id: string;
+  description: string;
+  currentValue: number;
+  targetValue: number;
+  targetType: string; // "at-or-above" | "at-or-below"
+  unit?: string;
 }
 
 export interface LifeTheme {
@@ -34,6 +47,7 @@ export interface LifeTheme {
   name: string;
   color: string;
   objectives: Objective[];
+  routines?: Routine[];
 }
 
 export interface DayFocus {
@@ -104,6 +118,23 @@ export interface PromotedTask {
   newPriority: string;
 }
 
+export interface ObjectiveProgress {
+  objectiveId: string;
+  progress: number;
+}
+
+export interface ThemeProgress {
+  themeId: string;
+  progress: number;
+  objectives: ObjectiveProgress[];
+}
+
+export interface PersonalVision {
+  mission: string;
+  vision: string;
+  updatedAt?: string;
+}
+
 export interface NavigationContext {
   currentView: string;
   currentItem: string;
@@ -121,6 +152,7 @@ export interface NavigationContext {
   collapsedColumns?: string[];
   calendarDayEditorDate?: string;
   calendarDayEditorExpandedIds?: string[];
+  visionCollapsed?: boolean;
 }
 
 // Type declarations for extended Window properties
@@ -325,6 +357,10 @@ let mockThemes: LifeTheme[] = [
         objectives: [],
       },
     ],
+    routines: [
+      { id: 'HF-R1', description: 'Exercise sessions per week', currentValue: 3, targetValue: 3, targetType: 'at-or-above', unit: 'times/week' },
+      { id: 'HF-R2', description: 'Body weight', currentValue: 82, targetValue: 80, targetType: 'at-or-below', unit: 'kg' },
+    ],
   },
   {
     id: 'CG',
@@ -339,6 +375,7 @@ let mockThemes: LifeTheme[] = [
         keyResults: [
           { id: 'CG-KR1', parentId: 'CG-O1', description: 'Lead 2 major projects', startValue: 0, currentValue: 1, targetValue: 2 },
           { id: 'CG-KR2', parentId: 'CG-O1', description: 'Mentor 1 junior developer' },  // untracked KR (no target)
+          { id: 'CG-KR3', parentId: 'CG-O1', description: 'Complete leadership course', type: 'binary', startValue: 0, currentValue: 0, targetValue: 1 },
         ],
         objectives: [],
       },
@@ -362,6 +399,9 @@ let mockTasks: TaskWithStatus[] = [
 
 // Mock task drafts storage
 let mockTaskDrafts = '{}';
+
+// Mock personal vision storage
+let mockPersonalVision: PersonalVision = { mission: '', vision: '' };
 
 // Mock navigation context storage
 let mockNavigationContext: NavigationContext = {
@@ -536,10 +576,19 @@ export const mockAppBindings = {
   },
 
   // Key Result operations
-  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 1): Promise<KeyResult> => {
+  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 1, krType: string = ''): Promise<KeyResult> => {
     const objective = findObjectiveById(mockThemes, parentObjectiveId);
     if (!objective) {
       throw new Error(`Objective ${parentObjectiveId} not found`);
+    }
+
+    if (krType !== '' && krType !== 'metric' && krType !== 'binary') {
+      throw new Error(`invalid key result type: ${krType}`);
+    }
+
+    if (krType === 'binary') {
+      startValue = 0;
+      targetValue = 1;
     }
 
     const theme = findThemeForObjective(mockThemes, parentObjectiveId);
@@ -550,6 +599,7 @@ export const mockAppBindings = {
       id: `${theme.id}-KR${maxNum + 1}`,
       parentId: parentObjectiveId,
       description,
+      type: krType || undefined,
       startValue,
       currentValue: 0,
       targetValue,
@@ -623,6 +673,52 @@ export const mockAppBindings = {
       throw new Error('cannot archive an active item; complete it first');
     }
     kr.status = status;
+  },
+
+  CloseObjective: async (objectiveId: string, closingStatus: string, closingNotes: string): Promise<void> => {
+    const obj = findObjectiveById(mockThemes, objectiveId);
+    if (!obj) {
+      throw new Error(`Objective ${objectiveId} not found`);
+    }
+    const current = obj.status || 'active';
+    if (current !== 'active') {
+      throw new Error(`cannot close: objective is not active (current status: ${current})`);
+    }
+    const validStatuses = ['achieved', 'partially-achieved', 'missed', 'postponed', 'canceled'];
+    if (!validStatuses.includes(closingStatus)) {
+      throw new Error(`invalid closing status "${closingStatus}"`);
+    }
+    obj.status = 'completed';
+    obj.closingStatus = closingStatus;
+    obj.closingNotes = closingNotes || undefined;
+    obj.closedAt = new Date().toISOString();
+    // Close all active direct child KRs
+    for (const kr of obj.keyResults) {
+      if ((kr.status || 'active') === 'active') {
+        kr.status = 'completed';
+      }
+    }
+  },
+
+  ReopenObjective: async (objectiveId: string): Promise<void> => {
+    const obj = findObjectiveById(mockThemes, objectiveId);
+    if (!obj) {
+      throw new Error(`Objective ${objectiveId} not found`);
+    }
+    const current = obj.status || 'active';
+    if (current !== 'completed') {
+      throw new Error(`cannot reopen: objective is not completed (current status: ${current})`);
+    }
+    obj.status = undefined;
+    obj.closingStatus = undefined;
+    obj.closingNotes = undefined;
+    obj.closedAt = undefined;
+    // Reopen all completed direct child KRs
+    for (const kr of obj.keyResults) {
+      if (kr.status === 'completed') {
+        kr.status = undefined;
+      }
+    }
   },
 
   // Calendar operations
@@ -925,6 +1021,118 @@ export const mockAppBindings = {
   LogFrontend(level: string, message: string, source: string) {
     const fn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
     fn(`[${level}] ${message} (${source})`);
+  },
+
+  // Personal vision
+  GetPersonalVision: async (): Promise<PersonalVision> => {
+    return { ...mockPersonalVision };
+  },
+
+  SavePersonalVision: async (mission: string, vision: string): Promise<void> => {
+    mockPersonalVision = { mission, vision, updatedAt: new Date().toISOString() };
+  },
+
+  // Progress rollup
+  GetAllThemeProgress: async (): Promise<ThemeProgress[]> => {
+    function isActive(status: string | undefined): boolean {
+      return !status || status === 'active';
+    }
+    function krProgress(kr: KeyResult): number {
+      if (!kr.targetValue) return -1;
+      const range = (kr.targetValue ?? 0) - (kr.startValue ?? 0);
+      if (range === 0) return 0;
+      const p = ((kr.currentValue ?? 0) - (kr.startValue ?? 0)) / range * 100;
+      return Math.max(0, Math.min(100, p));
+    }
+    function computeObjProgress(obj: Objective): { progress: number; all: ObjectiveProgress[] } {
+      const all: ObjectiveProgress[] = [];
+      const values: number[] = [];
+      for (const kr of obj.keyResults) {
+        if (!isActive(kr.status)) continue;
+        const p = krProgress(kr);
+        if (p >= 0) values.push(p);
+      }
+      for (const child of (obj.objectives ?? [])) {
+        if (!isActive(child.status)) continue;
+        const r = computeObjProgress(child);
+        all.push(...r.all);
+        if (r.progress >= 0) values.push(r.progress);
+      }
+      const progress = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : -1;
+      all.push({ objectiveId: obj.id, progress });
+      return { progress, all };
+    }
+
+    const result: ThemeProgress[] = [];
+    for (const theme of mockThemes) {
+      const objectives: ObjectiveProgress[] = [];
+      const topValues: number[] = [];
+      for (const obj of theme.objectives) {
+        if (!isActive(obj.status)) continue;
+        const r = computeObjProgress(obj);
+        objectives.push(...r.all);
+        if (r.progress >= 0) topValues.push(r.progress);
+      }
+      const progress = topValues.length > 0 ? topValues.reduce((a, b) => a + b, 0) / topValues.length : -1;
+      result.push({ themeId: theme.id, progress, objectives });
+    }
+    return result;
+  },
+
+  // Routine operations
+  AddRoutine: async (themeId: string, description: string, targetValue: number, targetType: string, unit: string): Promise<Routine> => {
+    const theme = mockThemes.find(t => t.id === themeId);
+    if (!theme) throw new Error(`Theme ${themeId} not found`);
+    if (!description.trim()) throw new Error('description cannot be empty');
+    if (targetType !== 'at-or-above' && targetType !== 'at-or-below') throw new Error(`invalid target type: ${targetType}`);
+    if (targetValue <= 0) throw new Error('targetValue must be positive');
+
+    if (!theme.routines) theme.routines = [];
+    let maxNum = 0;
+    const re = new RegExp(`^${themeId}-R(\\d+)$`);
+    for (const routine of theme.routines) {
+      const match = routine.id.match(re);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
+    }
+    const newRoutine: Routine = {
+      id: `${themeId}-R${maxNum + 1}`,
+      description: description.trim(),
+      currentValue: 0,
+      targetValue,
+      targetType,
+      unit: unit?.trim() || undefined,
+    };
+    theme.routines.push(newRoutine);
+    return newRoutine;
+  },
+
+  UpdateRoutine: async (routineId: string, description: string, currentValue: number, targetValue: number, targetType: string, unit: string): Promise<void> => {
+    for (const theme of mockThemes) {
+      const idx = (theme.routines ?? []).findIndex(k => k.id === routineId);
+      if (idx >= 0) {
+        theme.routines![idx] = {
+          ...theme.routines![idx],
+          description: description.trim(),
+          currentValue,
+          targetValue,
+          targetType,
+          unit: unit?.trim() || undefined,
+        };
+        return;
+      }
+    }
+    throw new Error(`Routine ${routineId} not found`);
+  },
+
+  DeleteRoutine: async (routineId: string): Promise<void> => {
+    for (const theme of mockThemes) {
+      const idx = (theme.routines ?? []).findIndex(k => k.id === routineId);
+      if (idx >= 0) {
+        theme.routines!.splice(idx, 1);
+        return;
+      }
+    }
+    throw new Error(`Routine ${routineId} not found`);
   },
 };
 

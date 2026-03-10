@@ -424,6 +424,7 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="calendar-view" onkeydown={handleKeyDown} onclick={handleViewClick} tabindex="-1" role="application">
   <!-- Header -->
   <div class="calendar-header">

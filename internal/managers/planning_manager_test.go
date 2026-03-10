@@ -17,6 +17,7 @@ type mockPlanAccess struct {
 	taskOrder   map[string][]string                 // drop zone ID -> ordered task IDs
 	nextTaskNum int                                 // counter for unique task ID generation
 	boardConfig *access.BoardConfiguration          // custom board config (nil = default)
+	vision      *access.PersonalVision              // personal vision storage
 }
 
 func newMockPlanAccess() *mockPlanAccess {
@@ -278,6 +279,18 @@ func (m *mockPlanAccess) SaveNavigationContext(ctx access.NavigationContext) err
 	return nil
 }
 
+func (m *mockPlanAccess) LoadVision() (*access.PersonalVision, error) {
+	if m.vision == nil {
+		return &access.PersonalVision{}, nil
+	}
+	return m.vision, nil
+}
+
+func (m *mockPlanAccess) SaveVision(vision *access.PersonalVision) error {
+	m.vision = vision
+	return nil
+}
+
 func (m *mockPlanAccess) LoadTaskDrafts() (json.RawMessage, error) {
 	return nil, nil
 }
@@ -329,6 +342,21 @@ func (m *mockPlanAccess) CommitFiles(paths []string, message string) error {
 }
 
 func (m *mockPlanAccess) CommitAll(message string) error {
+	return nil
+}
+
+// findKeyResultByID walks the objective tree and returns a pointer to the key result with the given ID.
+func findKeyResultByID(objectives []access.Objective, id string) *access.KeyResult {
+	for i := range objectives {
+		for j := range objectives[i].KeyResults {
+			if objectives[i].KeyResults[j].ID == id {
+				return &objectives[i].KeyResults[j]
+			}
+		}
+		if found := findKeyResultByID(objectives[i].Objectives, id); found != nil {
+			return found
+		}
+	}
 	return nil
 }
 
@@ -386,7 +414,7 @@ func TestUpdateTheme(t *testing.T) {
 
 		// Create objective with KR (start=0, target=12)
 		obj, _ := manager.CreateObjective("T", "Read More")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12, "")
 
 		// Set progress to 5
 		err := manager.UpdateKeyResultProgress(kr.ID, 5)
@@ -437,7 +465,7 @@ func TestUpdateTheme(t *testing.T) {
 		// Build nested structure: theme -> obj1 -> obj2 -> kr
 		obj1, _ := manager.CreateObjective("T", "Level 1")
 		obj2, _ := manager.CreateObjective(obj1.ID, "Level 2")
-		kr, _ := manager.CreateKeyResult(obj2.ID, "Deep KR", 1, 10)
+		kr, _ := manager.CreateKeyResult(obj2.ID, "Deep KR", 1, 10, "")
 
 		// Update theme name only
 		themes, _ := manager.GetThemes()
@@ -796,7 +824,7 @@ func TestDeleteObjective(t *testing.T) {
 		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
 		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
-		_, _ = manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0)
+		_, _ = manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0, "")
 
 		// Delete the middle objective (Level 2) -- Level 3 and its KR should be gone too
 		err := manager.DeleteObjective(l2.ID)
@@ -875,7 +903,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0)
+		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0, "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -892,7 +920,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12, "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -910,7 +938,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, err := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
+		kr, err := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0, "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -927,7 +955,7 @@ func TestCreateKeyResult(t *testing.T) {
 		_, _ = manager.CreateObjective(parent.ID, "Child")
 
 		// Add KR to the parent (intermediate node with children)
-		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0)
+		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0, "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -953,7 +981,7 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateKeyResult("", "Description", 0, 0)
+		_, err := manager.CreateKeyResult("", "Description", 0, 0, "")
 		if err == nil {
 			t.Fatal("expected error for empty parentObjectiveId")
 		}
@@ -963,9 +991,80 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0)
+		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0, "")
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
+		}
+	})
+
+	t.Run("creates binary key result with forced start=0 target=1", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, err := manager.CreateKeyResult(obj.ID, "Complete course", 5, 10, "binary")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.Type != "binary" {
+			t.Errorf("expected type 'binary', got '%s'", kr.Type)
+		}
+		if kr.StartValue != 0 {
+			t.Errorf("expected startValue 0 for binary KR, got %d", kr.StartValue)
+		}
+		if kr.TargetValue != 1 {
+			t.Errorf("expected targetValue 1 for binary KR, got %d", kr.TargetValue)
+		}
+	})
+
+	t.Run("creates metric key result preserving provided values", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 2, 14, "metric")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.Type != "metric" {
+			t.Errorf("expected type 'metric', got '%s'", kr.Type)
+		}
+		if kr.StartValue != 2 {
+			t.Errorf("expected startValue 2, got %d", kr.StartValue)
+		}
+		if kr.TargetValue != 14 {
+			t.Errorf("expected targetValue 14, got %d", kr.TargetValue)
+		}
+	})
+
+	t.Run("creates key result with empty type defaults to metric behavior", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12, "")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if kr.Type != "" {
+			t.Errorf("expected empty type, got '%s'", kr.Type)
+		}
+		if kr.StartValue != 0 {
+			t.Errorf("expected startValue 0, got %d", kr.StartValue)
+		}
+		if kr.TargetValue != 12 {
+			t.Errorf("expected targetValue 12, got %d", kr.TargetValue)
+		}
+	})
+
+	t.Run("returns error for invalid type", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		_, err := manager.CreateKeyResult(obj.ID, "Invalid", 0, 10, "unknown")
+		if err == nil {
+			t.Fatal("expected error for invalid type")
 		}
 	})
 }
@@ -976,7 +1075,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0)
+		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0, "")
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated")
 		if err != nil {
@@ -996,7 +1095,7 @@ func TestUpdateKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Original", 0, 0)
+		kr, _ := manager.CreateKeyResult(child.ID, "Original", 0, 0, "")
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated Nested")
 		if err != nil {
@@ -1037,7 +1136,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0)
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0, "")
 
 		err := manager.UpdateKeyResultProgress(kr.ID, 5)
 		if err != nil {
@@ -1057,7 +1156,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0, "")
 
 		err := manager.UpdateKeyResultProgress(kr.ID, 10)
 		if err != nil {
@@ -1098,7 +1197,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0)
+		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0, "")
 
 		err := manager.DeleteKeyResult(kr.ID)
 		if err != nil {
@@ -1118,7 +1217,7 @@ func TestDeleteKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0, "")
 
 		err := manager.DeleteKeyResult(kr.ID)
 		if err != nil {
@@ -1163,7 +1262,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
 
 		err := manager.SetKeyResultStatus(kr.ID, "completed")
 		if err != nil {
@@ -1182,7 +1281,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
@@ -1202,7 +1301,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "active")
@@ -1222,7 +1321,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr.ID, "archived")
 
@@ -1243,7 +1342,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
 		if err == nil {
@@ -1256,7 +1355,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
 
 		err := manager.SetKeyResultStatus(kr.ID, "invalid")
 		if err == nil {
@@ -1291,8 +1390,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10, "")
 
 		// Complete both KRs
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
@@ -1316,8 +1415,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10, "")
 
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
@@ -1334,7 +1433,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
+		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10, "")
 
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err == nil {
@@ -1449,6 +1548,268 @@ func TestSetObjectiveStatus(t *testing.T) {
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err != nil {
 			t.Fatalf("expected no error for empty objective, got %v", err)
+		}
+	})
+}
+
+// =============================================================================
+// Routine CRUD Tests
+// =============================================================================
+
+func TestAddRoutine(t *testing.T) {
+	t.Run("creates routine with correct ID", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		routine, err := manager.AddRoutine("T", "Exercise sessions per week", 3, "at-or-above", "times/week")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if routine.ID != "T-R1" {
+			t.Errorf("expected ID 'T-R1', got '%s'", routine.ID)
+		}
+		if routine.Description != "Exercise sessions per week" {
+			t.Errorf("expected description 'Exercise sessions per week', got '%s'", routine.Description)
+		}
+		if routine.TargetValue != 3 {
+			t.Errorf("expected targetValue 3, got %d", routine.TargetValue)
+		}
+		if routine.TargetType != "at-or-above" {
+			t.Errorf("expected targetType 'at-or-above', got '%s'", routine.TargetType)
+		}
+		if routine.Unit != "times/week" {
+			t.Errorf("expected unit 'times/week', got '%s'", routine.Unit)
+		}
+		if routine.CurrentValue != 0 {
+			t.Errorf("expected currentValue 0, got %d", routine.CurrentValue)
+		}
+	})
+
+	t.Run("auto-increments routine ID", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		r1, _ := manager.AddRoutine("T", "Routine one", 1, "at-or-above", "")
+		r2, _ := manager.AddRoutine("T", "Routine two", 2, "at-or-below", "kg")
+		if r1.ID != "T-R1" {
+			t.Errorf("expected T-R1, got %s", r1.ID)
+		}
+		if r2.ID != "T-R2" {
+			t.Errorf("expected T-R2, got %s", r2.ID)
+		}
+	})
+
+	t.Run("returns error for empty description", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("T", "", 3, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for empty description")
+		}
+	})
+
+	t.Run("returns error for whitespace-only description", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("T", "   ", 3, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for whitespace-only description")
+		}
+	})
+
+	t.Run("returns error for invalid targetType", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("T", "Test", 3, "invalid-type", "")
+		if err == nil {
+			t.Fatal("expected error for invalid targetType")
+		}
+	})
+
+	t.Run("returns error for zero targetValue", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("T", "Test", 0, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for zero targetValue")
+		}
+	})
+
+	t.Run("returns error for negative targetValue", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("T", "Test", -1, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for negative targetValue")
+		}
+	})
+
+	t.Run("returns error for non-existent theme", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("NONEXISTENT", "Test", 3, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for non-existent theme")
+		}
+	})
+
+	t.Run("returns error for empty themeId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		_, err := manager.AddRoutine("", "Test", 3, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for empty themeId")
+		}
+	})
+}
+
+func TestUpdateRoutine(t *testing.T) {
+	t.Run("updates all routine fields", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		routine, _ := manager.AddRoutine("T", "Original", 5, "at-or-above", "kg")
+		err := manager.UpdateRoutine(routine.ID, "Updated", 3, 10, "at-or-below", "lbs")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		updated := themes[0].Routines[0]
+		if updated.Description != "Updated" {
+			t.Errorf("expected description 'Updated', got '%s'", updated.Description)
+		}
+		if updated.CurrentValue != 3 {
+			t.Errorf("expected currentValue 3, got %d", updated.CurrentValue)
+		}
+		if updated.TargetValue != 10 {
+			t.Errorf("expected targetValue 10, got %d", updated.TargetValue)
+		}
+		if updated.TargetType != "at-or-below" {
+			t.Errorf("expected targetType 'at-or-below', got '%s'", updated.TargetType)
+		}
+		if updated.Unit != "lbs" {
+			t.Errorf("expected unit 'lbs', got '%s'", updated.Unit)
+		}
+	})
+
+	t.Run("returns error for empty routineId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateRoutine("", "Desc", 1, 5, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for empty routineId")
+		}
+	})
+
+	t.Run("returns error for non-existent routine", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.UpdateRoutine("T-R999", "Desc", 1, 5, "at-or-above", "")
+		if err == nil {
+			t.Fatal("expected error for non-existent routine")
+		}
+	})
+
+	t.Run("returns error for invalid targetType", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		routine, _ := manager.AddRoutine("T", "Test", 5, "at-or-above", "")
+		err := manager.UpdateRoutine(routine.ID, "Test", 1, 5, "invalid", "")
+		if err == nil {
+			t.Fatal("expected error for invalid targetType")
+		}
+	})
+}
+
+func TestDeleteRoutine(t *testing.T) {
+	t.Run("deletes routine", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		routine, _ := manager.AddRoutine("T", "To Delete", 5, "at-or-above", "")
+		err := manager.DeleteRoutine(routine.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		if len(themes[0].Routines) != 0 {
+			t.Errorf("expected 0 routines after delete, got %d", len(themes[0].Routines))
+		}
+	})
+
+	t.Run("returns error for empty routineId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.DeleteRoutine("")
+		if err == nil {
+			t.Fatal("expected error for empty routineId")
+		}
+	})
+
+	t.Run("returns error for non-existent routine", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.DeleteRoutine("T-R999")
+		if err == nil {
+			t.Fatal("expected error for non-existent routine")
+		}
+	})
+}
+
+func TestRoutineIsOnTrack(t *testing.T) {
+	t.Run("at-or-above on track", func(t *testing.T) {
+		routine := access.Routine{TargetType: "at-or-above", CurrentValue: 5, TargetValue: 3}
+		if !routine.IsOnTrack() {
+			t.Error("expected on track (5 >= 3)")
+		}
+	})
+
+	t.Run("at-or-above at target", func(t *testing.T) {
+		routine := access.Routine{TargetType: "at-or-above", CurrentValue: 3, TargetValue: 3}
+		if !routine.IsOnTrack() {
+			t.Error("expected on track (3 >= 3)")
+		}
+	})
+
+	t.Run("at-or-above off track", func(t *testing.T) {
+		routine := access.Routine{TargetType: "at-or-above", CurrentValue: 2, TargetValue: 3}
+		if routine.IsOnTrack() {
+			t.Error("expected off track (2 < 3)")
+		}
+	})
+
+	t.Run("at-or-below on track", func(t *testing.T) {
+		routine := access.Routine{TargetType: "at-or-below", CurrentValue: 75, TargetValue: 80}
+		if !routine.IsOnTrack() {
+			t.Error("expected on track (75 <= 80)")
+		}
+	})
+
+	t.Run("at-or-below at target", func(t *testing.T) {
+		routine := access.Routine{TargetType: "at-or-below", CurrentValue: 80, TargetValue: 80}
+		if !routine.IsOnTrack() {
+			t.Error("expected on track (80 <= 80)")
+		}
+	})
+
+	t.Run("at-or-below off track", func(t *testing.T) {
+		routine := access.Routine{TargetType: "at-or-below", CurrentValue: 82, TargetValue: 80}
+		if routine.IsOnTrack() {
+			t.Error("expected off track (82 > 80)")
 		}
 	})
 }
@@ -2462,4 +2823,577 @@ func TestUnit_MoveTask_InvalidColumn(t *testing.T) {
 	if err == nil {
 		t.Error("Expected error for invalid target column")
 	}
+}
+
+// =============================================================================
+// Progress Rollup Tests
+// =============================================================================
+
+func TestGetAllThemeProgress(t *testing.T) {
+	t.Run("single KR progress", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr.ID, 50)
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(progress) != 1 {
+			t.Fatalf("expected 1 theme progress, got %d", len(progress))
+		}
+		if progress[0].ThemeID != "T" {
+			t.Errorf("expected themeId 'T', got '%s'", progress[0].ThemeID)
+		}
+		// KR progress: (50-0)/(100-0)*100 = 50%
+		if progress[0].Progress != 50 {
+			t.Errorf("expected theme progress 50, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("multiple KRs average", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Average: (100 + 0) / 2 = 50%
+		if progress[0].Progress != 50 {
+			t.Errorf("expected theme progress 50, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("untracked KR excluded", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR tracked", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 80) // 80%
+		_, _ = manager.CreateKeyResult(obj.ID, "KR untracked", 0, 0, "") // targetValue=0, excluded
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Only tracked KR counts: 80%
+		if progress[0].Progress != 80 {
+			t.Errorf("expected theme progress 80, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("completed KR excluded", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 60) // 60%
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR completed", 0, 1, "")
+		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
+		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Only active KR counts: 60%
+		if progress[0].Progress != 60 {
+			t.Errorf("expected theme progress 60, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("archived KR excluded", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 40) // 40%
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR archived", 0, 1, "")
+		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
+		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr2.ID, "archived")
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Only active KR counts: 40%
+		if progress[0].Progress != 40 {
+			t.Errorf("expected theme progress 40, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("nested objective progress rollup", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		parent, _ := manager.CreateObjective("T", "Parent")
+		child, _ := manager.CreateObjective(parent.ID, "Child")
+		kr1, _ := manager.CreateKeyResult(parent.ID, "Parent KR", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
+		kr2, _ := manager.CreateKeyResult(child.ID, "Child KR", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Child objective: 0%
+		// Parent objective: avg(100%, 0%) = 50% (parent KR + child obj progress)
+		// Theme: 50%
+		if progress[0].Progress != 50 {
+			t.Errorf("expected theme progress 50, got %f", progress[0].Progress)
+		}
+		// Check child objective progress
+		var childProgress float64 = -2
+		for _, op := range progress[0].Objectives {
+			if op.ObjectiveID == child.ID {
+				childProgress = op.Progress
+			}
+		}
+		if childProgress != 0 {
+			t.Errorf("expected child progress 0, got %f", childProgress)
+		}
+	})
+
+	t.Run("theme-level progress averages top-level objectives", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj1, _ := manager.CreateObjective("T", "Obj1")
+		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
+
+		obj2, _ := manager.CreateObjective("T", "Obj2")
+		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Theme: avg(100%, 0%) = 50%
+		if progress[0].Progress != 50 {
+			t.Errorf("expected theme progress 50, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("empty theme returns -1 progress", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if len(progress) != 1 {
+			t.Fatalf("expected 1 theme progress, got %d", len(progress))
+		}
+		if progress[0].Progress != -1 {
+			t.Errorf("expected theme progress -1, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("objective with no tracked KRs returns -1", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		_, _ = manager.CreateKeyResult(obj.ID, "Untracked KR", 0, 0, "")
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Objective has only untracked KRs -> -1
+		// Theme also -1 (no objectives with valid progress)
+		if progress[0].Progress != -1 {
+			t.Errorf("expected theme progress -1, got %f", progress[0].Progress)
+		}
+		var objProgress float64 = -2
+		for _, op := range progress[0].Objectives {
+			if op.ObjectiveID == obj.ID {
+				objProgress = op.Progress
+			}
+		}
+		if objProgress != -1 {
+			t.Errorf("expected objective progress -1, got %f", objProgress)
+		}
+	})
+
+	t.Run("completed objective excluded from theme progress", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj1, _ := manager.CreateObjective("T", "Active Obj")
+		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100, "")
+		_ = manager.UpdateKeyResultProgress(kr1.ID, 80) // 80%
+
+		obj2, _ := manager.CreateObjective("T", "Completed Obj")
+		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 1, "")
+		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
+		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
+		_ = manager.SetObjectiveStatus(obj2.ID, "completed")
+
+		progress, err := manager.GetAllThemeProgress()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		// Only active objective counts: 80%
+		if progress[0].Progress != 80 {
+			t.Errorf("expected theme progress 80, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("binary KR progress", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Binary KR", 0, 1, "")
+
+		// Not done
+		progress, _ := manager.GetAllThemeProgress()
+		if progress[0].Progress != 0 {
+			t.Errorf("expected progress 0 for incomplete binary KR, got %f", progress[0].Progress)
+		}
+
+		// Done
+		_ = manager.UpdateKeyResultProgress(kr.ID, 1)
+		progress, _ = manager.GetAllThemeProgress()
+		if progress[0].Progress != 100 {
+			t.Errorf("expected progress 100 for complete binary KR, got %f", progress[0].Progress)
+		}
+	})
+
+	t.Run("KR progress clamped to 0-100", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Obj1")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Over-achieved KR", 0, 10, "")
+		_ = manager.UpdateKeyResultProgress(kr.ID, 20) // Over-achieved
+
+		progress, _ := manager.GetAllThemeProgress()
+		if progress[0].Progress != 100 {
+			t.Errorf("expected clamped progress 100, got %f", progress[0].Progress)
+		}
+	})
+}
+
+// =============================================================================
+// Personal Vision Tests
+// =============================================================================
+
+func TestPersonalVision(t *testing.T) {
+	t.Run("returns empty vision when file does not exist", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		vision, err := manager.GetPersonalVision()
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if vision.Mission != "" {
+			t.Errorf("expected empty mission, got %q", vision.Mission)
+		}
+		if vision.Vision != "" {
+			t.Errorf("expected empty vision, got %q", vision.Vision)
+		}
+	})
+
+	t.Run("save and load round-trip", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.SavePersonalVision("To live well", "Be the best version of myself")
+		if err != nil {
+			t.Fatalf("expected no error saving, got %v", err)
+		}
+
+		vision, err := manager.GetPersonalVision()
+		if err != nil {
+			t.Fatalf("expected no error loading, got %v", err)
+		}
+		if vision.Mission != "To live well" {
+			t.Errorf("expected mission 'To live well', got %q", vision.Mission)
+		}
+		if vision.Vision != "Be the best version of myself" {
+			t.Errorf("expected vision 'Be the best version of myself', got %q", vision.Vision)
+		}
+		if vision.UpdatedAt == "" {
+			t.Error("expected UpdatedAt to be set")
+		}
+	})
+}
+
+func TestCloseObjective(t *testing.T) {
+	t.Run("closes objective and sets all fields correctly", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+
+		err := manager.CloseObjective(obj.ID, "achieved", "Great progress!")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.Status != "completed" {
+			t.Errorf("expected status 'completed', got '%s'", found.Status)
+		}
+		if found.ClosingStatus != "achieved" {
+			t.Errorf("expected closingStatus 'achieved', got '%s'", found.ClosingStatus)
+		}
+		if found.ClosingNotes != "Great progress!" {
+			t.Errorf("expected closingNotes 'Great progress!', got '%s'", found.ClosingNotes)
+		}
+		if found.ClosedAt == "" {
+			t.Error("expected closedAt to be set")
+		}
+
+		// Child KRs should be completed
+		foundKR1 := findKeyResultByID(themes[0].Objectives, kr1.ID)
+		if foundKR1.Status != "completed" {
+			t.Errorf("expected KR1 status 'completed', got '%s'", foundKR1.Status)
+		}
+		foundKR2 := findKeyResultByID(themes[0].Objectives, kr2.ID)
+		if foundKR2.Status != "completed" {
+			t.Errorf("expected KR2 status 'completed', got '%s'", foundKR2.Status)
+		}
+	})
+
+	t.Run("does not close already completed KRs again", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
+		_, _ = manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+
+		// Complete KR1 before closing
+		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
+
+		err := manager.CloseObjective(obj.ID, "partially-achieved", "")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+	})
+
+	t.Run("fails on non-active objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		_ = manager.CloseObjective(obj.ID, "achieved", "")
+
+		err := manager.CloseObjective(obj.ID, "missed", "")
+		if err == nil {
+			t.Fatal("expected error for closing non-active objective")
+		}
+	})
+
+	t.Run("fails with invalid closing status", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+
+		err := manager.CloseObjective(obj.ID, "invalid-status", "")
+		if err == nil {
+			t.Fatal("expected error for invalid closing status")
+		}
+	})
+
+	t.Run("fails with empty objectiveId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.CloseObjective("", "achieved", "")
+		if err == nil {
+			t.Fatal("expected error for empty objectiveId")
+		}
+	})
+
+	t.Run("fails for non-existent objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.CloseObjective("NONEXISTENT", "achieved", "")
+		if err == nil {
+			t.Fatal("expected error for non-existent objective")
+		}
+	})
+
+	t.Run("closes with empty notes", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+
+		err := manager.CloseObjective(obj.ID, "canceled", "")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.ClosingNotes != "" {
+			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
+		}
+	})
+}
+
+func TestReopenObjective(t *testing.T) {
+	t.Run("reopens objective and clears all closing fields", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+
+		_ = manager.CloseObjective(obj.ID, "achieved", "Well done!")
+
+		err := manager.ReopenObjective(obj.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.Status != "" {
+			t.Errorf("expected empty status, got '%s'", found.Status)
+		}
+		if found.ClosingStatus != "" {
+			t.Errorf("expected empty closingStatus, got '%s'", found.ClosingStatus)
+		}
+		if found.ClosingNotes != "" {
+			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
+		}
+		if found.ClosedAt != "" {
+			t.Errorf("expected empty closedAt, got '%s'", found.ClosedAt)
+		}
+
+		// Child KRs should be reopened
+		foundKR1 := findKeyResultByID(themes[0].Objectives, kr1.ID)
+		if foundKR1.Status != "" {
+			t.Errorf("expected KR1 status empty, got '%s'", foundKR1.Status)
+		}
+		foundKR2 := findKeyResultByID(themes[0].Objectives, kr2.ID)
+		if foundKR2.Status != "" {
+			t.Errorf("expected KR2 status empty, got '%s'", foundKR2.Status)
+		}
+	})
+
+	t.Run("fails on active objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+
+		err := manager.ReopenObjective(obj.ID)
+		if err == nil {
+			t.Fatal("expected error for reopening active objective")
+		}
+	})
+
+	t.Run("does not reopen archived KRs", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+
+		// Complete and archive KR1 before closing
+		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
+		_ = manager.SetKeyResultStatus(kr1.ID, "archived")
+
+		_ = manager.CloseObjective(obj.ID, "achieved", "")
+
+		err := manager.ReopenObjective(obj.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		foundKR1 := findKeyResultByID(themes[0].Objectives, kr1.ID)
+		if foundKR1.Status != "archived" {
+			t.Errorf("expected KR1 status to remain 'archived', got '%s'", foundKR1.Status)
+		}
+		foundKR2 := findKeyResultByID(themes[0].Objectives, kr2.ID)
+		if foundKR2.Status != "" {
+			t.Errorf("expected KR2 status empty, got '%s'", foundKR2.Status)
+		}
+	})
+
+	t.Run("fails with empty objectiveId", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.ReopenObjective("")
+		if err == nil {
+			t.Fatal("expected error for empty objectiveId")
+		}
+	})
+
+	t.Run("fails for non-existent objective", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		err := manager.ReopenObjective("NONEXISTENT")
+		if err == nil {
+			t.Fatal("expected error for non-existent objective")
+		}
+	})
+}
+
+func TestBackwardCompatClosingStatus(t *testing.T) {
+	t.Run("existing completed status without closing fields works", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+
+		// Use the old SetObjectiveStatus path (no closing fields set)
+		// First close all KRs to satisfy the check
+		err := manager.SetObjectiveStatus(obj.ID, "completed")
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetThemes()
+		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		if found.Status != "completed" {
+			t.Errorf("expected status 'completed', got '%s'", found.Status)
+		}
+		// Closing fields should be empty (not set by old path)
+		if found.ClosingStatus != "" {
+			t.Errorf("expected empty closingStatus, got '%s'", found.ClosingStatus)
+		}
+		if found.ClosingNotes != "" {
+			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
+		}
+		if found.ClosedAt != "" {
+			t.Errorf("expected empty closedAt, got '%s'", found.ClosedAt)
+		}
+	})
 }

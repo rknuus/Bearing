@@ -54,7 +54,13 @@ function makeMockBindings() {
     // Status operations
     SetObjectiveStatus: vi.fn().mockResolvedValue(undefined),
     SetKeyResultStatus: vi.fn().mockResolvedValue(undefined),
+    CloseObjective: vi.fn().mockResolvedValue(undefined),
+    ReopenObjective: vi.fn().mockResolvedValue(undefined),
     SuggestThemeAbbreviation: vi.fn().mockResolvedValue('T'),
+    GetAllThemeProgress: vi.fn().mockResolvedValue([]),
+    GetPersonalVision: vi.fn().mockResolvedValue({ mission: '', vision: '' }),
+    SavePersonalVision: vi.fn().mockResolvedValue(undefined),
+    LogFrontend: vi.fn(),
   };
 }
 

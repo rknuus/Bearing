@@ -171,6 +171,7 @@ type KeyResult struct {
 	ID           string `json:"id"`
 	ParentID     string `json:"parentId"`
 	Description  string `json:"description"`
+	Type         string `json:"type,omitempty"`
 	Status       string `json:"status,omitempty"`
 	StartValue   int    `json:"startValue,omitempty"`
 	CurrentValue int    `json:"currentValue,omitempty"`
@@ -179,13 +180,26 @@ type KeyResult struct {
 
 // Objective represents a medium-term goal (for Wails binding)
 type Objective struct {
-	ID         string      `json:"id"`
-	ParentID   string      `json:"parentId"`
-	Title      string      `json:"title"`
-	Status     string      `json:"status,omitempty"`
-	Tags       []string    `json:"tags,omitempty"`
-	KeyResults []KeyResult `json:"keyResults"`
-	Objectives []Objective `json:"objectives,omitempty"`
+	ID            string      `json:"id"`
+	ParentID      string      `json:"parentId"`
+	Title         string      `json:"title"`
+	Status        string      `json:"status,omitempty"`
+	Tags          []string    `json:"tags,omitempty"`
+	ClosingStatus string      `json:"closingStatus,omitempty"`
+	ClosingNotes  string      `json:"closingNotes,omitempty"`
+	ClosedAt      string      `json:"closedAt,omitempty"`
+	KeyResults    []KeyResult `json:"keyResults"`
+	Objectives    []Objective `json:"objectives,omitempty"`
+}
+
+// Routine represents an ongoing health metric (for Wails binding)
+type Routine struct {
+	ID           string `json:"id"`
+	Description  string `json:"description"`
+	CurrentValue int    `json:"currentValue"`
+	TargetValue  int    `json:"targetValue"`
+	TargetType   string `json:"targetType"`
+	Unit         string `json:"unit,omitempty"`
 }
 
 // LifeTheme represents a long-term life focus area (for Wails binding)
@@ -194,6 +208,7 @@ type LifeTheme struct {
 	Name       string      `json:"name"`
 	Color      string      `json:"color"`
 	Objectives []Objective `json:"objectives"`
+	Routines   []Routine   `json:"routines,omitempty"`
 }
 
 // DayFocus represents a daily focus entry (for Wails binding)
@@ -246,6 +261,26 @@ type BoardConfiguration struct {
 	ColumnDefinitions []ColumnDefinition `json:"columnDefinitions"`
 }
 
+// ObjectiveProgress represents the computed progress of an objective (for Wails binding)
+type ObjectiveProgress struct {
+	ObjectiveID string  `json:"objectiveId"`
+	Progress    float64 `json:"progress"`
+}
+
+// ThemeProgress represents computed progress for a theme and its objectives (for Wails binding)
+type ThemeProgress struct {
+	ThemeID    string              `json:"themeId"`
+	Progress   float64             `json:"progress"`
+	Objectives []ObjectiveProgress `json:"objectives"`
+}
+
+// PersonalVision stores the user's personal mission and vision statements (for Wails binding)
+type PersonalVision struct {
+	Mission   string `json:"mission"`
+	Vision    string `json:"vision"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
 // NavigationContext represents the user's navigation state (for Wails binding)
 type NavigationContext struct {
 	CurrentView       string   `json:"currentView"`
@@ -256,6 +291,7 @@ type NavigationContext struct {
 	ShowArchived      bool     `json:"showArchived,omitempty"`
 	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
 	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
+	VisionCollapsed   *bool    `json:"visionCollapsed,omitempty"`
 }
 
 // convertObjective recursively converts an access.Objective to a Wails Objective
@@ -266,6 +302,7 @@ func convertObjective(o access.Objective) Objective {
 			ID:           kr.ID,
 			ParentID:     kr.ParentID,
 			Description:  kr.Description,
+			Type:         kr.Type,
 			Status:       kr.Status,
 			StartValue:   kr.StartValue,
 			CurrentValue: kr.CurrentValue,
@@ -277,12 +314,15 @@ func convertObjective(o access.Objective) Objective {
 		objectives[i] = convertObjective(child)
 	}
 	result := Objective{
-		ID:         o.ID,
-		ParentID:   o.ParentID,
-		Title:      o.Title,
-		Status:     o.Status,
-		Tags:       o.Tags,
-		KeyResults: keyResults,
+		ID:            o.ID,
+		ParentID:      o.ParentID,
+		Title:         o.Title,
+		Status:        o.Status,
+		Tags:          o.Tags,
+		ClosingStatus: o.ClosingStatus,
+		ClosingNotes:  o.ClosingNotes,
+		ClosedAt:      o.ClosedAt,
+		KeyResults:    keyResults,
 	}
 	if len(objectives) > 0 {
 		result.Objectives = objectives
@@ -298,6 +338,7 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 			ID:           kr.ID,
 			ParentID:     kr.ParentID,
 			Description:  kr.Description,
+			Type:         kr.Type,
 			Status:       kr.Status,
 			StartValue:   kr.StartValue,
 			CurrentValue: kr.CurrentValue,
@@ -309,12 +350,15 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 		objectives[i] = convertObjectiveToAccess(child)
 	}
 	result := access.Objective{
-		ID:         o.ID,
-		ParentID:   o.ParentID,
-		Title:      o.Title,
-		Status:     o.Status,
-		Tags:       o.Tags,
-		KeyResults: keyResults,
+		ID:            o.ID,
+		ParentID:      o.ParentID,
+		Title:         o.Title,
+		Status:        o.Status,
+		Tags:          o.Tags,
+		ClosingStatus: o.ClosingStatus,
+		ClosingNotes:  o.ClosingNotes,
+		ClosedAt:      o.ClosedAt,
+		KeyResults:    keyResults,
 	}
 	if len(objectives) > 0 {
 		result.Objectives = objectives
@@ -342,11 +386,26 @@ func (a *App) GetThemes() ([]LifeTheme, error) {
 		for j, o := range t.Objectives {
 			objectives[j] = convertObjective(o)
 		}
+		var routines []Routine
+		if len(t.Routines) > 0 {
+			routines = make([]Routine, len(t.Routines))
+			for k, routine := range t.Routines {
+				routines[k] = Routine{
+					ID:           routine.ID,
+					Description:  routine.Description,
+					CurrentValue: routine.CurrentValue,
+					TargetValue:  routine.TargetValue,
+					TargetType:   routine.TargetType,
+					Unit:         routine.Unit,
+				}
+			}
+		}
 		result[i] = LifeTheme{
 			ID:         t.ID,
 			Name:       t.Name,
 			Color:      t.Color,
 			Objectives: objectives,
+			Routines:   routines,
 		}
 	}
 	return result, nil
@@ -386,11 +445,24 @@ func (a *App) UpdateTheme(theme LifeTheme) error {
 		objectives[i] = convertObjectiveToAccess(o)
 	}
 
+	var routines []access.Routine
+	for _, routine := range theme.Routines {
+		routines = append(routines, access.Routine{
+			ID:           routine.ID,
+			Description:  routine.Description,
+			CurrentValue: routine.CurrentValue,
+			TargetValue:  routine.TargetValue,
+			TargetType:   routine.TargetType,
+			Unit:         routine.Unit,
+		})
+	}
+
 	err := a.planningManager.UpdateTheme(access.LifeTheme{
 		ID:         theme.ID,
 		Name:       theme.Name,
 		Color:      theme.Color,
 		Objectives: objectives,
+		Routines:   routines,
 	})
 	if err != nil {
 		slog.Error("UpdateTheme failed", "error", err, "themeId", theme.ID)
@@ -479,13 +551,13 @@ func (a *App) DeleteObjective(objectiveId string) error {
 }
 
 // CreateKeyResult creates a new key result under an objective at any depth
-func (a *App) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
+func (a *App) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int, krType string) (*KeyResult, error) {
 	if a.planningManager == nil {
 		slog.Warn("CreateKeyResult: planning manager not initialized")
 		return nil, fmt.Errorf("planning manager not initialized")
 	}
 
-	kr, err := a.planningManager.CreateKeyResult(parentObjectiveId, description, startValue, targetValue)
+	kr, err := a.planningManager.CreateKeyResult(parentObjectiveId, description, startValue, targetValue, krType)
 	if err != nil {
 		slog.Error("CreateKeyResult failed", "error", err, "parentObjectiveId", parentObjectiveId)
 		return nil, err
@@ -494,6 +566,7 @@ func (a *App) CreateKeyResult(parentObjectiveId, description string, startValue,
 	return &KeyResult{
 		ID:           kr.ID,
 		Description:  kr.Description,
+		Type:         kr.Type,
 		StartValue:   kr.StartValue,
 		CurrentValue: kr.CurrentValue,
 		TargetValue:  kr.TargetValue,
@@ -566,6 +639,85 @@ func (a *App) SetKeyResultStatus(keyResultId, status string) error {
 	err := a.planningManager.SetKeyResultStatus(keyResultId, status)
 	if err != nil {
 		slog.Error("SetKeyResultStatus failed", "error", err, "keyResultId", keyResultId, "status", status)
+	}
+	return err
+}
+
+// CloseObjective closes an objective with a structured closing status and optional notes
+func (a *App) CloseObjective(objectiveId, closingStatus, closingNotes string) error {
+	if a.planningManager == nil {
+		slog.Warn("CloseObjective: planning manager not initialized")
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	err := a.planningManager.CloseObjective(objectiveId, closingStatus, closingNotes)
+	if err != nil {
+		slog.Error("CloseObjective failed", "error", err, "objectiveId", objectiveId, "closingStatus", closingStatus)
+	}
+	return err
+}
+
+// ReopenObjective reopens a closed objective, clearing closing metadata
+func (a *App) ReopenObjective(objectiveId string) error {
+	if a.planningManager == nil {
+		slog.Warn("ReopenObjective: planning manager not initialized")
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	err := a.planningManager.ReopenObjective(objectiveId)
+	if err != nil {
+		slog.Error("ReopenObjective failed", "error", err, "objectiveId", objectiveId)
+	}
+	return err
+}
+
+// AddRoutine creates a new routine under a theme
+func (a *App) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
+	if a.planningManager == nil {
+		slog.Warn("AddRoutine: planning manager not initialized")
+		return nil, fmt.Errorf("planning manager not initialized")
+	}
+
+	routine, err := a.planningManager.AddRoutine(themeId, description, targetValue, targetType, unit)
+	if err != nil {
+		slog.Error("AddRoutine failed", "error", err, "themeId", themeId)
+		return nil, err
+	}
+
+	return &Routine{
+		ID:           routine.ID,
+		Description:  routine.Description,
+		CurrentValue: routine.CurrentValue,
+		TargetValue:  routine.TargetValue,
+		TargetType:   routine.TargetType,
+		Unit:         routine.Unit,
+	}, nil
+}
+
+// UpdateRoutine updates an existing routine
+func (a *App) UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error {
+	if a.planningManager == nil {
+		slog.Warn("UpdateRoutine: planning manager not initialized")
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	err := a.planningManager.UpdateRoutine(routineId, description, currentValue, targetValue, targetType, unit)
+	if err != nil {
+		slog.Error("UpdateRoutine failed", "error", err, "routineId", routineId)
+	}
+	return err
+}
+
+// DeleteRoutine deletes a routine by ID
+func (a *App) DeleteRoutine(routineId string) error {
+	if a.planningManager == nil {
+		slog.Warn("DeleteRoutine: planning manager not initialized")
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	err := a.planningManager.DeleteRoutine(routineId)
+	if err != nil {
+		slog.Error("DeleteRoutine failed", "error", err, "routineId", routineId)
 	}
 	return err
 }
@@ -1018,6 +1170,7 @@ func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 		ShowArchived:      ctx.ShowArchived,
 		ShowArchivedTasks: ctx.ShowArchivedTasks,
 		ExpandedOkrIds:    ctx.ExpandedOkrIds,
+		VisionCollapsed:   ctx.VisionCollapsed,
 	}, nil
 }
 
@@ -1037,6 +1190,7 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 		ShowArchived:      ctx.ShowArchived,
 		ShowArchivedTasks: ctx.ShowArchivedTasks,
 		ExpandedOkrIds:    ctx.ExpandedOkrIds,
+		VisionCollapsed:   ctx.VisionCollapsed,
 	})
 	if err != nil {
 		slog.Error("SaveNavigationContext failed", "error", err)
@@ -1073,6 +1227,72 @@ func (a *App) SaveTaskDrafts(data string) error {
 	err := a.planningManager.SaveTaskDrafts(json.RawMessage(data))
 	if err != nil {
 		slog.Error("SaveTaskDrafts failed", "error", err)
+	}
+	return err
+}
+
+// GetAllThemeProgress computes progress for all themes and their objectives
+func (a *App) GetAllThemeProgress() ([]ThemeProgress, error) {
+	if a.planningManager == nil {
+		slog.Warn("GetAllThemeProgress: planning manager not initialized")
+		return []ThemeProgress{}, nil
+	}
+
+	managerProgress, err := a.planningManager.GetAllThemeProgress()
+	if err != nil {
+		slog.Error("GetAllThemeProgress failed", "error", err)
+		return nil, err
+	}
+
+	// Convert to Wails binding types
+	result := make([]ThemeProgress, len(managerProgress))
+	for i, tp := range managerProgress {
+		objectives := make([]ObjectiveProgress, len(tp.Objectives))
+		for j, op := range tp.Objectives {
+			objectives[j] = ObjectiveProgress{
+				ObjectiveID: op.ObjectiveID,
+				Progress:    op.Progress,
+			}
+		}
+		result[i] = ThemeProgress{
+			ThemeID:    tp.ThemeID,
+			Progress:   tp.Progress,
+			Objectives: objectives,
+		}
+	}
+	return result, nil
+}
+
+// GetPersonalVision returns the user's personal mission and vision statements
+func (a *App) GetPersonalVision() (*PersonalVision, error) {
+	if a.planningManager == nil {
+		slog.Warn("GetPersonalVision: planning manager not initialized")
+		return &PersonalVision{}, nil
+	}
+
+	vision, err := a.planningManager.GetPersonalVision()
+	if err != nil {
+		slog.Error("GetPersonalVision failed", "error", err)
+		return nil, err
+	}
+
+	return &PersonalVision{
+		Mission:   vision.Mission,
+		Vision:    vision.Vision,
+		UpdatedAt: vision.UpdatedAt,
+	}, nil
+}
+
+// SavePersonalVision saves the user's personal mission and vision statements
+func (a *App) SavePersonalVision(mission, vision string) error {
+	if a.planningManager == nil {
+		slog.Warn("SavePersonalVision: planning manager not initialized")
+		return fmt.Errorf("planning manager not initialized")
+	}
+
+	err := a.planningManager.SavePersonalVision(mission, vision)
+	if err != nil {
+		slog.Error("SavePersonalVision failed", "error", err)
 	}
 	return err
 }

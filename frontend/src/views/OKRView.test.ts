@@ -4,7 +4,7 @@ import { tick } from 'svelte';
 import type { LifeTheme } from '../lib/wails-mock';
 import OKRView from './OKRView.svelte';
 
-/** Build a fixture with one theme, one objective, and 3 KR variants. */
+/** Build a fixture with one theme, one objective, and 4 KR variants. */
 function makeTestThemes(): LifeTheme[] {
   return [
     {
@@ -20,6 +20,7 @@ function makeTestThemes(): LifeTheme[] {
             { id: 'TST-KR1', parentId: 'TST-O1', description: 'Binary KR', startValue: 0, currentValue: 0, targetValue: 1 },
             { id: 'TST-KR2', parentId: 'TST-O1', description: 'Numeric KR', startValue: 0, currentValue: 3, targetValue: 4 },
             { id: 'TST-KR3', parentId: 'TST-O1', description: 'Untracked KR', startValue: 0, currentValue: 0, targetValue: 0 },
+            { id: 'TST-KR4', parentId: 'TST-O1', description: 'Typed Binary KR', type: 'binary', startValue: 0, currentValue: 0, targetValue: 1 },
           ],
           objectives: [],
         },
@@ -44,9 +45,14 @@ function makeMockBindings(themes: LifeTheme[]) {
     DeleteKeyResult: vi.fn().mockResolvedValue(undefined),
     SetObjectiveStatus: vi.fn().mockResolvedValue(undefined),
     SetKeyResultStatus: vi.fn().mockResolvedValue(undefined),
+    CloseObjective: vi.fn().mockResolvedValue(undefined),
+    ReopenObjective: vi.fn().mockResolvedValue(undefined),
     LogFrontend: vi.fn(),
     LoadNavigationContext: vi.fn().mockResolvedValue({ currentView: 'okr', currentItem: '', filterThemeId: '', lastAccessed: '' }),
     SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
+    GetAllThemeProgress: vi.fn().mockResolvedValue([]),
+    GetPersonalVision: vi.fn().mockResolvedValue({ mission: '', vision: '' }),
+    SavePersonalVision: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -127,13 +133,26 @@ describe('OKRView', () => {
     expect(targetLabel?.textContent).toBe('/ 4');
   });
 
+  it('renders typed binary KR (type="binary") with checkbox', async () => {
+    await renderView();
+    await expandThemeAndObjective();
+
+    // The 4th KR (TST-KR4) has type='binary' and should show as checkbox
+    const krItems = container.querySelectorAll('.tree-kr-item');
+    const typedBinaryKR = krItems[3];
+    const checkbox = typedBinaryKR.querySelector<HTMLInputElement>('.kr-checkbox');
+    expect(checkbox).toBeTruthy();
+    expect(checkbox?.type).toBe('checkbox');
+    expect(checkbox?.checked).toBe(false);
+  });
+
   it('renders untracked KR without checkbox, progress, or current input', async () => {
     await renderView();
     await expandThemeAndObjective();
 
     // Find the KR items and check the untracked one (third KR)
     const krItems = container.querySelectorAll('.tree-kr-item');
-    expect(krItems.length).toBe(3);
+    expect(krItems.length).toBe(4);
 
     const untrackedKR = krItems[2];
     expect(untrackedKR.querySelector('.kr-checkbox')).toBeNull();
@@ -141,7 +160,7 @@ describe('OKRView', () => {
     expect(untrackedKR.querySelector('.kr-current-input')).toBeNull();
   });
 
-  it('shows Start and Target inputs in KR creation form', async () => {
+  it('shows type selector and Start/Target inputs in KR creation form', async () => {
     await renderView();
     await expandThemeAndObjective();
 
@@ -154,6 +173,11 @@ describe('OKRView', () => {
     const formRow = container.querySelector('.kr-form-row');
     expect(formRow).toBeTruthy();
 
+    // Type selector should be present with default value 'metric'
+    const typeSelect = formRow!.querySelector<HTMLSelectElement>('.kr-type-select');
+    expect(typeSelect).toBeTruthy();
+    expect(typeSelect?.value).toBe('metric');
+
     const progressInputs = formRow!.querySelectorAll<HTMLInputElement>('.kr-progress-input');
     expect(progressInputs.length).toBe(2);
     // Start input
@@ -162,6 +186,27 @@ describe('OKRView', () => {
     // Target input
     expect(progressInputs[1].type).toBe('number');
     expect(progressInputs[1].value).toBe('1');
+  });
+
+  it('hides Start/Target inputs when binary type is selected in KR creation form', async () => {
+    await renderView();
+    await expandThemeAndObjective();
+
+    // Click "+KR" button to open creation form
+    const addKRButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-add[title="Add Key Result"]');
+    addKRButton!.click();
+    await tick();
+
+    const formRow = container.querySelector('.kr-form-row');
+    const typeSelect = formRow!.querySelector<HTMLSelectElement>('.kr-type-select');
+
+    // Switch to binary type
+    await fireEvent.change(typeSelect!, { target: { value: 'binary' } });
+    await tick();
+
+    // Start/Target inputs should be hidden
+    const progressInputs = formRow!.querySelectorAll<HTMLInputElement>('.kr-progress-input');
+    expect(progressInputs.length).toBe(0);
   });
 
   it('shows Start and Target inputs pre-filled in KR edit form', async () => {
@@ -197,7 +242,7 @@ describe('OKRView', () => {
 
     // Theme and objective should be expanded, so KR items should be visible
     const krItems = container.querySelectorAll('.tree-kr-item');
-    expect(krItems.length).toBe(3);
+    expect(krItems.length).toBe(4);
   });
 
   it('saves expanded IDs to navigation context when node is expanded', async () => {
@@ -233,6 +278,12 @@ describe('OKRView', () => {
     await tick();
 
     expect(mockBindings.UpdateKeyResultProgress).toHaveBeenCalledWith('TST-KR1', 1);
+
+    // Wait for the full async chain (loadThemes + verifyThemeState) to settle
+    await vi.waitFor(() => {
+      // GetThemes is called: 1x initial load, 1x after update, 1x verifyThemeState
+      expect(mockBindings.GetThemes).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('state-check verification', () => {
@@ -332,6 +383,139 @@ describe('OKRView', () => {
     // Its own color should NOT show a warning (self-conflict excluded)
     const warning = container.querySelector('.theme-header .color-warning');
     expect(warning).toBeNull();
+  });
+
+  describe('goal status indicators', () => {
+    it('shows on-track status dot for objective with progress >= 66', async () => {
+      mockBindings.GetAllThemeProgress.mockResolvedValue([
+        { themeId: 'TST', progress: 75, objectives: [{ objectiveId: 'TST-O1', progress: 75 }] },
+      ]);
+      await renderView();
+
+      // Expand theme to see objective header
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const dot = container.querySelector('.status-dot');
+      expect(dot).toBeTruthy();
+      expect(dot!.classList.contains('on-track')).toBe(true);
+    });
+
+    it('shows needs-attention status dot for objective with progress 33-65', async () => {
+      mockBindings.GetAllThemeProgress.mockResolvedValue([
+        { themeId: 'TST', progress: 50, objectives: [{ objectiveId: 'TST-O1', progress: 50 }] },
+      ]);
+      await renderView();
+
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const dot = container.querySelector('.status-dot');
+      expect(dot).toBeTruthy();
+      expect(dot!.classList.contains('needs-attention')).toBe(true);
+    });
+
+    it('shows off-track status dot for objective with progress < 33', async () => {
+      mockBindings.GetAllThemeProgress.mockResolvedValue([
+        { themeId: 'TST', progress: 10, objectives: [{ objectiveId: 'TST-O1', progress: 10 }] },
+      ]);
+      await renderView();
+
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const dot = container.querySelector('.status-dot');
+      expect(dot).toBeTruthy();
+      expect(dot!.classList.contains('off-track')).toBe(true);
+    });
+
+    it('shows no-status dot when no progress data exists', async () => {
+      // Default mock returns empty progress array
+      await renderView();
+
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const dot = container.querySelector('.status-dot');
+      expect(dot).toBeTruthy();
+      expect(dot!.classList.contains('no-status')).toBe(true);
+    });
+
+    it('does not show status dot for completed objectives', async () => {
+      const themes = makeTestThemes();
+      themes[0].objectives[0].status = 'completed';
+      mockBindings = makeMockBindings(themes);
+      mockBindings.GetAllThemeProgress.mockResolvedValue([
+        { themeId: 'TST', progress: 100, objectives: [{ objectiveId: 'TST-O1', progress: 100 }] },
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      const result = render(OKRView, { target: container });
+      await tick();
+      await vi.waitFor(() => {
+        if (container.querySelector('.loading')) throw new Error('still loading');
+      });
+      await tick();
+
+      // Expand theme and enable completed view
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      // Enable "Show Completed" toggle
+      const toggles = container.querySelectorAll<HTMLInputElement>('.toggle-checkbox');
+      const showCompletedToggle = toggles[0];
+      if (showCompletedToggle) {
+        showCompletedToggle.click();
+        await tick();
+      }
+
+      const dot = container.querySelector('.status-dot');
+      expect(dot).toBeNull();
+
+      result.unmount();
+    });
+  });
+
+  describe('vision section', () => {
+    it('renders vision section when vision data exists', async () => {
+      mockBindings.GetPersonalVision.mockResolvedValue({
+        mission: 'My mission',
+        vision: 'My vision',
+      });
+      await renderView();
+
+      // Expand vision section
+      const visionHeader = container.querySelector<HTMLButtonElement>('.vision-header');
+      expect(visionHeader).toBeTruthy();
+      visionHeader!.click();
+      await tick();
+
+      const visionText = container.querySelectorAll('.vision-text');
+      expect(visionText.length).toBe(2);
+      expect(visionText[0].textContent).toBe('My vision');
+      expect(visionText[1].textContent).toBe('My mission');
+    });
+
+    it('vision section is collapsed by default', async () => {
+      mockBindings.GetPersonalVision.mockResolvedValue({
+        mission: 'My mission',
+        vision: 'My vision',
+      });
+      await renderView();
+
+      // Should not show vision body when collapsed
+      const visionBody = container.querySelector('.vision-body');
+      expect(visionBody).toBeNull();
+
+      // Header should be present
+      const visionHeader = container.querySelector('.vision-header');
+      expect(visionHeader).toBeTruthy();
+    });
   });
 
   describe('tag filter bar', () => {
@@ -537,6 +721,163 @@ describe('OKRView', () => {
       expect(objectiveNames.length).toBeGreaterThanOrEqual(1);
 
       result.unmount();
+    });
+  });
+
+  describe('closing workflow', () => {
+    it('opens close dialog when clicking Close button on active objective', async () => {
+      await renderView();
+
+      // Expand the theme to see the objective
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      // Click the Close button (was Complete, now opens dialog)
+      const closeButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-complete[title="Close"]');
+      expect(closeButton).toBeTruthy();
+      closeButton!.click();
+      await tick();
+
+      // Dialog should be visible with the title
+      const dialog = container.ownerDocument.querySelector('.dialog');
+      expect(dialog).toBeTruthy();
+      expect(dialog?.textContent).toContain('Close Objective');
+      expect(dialog?.textContent).toContain('Test Objective');
+    });
+
+    it('shows KR progress summary in close dialog', async () => {
+      await renderView();
+
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const closeButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-complete[title="Close"]');
+      closeButton!.click();
+      await tick();
+
+      const dialog = container.ownerDocument.querySelector('.dialog');
+      const krRows = dialog?.querySelectorAll('.close-dialog-kr-row');
+      expect(krRows?.length).toBe(4);
+    });
+
+    it('shows closing status badge on closed objectives', async () => {
+      // Create themes with a closed objective
+      const closedThemes: LifeTheme[] = [
+        {
+          id: 'TST',
+          name: 'Test Theme',
+          color: '#dc2626',
+          objectives: [
+            {
+              id: 'TST-O1',
+              parentId: 'TST',
+              title: 'Closed Objective',
+              status: 'completed',
+              closingStatus: 'achieved',
+              closingNotes: 'Great work!',
+              closedAt: '2026-01-15T10:00:00Z',
+              keyResults: [],
+              objectives: [],
+            },
+          ],
+        },
+      ];
+
+      mockBindings.GetThemes.mockResolvedValue(JSON.parse(JSON.stringify(closedThemes)));
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'okr',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+        showCompleted: true,
+      });
+
+      await renderView();
+
+      // Expand the theme
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      // Should show closing status badge
+      const badge = container.querySelector('.closing-badge');
+      expect(badge).toBeTruthy();
+      expect(badge?.textContent).toBe('Achieved');
+    });
+
+    it('calls CloseObjective when dialog is submitted', async () => {
+      await renderView();
+
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const closeButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-complete[title="Close"]');
+      closeButton!.click();
+      await tick();
+
+      const dialog = container.ownerDocument.querySelector('.dialog');
+      const submitButton = dialog?.querySelector<HTMLButtonElement>('.btn-primary');
+      expect(submitButton?.textContent?.trim()).toBe('Close Objective');
+      submitButton!.click();
+      await tick();
+
+      expect(mockBindings.CloseObjective).toHaveBeenCalledWith('TST-O1', 'achieved', '');
+
+      // Wait for the full async chain (loadThemes + verifyThemeState) to settle
+      await vi.waitFor(() => {
+        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(3);
+      });
+    });
+
+    it('calls ReopenObjective via reopen button on closed objective', async () => {
+      const closedThemes: LifeTheme[] = [
+        {
+          id: 'TST',
+          name: 'Test Theme',
+          color: '#dc2626',
+          objectives: [
+            {
+              id: 'TST-O1',
+              parentId: 'TST',
+              title: 'Closed Objective',
+              status: 'completed',
+              closingStatus: 'achieved',
+              keyResults: [],
+              objectives: [],
+            },
+          ],
+        },
+      ];
+
+      mockBindings.GetThemes.mockResolvedValue(JSON.parse(JSON.stringify(closedThemes)));
+      mockBindings.LoadNavigationContext.mockResolvedValue({
+        currentView: 'okr',
+        currentItem: '',
+        filterThemeId: '',
+        lastAccessed: '',
+        showCompleted: true,
+      });
+
+      await renderView();
+
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const reopenButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-reopen[title="Reopen"]');
+      expect(reopenButton).toBeTruthy();
+      reopenButton!.click();
+      await tick();
+
+      expect(mockBindings.ReopenObjective).toHaveBeenCalledWith('TST-O1');
+
+      // Wait for the full async chain (loadThemes + verifyThemeState) to settle
+      await vi.waitFor(() => {
+        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(3);
+      });
     });
   });
 });
