@@ -66,7 +66,7 @@
   }: Props = $props();
 
   // Internal expand/collapse state (select mode only)
-  let selectExpandedIds = new SvelteSet<string>(initialSelectExpandedIds ?? []);
+  let selectExpandedIds = $derived(new SvelteSet<string>(initialSelectExpandedIds ?? []));
 
   // --- Select mode helpers ---
 

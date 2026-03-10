@@ -8,23 +8,27 @@ import "strings"
 // LifeTheme represents a long-term life focus area with associated objectives.
 // Life themes are the top-level organizational unit for goals and tasks.
 type LifeTheme struct {
-	ID         string      `json:"id"`         // 1-3 uppercase letter abbreviation: H, CF, LRN
-	Name       string      `json:"name"`       // Human-readable theme name
-	Color      string      `json:"color"`      // Hex color code for UI display
-	Objectives []Objective `json:"objectives"` // Associated objectives for this theme
+	ID         string      `json:"id"`              // 1-3 uppercase letter abbreviation: H, CF, LRN
+	Name       string      `json:"name"`            // Human-readable theme name
+	Color      string      `json:"color"`           // Hex color code for UI display
+	Objectives []Objective `json:"objectives"`      // Associated objectives for this theme
+	Routines   []Routine   `json:"routines,omitempty"` // Ongoing health metrics for this theme
 }
 
 // Objective represents a medium-term goal under a life theme.
 // Objectives contain key results that measure progress toward the goal.
 // Objectives can be nested to arbitrary depth.
 type Objective struct {
-	ID         string      `json:"id"`                   // Theme-scoped ID: H-O1, CF-O3
-	ParentID   string      `json:"parentId"`             // ID of parent theme or objective
-	Title      string      `json:"title"`                // Objective title/description
-	Status     string      `json:"status,omitempty"`     // Lifecycle status: active, completed, archived (empty = active)
-	Tags       []string    `json:"tags,omitempty"`       // Freeform tags for categorization
-	KeyResults []KeyResult `json:"keyResults"`           // Measurable key results
-	Objectives []Objective `json:"objectives,omitempty"` // Nested child objectives
+	ID            string      `json:"id"`                      // Theme-scoped ID: H-O1, CF-O3
+	ParentID      string      `json:"parentId"`                // ID of parent theme or objective
+	Title         string      `json:"title"`                   // Objective title/description
+	Status        string      `json:"status,omitempty"`        // Lifecycle status: active, completed, archived (empty = active)
+	Tags          []string    `json:"tags,omitempty"`          // Freeform tags for categorization
+	ClosingStatus string      `json:"closingStatus,omitempty"` // achieved, partially-achieved, missed, postponed, canceled
+	ClosingNotes  string      `json:"closingNotes,omitempty"`  // Reflection notes
+	ClosedAt      string      `json:"closedAt,omitempty"`      // ISO 8601 timestamp
+	KeyResults    []KeyResult `json:"keyResults"`              // Measurable key results
+	Objectives    []Objective `json:"objectives,omitempty"`    // Nested child objectives
 }
 
 // KeyResult represents a measurable outcome for an objective.
@@ -33,10 +37,77 @@ type KeyResult struct {
 	ID           string `json:"id"`                     // Theme-scoped ID: H-KR1, CF-KR2
 	ParentID     string `json:"parentId"`               // ID of owning objective
 	Description  string `json:"description"`            // Description of the measurable result
+	Type         string `json:"type,omitempty"`         // KR type: "" or "metric" (default), "binary"
 	Status       string `json:"status,omitempty"`       // Lifecycle status: active, completed, archived (empty = active)
 	StartValue   int    `json:"startValue,omitempty"`   // Starting value (default 0)
 	CurrentValue int    `json:"currentValue,omitempty"` // Current progress value
 	TargetValue  int    `json:"targetValue,omitempty"`  // Target value (0 = untracked, 1 = binary)
+}
+
+// Routine represents an ongoing health metric for a life theme.
+// Routines are "goals for stability" — metrics to maintain at or above/below a target.
+type Routine struct {
+	ID           string `json:"id"`                    // Theme-scoped: {ThemeID}-R{n}
+	Description  string `json:"description"`           // What is being tracked
+	CurrentValue int    `json:"currentValue"`          // Latest value
+	TargetValue  int    `json:"targetValue"`           // Threshold to maintain
+	TargetType   string `json:"targetType"`            // "at-or-above" or "at-or-below"
+	Unit         string `json:"unit,omitempty"`         // Optional label (kg, hours, times/week, %)
+}
+
+// RoutineTargetType constants
+const (
+	RoutineTargetAtOrAbove = "at-or-above"
+	RoutineTargetAtOrBelow = "at-or-below"
+)
+
+// IsValidRoutineTargetType checks if a routine target type string is valid.
+func IsValidRoutineTargetType(t string) bool {
+	return t == RoutineTargetAtOrAbove || t == RoutineTargetAtOrBelow
+}
+
+// IsOnTrack returns true if currentValue meets the target per targetType.
+func (k Routine) IsOnTrack() bool {
+	if k.TargetType == RoutineTargetAtOrBelow {
+		return k.CurrentValue <= k.TargetValue
+	}
+	return k.CurrentValue >= k.TargetValue // at-or-above (default)
+}
+
+// ClosingStatus constants for objective closing workflow
+const (
+	ClosingStatusAchieved          = "achieved"
+	ClosingStatusPartiallyAchieved = "partially-achieved"
+	ClosingStatusMissed            = "missed"
+	ClosingStatusPostponed         = "postponed"
+	ClosingStatusCanceled          = "canceled"
+)
+
+// IsValidClosingStatus checks if a closing status string is valid.
+func IsValidClosingStatus(status string) bool {
+	switch status {
+	case ClosingStatusAchieved, ClosingStatusPartiallyAchieved, ClosingStatusMissed, ClosingStatusPostponed, ClosingStatusCanceled:
+		return true
+	}
+	return false
+}
+
+// KRType constants for key result types
+const (
+	// KRTypeMetric is the default KR type with start/current/target values
+	KRTypeMetric = "metric"
+	// KRTypeBinary is a binary KR type (done/not done) with fixed start=0, target=1
+	KRTypeBinary = "binary"
+)
+
+// IsValidKRType checks if a KR type string is valid.
+// Empty string is treated as valid (equivalent to "metric").
+func IsValidKRType(krType string) bool {
+	switch krType {
+	case "", KRTypeMetric, KRTypeBinary:
+		return true
+	}
+	return false
 }
 
 // DayFocus represents the daily focus on one or more life themes.
@@ -279,6 +350,13 @@ type YearFocusFile struct {
 	Entries []DayFocus `json:"entries"`
 }
 
+// PersonalVision stores the user's personal mission and vision statements.
+type PersonalVision struct {
+	Mission   string `json:"mission"`
+	Vision    string `json:"vision"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
 	CurrentView    string   `json:"currentView"`
@@ -297,4 +375,5 @@ type NavigationContext struct {
 	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
 	CalendarDayEditorDate        string   `json:"calendarDayEditorDate,omitempty"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
+	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }

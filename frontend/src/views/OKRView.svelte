@@ -9,10 +9,11 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
-  import { Button, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
+  import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError } from '../lib/utils/bindings';
+  import { getObjectiveStatus } from '../lib/utils/okr-status';
   import { checkStateFromData } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
@@ -29,6 +30,7 @@
     id: string;
     parentId?: string;
     description: string;
+    type?: string;
     status?: string;
     startValue?: number;
     currentValue?: number;
@@ -41,8 +43,20 @@
     title: string;
     status?: string;
     tags?: string[];
+    closingStatus?: string;
+    closingNotes?: string;
+    closedAt?: string;
     keyResults: KeyResult[];
     objectives?: Objective[];
+  }
+
+  interface Routine {
+    id: string;
+    description: string;
+    currentValue: number;
+    targetValue: number;
+    targetType: string; // "at-or-above" | "at-or-below"
+    unit?: string;
   }
 
   interface LifeTheme {
@@ -50,6 +64,18 @@
     name: string;
     color: string;
     objectives: Objective[];
+    routines?: Routine[];
+  }
+
+  interface ObjectiveProgressEntry {
+    objectiveId: string;
+    progress: number;
+  }
+
+  interface ThemeProgressEntry {
+    themeId: string;
+    progress: number;
+    objectives: ObjectiveProgressEntry[];
   }
 
   // Predefined color palette for theme selection
@@ -66,6 +92,7 @@
 
   // State
   let themes = $state<LifeTheme[]>([]);
+  let themeProgress = $state<ThemeProgressEntry[]>([]);
   let loading = $state(true);
   let error = $state<string | null>(null);
 
@@ -89,8 +116,40 @@
 
   let addingKeyResultToObjective = $state<string | null>(null);
   let newKeyResultDescription = $state('');
+  let newKeyResultType = $state('metric');
   let newKeyResultStartValue = $state(0);
   let newKeyResultTargetValue = $state(1);
+
+  // Routine state
+  let addingRoutineToTheme = $state<string | null>(null);
+  let newRoutineDescription = $state('');
+  let newRoutineTargetValue = $state(1);
+  let newRoutineTargetType = $state('at-or-above');
+  let newRoutineUnit = $state('');
+  let editingRoutineId = $state<string | null>(null);
+  let editRoutineDescription = $state('');
+  let editRoutineCurrentValue = $state(0);
+  let editRoutineTargetValue = $state(1);
+  let editRoutineTargetType = $state('at-or-above');
+  let editRoutineUnit = $state('');
+
+  // Close objective dialog state
+  let closingObjectiveId = $state<string | null>(null);
+  let closingStatus = $state('achieved');
+  let closingNotes = $state('');
+
+  // Personal vision state
+  interface PersonalVision {
+    mission: string;
+    vision: string;
+    updatedAt?: string;
+  }
+
+  let personalVision = $state<PersonalVision>({ mission: '', vision: '' });
+  let visionCollapsed = $state(true);
+  let editingVision = $state(false);
+  let editVisionMission = $state('');
+  let editVisionVision = $state('');
 
   // View toggle state
   let showCompleted = $state(false);
@@ -98,6 +157,21 @@
 
   // Tag filter state (local only, not persisted)
   let filterTagIds: string[] = $state([]);
+
+  function getObjectiveProgress(objectiveId: string): number {
+    for (const tp of themeProgress) {
+      for (const op of tp.objectives) {
+        if (op.objectiveId === objectiveId) return op.progress;
+      }
+    }
+    return -1;
+  }
+
+  function getThemeProgressValue(themeId: string): number {
+    const tp = themeProgress.find(t => t.themeId === themeId);
+    return tp ? tp.progress : -1;
+  }
+
 
   /** Collect unique tags from all objectives across all themes. */
   const availableObjectiveTags = $derived.by(() => {
@@ -222,6 +296,11 @@
     error = null;
     try {
       themes = await getBindings().GetThemes();
+      try {
+        themeProgress = await getBindings().GetAllThemeProgress();
+      } catch {
+        themeProgress = [];
+      }
     } catch (e) {
       error = extractError(e);
       console.error('Failed to load themes:', e);
@@ -230,9 +309,31 @@
     }
   }
 
+  async function loadVision() {
+    try {
+      personalVision = await getBindings().GetPersonalVision();
+    } catch { /* ignore */ }
+  }
+
+  async function saveVision() {
+    try {
+      await getBindings().SavePersonalVision(editVisionMission, editVisionVision);
+      personalVision = { mission: editVisionMission, vision: editVisionVision, updatedAt: new Date().toISOString() };
+      editingVision = false;
+    } catch (e) {
+      error = extractError(e);
+    }
+  }
+
+  function startEditVision() {
+    editVisionMission = personalVision.mission;
+    editVisionVision = personalVision.vision;
+    editingVision = true;
+  }
+
   const THEME_FIELDS = ['id', 'name', 'color'];
-  const OBJECTIVE_FIELDS = ['id', 'parentId', 'title', 'status'];
-  const KEY_RESULT_FIELDS = ['id', 'parentId', 'description', 'status', 'startValue', 'currentValue', 'targetValue'];
+  const OBJECTIVE_FIELDS = ['id', 'parentId', 'title', 'status', 'closingStatus', 'closingNotes', 'closedAt'];
+  const KEY_RESULT_FIELDS = ['id', 'parentId', 'description', 'type', 'status', 'startValue', 'currentValue', 'targetValue'];
 
   /** Recursively collect all objectives from a theme tree. */
   function flattenObjectives(themeList: LifeTheme[]): Objective[] {
@@ -359,15 +460,16 @@
     }
   }
 
-  // CreateKeyResult — (parentObjectiveId, description)
+  // CreateKeyResult — (parentObjectiveId, description, startValue, targetValue, type)
   async function createKeyResult(objectiveId: string) {
     if (!newKeyResultDescription.trim()) return;
 
     try {
-      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue);
+      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue, newKeyResultType);
       await loadThemes();
       await verifyThemeState();
       newKeyResultDescription = '';
+      newKeyResultType = 'metric';
       newKeyResultStartValue = 0;
       newKeyResultTargetValue = 1;
       addingKeyResultToObjective = null;
@@ -418,6 +520,75 @@
     }
   }
 
+  // Routine CRUD
+  async function createRoutine(themeId: string) {
+    if (!newRoutineDescription.trim()) return;
+
+    try {
+      await getBindings().AddRoutine(themeId, newRoutineDescription.trim(), newRoutineTargetValue, newRoutineTargetType, newRoutineUnit);
+      await loadThemes();
+      await verifyThemeState();
+      newRoutineDescription = '';
+      newRoutineTargetValue = 1;
+      newRoutineTargetType = 'at-or-above';
+      newRoutineUnit = '';
+      addingRoutineToTheme = null;
+    } catch (e) {
+      console.error('Failed to create routine:', e);
+      error = extractError(e);
+    }
+  }
+
+  async function updateRoutine(routineId: string) {
+    try {
+      await getBindings().UpdateRoutine(routineId, editRoutineDescription, editRoutineCurrentValue, editRoutineTargetValue, editRoutineTargetType, editRoutineUnit);
+      await loadThemes();
+      await verifyThemeState();
+      editingRoutineId = null;
+    } catch (e) {
+      console.error('Failed to update routine:', e);
+      error = extractError(e);
+    }
+  }
+
+  async function updateRoutineCurrentValue(routineId: string, currentValue: number, routine: Routine) {
+    try {
+      await getBindings().UpdateRoutine(routineId, routine.description, currentValue, routine.targetValue, routine.targetType, routine.unit ?? '');
+      await loadThemes();
+      await verifyThemeState();
+    } catch (e) {
+      console.error('Failed to update routine current value:', e);
+      error = extractError(e);
+    }
+  }
+
+  async function deleteRoutine(routineId: string) {
+    if (!confirm('Are you sure you want to delete this routine?')) return;
+
+    try {
+      await getBindings().DeleteRoutine(routineId);
+      await loadThemes();
+      await verifyThemeState();
+    } catch (e) {
+      console.error('Failed to delete routine:', e);
+      error = extractError(e);
+    }
+  }
+
+  function startEditRoutine(routine: Routine) {
+    editingRoutineId = routine.id;
+    editRoutineDescription = routine.description;
+    editRoutineCurrentValue = routine.currentValue;
+    editRoutineTargetValue = routine.targetValue;
+    editRoutineTargetType = routine.targetType;
+    editRoutineUnit = routine.unit ?? '';
+  }
+
+  function isRoutineOnTrack(routine: Routine): boolean {
+    if (routine.targetType === 'at-or-below') return routine.currentValue <= routine.targetValue;
+    return routine.currentValue >= routine.targetValue;
+  }
+
   // Status helpers
   function isActive(status: string | undefined): boolean {
     return !status || status === 'active';
@@ -445,6 +616,77 @@
       console.error('Failed to set key result status:', e);
       error = extractError(e);
     }
+  }
+
+  // Closing workflow helpers
+  const CLOSING_STATUS_OPTIONS = [
+    { value: 'achieved', label: 'Achieved', description: 'All key results met or exceeded' },
+    { value: 'partially-achieved', label: 'Partially Achieved', description: 'Some key results met' },
+    { value: 'missed', label: 'Missed', description: 'Key results not met' },
+    { value: 'postponed', label: 'Postponed', description: 'Deferred to a future period' },
+    { value: 'canceled', label: 'Canceled', description: 'No longer relevant' },
+  ] as const;
+
+  function closingStatusLabel(status: string): string {
+    const opt = CLOSING_STATUS_OPTIONS.find(o => o.value === status);
+    return opt ? opt.label : status;
+  }
+
+  function getClosingObjective(): Objective | undefined {
+    if (!closingObjectiveId) return undefined;
+    for (const theme of themes) {
+      const found = findObjectiveInTree(theme.objectives, closingObjectiveId);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  function findObjectiveInTree(objectives: Objective[], id: string): Objective | undefined {
+    for (const obj of objectives) {
+      if (obj.id === id) return obj;
+      const found = findObjectiveInTree(obj.objectives ?? [], id);
+      if (found) return found;
+    }
+    return undefined;
+  }
+
+  function openCloseDialog(objectiveId: string) {
+    closingObjectiveId = objectiveId;
+    closingStatus = 'achieved';
+    closingNotes = '';
+  }
+
+  async function closeObjective() {
+    if (!closingObjectiveId) return;
+    try {
+      await getBindings().CloseObjective(closingObjectiveId, closingStatus, closingNotes);
+      closingObjectiveId = null;
+      await loadThemes();
+      await verifyThemeState();
+    } catch (e) {
+      console.error('Failed to close objective:', e);
+      error = extractError(e);
+    }
+  }
+
+  async function reopenObjective(objectiveId: string) {
+    try {
+      await getBindings().ReopenObjective(objectiveId);
+      await loadThemes();
+      await verifyThemeState();
+    } catch (e) {
+      console.error('Failed to reopen objective:', e);
+      error = extractError(e);
+    }
+  }
+
+  function krProgressPercent(kr: KeyResult): number {
+    const target = kr.targetValue ?? 0;
+    if (target === 0) return -1;
+    const start = kr.startValue ?? 0;
+    const range = target - start;
+    if (range === 0) return 0;
+    return Math.max(0, Math.min(100, Math.round(((kr.currentValue ?? 0) - start) / range * 100)));
   }
 
   // Start editing
@@ -549,6 +791,7 @@
     editingThemeId = null;
     editingObjectiveId = null;
     editingKeyResultId = null;
+    editingRoutineId = null;
   }
 
   function getColorConflicts(color: string, excludeThemeId?: string): string[] {
@@ -563,6 +806,7 @@
       if (navCtx) {
         showCompleted = navCtx.showCompleted ?? false;
         showArchived = navCtx.showArchived ?? false;
+        visionCollapsed = navCtx.visionCollapsed ?? true;
         if (navCtx.expandedOkrIds?.length) {
           for (const id of navCtx.expandedOkrIds) {
             expandedIds.add(id);
@@ -574,17 +818,19 @@
     }
     contextLoaded = true;
     loadThemes();
+    loadVision();
   });
 
   // Persist toggle states to NavigationContext
   $effect(() => {
     const sc = showCompleted;
     const sa = showArchived;
+    const vc = visionCollapsed;
     if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
-          getBindings().SaveNavigationContext({ ...ctx, showCompleted: sc, showArchived: sa });
+          getBindings().SaveNavigationContext({ ...ctx, showCompleted: sc, showArchived: sa, visionCollapsed: vc });
         }
       }).catch(() => { /* ignore */ });
     });
@@ -639,6 +885,64 @@
 
   {#if error}
     <ErrorBanner message={error} ondismiss={() => error = null} />
+  {/if}
+
+  <!-- Vision & Mission Section -->
+  <section class="vision-section">
+    <button class="vision-header" onclick={() => { visionCollapsed = !visionCollapsed; }}>
+      <span class="expand-icon">{visionCollapsed ? '\u25B6' : '\u25BC'}</span>
+      <span class="vision-title">Vision & Mission</span>
+    </button>
+    {#if !visionCollapsed}
+      <div class="vision-body">
+        {#if personalVision.mission || personalVision.vision}
+          <div class="vision-content">
+            {#if personalVision.vision}
+              <div class="vision-field">
+                <span class="vision-label">Vision</span>
+                <p class="vision-text">{personalVision.vision}</p>
+              </div>
+            {/if}
+            {#if personalVision.mission}
+              <div class="vision-field">
+                <span class="vision-label">Mission</span>
+                <p class="vision-text">{personalVision.mission}</p>
+              </div>
+            {/if}
+          </div>
+          <div class="vision-actions">
+            <Button variant="secondary" onclick={startEditVision}>Edit</Button>
+          </div>
+        {:else}
+          <div class="vision-empty">
+            <span class="vision-placeholder">Set your personal vision...</span>
+            <Button variant="secondary" onclick={startEditVision}>Edit</Button>
+          </div>
+        {/if}
+      </div>
+    {/if}
+  </section>
+
+  <!-- Vision Edit Dialog -->
+  {#if editingVision}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="vision-dialog-overlay" onkeydown={(e) => { if (e.key === 'Escape') editingVision = false; }}>
+      <div class="vision-dialog">
+        <h2>Edit Vision & Mission</h2>
+        <label class="vision-dialog-label">
+          Vision
+          <textarea class="vision-textarea" bind:value={editVisionVision} placeholder="What is your long-term vision?" rows="3"></textarea>
+        </label>
+        <label class="vision-dialog-label">
+          Mission
+          <textarea class="vision-textarea" bind:value={editVisionMission} placeholder="What is your personal mission?" rows="3"></textarea>
+        </label>
+        <div class="vision-dialog-actions">
+          <Button variant="primary" onclick={saveVision}>Save</Button>
+          <Button variant="secondary" onclick={() => { editingVision = false; }}>Cancel</Button>
+        </div>
+      </div>
+    </div>
   {/if}
 
   {#if loading}
@@ -730,6 +1034,11 @@
           {:else}
             <span class="item-name">{theme.name}</span>
             <span class="item-id">{theme.id}</span>
+            {@const tp = getThemeProgressValue(theme.id)}
+            {#if tp >= 0}
+              <span class="progress-bar"><span class="progress-fill" style="width: {tp}%"></span></span>
+              <span class="progress-text">{Math.round(tp)}%</span>
+            {/if}
             <div class="item-actions">
               {#if onNavigateToCalendar}
                 <Button
@@ -750,8 +1059,13 @@
               <Button
                 variant="icon" color="add"
                 onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
-                title="Add Objective"
-              >➕</Button>
+                title="Add OKR"
+              >+ OKR</Button>
+              <Button
+                variant="icon" color="add"
+                onclick={() => { addingRoutineToTheme = theme.id; expandId(theme.id); }}
+                title="Add Routine"
+              >+ Routine</Button>
             </div>
           {/if}
         </div>
@@ -771,12 +1085,97 @@
           </div>
         {/if}
 
-        {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
+        {#if theme.objectives.length === 0 && !(theme.routines?.length) && addingObjectiveTo !== theme.id && addingRoutineToTheme !== theme.id}
           <div class="empty-state">
-            No objectives yet.
-            <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add one</button>
+            No objectives or routines yet.
+            <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
+            or
+            <button class="link-button" onclick={() => { addingRoutineToTheme = theme.id; }}>add a routine</button>
           </div>
         {/if}
+
+        <!-- Routines Section -->
+        <div class="routine-section">
+          {#if addingRoutineToTheme === theme.id}
+            <div class="new-item-form routine-form">
+              <input
+                type="text"
+                placeholder="Routine description"
+                bind:value={newRoutineDescription}
+                onkeydown={(e) => { if (e.key === 'Enter') createRoutine(theme.id); if (e.key === 'Escape') { addingRoutineToTheme = null; newRoutineDescription = ''; } }}
+              />
+              <div class="routine-form-row">
+                <label class="routine-field-label">Target
+                  <input type="number" class="routine-field-input" bind:value={newRoutineTargetValue} min="1" />
+                </label>
+                <label class="routine-field-label routine-field-fixed">Type
+                  <select class="routine-field-select" bind:value={newRoutineTargetType}>
+                    <option value="at-or-above">&ge; (at or above)</option>
+                    <option value="at-or-below">&le; (at or below)</option>
+                  </select>
+                </label>
+                <label class="routine-field-label">Unit
+                  <input type="text" class="routine-field-input" bind:value={newRoutineUnit} placeholder="e.g. kg, %" />
+                </label>
+                <Button variant="primary" onclick={() => createRoutine(theme.id)}>Create</Button>
+                <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; newRoutineTargetValue = 1; newRoutineTargetType = 'at-or-above'; newRoutineUnit = ''; }}>Cancel</Button>
+              </div>
+            </div>
+          {/if}
+
+          {#each theme.routines ?? [] as routine (routine.id)}
+            <div class="routine-card">
+              {#if editingRoutineId === routine.id}
+                <div class="routine-edit-form">
+                  <input type="text" class="inline-edit" bind:value={editRoutineDescription}
+                    onkeydown={(e) => { if (e.key === 'Enter') updateRoutine(routine.id); if (e.key === 'Escape') cancelEdit(); }} />
+                  <div class="routine-form-row">
+                    <label class="routine-field-label">Current
+                      <input type="number" class="routine-field-input" bind:value={editRoutineCurrentValue} />
+                    </label>
+                    <label class="routine-field-label">Target
+                      <input type="number" class="routine-field-input" bind:value={editRoutineTargetValue} min="1" />
+                    </label>
+                    <label class="routine-field-label routine-field-fixed">Type
+                      <select class="routine-field-select" bind:value={editRoutineTargetType}>
+                        <option value="at-or-above">&ge; (at or above)</option>
+                        <option value="at-or-below">&le; (at or below)</option>
+                      </select>
+                    </label>
+                    <label class="routine-field-label">Unit
+                      <input type="text" class="routine-field-input" bind:value={editRoutineUnit} placeholder="e.g. kg, %" />
+                    </label>
+                    <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
+                    <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+                  </div>
+                </div>
+              {:else}
+                <div class="routine-display">
+                  <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
+                  <span class="routine-description">{routine.description}</span>
+                  <span class="routine-values">
+                    <input
+                      type="number"
+                      class="routine-current-input"
+                      value={routine.currentValue}
+                      onchange={(e) => updateRoutineCurrentValue(routine.id, parseInt((e.target as HTMLInputElement).value) || 0, routine)}
+                      title="Current value"
+                    />
+                    <span class="routine-direction">{routine.targetType === 'at-or-below' ? '\u2264' : '\u2265'}</span>
+                    <span class="routine-target">{routine.targetValue}</span>
+                    {#if routine.unit}
+                      <span class="routine-unit">{routine.unit}</span>
+                    {/if}
+                  </span>
+                  <div class="item-actions">
+                    <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
+                    <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
       {/snippet}
 
       {#snippet objectiveHeader(objective: Objective, themeColor: string)}
@@ -812,11 +1211,22 @@
             <span class="item-name">{objective.title}</span>
             <span class="item-id">{objective.id}</span>
             <TagBadges tags={objective.tags} />
+            {@const op = getObjectiveProgress(objective.id)}
+            {#if isActive(objective.status)}
+              <span class="status-dot {getObjectiveStatus(op)}"></span>
+            {/if}
+            {#if objective.closingStatus}
+              <span class="closing-badge closing-badge-{objective.closingStatus}">{closingStatusLabel(objective.closingStatus)}</span>
+            {/if}
+            {#if op >= 0}
+              <span class="progress-bar"><span class="progress-fill" style="width: {op}%"></span></span>
+              <span class="progress-text">{Math.round(op)}%</span>
+            {/if}
             <div class="item-actions">
               {#if isActive(objective.status)}
-                <Button variant="icon" color="complete" onclick={() => setObjectiveStatus(objective.id, 'completed')} title="Complete">✅</Button>
+                <Button variant="icon" color="complete" onclick={() => openCloseDialog(objective.id)} title="Close">✅</Button>
               {:else if objective.status === 'completed'}
-                <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
+                <Button variant="icon" color="reopen" onclick={() => reopenObjective(objective.id)} title="Reopen">🔄</Button>
                 <Button variant="icon" color="archive" onclick={() => setObjectiveStatus(objective.id, 'archived')} title="Archive">📦</Button>
               {:else}
                 <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
@@ -861,10 +1271,18 @@
               onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
             />
             <div class="kr-form-row">
-              <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
-              <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
+              <label class="kr-type-label">
+                <select class="kr-type-select" bind:value={newKeyResultType} onchange={() => { if (newKeyResultType === 'binary') { newKeyResultStartValue = 0; newKeyResultTargetValue = 1; } }}>
+                  <option value="metric">Metric</option>
+                  <option value="binary">Binary</option>
+                </select>
+              </label>
+              {#if newKeyResultType !== 'binary'}
+                <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
+                <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
+              {/if}
               <Button variant="primary" onclick={() => createKeyResult(objective.id)}>Create</Button>
-              <Button variant="secondary" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultStartValue = 0; newKeyResultTargetValue = 0; }}>Cancel</Button>
+              <Button variant="secondary" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultType = 'metric'; newKeyResultStartValue = 0; newKeyResultTargetValue = 1; }}>Cancel</Button>
             </div>
           </div>
         {/if}
@@ -875,6 +1293,13 @@
             <button class="link-button" onclick={() => { addingObjectiveTo = objective.id; }}>Add objective</button>
             or
             <button class="link-button" onclick={() => { addingKeyResultToObjective = objective.id; }}>Add key result</button>
+          </div>
+        {/if}
+
+        {#if objective.closingNotes}
+          <div class="closing-notes">
+            <span class="closing-notes-label">Reflection:</span>
+            <p class="closing-notes-text">{objective.closingNotes}</p>
           </div>
         {/if}
       {/snippet}
@@ -897,7 +1322,7 @@
           {:else}
             <span class="item-name">{kr.description}</span>
             <span class="item-id">{kr.id}</span>
-            {#if (kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0}
+            {#if kr.type === 'binary' || ((kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0)}
               <input
                 type="checkbox"
                 class="kr-checkbox"
@@ -954,6 +1379,59 @@
     {/if}
   {/if}
 </div>
+
+{#if closingObjectiveId}
+  {@const closingObj = getClosingObjective()}
+  {#if closingObj}
+    <Dialog title="Close Objective" maxWidth="500px" onclose={() => { closingObjectiveId = null; }}>
+      <p class="close-dialog-title">{closingObj.title}</p>
+
+      {#if closingObj.keyResults.length > 0}
+        <div class="close-dialog-kr-summary">
+          <span class="close-dialog-section-label">Key Results</span>
+          {#each closingObj.keyResults as kr (kr.id)}
+            {@const pct = krProgressPercent(kr)}
+            <div class="close-dialog-kr-row">
+              <span class="close-dialog-kr-desc">{kr.description}</span>
+              {#if pct >= 0}
+                <span class="close-dialog-kr-pct">{pct}%</span>
+              {:else}
+                <span class="close-dialog-kr-pct">--</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      <div class="close-dialog-field">
+        <span class="close-dialog-section-label">Closing Status</span>
+        {#each CLOSING_STATUS_OPTIONS as opt (opt.value)}
+          <label class="close-dialog-radio">
+            <input type="radio" bind:group={closingStatus} value={opt.value} />
+            <span class="close-dialog-radio-label">{opt.label}</span>
+            <span class="close-dialog-radio-desc">{opt.description}</span>
+          </label>
+        {/each}
+      </div>
+
+      <div class="close-dialog-field">
+        <label class="close-dialog-section-label" for="closing-notes">Reflection Notes</label>
+        <textarea
+          id="closing-notes"
+          class="close-dialog-textarea"
+          bind:value={closingNotes}
+          placeholder="What worked? What would you do differently? What's next?"
+          rows="3"
+        ></textarea>
+      </div>
+
+      {#snippet actions()}
+        <Button variant="secondary" onclick={() => { closingObjectiveId = null; }}>Cancel</Button>
+        <Button variant="primary" onclick={closeObjective}>Close Objective</Button>
+      {/snippet}
+    </Dialog>
+  {/if}
+{/if}
 
 <style>
   .okr-view {
@@ -1106,6 +1584,15 @@
     border: 1px solid var(--color-gray-300);
     border-radius: 4px;
     font-size: 0.875rem;
+  }
+
+  .new-item-form input.routine-field-input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 0.25rem;
+    font-size: 0.75rem;
+    border-radius: 3px;
   }
 
   .new-item-form input:focus {
@@ -1269,6 +1756,25 @@
     flex-shrink: 0;
   }
 
+  .kr-type-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+  }
+
+  .kr-type-select {
+    padding: 0.25rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .kr-type-select:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+  }
+
   .kr-progress-label {
     font-size: 0.75rem;
     color: var(--color-gray-500);
@@ -1304,5 +1810,451 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+  }
+
+  /* Progress rollup bar */
+  .progress-bar {
+    display: inline-block;
+    width: 60px;
+    height: 6px;
+    background: var(--color-gray-200, #e5e7eb);
+    border-radius: 3px;
+    vertical-align: middle;
+    margin: 0 6px;
+  }
+
+  .progress-fill {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--color-primary-500, #3b82f6);
+    transition: width 0.2s;
+  }
+
+  .progress-text {
+    font-size: 0.75rem;
+    color: var(--color-gray-500, #6b7280);
+  }
+
+  /* Goal status indicator dot */
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
+  .status-dot.on-track { background-color: #22c55e; }
+  .status-dot.needs-attention { background-color: #eab308; }
+  .status-dot.off-track { background-color: #ef4444; }
+  .status-dot.no-status { background-color: #9ca3af; }
+
+  /* Vision & Mission Section */
+  .vision-section {
+    background-color: var(--color-gray-50);
+    border: 1px solid var(--color-gray-200);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .vision-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .vision-title {
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+  }
+
+  .vision-body {
+    padding: 0 1rem 0.75rem;
+  }
+
+  .vision-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .vision-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .vision-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .vision-text {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+
+  .vision-actions {
+    margin-top: 0.5rem;
+  }
+
+  .vision-empty {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .vision-placeholder {
+    font-size: 0.875rem;
+    color: var(--color-gray-400);
+    font-style: italic;
+  }
+
+  /* Vision Edit Dialog */
+  .vision-dialog-overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .vision-dialog {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .vision-dialog h2 {
+    margin: 0 0 1rem;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+  }
+
+  .vision-dialog-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-gray-700);
+  }
+
+  .vision-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+
+  .vision-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  .vision-dialog-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  /* Routine Section */
+  .routine-section {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--color-gray-200);
+  }
+
+  .routine-card {
+    padding: 0.375rem 0.5rem;
+    margin: 0.125rem 0;
+    border-radius: 4px;
+    background-color: #fafafa;
+  }
+
+  .routine-card:hover .item-actions {
+    opacity: 1;
+  }
+
+  .routine-display {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .routine-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .routine-status-dot.on-track { background-color: #22c55e; }
+  .routine-status-dot.off-track { background-color: #ef4444; }
+
+  .routine-description {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--color-gray-700);
+  }
+
+  .routine-values {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    color: var(--color-gray-600);
+    flex-shrink: 0;
+  }
+
+  .routine-current-input {
+    width: 40px;
+    padding: 0 0.25rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    text-align: center;
+  }
+
+  .routine-current-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+  }
+
+  .routine-direction {
+    font-size: 0.875rem;
+    color: var(--color-gray-500);
+  }
+
+  .routine-target {
+    font-weight: 500;
+  }
+
+  .routine-unit {
+    font-size: 0.75rem;
+    color: var(--color-gray-400);
+  }
+
+  .routine-form {
+    margin: 0.5rem 0;
+  }
+
+  .routine-form > input {
+    width: 100%;
+    flex-basis: 100%;
+  }
+
+  .routine-form-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .routine-edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .routine-field-label {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .routine-field-fixed {
+    flex: 0 0 auto;
+  }
+
+  .routine-field-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 0.25rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 3px;
+    font-size: 0.75rem;
+  }
+
+  .routine-field-input:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+  }
+
+  .routine-field-select {
+    padding: 0.25rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+  }
+
+  .routine-field-select:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+  }
+
+  /* Closing status badge */
+  .closing-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+
+  .closing-badge-achieved { background-color: #dcfce7; color: #166534; }
+  .closing-badge-partially-achieved { background-color: #fef9c3; color: #854d0e; }
+  .closing-badge-missed { background-color: #fee2e2; color: #991b1b; }
+  .closing-badge-postponed { background-color: #e0e7ff; color: #3730a3; }
+  .closing-badge-canceled { background-color: #f3f4f6; color: #4b5563; }
+
+  /* Closing notes display */
+  .closing-notes {
+    padding: 0.5rem 1rem;
+    margin: 0.25rem 0;
+    background-color: #f8fafc;
+    border-left: 3px solid var(--color-gray-300);
+    font-size: 0.8rem;
+  }
+
+  .closing-notes-label {
+    font-weight: 600;
+    color: var(--color-gray-500);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .closing-notes-text {
+    margin: 0.25rem 0 0;
+    color: var(--color-gray-600);
+    line-height: 1.4;
+    white-space: pre-wrap;
+  }
+
+  /* Close dialog styles */
+  .close-dialog-title {
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+    color: var(--color-gray-800);
+  }
+
+  .close-dialog-kr-summary {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background-color: #f8fafc;
+    border-radius: 4px;
+  }
+
+  .close-dialog-kr-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.25rem 0;
+    font-size: 0.8rem;
+  }
+
+  .close-dialog-kr-desc {
+    color: var(--color-gray-700);
+    flex: 1;
+    margin-right: 0.5rem;
+  }
+
+  .close-dialog-kr-pct {
+    font-weight: 500;
+    color: var(--color-gray-500);
+    font-family: monospace;
+    flex-shrink: 0;
+  }
+
+  .close-dialog-field {
+    margin-bottom: 1rem;
+  }
+
+  .close-dialog-section-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.375rem;
+  }
+
+  .close-dialog-radio {
+    display: flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    padding: 0.25rem 0;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+
+  .close-dialog-radio input[type="radio"] {
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+  }
+
+  .close-dialog-radio-label {
+    font-weight: 500;
+    color: var(--color-gray-800);
+  }
+
+  .close-dialog-radio-desc {
+    color: var(--color-gray-400);
+    font-size: 0.75rem;
+  }
+
+  .close-dialog-textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+
+  .close-dialog-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
   }
 </style>
