@@ -62,7 +62,7 @@ export async function runTests() {
       timeout: TEST_CONFIG.TIMEOUT,
     })
 
-    await page.click('.nav-link:has-text("Tasks")')
+    await page.click('.nav-link:has-text("Short-term")')
     await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
 
     // ---- Test 1: CreateTaskDialog — new tag via comma ----
@@ -222,7 +222,7 @@ export async function runTests() {
       await page.waitForSelector('[role="dialog"]', { state: 'detached', timeout: 5000 })
 
       // Navigate away and back to refresh task state from mock storage
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })

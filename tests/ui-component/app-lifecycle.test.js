@@ -131,9 +131,9 @@ export async function runTests() {
         '.nav-link.active',
         (el) => el.textContent.trim()
       )
-      if (activeNavLink !== 'OKRs') {
+      if (activeNavLink !== 'Long-term') {
         throw new Error(
-          `Expected active nav link "OKRs", got "${activeNavLink}"`
+          `Expected active nav link "Long-term", got "${activeNavLink}"`
         )
       }
 
@@ -154,7 +154,7 @@ export async function runTests() {
     reporter.startTest('Navigation between views works')
     try {
       // Navigate to Calendar view
-      await page.click('.nav-link:has-text("Calendar")')
+      await page.click('.nav-link:has-text("Mid-term")')
       await page.waitForSelector('.calendar-view', {
         timeout: 5000,
       })
@@ -163,20 +163,20 @@ export async function runTests() {
         '.nav-link.active',
         (el) => el.textContent.trim()
       )
-      if (activeAfterCal !== 'Calendar') {
+      if (activeAfterCal !== 'Mid-term') {
         throw new Error(
-          `Expected active nav link "Calendar" after click, got "${activeAfterCal}"`
+          `Expected active nav link "Mid-term" after click, got "${activeAfterCal}"`
         )
       }
 
       // Navigate to Tasks view
-      await page.click('.nav-link:has-text("Tasks")')
-      await page.waitForSelector('.nav-link.active:has-text("Tasks")', {
+      await page.click('.nav-link:has-text("Short-term")')
+      await page.waitForSelector('.nav-link.active:has-text("Short-term")', {
         timeout: 5000,
       })
 
       // Navigate back to OKRs
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.scrollable-view', {
         timeout: 5000,
       })
@@ -185,9 +185,9 @@ export async function runTests() {
         '.nav-link.active',
         (el) => el.textContent.trim()
       )
-      if (activeAfterOKR !== 'OKRs') {
+      if (activeAfterOKR !== 'Long-term') {
         throw new Error(
-          `Expected active nav link "OKRs" after returning, got "${activeAfterOKR}"`
+          `Expected active nav link "Long-term" after returning, got "${activeAfterOKR}"`
         )
       }
 

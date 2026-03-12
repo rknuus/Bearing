@@ -116,7 +116,7 @@ export async function runTests() {
     // ---- 1a: Create theme ----
     reporter.startTest('Phase 1a: Create theme and verify files')
     try {
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.okr-header', { timeout: 10000 })
 
       await page.click('.btn-primary:has-text("+ Add Theme")')
@@ -250,7 +250,7 @@ export async function runTests() {
     let theme2Id = 'UNKNOWN'
     reporter.startTest('Phase 2b: Create second theme for multi-theme test')
     try {
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.okr-header', { timeout: 10000 })
 
       await page.click('.btn-primary:has-text("+ Add Theme")')
@@ -794,7 +794,7 @@ export async function runTests() {
     reporter.startTest('Phase 6b: Create task in custom column, rename column, verify migration')
     try {
       // Create a theme for Phase 6 tasks (Phase 5d deleted the original)
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.okr-header', { timeout: 10000 })
       await page.click('.btn-primary:has-text("+ Add Theme")')
       await page.waitForSelector('.theme-form', { timeout: 5000 })

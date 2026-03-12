@@ -34,13 +34,13 @@
     // Add view-level breadcrumb
     switch (currentView) {
       case 'okr':
-        parts.push({ id: 'VIEW:okr', label: 'OKRs' });
+        parts.push({ id: 'VIEW:okr', label: 'Long-term' });
         break;
       case 'calendar':
-        parts.push({ id: 'VIEW:calendar', label: 'Calendar' });
+        parts.push({ id: 'VIEW:calendar', label: 'Mid-term' });
         break;
       case 'eisenkan':
-        parts.push({ id: 'VIEW:eisenkan', label: 'Tasks' });
+        parts.push({ id: 'VIEW:eisenkan', label: 'Short-term' });
         break;
     }
 
@@ -366,25 +366,25 @@
         class="nav-link"
         class:active={currentView === 'okr'}
         onclick={() => navigateToOKR()}
-        title="OKRs (Ctrl+1 / Cmd+1)"
+        title="Long-term (Ctrl+1 / Cmd+1)"
       >
-        OKRs
+        Long-term
       </button>
       <button
         class="nav-link"
         class:active={currentView === 'calendar'}
         onclick={() => navigateToCalendar()}
-        title="Calendar (Ctrl+2 / Cmd+2)"
+        title="Mid-term (Ctrl+2 / Cmd+2)"
       >
-        Calendar
+        Mid-term
       </button>
       <button
         class="nav-link"
         class:active={currentView === 'eisenkan'}
         onclick={() => navigateToEisenKan()}
-        title="Tasks (Ctrl+3 / Cmd+3)"
+        title="Short-term (Ctrl+3 / Cmd+3)"
       >
-        Tasks
+        Short-term
       </button>
     </div>
   </nav>
