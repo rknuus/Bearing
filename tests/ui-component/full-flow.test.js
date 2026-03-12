@@ -66,7 +66,7 @@ export async function runTests() {
     reporter.startTest('OKR: create theme, objective, and key result')
     try {
       // Navigate to OKRs
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.okr-header', { timeout: 5000 })
 
       // Create theme "E2E Flow" with orange color
@@ -216,7 +216,7 @@ export async function runTests() {
       })
 
       // Navigate away and back to trigger fresh data fetch
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
@@ -276,7 +276,7 @@ export async function runTests() {
       })
 
       // Navigate away and back to refresh
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
@@ -324,7 +324,7 @@ export async function runTests() {
       await page.waitForSelector('.okr-header', { timeout: 5000 })
 
       const okrNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (okrNav !== 'OKRs') {
+      if (okrNav !== 'Long-term') {
         throw new Error(`Expected OKRs active after theme click, got "${okrNav}"`)
       }
 
@@ -349,7 +349,7 @@ export async function runTests() {
       await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
 
       const taskNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (taskNav !== 'Tasks') {
+      if (taskNav !== 'Short-term') {
         throw new Error(`Expected Tasks active, got "${taskNav}"`)
       }
 
@@ -375,7 +375,7 @@ export async function runTests() {
       })
 
       // Navigate away and back to refresh state
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })

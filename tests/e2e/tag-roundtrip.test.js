@@ -99,7 +99,7 @@ export async function runTests() {
     reporter.startTest('Setup: Create theme for tag tests')
     let themeId
     try {
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.okr-header', { timeout: 10000 })
 
       await page.click('.btn-primary:has-text("+ Add Theme")')

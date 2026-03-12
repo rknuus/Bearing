@@ -98,7 +98,7 @@ describe('App', () => {
 
     // OKRs nav link should be active
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
+      .find(l => l.textContent?.trim() === 'Long-term');
     expect(okrLink?.classList.contains('active')).toBe(true);
   });
 
@@ -107,12 +107,12 @@ describe('App', () => {
 
     // Should start on OKRs
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
+      .find(l => l.textContent?.trim() === 'Long-term');
     expect(okrLink?.classList.contains('active')).toBe(true);
 
     // Click Calendar nav link
     const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Calendar');
+      .find(l => l.textContent?.trim() === 'Mid-term');
     calLink!.click();
     await tick();
     await vi.waitFor(() => {
@@ -125,12 +125,12 @@ describe('App', () => {
 
     // OKRs should be active by default
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
+      .find(l => l.textContent?.trim() === 'Long-term');
     expect(okrLink?.classList.contains('active')).toBe(true);
 
     // Click Calendar
     const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Calendar');
+      .find(l => l.textContent?.trim() === 'Mid-term');
     calLink!.click();
     await tick();
 
@@ -146,7 +146,7 @@ describe('App', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: '1', ctrlKey: true, bubbles: true }));
     await tick();
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
+      .find(l => l.textContent?.trim() === 'Long-term');
     expect(okrLink?.classList.contains('active')).toBe(true);
 
     // Ctrl+2 → Calendar
@@ -154,7 +154,7 @@ describe('App', () => {
     await tick();
     await vi.waitFor(() => {
       const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-        .find(l => l.textContent?.trim() === 'Calendar');
+        .find(l => l.textContent?.trim() === 'Mid-term');
       expect(calLink?.classList.contains('active')).toBe(true);
     });
 
@@ -163,7 +163,7 @@ describe('App', () => {
     await tick();
     await vi.waitFor(() => {
       const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-        .find(l => l.textContent?.trim() === 'Tasks');
+        .find(l => l.textContent?.trim() === 'Short-term');
       expect(taskLink?.classList.contains('active')).toBe(true);
     });
   });
@@ -180,7 +180,7 @@ describe('App', () => {
 
     // OKRs should be the active view
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
+      .find(l => l.textContent?.trim() === 'Long-term');
     expect(okrLink?.classList.contains('active')).toBe(true);
   });
 
@@ -191,7 +191,7 @@ describe('App', () => {
 
     // Click OKRs
     const okrLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'OKRs');
+      .find(l => l.textContent?.trim() === 'Long-term');
     okrLink!.click();
     await tick();
 
@@ -227,7 +227,7 @@ describe('App', () => {
 
     // Switch to Calendar view
     const calLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Calendar');
+      .find(l => l.textContent?.trim() === 'Mid-term');
     calLink!.click();
     await tick();
 
@@ -262,9 +262,9 @@ describe('App', () => {
     const navLinks = container.querySelectorAll('.nav-link');
     expect(navLinks.length).toBe(3);
     const linkTexts = Array.from(navLinks).map(l => l.textContent?.trim());
-    expect(linkTexts).toContain('OKRs');
-    expect(linkTexts).toContain('Calendar');
-    expect(linkTexts).toContain('Tasks');
+    expect(linkTexts).toContain('Long-term');
+    expect(linkTexts).toContain('Mid-term');
+    expect(linkTexts).toContain('Short-term');
   });
 
   it('restores EisenKan view with filterThemeIds from navigation context', async () => {
@@ -280,7 +280,7 @@ describe('App', () => {
 
     // Tasks nav link should be active
     const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Tasks');
+      .find(l => l.textContent?.trim() === 'Short-term');
     expect(taskLink?.classList.contains('active')).toBe(true);
 
     // Breadcrumb bar should show filter context
@@ -301,7 +301,7 @@ describe('App', () => {
 
     // Tasks nav link should be active
     const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-      .find(l => l.textContent?.trim() === 'Tasks');
+      .find(l => l.textContent?.trim() === 'Short-term');
     expect(taskLink?.classList.contains('active')).toBe(true);
 
   });
@@ -337,7 +337,7 @@ describe('App', () => {
       // Trigger a view switch to force SaveNavigationContext
       mockBindings.SaveNavigationContext.mockClear();
       const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-        .find(l => l.textContent?.trim() === 'Tasks');
+        .find(l => l.textContent?.trim() === 'Short-term');
       taskLink!.click();
       await tick();
 
@@ -370,7 +370,7 @@ describe('App', () => {
       // Navigate to Tasks — should auto-activate Today's Focus since a DayFocus exists
       mockBindings.SaveNavigationContext.mockClear();
       const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-        .find(l => l.textContent?.trim() === 'Tasks');
+        .find(l => l.textContent?.trim() === 'Short-term');
       taskLink!.click();
       await tick();
 
@@ -401,7 +401,7 @@ describe('App', () => {
       // Trigger a save by clicking the Tasks nav link
       mockBindings.SaveNavigationContext.mockClear();
       const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
-        .find(l => l.textContent?.trim() === 'Tasks');
+        .find(l => l.textContent?.trim() === 'Short-term');
       taskLink!.click();
       await tick();
 

@@ -48,7 +48,7 @@ export async function runTests() {
       })
 
       // Navigate to OKRs view
-      await page.click('.nav-link:has-text("OKRs")')
+      await page.click('.nav-link:has-text("Long-term")')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
 
       // Wait for OKR content to load (should show themes from mock data)
@@ -74,7 +74,7 @@ export async function runTests() {
     reporter.startTest('Calendar workflow: navigate and open day editor')
     try {
       // Navigate to Calendar view
-      await page.click('.nav-link:has-text("Calendar")')
+      await page.click('.nav-link:has-text("Mid-term")')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
       // Verify calendar header with year
@@ -113,7 +113,7 @@ export async function runTests() {
     reporter.startTest('Task workflow: navigate and view kanban board')
     try {
       // Navigate to Tasks view
-      await page.click('.nav-link:has-text("Tasks")')
+      await page.click('.nav-link:has-text("Short-term")')
       await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
 
       // Verify board header
@@ -175,24 +175,24 @@ export async function runTests() {
       await page.keyboard.press('Control+1')
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
       const activeAfter1 = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (activeAfter1 !== 'OKRs') {
-        throw new Error(`Expected active link "OKRs" after Ctrl+1, got "${activeAfter1}"`)
+      if (activeAfter1 !== 'Long-term') {
+        throw new Error(`Expected active link "Long-term" after Ctrl+1, got "${activeAfter1}"`)
       }
 
       // Ctrl+2 → Calendar
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
       const activeAfter2 = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (activeAfter2 !== 'Calendar') {
-        throw new Error(`Expected active link "Calendar" after Ctrl+2, got "${activeAfter2}"`)
+      if (activeAfter2 !== 'Mid-term') {
+        throw new Error(`Expected active link "Mid-term" after Ctrl+2, got "${activeAfter2}"`)
       }
 
       // Ctrl+3 → Tasks
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
       const activeAfter3 = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (activeAfter3 !== 'Tasks') {
-        throw new Error(`Expected active link "Tasks" after Ctrl+3, got "${activeAfter3}"`)
+      if (activeAfter3 !== 'Short-term') {
+        throw new Error(`Expected active link "Short-term" after Ctrl+3, got "${activeAfter3}"`)
       }
 
       reporter.pass('Keyboard shortcuts switch views correctly')

@@ -68,7 +68,7 @@ export async function runTests() {
     // Sub-test 1: ThemeFilterBar and TagFilterBar render on Tasks view
     reporter.startTest('201a: Filter bars render on Tasks view')
     try {
-      await page.click('.nav-link:has-text("Tasks")')
+      await page.click('.nav-link:has-text("Short-term")')
       await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
 
       // Verify ThemeFilterBar renders
@@ -783,7 +783,7 @@ export async function runTests() {
       // Verify we navigated to OKR view
       await page.waitForSelector('.okr-header', { timeout: 5000 })
       const activeNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (activeNav !== 'OKRs') {
+      if (activeNav !== 'Long-term') {
         throw new Error(`Expected OKRs active after theme click, got "${activeNav}"`)
       }
 
@@ -802,7 +802,7 @@ export async function runTests() {
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
       const calNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (calNav !== 'Calendar') {
+      if (calNav !== 'Mid-term') {
         throw new Error(`Expected Calendar active, got "${calNav}"`)
       }
 
@@ -810,7 +810,7 @@ export async function runTests() {
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
       const taskNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (taskNav !== 'Tasks') {
+      if (taskNav !== 'Short-term') {
         throw new Error(`Expected Tasks active, got "${taskNav}"`)
       }
 
@@ -818,7 +818,7 @@ export async function runTests() {
       await page.keyboard.press('Control+1')
       await page.waitForSelector('.okr-header', { timeout: 5000 })
       const okrNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
-      if (okrNav !== 'OKRs') {
+      if (okrNav !== 'Long-term') {
         throw new Error(`Expected OKRs active, got "${okrNav}"`)
       }
 
