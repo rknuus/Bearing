@@ -1158,6 +1158,12 @@ export const mockRuntimeBindings = {
   ScreenGetAll: async (): Promise<{ isCurrent: boolean; isPrimary: boolean; width: number; height: number }[]> => [
     { isCurrent: true, isPrimary: true, width: 1920, height: 1080 },
   ],
+
+  BrowserOpenURL: (url: string): void => {
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank');
+    }
+  },
 };
 
 /**
