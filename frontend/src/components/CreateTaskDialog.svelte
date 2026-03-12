@@ -447,7 +447,7 @@
     padding: 0.5rem 1rem;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 9999px;
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
