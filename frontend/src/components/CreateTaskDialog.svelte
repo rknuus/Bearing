@@ -447,11 +447,13 @@
     padding: 0.5rem 1rem;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     font-size: 0.875rem;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.2s;
+    box-shadow:
+      inset 3px 3px 0 rgba(255, 255, 255, 0.5),
+      inset -3px -3px 0 rgba(0, 0, 0, 0.4);
   }
 
   .nowrap {
@@ -459,7 +461,15 @@
   }
 
   .btn-add:hover:not(:disabled) {
-    opacity: 0.85;
+    box-shadow:
+      inset 3px 3px 0 rgba(255, 255, 255, 0.75),
+      inset -3px -3px 0 rgba(0, 0, 0, 0.6);
+  }
+
+  .btn-add:active:not(:disabled) {
+    box-shadow:
+      inset -3px -3px 0 rgba(255, 255, 255, 0.5),
+      inset 3px 3px 0 rgba(0, 0, 0, 0.4);
   }
 
   .btn-add:disabled {
