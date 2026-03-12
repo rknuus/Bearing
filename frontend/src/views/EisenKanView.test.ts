@@ -1007,7 +1007,7 @@ describe('EisenKanView', () => {
 
       const archivedCard = container.querySelector('.archived-column .task-card')!;
       expect(archivedCard.querySelector('.priority-badge')).toBeTruthy();
-      expect(archivedCard.querySelector('.theme-name-btn')).toBeTruthy();
+      expect(archivedCard.querySelector('.theme-badge')).toBeTruthy();
     });
 
     it('restore button on archived task calls RestoreTask', async () => {

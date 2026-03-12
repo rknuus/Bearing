@@ -320,7 +320,7 @@ export async function runTests() {
     reporter.startTest('Navigation: cross-view links between views')
     try {
       // Click theme name on a task card to navigate to OKR view
-      await page.click('.theme-name-btn:has-text("E2E Flow")')
+      await page.click('.theme-badge:has-text("E2E Flow")')
       await page.waitForSelector('.okr-header', { timeout: 5000 })
 
       const okrNav = await page.$eval('.nav-link.active', el => el.textContent.trim())

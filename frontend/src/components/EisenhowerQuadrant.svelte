@@ -8,7 +8,7 @@
 
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import TagBadges from '../lib/components/TagBadges.svelte';
-  import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+
   import type { LifeTheme } from '../lib/wails-mock';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels } from '../lib/constants/priorities';
@@ -75,17 +75,20 @@
       <div
         class="pending-task"
         data-testid="pending-task-{task.id}"
-        style="--theme-color: {getThemeColor(themes, task.themeId)};"
         onclick={() => onTaskClick?.(task)}
         role="article"
       >
         <div class="task-header">
-          <ThemeBadge color={getThemeColor(themes, task.themeId)} size="sm" />
           {#if priorityLabel}
             <span class="priority-badge" style="background-color: {color};">{priorityLabel}</span>
           {/if}
           {#if getTheme(themes, task.themeId)}
-            <span class="theme-name">{getTheme(themes, task.themeId)?.name}</span>
+            <span
+              class="theme-badge"
+              style="background-color: {getThemeColor(themes, task.themeId)};"
+            >
+              {getTheme(themes, task.themeId)?.name}
+            </span>
           {/if}
           {#if onTaskDelete}
             <button
@@ -153,7 +156,6 @@
     border-radius: 6px;
     cursor: grab;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border-left: 4px solid var(--theme-color, var(--color-gray-500));
     transition: box-shadow 0.2s;
   }
 
@@ -178,12 +180,18 @@
     letter-spacing: 0.05em;
   }
 
-  .theme-name {
-    font-size: 0.6875rem;
-    color: var(--color-gray-500);
+  .theme-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    max-width: 120px;
   }
 
   .delete-btn {
