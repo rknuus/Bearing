@@ -20,7 +20,7 @@ function makeTestThemes(): LifeTheme[] {
             { id: 'TST-KR1', parentId: 'TST-O1', description: 'Binary KR', startValue: 0, currentValue: 0, targetValue: 1 },
             { id: 'TST-KR2', parentId: 'TST-O1', description: 'Numeric KR', startValue: 0, currentValue: 3, targetValue: 4 },
             { id: 'TST-KR3', parentId: 'TST-O1', description: 'Untracked KR', startValue: 0, currentValue: 0, targetValue: 0 },
-            { id: 'TST-KR4', parentId: 'TST-O1', description: 'Typed Binary KR', type: 'binary', startValue: 0, currentValue: 0, targetValue: 1 },
+            { id: 'TST-KR4', parentId: 'TST-O1', description: 'Typed Binary KR', startValue: 0, currentValue: 0, targetValue: 1 },
           ],
           objectives: [],
         },
@@ -133,11 +133,11 @@ describe('OKRView', () => {
     expect(targetLabel?.textContent).toBe('/ 4');
   });
 
-  it('renders typed binary KR (type="binary") with checkbox', async () => {
+  it('renders binary KR (start=0, target=1) with checkbox', async () => {
     await renderView();
     await expandThemeAndObjective();
 
-    // The 4th KR (TST-KR4) has type='binary' and should show as checkbox
+    // The 4th KR (TST-KR4) has start=0, target=1 and should show as checkbox
     const krItems = container.querySelectorAll('.tree-kr-item');
     const typedBinaryKR = krItems[3];
     const checkbox = typedBinaryKR.querySelector<HTMLInputElement>('.kr-checkbox');
@@ -160,7 +160,7 @@ describe('OKRView', () => {
     expect(untrackedKR.querySelector('.kr-current-input')).toBeNull();
   });
 
-  it('shows type selector and Start/Target inputs in KR creation form', async () => {
+  it('shows Start and Target inputs in KR creation form', async () => {
     await renderView();
     await expandThemeAndObjective();
 
@@ -173,11 +173,6 @@ describe('OKRView', () => {
     const formRow = container.querySelector('.kr-form-row');
     expect(formRow).toBeTruthy();
 
-    // Type selector should be present with default value 'metric'
-    const typeSelect = formRow!.querySelector<HTMLSelectElement>('.kr-type-select');
-    expect(typeSelect).toBeTruthy();
-    expect(typeSelect?.value).toBe('metric');
-
     const progressInputs = formRow!.querySelectorAll<HTMLInputElement>('.kr-progress-input');
     expect(progressInputs.length).toBe(2);
     // Start input
@@ -186,27 +181,6 @@ describe('OKRView', () => {
     // Target input
     expect(progressInputs[1].type).toBe('number');
     expect(progressInputs[1].value).toBe('1');
-  });
-
-  it('hides Start/Target inputs when binary type is selected in KR creation form', async () => {
-    await renderView();
-    await expandThemeAndObjective();
-
-    // Click "+KR" button to open creation form
-    const addKRButton = container.querySelector<HTMLButtonElement>('.tree-objective-item .btn-icon.icon-add[title="Add Key Result"]');
-    addKRButton!.click();
-    await tick();
-
-    const formRow = container.querySelector('.kr-form-row');
-    const typeSelect = formRow!.querySelector<HTMLSelectElement>('.kr-type-select');
-
-    // Switch to binary type
-    await fireEvent.change(typeSelect!, { target: { value: 'binary' } });
-    await tick();
-
-    // Start/Target inputs should be hidden
-    const progressInputs = formRow!.querySelectorAll<HTMLInputElement>('.kr-progress-input');
-    expect(progressInputs.length).toBe(0);
   });
 
   it('shows Start and Target inputs pre-filled in KR edit form', async () => {

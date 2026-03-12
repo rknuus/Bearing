@@ -116,7 +116,6 @@
 
   let addingKeyResultToObjective = $state<string | null>(null);
   let newKeyResultDescription = $state('');
-  let newKeyResultType = $state('metric');
   let newKeyResultStartValue = $state(0);
   let newKeyResultTargetValue = $state(1);
 
@@ -460,16 +459,15 @@
     }
   }
 
-  // CreateKeyResult — (parentObjectiveId, description, startValue, targetValue, type)
+  // CreateKeyResult — (parentObjectiveId, description, startValue, targetValue)
   async function createKeyResult(objectiveId: string) {
     if (!newKeyResultDescription.trim()) return;
 
     try {
-      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue, newKeyResultType);
+      await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue);
       await loadThemes();
       await verifyThemeState();
       newKeyResultDescription = '';
-      newKeyResultType = 'metric';
       newKeyResultStartValue = 0;
       newKeyResultTargetValue = 1;
       addingKeyResultToObjective = null;
@@ -1271,18 +1269,10 @@
               onkeydown={(e) => { if (e.key === 'Enter') createKeyResult(objective.id); if (e.key === 'Escape') { addingKeyResultToObjective = null; newKeyResultDescription = ''; } }}
             />
             <div class="kr-form-row">
-              <label class="kr-type-label">
-                <select class="kr-type-select" bind:value={newKeyResultType} onchange={() => { if (newKeyResultType === 'binary') { newKeyResultStartValue = 0; newKeyResultTargetValue = 1; } }}>
-                  <option value="metric">Metric</option>
-                  <option value="binary">Binary</option>
-                </select>
-              </label>
-              {#if newKeyResultType !== 'binary'}
-                <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
-                <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
-              {/if}
+              <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={newKeyResultStartValue} min="0" /></label>
+              <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={newKeyResultTargetValue} min="0" /></label>
               <Button variant="primary" onclick={() => createKeyResult(objective.id)}>Create</Button>
-              <Button variant="secondary" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultType = 'metric'; newKeyResultStartValue = 0; newKeyResultTargetValue = 1; }}>Cancel</Button>
+              <Button variant="secondary" onclick={() => { addingKeyResultToObjective = null; newKeyResultDescription = ''; newKeyResultStartValue = 0; newKeyResultTargetValue = 1; }}>Cancel</Button>
             </div>
           </div>
         {/if}
@@ -1322,7 +1312,7 @@
           {:else}
             <span class="item-name">{kr.description}</span>
             <span class="item-id">{kr.id}</span>
-            {#if kr.type === 'binary' || ((kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0)}
+            {#if (kr.targetValue ?? 0) === 1 && (kr.startValue ?? 0) === 0}
               <input
                 type="checkbox"
                 class="kr-checkbox"
@@ -1754,25 +1744,6 @@
     font-size: 0.75rem;
     color: var(--color-gray-500);
     flex-shrink: 0;
-  }
-
-  .kr-type-label {
-    font-size: 0.75rem;
-    color: var(--color-gray-500);
-    flex-shrink: 0;
-  }
-
-  .kr-type-select {
-    padding: 0.25rem;
-    border: 1px solid var(--color-gray-300);
-    border-radius: 3px;
-    font-size: 0.75rem;
-    cursor: pointer;
-  }
-
-  .kr-type-select:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
   }
 
   .kr-progress-label {

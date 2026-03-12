@@ -375,7 +375,7 @@ let mockThemes: LifeTheme[] = [
         keyResults: [
           { id: 'CG-KR1', parentId: 'CG-O1', description: 'Lead 2 major projects', startValue: 0, currentValue: 1, targetValue: 2 },
           { id: 'CG-KR2', parentId: 'CG-O1', description: 'Mentor 1 junior developer' },  // untracked KR (no target)
-          { id: 'CG-KR3', parentId: 'CG-O1', description: 'Complete leadership course', type: 'binary', startValue: 0, currentValue: 0, targetValue: 1 },
+          { id: 'CG-KR3', parentId: 'CG-O1', description: 'Complete leadership course', startValue: 0, currentValue: 0, targetValue: 1 },
         ],
         objectives: [],
       },
@@ -576,19 +576,14 @@ export const mockAppBindings = {
   },
 
   // Key Result operations
-  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 1, krType: string = ''): Promise<KeyResult> => {
+  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 1): Promise<KeyResult> => {
     const objective = findObjectiveById(mockThemes, parentObjectiveId);
     if (!objective) {
       throw new Error(`Objective ${parentObjectiveId} not found`);
     }
 
-    if (krType !== '' && krType !== 'metric' && krType !== 'binary') {
-      throw new Error(`invalid key result type: ${krType}`);
-    }
-
-    if (krType === 'binary') {
-      startValue = 0;
-      targetValue = 1;
+    if (startValue > targetValue) {
+      throw new Error('startValue cannot exceed targetValue');
     }
 
     const theme = findThemeForObjective(mockThemes, parentObjectiveId);
@@ -599,7 +594,6 @@ export const mockAppBindings = {
       id: `${theme.id}-KR${maxNum + 1}`,
       parentId: parentObjectiveId,
       description,
-      type: krType || undefined,
       startValue,
       currentValue: 0,
       targetValue,
