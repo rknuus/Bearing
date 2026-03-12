@@ -244,6 +244,11 @@ describe('OKRView', () => {
     await renderView();
     await expandThemeAndObjective();
 
+    // After updateKeyResultProgress, verifyThemeState calls GetThemes — return data matching optimistic update
+    const updatedData = makeTestThemes();
+    updatedData[0].objectives[0].keyResults[0].currentValue = 1;
+    mockBindings.GetThemes.mockResolvedValueOnce(JSON.parse(JSON.stringify(updatedData)));
+
     const checkbox = container.querySelector<HTMLInputElement>('.kr-checkbox');
     expect(checkbox).toBeTruthy();
 
@@ -253,10 +258,10 @@ describe('OKRView', () => {
 
     expect(mockBindings.UpdateKeyResultProgress).toHaveBeenCalledWith('TST-KR1', 1);
 
-    // Wait for the full async chain (loadThemes + verifyThemeState) to settle
+    // Wait for the full async chain (optimistic update + verifyThemeState) to settle
     await vi.waitFor(() => {
-      // GetThemes is called: 1x initial load, 1x after update, 1x verifyThemeState
-      expect(mockBindings.GetThemes).toHaveBeenCalledTimes(3);
+      // GetThemes is called: 1x initial load, 1x verifyThemeState (no loadThemes after mutation)
+      expect(mockBindings.GetThemes).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -267,14 +272,15 @@ describe('OKRView', () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {});
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
-      const normalData = makeTestThemes();
       const divergentData = makeTestThemes();
       // Introduce a mismatch: change currentValue on a key result
       divergentData[0].objectives[0].keyResults[1].currentValue = 999;
 
-      // After createTheme: loadThemes (call 1) gets normal data, verifyThemeState (call 2) gets divergent
+      // CreateTheme must return a valid theme object for the optimistic update path
+      mockBindings.CreateTheme.mockResolvedValueOnce({ id: 'NEW', name: 'New Theme', color: '#dc2626', objectives: [] });
+
+      // After createTheme: optimistic update (no GetThemes), verifyThemeState (call 1) gets divergent data
       mockBindings.GetThemes
-        .mockResolvedValueOnce(JSON.parse(JSON.stringify(normalData)))
         .mockResolvedValueOnce(JSON.parse(JSON.stringify(divergentData)));
 
       // Click "+ Add Theme" button and submit the form
@@ -784,6 +790,13 @@ describe('OKRView', () => {
     it('calls CloseObjective when dialog is submitted', async () => {
       await renderView();
 
+      // After closeObjective, verifyThemeState calls GetThemes — return data matching optimistic update
+      const closedData = makeTestThemes();
+      closedData[0].objectives[0].status = 'completed';
+      closedData[0].objectives[0].closingStatus = 'achieved';
+      closedData[0].objectives[0].closingNotes = '';
+      mockBindings.GetThemes.mockResolvedValueOnce(JSON.parse(JSON.stringify(closedData)));
+
       const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
       expandButtons[0]?.click();
       await tick();
@@ -800,9 +813,10 @@ describe('OKRView', () => {
 
       expect(mockBindings.CloseObjective).toHaveBeenCalledWith('TST-O1', 'achieved', '');
 
-      // Wait for the full async chain (loadThemes + verifyThemeState) to settle
+      // Wait for the full async chain (optimistic update + verifyThemeState) to settle
       await vi.waitFor(() => {
-        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(3);
+        // GetThemes is called: 1x initial load, 1x verifyThemeState (no loadThemes after mutation)
+        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(2);
       });
     });
 
@@ -837,6 +851,26 @@ describe('OKRView', () => {
 
       await renderView();
 
+      // After reopenObjective, verifyThemeState calls GetThemes — return data matching optimistic update
+      const reopenedData: LifeTheme[] = [
+        {
+          id: 'TST',
+          name: 'Test Theme',
+          color: '#dc2626',
+          objectives: [
+            {
+              id: 'TST-O1',
+              parentId: 'TST',
+              title: 'Closed Objective',
+              status: 'active',
+              keyResults: [],
+              objectives: [],
+            },
+          ],
+        },
+      ];
+      mockBindings.GetThemes.mockResolvedValueOnce(JSON.parse(JSON.stringify(reopenedData)));
+
       const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
       expandButtons[0]?.click();
       await tick();
@@ -848,9 +882,10 @@ describe('OKRView', () => {
 
       expect(mockBindings.ReopenObjective).toHaveBeenCalledWith('TST-O1');
 
-      // Wait for the full async chain (loadThemes + verifyThemeState) to settle
+      // Wait for the full async chain (optimistic update + verifyThemeState) to settle
       await vi.waitFor(() => {
-        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(3);
+        // GetThemes is called: 1x initial load, 1x verifyThemeState (no loadThemes after mutation)
+        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(2);
       });
     });
   });
