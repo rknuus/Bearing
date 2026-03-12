@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/rkn/bearing/internal/access"
@@ -414,7 +415,7 @@ func TestUpdateTheme(t *testing.T) {
 
 		// Create objective with KR (start=0, target=12)
 		obj, _ := manager.CreateObjective("T", "Read More")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
 
 		// Set progress to 5
 		err := manager.UpdateKeyResultProgress(kr.ID, 5)
@@ -465,7 +466,7 @@ func TestUpdateTheme(t *testing.T) {
 		// Build nested structure: theme -> obj1 -> obj2 -> kr
 		obj1, _ := manager.CreateObjective("T", "Level 1")
 		obj2, _ := manager.CreateObjective(obj1.ID, "Level 2")
-		kr, _ := manager.CreateKeyResult(obj2.ID, "Deep KR", 1, 10, "")
+		kr, _ := manager.CreateKeyResult(obj2.ID, "Deep KR", 1, 10)
 
 		// Update theme name only
 		themes, _ := manager.GetThemes()
@@ -824,7 +825,7 @@ func TestDeleteObjective(t *testing.T) {
 		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
 		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
-		_, _ = manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0, "")
+		_, _ = manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0)
 
 		// Delete the middle objective (Level 2) -- Level 3 and its KR should be gone too
 		err := manager.DeleteObjective(l2.ID)
@@ -903,7 +904,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0, "")
+		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -920,7 +921,7 @@ func TestCreateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12, "")
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -938,7 +939,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, err := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0, "")
+		kr, err := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -955,7 +956,7 @@ func TestCreateKeyResult(t *testing.T) {
 		_, _ = manager.CreateObjective(parent.ID, "Child")
 
 		// Add KR to the parent (intermediate node with children)
-		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0, "")
+		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -981,7 +982,7 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateKeyResult("", "Description", 0, 0, "")
+		_, err := manager.CreateKeyResult("", "Description", 0, 0)
 		if err == nil {
 			t.Fatal("expected error for empty parentObjectiveId")
 		}
@@ -991,43 +992,20 @@ func TestCreateKeyResult(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0, "")
+		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0)
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
 		}
 	})
 
-	t.Run("creates binary key result with forced start=0 target=1", func(t *testing.T) {
+	t.Run("preserves custom start/target", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Complete course", 5, 10, "binary")
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 2, 14)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
-		}
-		if kr.Type != "binary" {
-			t.Errorf("expected type 'binary', got '%s'", kr.Type)
-		}
-		if kr.StartValue != 0 {
-			t.Errorf("expected startValue 0 for binary KR, got %d", kr.StartValue)
-		}
-		if kr.TargetValue != 1 {
-			t.Errorf("expected targetValue 1 for binary KR, got %d", kr.TargetValue)
-		}
-	})
-
-	t.Run("creates metric key result preserving provided values", func(t *testing.T) {
-		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
-
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 2, 14, "metric")
-		if err != nil {
-			t.Fatalf("expected no error, got %v", err)
-		}
-		if kr.Type != "metric" {
-			t.Errorf("expected type 'metric', got '%s'", kr.Type)
 		}
 		if kr.StartValue != 2 {
 			t.Errorf("expected startValue 2, got %d", kr.StartValue)
@@ -1037,17 +1015,14 @@ func TestCreateKeyResult(t *testing.T) {
 		}
 	})
 
-	t.Run("creates key result with empty type defaults to metric behavior", func(t *testing.T) {
+	t.Run("default start/target values", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12, "")
+		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
-		}
-		if kr.Type != "" {
-			t.Errorf("expected empty type, got '%s'", kr.Type)
 		}
 		if kr.StartValue != 0 {
 			t.Errorf("expected startValue 0, got %d", kr.StartValue)
@@ -1057,14 +1032,28 @@ func TestCreateKeyResult(t *testing.T) {
 		}
 	})
 
-	t.Run("returns error for invalid type", func(t *testing.T) {
+	t.Run("start greater than target returns error", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		_, err := manager.CreateKeyResult(obj.ID, "Invalid", 0, 10, "unknown")
+		_, err := manager.CreateKeyResult(obj.ID, "Invalid", 10, 5)
 		if err == nil {
-			t.Fatal("expected error for invalid type")
+			t.Fatal("expected error when start > target")
+		}
+		if !strings.Contains(err.Error(), "cannot exceed") {
+			t.Errorf("expected error to contain 'cannot exceed', got: %s", err.Error())
+		}
+	})
+
+	t.Run("start equals target is allowed", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		obj, _ := manager.CreateObjective("T", "Objective")
+		_, err := manager.CreateKeyResult(obj.ID, "Valid", 5, 5)
+		if err != nil {
+			t.Fatalf("expected no error when start == target, got %v", err)
 		}
 	})
 }
@@ -1075,7 +1064,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0)
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated")
 		if err != nil {
@@ -1095,7 +1084,7 @@ func TestUpdateKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Original", 0, 0, "")
+		kr, _ := manager.CreateKeyResult(child.ID, "Original", 0, 0)
 
 		err := manager.UpdateKeyResult(kr.ID, "Updated Nested")
 		if err != nil {
@@ -1136,7 +1125,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0)
 
 		err := manager.UpdateKeyResultProgress(kr.ID, 5)
 		if err != nil {
@@ -1156,7 +1145,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0, "")
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
 
 		err := manager.UpdateKeyResultProgress(kr.ID, 10)
 		if err != nil {
@@ -1197,7 +1186,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0)
 
 		err := manager.DeleteKeyResult(kr.ID)
 		if err != nil {
@@ -1217,7 +1206,7 @@ func TestDeleteKeyResult(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0, "")
+		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
 
 		err := manager.DeleteKeyResult(kr.ID)
 		if err != nil {
@@ -1262,7 +1251,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
 
 		err := manager.SetKeyResultStatus(kr.ID, "completed")
 		if err != nil {
@@ -1281,7 +1270,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
@@ -1301,7 +1290,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "active")
@@ -1321,7 +1310,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr.ID, "archived")
 
@@ -1342,7 +1331,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
 		if err == nil {
@@ -1355,7 +1344,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
 
 		err := manager.SetKeyResultStatus(kr.ID, "invalid")
 		if err == nil {
@@ -1390,8 +1379,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1, "")
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
 
 		// Complete both KRs
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
@@ -1415,8 +1404,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1, "")
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
 
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
@@ -1433,7 +1422,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10, "")
+		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
 
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err == nil {
@@ -2835,7 +2824,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr.ID, 50)
 
 		progress, err := manager.GetAllThemeProgress()
@@ -2859,9 +2848,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 100, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
 
 		progress, err := manager.GetAllThemeProgress()
@@ -2879,9 +2868,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR tracked", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR tracked", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 80) // 80%
-		_, _ = manager.CreateKeyResult(obj.ID, "KR untracked", 0, 0, "") // targetValue=0, excluded
+		_, _ = manager.CreateKeyResult(obj.ID, "KR untracked", 0, 0) // targetValue=0, excluded
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -2898,9 +2887,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 60) // 60%
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR completed", 0, 1, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR completed", 0, 1)
 		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 
@@ -2919,9 +2908,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 40) // 40%
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR archived", 0, 1, "")
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR archived", 0, 1)
 		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr2.ID, "archived")
@@ -2942,9 +2931,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr1, _ := manager.CreateKeyResult(parent.ID, "Parent KR", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(parent.ID, "Parent KR", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
-		kr2, _ := manager.CreateKeyResult(child.ID, "Child KR", 0, 100, "")
+		kr2, _ := manager.CreateKeyResult(child.ID, "Child KR", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
 
 		progress, err := manager.GetAllThemeProgress()
@@ -2974,11 +2963,11 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj1, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
 
 		obj2, _ := manager.CreateObjective("T", "Obj2")
-		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 100, "")
+		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
 
 		progress, err := manager.GetAllThemeProgress()
@@ -3012,7 +3001,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		_, _ = manager.CreateKeyResult(obj.ID, "Untracked KR", 0, 0, "")
+		_, _ = manager.CreateKeyResult(obj.ID, "Untracked KR", 0, 0)
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -3039,11 +3028,11 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj1, _ := manager.CreateObjective("T", "Active Obj")
-		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100, "")
+		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100)
 		_ = manager.UpdateKeyResultProgress(kr1.ID, 80) // 80%
 
 		obj2, _ := manager.CreateObjective("T", "Completed Obj")
-		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 1, "")
+		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 1)
 		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 		_ = manager.SetObjectiveStatus(obj2.ID, "completed")
@@ -3063,7 +3052,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Binary KR", 0, 1, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Binary KR", 0, 1)
 
 		// Not done
 		progress, _ := manager.GetAllThemeProgress()
@@ -3084,7 +3073,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Over-achieved KR", 0, 10, "")
+		kr, _ := manager.CreateKeyResult(obj.ID, "Over-achieved KR", 0, 10)
 		_ = manager.UpdateKeyResultProgress(kr.ID, 20) // Over-achieved
 
 		progress, _ := manager.GetAllThemeProgress()
@@ -3146,8 +3135,8 @@ func TestCloseObjective(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
 
 		err := manager.CloseObjective(obj.ID, "achieved", "Great progress!")
 		if err != nil {
@@ -3185,8 +3174,8 @@ func TestCloseObjective(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
-		_, _ = manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
+		_, _ = manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
 
 		// Complete KR1 before closing
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
@@ -3267,8 +3256,8 @@ func TestReopenObjective(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
 
 		_ = manager.CloseObjective(obj.ID, "achieved", "Well done!")
 
@@ -3320,8 +3309,8 @@ func TestReopenObjective(t *testing.T) {
 		manager, _ := NewPlanningManager(mockAccess)
 
 		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10, "")
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5, "")
+		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
+		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
 
 		// Complete and archive KR1 before closing
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")

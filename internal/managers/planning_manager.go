@@ -49,7 +49,7 @@ type IPlanningManager interface {
 	DeleteObjective(objectiveId string) error
 
 	// Key Results — parentObjectiveId / keyResultId found by tree-walking
-	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int, krType string) (*access.KeyResult, error)
+	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error)
 	UpdateKeyResult(keyResultId, description string) error
 	UpdateKeyResultProgress(keyResultId string, currentValue int) error
 	DeleteKeyResult(keyResultId string) error
@@ -443,22 +443,15 @@ func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 
 // CreateKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
-// krType must be "" (defaults to metric), "metric", or "binary".
-// When type is "binary", startValue and targetValue are forced to 0 and 1.
-func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int, krType string) (*access.KeyResult, error) {
+func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error) {
 	if parentObjectiveId == "" {
 		return nil, fmt.Errorf("parentObjectiveId cannot be empty")
 	}
 	if description == "" {
 		return nil, fmt.Errorf("description cannot be empty")
 	}
-	if !access.IsValidKRType(krType) {
-		return nil, fmt.Errorf("invalid key result type: %s", krType)
-	}
-
-	if krType == access.KRTypeBinary {
-		startValue = 0
-		targetValue = 1
+	if startValue > targetValue {
+		return nil, fmt.Errorf("startValue (%d) cannot exceed targetValue (%d)", startValue, targetValue)
 	}
 
 	themes, err := m.planAccess.GetThemes()
@@ -470,7 +463,7 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, parentObjectiveId); obj != nil {
 			targetTheme = &themes[i]
-			obj.KeyResults = append(obj.KeyResults, access.KeyResult{Description: description, Type: krType, StartValue: startValue, TargetValue: targetValue})
+			obj.KeyResults = append(obj.KeyResults, access.KeyResult{Description: description, StartValue: startValue, TargetValue: targetValue})
 			break
 		}
 	}
