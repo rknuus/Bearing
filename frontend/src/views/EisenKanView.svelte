@@ -1165,7 +1165,6 @@
                         class="task-card"
                         onclick={() => handleTaskClick(task)}
                         oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                        style="--theme-color: {getThemeColor(themes, task.themeId)};"
                         role="article"
                         aria-label="{task.title}"
                       >
@@ -1174,18 +1173,19 @@
                           <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                             {priorityLabels[task.priority]}
                           </span>
-                        </div>
-                        <h3 class="task-title">{task.title}</h3>
-                        <TagBadges tags={task.tags} />
-                        <div class="task-footer">
                           <button
                             type="button"
-                            class="theme-name-btn"
+                            class="theme-badge"
+                            style="background-color: {getThemeColor(themes, task.themeId)};"
                             onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
                             title="Go to theme"
                           >
                             {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
                           </button>
+                        </div>
+                        <h3 class="task-title">{task.title}</h3>
+                        <TagBadges tags={task.tags} />
+                        <div class="task-footer">
                           <button
                             type="button"
                             class="delete-btn"
@@ -1216,7 +1216,6 @@
                   class="task-card"
                   onclick={() => handleTaskClick(task)}
                   oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                  style="--theme-color: {getThemeColor(themes, task.themeId)};"
                   role="article"
                   aria-label="{task.title}"
                 >
@@ -1225,18 +1224,19 @@
                     <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                       {priorityLabels[task.priority]}
                     </span>
-                  </div>
-                  <h3 class="task-title">{task.title}</h3>
-                  <TagBadges tags={task.tags} />
-                  <div class="task-footer">
                     <button
                       type="button"
-                      class="theme-name-btn"
+                      class="theme-badge"
+                      style="background-color: {getThemeColor(themes, task.themeId)};"
                       onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
                       title="Go to theme"
                     >
                       {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
                     </button>
+                  </div>
+                  <h3 class="task-title">{task.title}</h3>
+                  <TagBadges tags={task.tags} />
+                  <div class="task-footer">
                     {#if column.type === 'done'}
                       <button
                         type="button"
@@ -1287,7 +1287,6 @@
             {#each rootArchivedTasks as task (task.id)}
               <div
                 class="task-card"
-                style="--theme-color: {getThemeColor(themes, task.themeId)};"
                 role="article"
                 aria-label="{task.title}"
               >
@@ -1296,18 +1295,19 @@
                   <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
                     {priorityLabels[task.priority]}
                   </span>
-                </div>
-                <h3 class="task-title">{task.title}</h3>
-                <TagBadges tags={task.tags} />
-                <div class="task-footer">
                   <button
                     type="button"
-                    class="theme-name-btn"
+                    class="theme-badge"
+                    style="background-color: {getThemeColor(themes, task.themeId)};"
                     onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
                     title="Go to theme"
                   >
                     {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
                   </button>
+                </div>
+                <h3 class="task-title">{task.title}</h3>
+                <TagBadges tags={task.tags} />
+                <div class="task-footer">
                   <button
                     type="button"
                     class="restore-btn"
@@ -1657,7 +1657,6 @@
     padding: 0.75rem;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     cursor: grab;
-    border-left: 4px solid var(--theme-color, var(--color-gray-500));
     transition: box-shadow 0.2s, transform 0.1s;
   }
 
@@ -1701,18 +1700,24 @@
     align-items: center;
   }
 
-  .theme-name-btn {
-    font-size: 0.75rem;
-    color: var(--color-primary-500);
-    background: none;
+  .theme-badge {
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
     border: none;
-    padding: 0;
     cursor: pointer;
-    text-decoration: underline;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 120px;
   }
 
-  .theme-name-btn:hover {
-    color: var(--color-primary-600);
+  .theme-badge:hover {
+    opacity: 0.85;
   }
 
   .delete-btn {

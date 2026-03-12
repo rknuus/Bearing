@@ -778,7 +778,7 @@ export async function runTests() {
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
       // Click a theme name button on a task card
-      await page.click('.theme-name-btn:has-text("Career Growth")')
+      await page.click('.theme-badge:has-text("Career Growth")')
 
       // Verify we navigated to OKR view
       await page.waitForSelector('.okr-header', { timeout: 5000 })
