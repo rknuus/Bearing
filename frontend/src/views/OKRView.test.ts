@@ -477,8 +477,8 @@ describe('OKRView', () => {
 
       const visionText = container.querySelectorAll('.vision-text');
       expect(visionText.length).toBe(2);
-      expect(visionText[0].textContent).toBe('My vision');
-      expect(visionText[1].textContent).toBe('My mission');
+      expect(visionText[0].textContent?.trim()).toBe('My vision');
+      expect(visionText[1].textContent?.trim()).toBe('My mission');
     });
 
     it('vision section is collapsed by default', async () => {

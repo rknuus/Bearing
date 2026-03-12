@@ -12,9 +12,10 @@
   import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
   import ThemeBadge from '../lib/components/ThemeBadge.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
-  import { getBindings, extractError } from '../lib/utils/bindings';
+  import { getBindings, extractError, openExternalLink } from '../lib/utils/bindings';
   import { getObjectiveStatus } from '../lib/utils/okr-status';
   import { checkStateFromData } from '../lib/utils/state-check';
+  import { renderMarkdown } from '../lib/utils/markdown';
 
   // Props for cross-view navigation
   interface Props {
@@ -149,6 +150,16 @@
   let editingVision = $state(false);
   let editVisionMission = $state('');
   let editVisionVision = $state('');
+  let previewMode = $state(false);
+
+  function handleVisionLinkClick(e: MouseEvent) {
+    const target = e.target as HTMLElement;
+    const anchor = target.closest('a');
+    if (anchor?.href) {
+      e.preventDefault();
+      openExternalLink(anchor.href);
+    }
+  }
 
   // View toggle state
   let showCompleted = $state(false);
@@ -327,6 +338,7 @@
   function startEditVision() {
     editVisionMission = personalVision.mission;
     editVisionVision = personalVision.vision;
+    previewMode = false;
     editingVision = true;
   }
 
@@ -1045,13 +1057,17 @@
             {#if personalVision.vision}
               <div class="vision-field">
                 <span class="vision-label">Vision</span>
-                <p class="vision-text">{personalVision.vision}</p>
+                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
+                <div class="vision-text markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(personalVision.vision)}</div>
               </div>
             {/if}
             {#if personalVision.mission}
               <div class="vision-field">
                 <span class="vision-label">Mission</span>
-                <p class="vision-text">{personalVision.mission}</p>
+                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+                <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
+                <div class="vision-text markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(personalVision.mission)}</div>
               </div>
             {/if}
           </div>
@@ -1074,15 +1090,37 @@
     <div class="vision-dialog-overlay" onkeydown={(e) => { if (e.key === 'Escape') editingVision = false; }}>
       <div class="vision-dialog">
         <h2>Edit Vision & Mission</h2>
-        <label class="vision-dialog-label">
-          Vision
-          <textarea class="vision-textarea" bind:value={editVisionVision} placeholder="What is your long-term vision?" rows="3"></textarea>
-        </label>
-        <label class="vision-dialog-label">
-          Mission
-          <textarea class="vision-textarea" bind:value={editVisionMission} placeholder="What is your personal mission?" rows="3"></textarea>
-        </label>
+        <div class="vision-dialog-body">
+          {#if previewMode}
+            <div class="vision-dialog-label">
+              <span>Vision</span>
+              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+              <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
+              <div class="vision-preview markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(editVisionVision)}</div>
+            </div>
+            <div class="vision-dialog-label">
+              <span>Mission</span>
+              <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+              <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
+              <div class="vision-preview markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(editVisionMission)}</div>
+            </div>
+          {:else}
+            <label class="vision-dialog-label">
+              Vision
+              <textarea class="vision-textarea" bind:value={editVisionVision} placeholder="What is your long-term vision?" rows="3"></textarea>
+            </label>
+            <label class="vision-dialog-label">
+              Mission
+              <textarea class="vision-textarea" bind:value={editVisionMission} placeholder="What is your personal mission?" rows="3"></textarea>
+            </label>
+          {/if}
+        </div>
         <div class="vision-dialog-actions">
+          {#if previewMode}
+            <Button variant="secondary" onclick={() => { previewMode = false; }}>Edit</Button>
+          {:else}
+            <Button variant="secondary" onclick={() => { previewMode = true; }}>Preview</Button>
+          {/if}
           <Button variant="primary" onclick={saveVision}>Save</Button>
           <Button variant="secondary" onclick={() => { editingVision = false; }}>Cancel</Button>
         </div>
@@ -2020,11 +2058,9 @@
   }
 
   .vision-text {
-    margin: 0;
     font-size: 0.875rem;
     color: var(--color-gray-700);
     line-height: 1.5;
-    white-space: pre-wrap;
   }
 
   .vision-actions {
@@ -2059,8 +2095,19 @@
     border-radius: 8px;
     padding: 1.5rem;
     width: 100%;
-    max-width: 500px;
+    max-width: 750px;
+    height: 70vh;
+    display: flex;
+    flex-direction: column;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .vision-dialog-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .vision-dialog h2 {
@@ -2078,10 +2125,13 @@
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--color-gray-700);
+    flex: 1;
+    min-height: 0;
   }
 
   .vision-textarea {
     width: 100%;
+    flex: 1;
     padding: 0.5rem;
     border: 1px solid var(--color-gray-300);
     border-radius: 4px;
@@ -2095,6 +2145,87 @@
     outline: none;
     border-color: var(--color-primary-500);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  .vision-preview {
+    padding: 0.5rem;
+    border: 1px solid var(--color-gray-200);
+    border-radius: 4px;
+    background-color: var(--color-gray-50);
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    color: var(--color-gray-700);
+  }
+
+  .markdown-content :global(h1),
+  .markdown-content :global(h2),
+  .markdown-content :global(h3),
+  .markdown-content :global(h4),
+  .markdown-content :global(h5),
+  .markdown-content :global(h6) {
+    margin: 0.5rem 0 0.25rem;
+    color: var(--color-gray-800);
+    line-height: 1.3;
+  }
+  .markdown-content :global(h1) { font-size: 1.25rem; }
+  .markdown-content :global(h2) { font-size: 1.125rem; }
+  .markdown-content :global(h3) { font-size: 1rem; }
+
+  .markdown-content :global(p) {
+    margin: 0 0 0.5rem;
+  }
+  .markdown-content :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .markdown-content :global(ul),
+  .markdown-content :global(ol) {
+    margin: 0 0 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .markdown-content :global(li) {
+    margin-bottom: 0.125rem;
+  }
+
+  .markdown-content :global(a) {
+    color: var(--color-primary-500);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .markdown-content :global(a:hover) {
+    color: var(--color-primary-600);
+  }
+
+  .markdown-content :global(blockquote) {
+    margin: 0.5rem 0;
+    padding: 0.25rem 0.75rem;
+    border-left: 3px solid var(--color-gray-300);
+    color: var(--color-gray-600);
+  }
+
+  .markdown-content :global(code) {
+    background-color: var(--color-gray-100);
+    padding: 0.125rem 0.25rem;
+    border-radius: 3px;
+    font-size: 0.8125rem;
+  }
+
+  .markdown-content :global(pre) {
+    background-color: var(--color-gray-100);
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+  }
+
+  .markdown-content :global(hr) {
+    border: none;
+    border-top: 1px solid var(--color-gray-200);
+    margin: 0.75rem 0;
   }
 
   .vision-dialog-actions {
