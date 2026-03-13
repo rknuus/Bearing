@@ -85,9 +85,8 @@ body {
 
 /* Example themed component styles that use --theme-color */
 
-/* Task card with theme-colored left border */
+/* Task card base styles */
 .task-card {
-  border-left: 4px solid var(--theme-color, var(--default-theme-color));
   background-color: white;
   padding: 1rem;
   border-radius: 4px;
