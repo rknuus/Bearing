@@ -1,6 +1,7 @@
 /**
  * Component exports
  */
+export { default as BearingLogo } from './BearingLogo.svelte';
 export { default as Breadcrumb } from './Breadcrumb.svelte';
 export { default as Button } from './Button.svelte';
 export { default as Dialog } from './Dialog.svelte';
