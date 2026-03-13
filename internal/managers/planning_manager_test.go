@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/rkn/bearing/internal/access"
@@ -13,6 +14,7 @@ import (
 // mockPlanAccess implements access.IPlanAccess for testing.
 // SaveTheme assigns IDs to objectives and key results to simulate ensureThemeIDs.
 type mockPlanAccess struct {
+	mu          sync.Mutex
 	themes      []access.LifeTheme
 	tasks       map[string][]access.Task            // status -> tasks
 	taskOrder   map[string][]string                 // drop zone ID -> ordered task IDs
@@ -136,6 +138,8 @@ func (m *mockPlanAccess) GetYearFocus(year int) ([]access.DayFocus, error) {
 }
 
 func (m *mockPlanAccess) GetTasksByTheme(themeID string) ([]access.Task, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	var result []access.Task
 	for _, tasks := range m.tasks {
 		for _, t := range tasks {
@@ -148,6 +152,8 @@ func (m *mockPlanAccess) GetTasksByTheme(themeID string) ([]access.Task, error) 
 }
 
 func (m *mockPlanAccess) GetTasksByStatus(status string) ([]access.Task, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if tasks, ok := m.tasks[status]; ok {
 		return tasks, nil
 	}
@@ -155,6 +161,8 @@ func (m *mockPlanAccess) GetTasksByStatus(status string) ([]access.Task, error) 
 }
 
 func (m *mockPlanAccess) SaveTask(task access.Task) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	// Default to todo status for new tasks
 	status := "todo"
 
@@ -181,6 +189,8 @@ func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 	if err := m.SaveTask(task); err != nil {
 		return nil, err
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	// SaveTask generates the ID; find the saved task to get it
 	tasks := m.tasks["todo"]
 	saved := tasks[len(tasks)-1]
@@ -192,6 +202,8 @@ func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 }
 
 func (m *mockPlanAccess) MoveTask(taskID, newStatus string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	for status, tasks := range m.tasks {
 		for i, task := range tasks {
 			if task.ID == taskID {
@@ -215,6 +227,8 @@ func (m *mockPlanAccess) RestoreTask(taskID string) error {
 }
 
 func (m *mockPlanAccess) DeleteTask(taskID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	for status, tasks := range m.tasks {
 		for i, task := range tasks {
 			if task.ID == taskID {
@@ -230,6 +244,8 @@ func (m *mockPlanAccess) DeleteTaskWithOrder(taskID string) error {
 	if err := m.DeleteTask(taskID); err != nil {
 		return err
 	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	// Remove from task order
 	for zone, ids := range m.taskOrder {
 		filtered := make([]string, 0, len(ids))
@@ -246,6 +262,8 @@ func (m *mockPlanAccess) DeleteTaskWithOrder(taskID string) error {
 }
 
 func (m *mockPlanAccess) LoadTaskOrder() (map[string][]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.taskOrder == nil {
 		return make(map[string][]string), nil
 	}
@@ -258,6 +276,8 @@ func (m *mockPlanAccess) LoadTaskOrder() (map[string][]string, error) {
 }
 
 func (m *mockPlanAccess) SaveTaskOrder(order map[string][]string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.taskOrder = make(map[string][]string, len(order))
 	for k, v := range order {
 		m.taskOrder[k] = append([]string{}, v...)
@@ -322,6 +342,8 @@ func (m *mockPlanAccess) UpdateTaskStatusField(dirSlug, newStatus string) ([]str
 }
 
 func (m *mockPlanAccess) WriteTaskOrder(order map[string][]string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	m.taskOrder = order
 	return nil
 }
@@ -2811,6 +2833,208 @@ func TestUnit_MoveTask_InvalidColumn(t *testing.T) {
 	_, err := manager.MoveTask("T-T1", "nonexistent", nil)
 	if err == nil {
 		t.Error("Expected error for invalid target column")
+	}
+}
+
+func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Create 3 tasks in todo with priority "important-urgent" (they'll be in I&U zone)
+	task1, err := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask 1 failed: %v", err)
+	}
+	task2, err := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask 2 failed: %v", err)
+	}
+	task3, err := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask 3 failed: %v", err)
+	}
+
+	// Verify initial order in important-urgent zone is [task1, task2, task3]
+	initialOrder, err := mockAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	expectedInitial := []string{task1.ID, task2.ID, task3.ID}
+	if !slices.Equal(initialOrder["important-urgent"], expectedInitial) {
+		t.Fatalf("Initial order mismatch: got %v, want %v", initialOrder["important-urgent"], expectedInitial)
+	}
+
+	// Move task1 to "doing" with positions for the doing zone (matches frontend behavior)
+	_, err = manager.MoveTask(task1.ID, "doing", map[string][]string{
+		"doing": {task1.ID},
+	})
+	if err != nil {
+		t.Fatalf("MoveTask to doing failed: %v", err)
+	}
+
+	// Verify task1 is now in "doing" zone and removed from "important-urgent"
+	afterDoingOrder, err := mockAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder after doing failed: %v", err)
+	}
+	if slices.Contains(afterDoingOrder["important-urgent"], task1.ID) {
+		t.Errorf("task1 should not be in important-urgent zone after move to doing")
+	}
+	if !slices.Contains(afterDoingOrder["doing"], task1.ID) {
+		t.Errorf("task1 should be in doing zone after move to doing")
+	}
+
+	// Move task1 back to "todo" with explicit positions placing it at position 0
+	desiredOrder := []string{task1.ID, task2.ID, task3.ID}
+	result, err := manager.MoveTask(task1.ID, "todo", map[string][]string{
+		"important-urgent": desiredOrder,
+	})
+	if err != nil {
+		t.Fatalf("MoveTask back to todo failed: %v", err)
+	}
+	if !result.Success {
+		t.Fatalf("MoveTask back to todo not successful: %v", result.Violations)
+	}
+
+	// Verify task order via GetTasks — tasks in important-urgent zone should be [task1, task2, task3]
+	allTasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("GetTasks failed: %v", err)
+	}
+	var iuTasks []string
+	for _, task := range allTasks {
+		if task.Priority == "important-urgent" && task.Status == "todo" {
+			iuTasks = append(iuTasks, task.ID)
+		}
+	}
+	if !slices.Equal(iuTasks, desiredOrder) {
+		t.Errorf("GetTasks order mismatch in important-urgent zone:\n  got  %v\n  want %v", iuTasks, desiredOrder)
+	}
+
+	// Verify task_order.json directly
+	finalOrder, err := mockAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder final failed: %v", err)
+	}
+	if !slices.Equal(finalOrder["important-urgent"], desiredOrder) {
+		t.Errorf("task_order.json mismatch in important-urgent zone:\n  got  %v\n  want %v", finalOrder["important-urgent"], desiredOrder)
+	}
+}
+
+func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Create tasks in I&U zone (todo column, important-urgent priority)
+	task1, err := manager.CreateTask("IU Task 1", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask 1 failed: %v", err)
+	}
+	task2, err := manager.CreateTask("IU Task 2", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask 2 failed: %v", err)
+	}
+
+	// Create a task in "doing"
+	doingTask, err := manager.CreateTask("Doing Task", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask doing failed: %v", err)
+	}
+	_, err = manager.MoveTask(doingTask.ID, "doing", map[string][]string{
+		"doing": {doingTask.ID},
+	})
+	if err != nil {
+		t.Fatalf("MoveTask to doing failed: %v", err)
+	}
+
+	// Run MoveTask (doing→todo/I&U) and ReorderTasks (doing zone) concurrently
+	// to verify the mutex prevents lost updates.
+	var wg sync.WaitGroup
+	var moveErr, reorderErr error
+
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		// Move doingTask back to todo/I&U, placing it first
+		_, moveErr = manager.MoveTask(doingTask.ID, "todo", map[string][]string{
+			"important-urgent": {doingTask.ID, task1.ID, task2.ID},
+		})
+	}()
+	go func() {
+		defer wg.Done()
+		// Spurious reorder of doing zone (simulates source-zone finalize)
+		_, reorderErr = manager.ReorderTasks(map[string][]string{
+			"doing": {},
+		})
+	}()
+	wg.Wait()
+
+	if moveErr != nil {
+		t.Fatalf("MoveTask failed: %v", moveErr)
+	}
+	if reorderErr != nil {
+		t.Fatalf("ReorderTasks failed: %v", reorderErr)
+	}
+
+	// Verify the final task order is consistent:
+	// - important-urgent zone must contain [doingTask, task1, task2]
+	// - doing zone must be empty
+	finalOrder, err := mockAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+
+	expectedIU := []string{doingTask.ID, task1.ID, task2.ID}
+	if !slices.Equal(finalOrder["important-urgent"], expectedIU) {
+		t.Errorf("important-urgent zone mismatch:\n  got  %v\n  want %v", finalOrder["important-urgent"], expectedIU)
+	}
+	if len(finalOrder["doing"]) != 0 {
+		t.Errorf("doing zone should be empty, got %v", finalOrder["doing"])
+	}
+}
+
+func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+
+	// Create tasks: task1 in todo/I&U, task2 in doing
+	task1 := access.Task{ID: "T-T1", Title: "Task 1", ThemeID: "T", Priority: "important-urgent"}
+	task2 := access.Task{ID: "T-T2", Title: "Task 2", ThemeID: "T", Priority: "important-urgent"}
+	mockAccess.tasks["todo"] = []access.Task{task1}
+	mockAccess.tasks["doing"] = []access.Task{task2}
+
+	// Corrupt task_order.json: task1 in TWO zones, task2 in wrong zone
+	mockAccess.taskOrder = map[string][]string{
+		"important-urgent":     {"T-T1"},
+		"important-not-urgent": {"T-T1"}, // stale duplicate
+		"doing":                {},       // task2 missing from correct zone
+		"important-urgent-dup": {"T-T2"}, // task2 in wrong zone
+	}
+
+	// NewPlanningManager calls validateTaskOrder
+	manager, err := NewPlanningManager(mockAccess)
+	if err != nil {
+		t.Fatalf("NewPlanningManager failed: %v", err)
+	}
+
+	order, err := manager.planAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+
+	// task1 should only be in important-urgent
+	if !slices.Contains(order["important-urgent"], "T-T1") {
+		t.Errorf("T-T1 should be in important-urgent, got %v", order["important-urgent"])
+	}
+	if slices.Contains(order["important-not-urgent"], "T-T1") {
+		t.Errorf("T-T1 should NOT be in important-not-urgent, got %v", order["important-not-urgent"])
+	}
+
+	// task2 should be in doing (its actual status), not in important-urgent-dup
+	if !slices.Contains(order["doing"], "T-T2") {
+		t.Errorf("T-T2 should be in doing zone, got %v", order["doing"])
+	}
+	if slices.Contains(order["important-urgent-dup"], "T-T2") {
+		t.Errorf("T-T2 should NOT be in important-urgent-dup, got %v", order["important-urgent-dup"])
 	}
 }
 

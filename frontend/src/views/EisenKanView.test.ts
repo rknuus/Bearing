@@ -826,6 +826,39 @@ describe('EisenKanView', () => {
       const callArgs = mockMoveTask.mock.calls[0];
       expect(callArgs[2]).toEqual({ done: ['DONE-CG', 'D1', 'DONE-HF'] });
     });
+
+    it('cross-column drop from doing to sectioned todo column sends section positions', async () => {
+      // Setup: two tasks in important-urgent section of todo, one in doing
+      currentTasks = [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
+        { id: 'D1', title: 'Doing One', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
+      ];
+
+      await renderView();
+
+      const todoColumn = container.querySelector('.kanban-column');
+      const iuSection = todoColumn!.querySelector('.section-important-urgent .column-content')!;
+
+      // Simulate dropping D1 into important-urgent section at position 0
+      const dndItems: TaskWithStatus[] = [
+        { id: 'D1', title: 'Doing One', themeId: 'HF', priority: 'important-urgent', status: 'doing' },
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
+      ];
+
+      dispatchDndFinalize(iuSection, dndItems);
+      await tick();
+      await tick();
+
+      // MoveTask should be called with section-level positions, NOT column-level
+      await vi.waitFor(() => {
+        expect(mockMoveTask).toHaveBeenCalledWith(
+          'D1', 'todo',
+          { 'important-urgent': ['D1', 'IU1', 'IU2'] }
+        );
+      });
+    });
   });
 
   describe('theme filtering', () => {
