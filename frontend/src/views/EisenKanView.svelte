@@ -1237,6 +1237,14 @@
                   <h3 class="task-title">{task.title}</h3>
                   <TagBadges tags={task.tags} />
                   <div class="task-footer">
+                    <button
+                      type="button"
+                      class="delete-btn"
+                      onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
+                      aria-label="Delete task"
+                    >
+                      🗑️
+                    </button>
                     {#if column.type === 'done'}
                       <button
                         type="button"
@@ -1248,14 +1256,6 @@
                         ✅
                       </button>
                     {/if}
-                    <button
-                      type="button"
-                      class="delete-btn"
-                      onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                      aria-label="Delete task"
-                    >
-                      🗑️
-                    </button>
                   </div>
                 </div>
               {/each}
