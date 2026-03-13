@@ -11,13 +11,14 @@
   import { onMount, onDestroy, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
-  import { Button, ErrorBanner, TagBadges } from '../lib/components';
+  import { Button, ErrorBanner } from '../lib/components';
 
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
   import ErrorDialog from '../components/ErrorDialog.svelte';
+  import TaskCard from '../components/TaskCard.svelte';
   import {
     type TaskWithStatus,
     type LifeTheme,
@@ -29,8 +30,7 @@
     type PromotedTask,
   } from '../lib/wails-mock';
   import { getBindings, extractError } from '../lib/utils/bindings';
-  import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
-  import { priorityLabels } from '../lib/constants/priorities';
+  import { getTheme } from '../lib/utils/theme-helpers';
   import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
   import { formatDateLong } from '../lib/utils/date-format';
   import { checkFullState } from '../lib/utils/state-check';
@@ -58,13 +58,6 @@
   type Theme = LifeTheme;
 
   const flipDurationMs = 200;
-
-  // Priority colors for badges
-  const priorityColors: Record<string, string> = {
-    'important-urgent': '#ef4444',      // Red
-    'not-important-urgent': '#f59e0b',  // Amber
-    'important-not-urgent': '#3b82f6'   // Blue
-  };
 
   // State
   let tasks = $state<TaskWithStatus[]>([]);
@@ -1160,42 +1153,14 @@
                     onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
                   >
                     {#each sectionTaskItems as task (task.id)}
-                      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-                      <div
-                        class="task-card"
+                      <TaskCard
+                        {task}
+                        {themes}
                         onclick={() => handleTaskClick(task)}
                         oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                        role="article"
-                        aria-label="{task.title}"
-                      >
-                        <div class="task-header">
-
-                          <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
-                            {priorityLabels[task.priority]}
-                          </span>
-                          <button
-                            type="button"
-                            class="theme-badge"
-                            style="background-color: {getThemeColor(themes, task.themeId)};"
-                            onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
-                            title="Go to theme"
-                          >
-                            {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
-                          </button>
-                        </div>
-                        <h3 class="task-title">{task.title}</h3>
-                        <TagBadges tags={task.tags} />
-                        <div class="task-footer">
-                          <button
-                            type="button"
-                            class="delete-btn"
-                            onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                            aria-label="Delete task"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
+                        onDelete={() => handleDeleteTask(task.id)}
+                        {onNavigateToTheme}
+                      />
                     {/each}
                   </div>
                 </div>
@@ -1211,53 +1176,15 @@
               onfinalize={(e) => handleDndFinalize(column.name, e)}
             >
               {#each (columnItems[column.name] ?? []) as task (task.id)}
-                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
-                <div
-                  class="task-card"
+                <TaskCard
+                  {task}
+                  {themes}
                   onclick={() => handleTaskClick(task)}
                   oncontextmenu={(e) => handleTaskContextMenu(e, task)}
-                  role="article"
-                  aria-label="{task.title}"
-                >
-                  <div class="task-header">
-
-                    <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
-                      {priorityLabels[task.priority]}
-                    </span>
-                    <button
-                      type="button"
-                      class="theme-badge"
-                      style="background-color: {getThemeColor(themes, task.themeId)};"
-                      onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
-                      title="Go to theme"
-                    >
-                      {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
-                    </button>
-                  </div>
-                  <h3 class="task-title">{task.title}</h3>
-                  <TagBadges tags={task.tags} />
-                  <div class="task-footer">
-                    <button
-                      type="button"
-                      class="delete-btn"
-                      onclick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
-                      aria-label="Delete task"
-                    >
-                      🗑️
-                    </button>
-                    {#if column.type === 'done'}
-                      <button
-                        type="button"
-                        class="archive-btn"
-                        onclick={(e) => { e.stopPropagation(); handleArchiveTask(task.id); }}
-                        aria-label="Archive task"
-                        title="Archive task"
-                      >
-                        ✅
-                      </button>
-                    {/if}
-                  </div>
-                </div>
+                  onDelete={() => handleDeleteTask(task.id)}
+                  onArchive={column.type === 'done' ? () => handleArchiveTask(task.id) : undefined}
+                  {onNavigateToTheme}
+                />
               {/each}
 
               {#if (columnItems[column.name] ?? []).length === 0}
@@ -1285,39 +1212,13 @@
 
           <div class="column-content">
             {#each rootArchivedTasks as task (task.id)}
-              <div
-                class="task-card"
-                role="article"
-                aria-label="{task.title}"
-              >
-                <div class="task-header">
-
-                  <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
-                    {priorityLabels[task.priority]}
-                  </span>
-                  <button
-                    type="button"
-                    class="theme-badge"
-                    style="background-color: {getThemeColor(themes, task.themeId)};"
-                    onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
-                    title="Go to theme"
-                  >
-                    {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
-                  </button>
-                </div>
-                <h3 class="task-title">{task.title}</h3>
-                <TagBadges tags={task.tags} />
-                <div class="task-footer">
-                  <button
-                    type="button"
-                    class="restore-btn"
-                    onclick={() => handleRestoreTask(task.id)}
-                    title="Restore to done"
-                  >
-                    Restore
-                  </button>
-                </div>
-              </div>
+              <TaskCard
+                {task}
+                {themes}
+                draggable={false}
+                onRestore={() => handleRestoreTask(task.id)}
+                {onNavigateToTheme}
+              />
             {/each}
 
             {#if rootArchivedTasks.length === 0}
@@ -1651,92 +1552,6 @@
     min-height: 60px;
   }
 
-  .task-card {
-    background-color: white;
-    border-radius: 6px;
-    padding: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    cursor: grab;
-    transition: box-shadow 0.2s, transform 0.1s;
-  }
-
-  .task-card:hover {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .task-card:active {
-    cursor: grabbing;
-    transform: rotate(2deg);
-  }
-
-  .task-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .priority-badge {
-    font-size: 0.625rem;
-    font-weight: 700;
-    color: white;
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  .task-title {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--color-gray-800);
-    margin: 0 0 0.5rem 0;
-    line-height: 1.3;
-  }
-
-  .task-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .theme-badge {
-    font-size: 0.625rem;
-    font-weight: 700;
-    color: white;
-    padding: 0.125rem 0.375rem;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 120px;
-  }
-
-  .theme-badge:hover {
-    opacity: 0.85;
-  }
-
-  .delete-btn {
-    background: none;
-    border: none;
-    color: var(--color-gray-400);
-    font-size: 0.875rem;
-    cursor: pointer;
-    padding: 0.25rem;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.2s;
-  }
-
-  .delete-btn:hover {
-    color: var(--color-error-600);
-    background-color: var(--color-error-100);
-  }
-
   .column-header-right {
     display: flex;
     align-items: center;
@@ -1759,23 +1574,6 @@
     background-color: var(--color-gray-300);
   }
 
-  .archive-btn {
-    background: none;
-    border: none;
-    color: var(--color-gray-400);
-    font-size: 0.875rem;
-    cursor: pointer;
-    padding: 0.25rem;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.2s;
-  }
-
-  .archive-btn:hover {
-    color: var(--color-success-600, #16a34a);
-    background-color: var(--color-success-100, #dcfce7);
-  }
-
   .header-right {
     display: flex;
     align-items: center;
@@ -1795,35 +1593,6 @@
   .toggle-label input[type="checkbox"] {
     cursor: pointer;
     accent-color: var(--color-gray-500);
-  }
-
-  .archived-column .task-card {
-    cursor: default;
-  }
-
-  .archived-column .task-card:hover {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
-
-  .archived-column .task-card:active {
-    cursor: default;
-    transform: none;
-  }
-
-  .restore-btn {
-    background: none;
-    border: 1px solid var(--color-gray-300);
-    color: var(--color-gray-500);
-    font-size: 0.6875rem;
-    cursor: pointer;
-    padding: 0.125rem 0.5rem;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.2s;
-  }
-
-  .restore-btn:hover {
-    color: var(--color-gray-700);
-    background-color: var(--color-gray-300);
   }
 
   .empty-column {
