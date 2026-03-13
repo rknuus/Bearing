@@ -197,6 +197,18 @@ fmt: ## Format Go code
 	@echo "Formatting Go code..."
 	go fmt ./...
 
+# Render macOS app icon from SVG logo (with padding + rounded corners to match macOS style)
+$(BIN_DIR)/appicon.png: logo.svg
+	rsvg-convert -w 680 --keep-aspect-ratio $< -o $(BIN_DIR)/appicon-raw.png
+	magick -size 1024x1024 xc:none \
+		-fill white -draw "roundrectangle 100,100 923,923 184,184" \
+		$(BIN_DIR)/appicon-raw.png -gravity center -compose Over -composite \
+		$@
+	rm -f $(BIN_DIR)/appicon-raw.png
+
+.PHONY: icon
+icon: $(BIN_DIR)/appicon.png ## Generate macOS app icon from logo.svg
+
 .PHONY: migrate-tasks
 migrate-tasks: ## Migrate task files from theme-scoped to flat structure
 	@bash scripts/migrate-task-structure.sh

@@ -5,6 +5,7 @@
   import EisenKanView from './views/EisenKanView.svelte';
   import OKRView from './views/OKRView.svelte';
   import Breadcrumb from './lib/components/Breadcrumb.svelte';
+  import BearingLogo from './lib/components/BearingLogo.svelte';
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
   import { initLocale } from './lib/utils/date-format';
@@ -387,6 +388,9 @@
         Short-term
       </button>
     </div>
+    <div class="nav-logo">
+      <BearingLogo size={28} />
+    </div>
   </nav>
 
   <!-- Breadcrumb Bar -->
@@ -462,6 +466,12 @@
   .nav-links {
     display: flex;
     gap: 0.5rem;
+  }
+
+  .nav-logo {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
   }
 
   .nav-link {
