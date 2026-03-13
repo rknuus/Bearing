@@ -90,16 +90,18 @@
               {getTheme(themes, task.themeId)?.name}
             </span>
           {/if}
-          {#if onTaskDelete}
+        </div>
+        <h3 class="task-title">{task.title}</h3>
+        <TagBadges tags={task.tags} />
+        {#if onTaskDelete}
+          <div class="task-footer">
             <button
               class="delete-btn"
               onclick={(e) => { e.stopPropagation(); onTaskDelete(task.id); }}
               aria-label="Remove task"
             >🗑️</button>
-          {/if}
-        </div>
-        <span class="task-title">{task.title}</span>
-        <TagBadges tags={task.tags} />
+          </div>
+        {/if}
       </div>
     {/each}
   </div>
@@ -112,7 +114,7 @@
     background-color: color-mix(in srgb, var(--quadrant-color) 8%, white);
     border: 1px solid var(--color-gray-200);
     border-radius: 6px;
-    min-height: 120px;
+    min-height: 160px;
   }
 
   .quadrant-header {
@@ -167,7 +169,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-bottom: 0.375rem;
+    margin-bottom: 0.5rem;
   }
 
   .priority-badge {
@@ -194,8 +196,14 @@
     max-width: 120px;
   }
 
+  .task-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+
   .delete-btn {
-    margin-left: auto;
     background: none;
     border: none;
     color: var(--color-gray-400);
@@ -216,6 +224,7 @@
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--color-gray-800);
+    margin: 0 0 0.5rem 0;
     line-height: 1.3;
   }
 
