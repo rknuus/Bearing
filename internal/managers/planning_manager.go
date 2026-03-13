@@ -6,8 +6,10 @@ package managers
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rkn/bearing/internal/access"
@@ -148,6 +150,7 @@ type PlanningManager struct {
 	planAccess        access.IPlanAccess
 	ruleEngine        rule_engine.IRuleEngine
 	navigationContext *NavigationContext
+	taskOrderMu       sync.Mutex
 }
 
 // NewPlanningManager creates a new PlanningManager instance.
@@ -158,10 +161,14 @@ func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error)
 
 	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
 
-	return &PlanningManager{
+	pm := &PlanningManager{
 		planAccess: planAccess,
 		ruleEngine: engine,
-	}, nil
+	}
+
+	pm.validateTaskOrder()
+
+	return pm, nil
 }
 
 // GetThemes returns all life themes.
@@ -978,6 +985,74 @@ func todoSlugFromConfig(config *access.BoardConfiguration) string {
 	return string(access.TaskStatusTodo) // fallback
 }
 
+// validateTaskOrder repairs task_order.json so that each task appears in exactly
+// the zone that dropZoneForTask derives from its current (status, priority).
+// Removes duplicates and stale entries left by prior race conditions.
+func (m *PlanningManager) validateTaskOrder() {
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return
+	}
+
+	tSlug := todoSlugFromConfig(config)
+
+	// Collect actual zone for every task from disk
+	statuses := make([]string, 0, len(config.ColumnDefinitions)+1)
+	for _, col := range config.ColumnDefinitions {
+		statuses = append(statuses, col.Name)
+	}
+	statuses = append(statuses, string(access.TaskStatusArchived))
+
+	actualZone := make(map[string]string) // taskID → correct zone
+	for _, status := range statuses {
+		tasks, err := m.planAccess.GetTasksByStatus(status)
+		if err != nil {
+			continue
+		}
+		for _, t := range tasks {
+			actualZone[t.ID] = dropZoneForTask(status, t.Priority, tSlug)
+		}
+	}
+
+	orderMap, err := m.planAccess.LoadTaskOrder()
+	if err != nil || len(orderMap) == 0 {
+		return
+	}
+
+	// Remove stale entries: keep only IDs whose actual zone matches the zone key
+	changed := false
+	for zone, ids := range orderMap {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if actualZone[id] == zone {
+				filtered = append(filtered, id)
+			} else {
+				changed = true
+			}
+		}
+		orderMap[zone] = filtered
+	}
+
+	// Add missing tasks to their correct zone
+	present := make(map[string]bool)
+	for _, ids := range orderMap {
+		for _, id := range ids {
+			present[id] = true
+		}
+	}
+	for id, zone := range actualZone {
+		if !present[id] {
+			orderMap[zone] = append(orderMap[zone], id)
+			changed = true
+		}
+	}
+
+	if changed {
+		slog.Info("validateTaskOrder: repaired task_order.json")
+		_ = m.planAccess.SaveTaskOrder(orderMap)
+	}
+}
+
 // GetTasks returns all tasks with their status across all themes.
 // Tasks are sorted by persisted order from task_order.json within each drop zone.
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
@@ -1234,8 +1309,11 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	// Update task order: remove from source drop zone, then apply positions or append to target
 	moveTodoSlug := todoSlugFromConfig(config)
 	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority, moveTodoSlug)
+
+	m.taskOrderMu.Lock()
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
+		m.taskOrderMu.Unlock()
 		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 	orderMap[sourceZone] = removeFromSlice(orderMap[sourceZone], taskId)
@@ -1248,8 +1326,10 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		orderMap[targetZone] = append(orderMap[targetZone], taskId)
 	}
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+		m.taskOrderMu.Unlock()
 		return nil, fmt.Errorf("failed to save task order: %w", err)
 	}
+	m.taskOrderMu.Unlock()
 
 	return &MoveTaskResult{Success: true, Positions: orderMap}, nil
 }
@@ -1431,8 +1511,10 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 
 // removeFromTaskOrder removes the given task IDs from all drop zones in the task order.
 func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
+	m.taskOrderMu.Lock()
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
+		m.taskOrderMu.Unlock()
 		return fmt.Errorf("failed to load task order: %w", err)
 	}
 
@@ -1457,9 +1539,11 @@ func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
 
 	if changed {
 		if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+			m.taskOrderMu.Unlock()
 			return fmt.Errorf("failed to save task order: %w", err)
 		}
 	}
+	m.taskOrderMu.Unlock()
 
 	return nil
 }
@@ -1467,8 +1551,10 @@ func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
 // ReorderTasks accepts proposed positions for one or more drop zones,
 // merges them into the full order map, persists, and returns authoritative positions.
 func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
+	m.taskOrderMu.Lock()
 	orderMap, err := m.planAccess.LoadTaskOrder()
 	if err != nil {
+		m.taskOrderMu.Unlock()
 		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 
@@ -1478,8 +1564,10 @@ func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderR
 	}
 
 	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+		m.taskOrderMu.Unlock()
 		return nil, fmt.Errorf("failed to save task order: %w", err)
 	}
+	m.taskOrderMu.Unlock()
 
 	return &ReorderResult{Success: true, Positions: orderMap}, nil
 }
@@ -1616,6 +1704,7 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 	}
 
 	// Clean task order entries
+	m.taskOrderMu.Lock()
 	orderMap, loadErr := m.planAccess.LoadTaskOrder()
 	if loadErr == nil {
 		if _, exists := orderMap[slug]; exists {
@@ -1623,6 +1712,7 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 			_ = m.planAccess.WriteTaskOrder(orderMap)
 		}
 	}
+	m.taskOrderMu.Unlock()
 
 	// Update config
 	config.ColumnDefinitions = append(config.ColumnDefinitions[:colIdx], config.ColumnDefinitions[colIdx+1:]...)
@@ -1697,6 +1787,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 	}
 
 	// Update task_order.json keys
+	m.taskOrderMu.Lock()
 	orderMap, loadErr := m.planAccess.LoadTaskOrder()
 	if loadErr == nil {
 		if ids, exists := orderMap[oldSlug]; exists {
@@ -1705,6 +1796,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 			_ = m.planAccess.WriteTaskOrder(orderMap)
 		}
 	}
+	m.taskOrderMu.Unlock()
 
 	// Update config
 	config.ColumnDefinitions[colIdx].Name = newSlug

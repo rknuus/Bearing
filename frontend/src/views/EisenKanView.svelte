@@ -548,6 +548,13 @@
     return result;
   }
 
+  // Apply authoritative positions from backend after a successful MoveTask call
+  function applyBackendPositions(backendPositions: Record<string, string[]>): void {
+    for (const [, ids] of Object.entries(backendPositions)) {
+      tasks = reorderZone(tasks, ids);
+    }
+  }
+
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
     const { trigger, source } = event.detail.info;
@@ -577,7 +584,13 @@
     // Find the task that was moved into this column (its status differs from column)
     const movedTask = newItems.find(t => t.status !== status);
     if (!movedTask) {
-      // Within-column reorder: persist new order
+      // Check if an item was dragged OUT (vs genuine within-column reorder)
+      const expectedCount = filteredTasks.filter(t => t.status === status).length;
+      if (newItems.length < expectedCount) {
+        // Item was dragged out — target zone handler manages the order
+        return;
+      }
+      // Genuine within-column reorder: persist new order
       const visibleIds = newItems.map(t => t.id);
       const taskIds = fullZoneOrder(visibleIds, status);
       try {
@@ -617,6 +630,9 @@
           error = 'Move rejected by rules';
         }
       } else {
+        if (result.positions) {
+          applyBackendPositions(result.positions);
+        }
         await verifyTaskState();
       }
     } catch (e) {
@@ -657,7 +673,15 @@
     // Find the moved task (its status or priority differs from the target)
     const movedTask = newItems.find(t => t.status !== columnName || t.priority !== sectionName);
     if (!movedTask) {
-      // Within-section reorder: persist new order
+      // Check if an item was dragged OUT (vs genuine within-section reorder)
+      const expectedCount = filteredTasks.filter(t =>
+        t.status === columnName && t.priority === sectionName
+      ).length;
+      if (newItems.length < expectedCount) {
+        // Item was dragged out — target zone handler manages the order
+        return;
+      }
+      // Genuine within-section reorder: persist new order
       const visibleIds = newItems.map(t => t.id);
       const taskIds = fullZoneOrder(visibleIds, sectionName);
       try {
@@ -695,6 +719,9 @@
             error = 'Move rejected by rules';
           }
         } else {
+          if (result.positions) {
+            applyBackendPositions(result.positions);
+          }
           await verifyTaskState();
         }
       } catch (e) {
