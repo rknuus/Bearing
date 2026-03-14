@@ -107,7 +107,7 @@ export async function runTests() {
       await page.fill('.theme-form input[type="text"]', 'Tag Test Theme')
       await page.click('.theme-form .color-option:nth-child(2)')
       await page.click('.theme-form .btn-primary:has-text("Create")')
-      await page.waitForSelector('.item-name:has-text("Tag Test Theme")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("Tag Test Theme")', { timeout: 5000 })
 
       const themes = readThemes(DATA_DIR)
       const theme = themes.find(t => t.name === 'Tag Test Theme')

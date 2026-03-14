@@ -104,7 +104,7 @@ describe('OKRView', () => {
     const header = container.querySelector('.okr-header h1');
     expect(header?.textContent).toBe('Life Themes & OKRs');
 
-    const themeName = container.querySelector('.tree-theme-item .item-name');
+    const themeName = container.querySelector('.tree-theme-item .theme-pill');
     expect(themeName?.textContent).toBe('Test Theme');
   });
 
@@ -592,7 +592,7 @@ describe('OKRView', () => {
     it('shows all themes when no filter is active', async () => {
       await renderTaggedView();
 
-      const themeNames = container.querySelectorAll('.tree-theme-item .item-name');
+      const themeNames = container.querySelectorAll('.tree-theme-item .theme-pill');
       expect(themeNames.length).toBe(3);
       expect(themeNames[0].textContent).toBe('Theme One');
       expect(themeNames[1].textContent).toBe('Theme Two');
@@ -610,7 +610,7 @@ describe('OKRView', () => {
       await tick();
 
       // Only Theme One should be visible (it has the "health" tagged objective)
-      const themeNames = container.querySelectorAll('.tree-theme-item .item-name');
+      const themeNames = container.querySelectorAll('.tree-theme-item .theme-pill');
       expect(themeNames.length).toBe(1);
       expect(themeNames[0].textContent).toBe('Theme One');
     });
@@ -625,7 +625,7 @@ describe('OKRView', () => {
       await tick();
 
       // Only Theme Two should be visible
-      let themeNames = container.querySelectorAll('.tree-theme-item .item-name');
+      let themeNames = container.querySelectorAll('.tree-theme-item .theme-pill');
       expect(themeNames.length).toBe(1);
 
       // Click "All" to clear
@@ -634,7 +634,7 @@ describe('OKRView', () => {
       await tick();
 
       // All themes restored
-      themeNames = container.querySelectorAll('.tree-theme-item .item-name');
+      themeNames = container.querySelectorAll('.tree-theme-item .theme-pill');
       expect(themeNames.length).toBe(3);
     });
 
@@ -684,7 +684,7 @@ describe('OKRView', () => {
       await tick();
 
       // Theme should still be visible (ancestor of matching objective)
-      const themeNames = container.querySelectorAll('.tree-theme-item .item-name');
+      const themeNames = container.querySelectorAll('.tree-theme-item .theme-pill');
       expect(themeNames.length).toBe(1);
       expect(themeNames[0].textContent).toBe('Nested Theme');
 

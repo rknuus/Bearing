@@ -552,7 +552,7 @@ export async function runTests() {
       const pfThemeSelector = await page.evaluate(() => {
         const themes = document.querySelectorAll('.tree-theme-edit')
         for (let i = 0; i < themes.length; i++) {
-          const name = themes[i].querySelector('.item-name')
+          const name = themes[i].querySelector('.theme-pill')
           if (name && name.textContent.trim() === 'Personal Finance') {
             return `.tree-theme-edit:nth-child(${i + 1})`
           }
@@ -577,7 +577,7 @@ export async function runTests() {
       await page.click(`${pfThemeSelector} button[title="Save"]`)
 
       // Verify updated name is displayed
-      await page.waitForSelector('.item-name:has-text("Personal Finance Edited")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("Personal Finance Edited")', { timeout: 5000 })
 
       reporter.pass('Theme name edited inline')
     } catch (err) {
@@ -588,11 +588,11 @@ export async function runTests() {
     reporter.startTest('204b: Inline edit objective title')
     try {
       // Expand HF theme
-      const hfTheme = await page.$('.tree-theme-edit:has(.item-name:has-text("Health & Fitness"))')
+      const hfTheme = await page.$('.tree-theme-edit:has(.theme-pill:has-text("Health & Fitness"))')
       const hfExpanded = await hfTheme?.$('.tree-children-edit')
       if (!hfExpanded) {
-        await page.click('.tree-theme-edit:has(.item-name:has-text("Health & Fitness")) .expand-button')
-        await page.waitForSelector('.tree-theme-edit:has(.item-name:has-text("Health & Fitness")) .tree-children-edit', { timeout: 5000 })
+        await page.click('.tree-theme-edit:has(.theme-pill:has-text("Health & Fitness")) .expand-button')
+        await page.waitForSelector('.tree-theme-edit:has(.theme-pill:has-text("Health & Fitness")) .tree-children-edit', { timeout: 5000 })
       }
 
       // Hover to reveal actions on first objective
@@ -662,11 +662,11 @@ export async function runTests() {
       }, { timeout: 5000 })
 
       // HF theme should be visible (has objective with Q1 tag)
-      await page.waitForSelector('.item-name:has-text("Health & Fitness")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("Health & Fitness")', { timeout: 5000 })
 
       // CG theme should be filtered out (no Q1 tag)
       const cgVisible = await page.evaluate(() => {
-        const names = document.querySelectorAll('.tree-theme-edit .item-name')
+        const names = document.querySelectorAll('.tree-theme-edit .theme-pill')
         return Array.from(names).some(n => n.textContent.trim() === 'Career Growth')
       })
       if (cgVisible) {

@@ -124,7 +124,7 @@ export async function runTests() {
       await page.fill('.theme-form input[type="text"]', 'E2E Theme')
       await page.click('.theme-form .color-option:nth-child(3)')
       await page.click('.theme-form .btn-primary:has-text("Create")')
-      await page.waitForSelector('.item-name:has-text("E2E Theme")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("E2E Theme")', { timeout: 5000 })
 
       // Verify files
       assertFileExists(DATA_DIR, 'themes/themes.json')
@@ -258,7 +258,7 @@ export async function runTests() {
       await page.fill('.theme-form input[type="text"]', 'E2E Theme 2')
       await page.click('.theme-form .color-option:nth-child(5)')
       await page.click('.theme-form .btn-primary:has-text("Create")')
-      await page.waitForSelector('.item-name:has-text("E2E Theme 2")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("E2E Theme 2")', { timeout: 5000 })
 
       const themesAfter2 = readThemes(DATA_DIR)
       const theme2 = themesAfter2.find(t => t.name === 'E2E Theme 2')
@@ -801,7 +801,7 @@ export async function runTests() {
       await page.fill('.theme-form input[type="text"]', 'Column Test')
       await page.click('.theme-form .color-option:nth-child(2)')
       await page.click('.theme-form .btn-primary:has-text("Create")')
-      await page.waitForSelector('.item-name:has-text("Column Test")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("Column Test")', { timeout: 5000 })
       expectedCommits++
 
       const colThemes = readThemes(DATA_DIR)

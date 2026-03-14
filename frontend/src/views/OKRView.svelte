@@ -10,7 +10,7 @@
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
-  import ThemeBadge from '../lib/components/ThemeBadge.svelte';
+
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError, openExternalLink } from '../lib/utils/bindings';
   import { getObjectiveStatus } from '../lib/utils/okr-status';
@@ -1188,8 +1188,6 @@
           >
             <span class="expand-icon">{expandedIds.has(theme.id) ? '\u25BC' : '\u25B6'}</span>
           </button>
-          <ThemeBadge color={theme.color} size="md" />
-
           {#if editingThemeId === theme.id}
             <input
               type="text"
@@ -1215,7 +1213,7 @@
             <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save">✅</Button>
             <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
           {:else}
-            <span class="item-name">{theme.name}</span>
+            <span class="theme-pill" style="background-color: {theme.color};">{theme.name}</span>
             <span class="item-id">{theme.id}</span>
             {@const tp = getThemeProgressValue(theme.id)}
             {#if tp >= 0}
@@ -1667,6 +1665,15 @@
 
   .theme-header {
     background-color: var(--color-gray-50);
+  }
+
+  .theme-pill {
+    font-weight: 700;
+    color: white;
+    padding: 0.125rem 0.375rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .expand-button {
