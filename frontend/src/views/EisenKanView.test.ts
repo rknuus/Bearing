@@ -349,11 +349,11 @@ describe('EisenKanView', () => {
     expect(taskCounts[2].textContent).toBe('1'); // done
   });
 
-  it('opens edit dialog when clicking on a task card', async () => {
+  it('opens edit dialog when double-clicking on a task card', async () => {
     await renderView();
 
     const firstCard = container.querySelector('.task-card') as HTMLElement;
-    firstCard.click();
+    firstCard.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     await tick();
 
     const dialog = container.querySelector('#edit-dialog-title');
@@ -1199,7 +1199,7 @@ describe('EisenKanView', () => {
 
       // Simulate edit: click task card to open edit dialog, then save
       const card = container.querySelector('.task-card')!;
-      card.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      card.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
       await tick();
 
       const titleInput = container.querySelector<HTMLInputElement>('#edit-task-title');

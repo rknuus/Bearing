@@ -16,7 +16,7 @@
   interface Props {
     task: TaskWithStatus;
     themes: LifeTheme[];
-    onclick?: (e: MouseEvent) => void;
+    ondblclick?: (e: MouseEvent) => void;
     oncontextmenu?: (e: MouseEvent) => void;
     onDelete?: () => void;
     onArchive?: () => void;
@@ -28,7 +28,7 @@
   let {
     task,
     themes,
-    onclick,
+    ondblclick,
     oncontextmenu,
     onDelete,
     onArchive,
@@ -38,11 +38,10 @@
   }: Props = $props();
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
 <div
   class="task-card"
   class:not-draggable={!draggable}
-  onclick={onclick}
+  ondblclick={ondblclick}
   oncontextmenu={oncontextmenu}
   role="article"
   aria-label={task.title}

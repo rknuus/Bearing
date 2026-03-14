@@ -32,11 +32,11 @@
     onTasksChange: (tasks: PendingTask[]) => void;
     onDragStart?: () => void;
     onDragEnd?: () => void;
-    onTaskClick?: (task: PendingTask) => void;
+    onTaskDblClick?: (task: PendingTask) => void;
     onTaskDelete?: (taskId: string) => void;
   }
 
-  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, onTaskClick, onTaskDelete }: Props = $props();
+  let { quadrantId, title, color, tasks, themes, onTasksChange, onDragStart, onDragEnd, onTaskDblClick, onTaskDelete }: Props = $props();
 
   const priorityLabel = $derived(priorityLabels[quadrantId] ?? '');
 
@@ -71,11 +71,10 @@
     onfinalize={handleDndFinalize}
   >
     {#each tasks as task (task.id)}
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
       <div
         class="pending-task"
         data-testid="pending-task-{task.id}"
-        onclick={() => onTaskClick?.(task)}
+        ondblclick={() => onTaskDblClick?.(task)}
         role="article"
       >
         <div class="task-header">
