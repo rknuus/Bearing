@@ -27,3 +27,6 @@ frontend/coverage/
 tests/ui-component/node_modules/
 tests/ui-component/test-results/
 tests/ui-component/playwright-report/
+
+# Project management
+.pm/
