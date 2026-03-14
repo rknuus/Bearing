@@ -471,7 +471,7 @@
     try {
       await getBindings().UpdateTheme(theme);
       const idx = themes.findIndex(t => t.id === theme.id);
-      if (idx >= 0) themes[idx] = { ...themes[idx], name: theme.name, color: theme.color };
+      if (idx >= 0) themes[idx] = theme;
       themes = themes;
       await verifyThemeState();
       editingThemeId = null;
@@ -926,8 +926,8 @@
             const idx = obj.keyResults.findIndex(k => k.id === kr.id);
             if (idx >= 0) {
               obj.keyResults[idx].description = editKeyResultDescription;
-              obj.keyResults[idx].startValue = editKeyResultStartValue;
-              obj.keyResults[idx].targetValue = editKeyResultTargetValue;
+              if (startChanged) obj.keyResults[idx].startValue = editKeyResultStartValue;
+              if (targetChanged) obj.keyResults[idx].targetValue = editKeyResultTargetValue;
               return true;
             }
             if (updateKR(obj.objectives ?? [])) return true;
