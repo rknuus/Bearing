@@ -704,6 +704,103 @@ describe('OKRView', () => {
     });
   });
 
+  describe('KR edit form — regression for state update bug', () => {
+    it('editing targetValue calls UpdateTheme with updated KR and reflects new target in frontend state', async () => {
+      await renderView();
+      await expandThemeAndObjective();
+
+      // After UpdateTheme, verifyThemeState calls GetThemes — return data matching the updated KR
+      const updatedData = makeTestThemes();
+      updatedData[0].objectives[0].keyResults[1].targetValue = 10;
+      mockBindings.GetThemes.mockResolvedValueOnce(JSON.parse(JSON.stringify(updatedData)));
+
+      // Click edit on the numeric KR (second KR item, targetValue=4)
+      const krItems = container.querySelectorAll('.tree-kr-item');
+      const numericKR = krItems[1];
+      const editButton = numericKR.querySelector<HTMLButtonElement>('.btn-icon.icon-edit');
+      expect(editButton).toBeTruthy();
+      editButton!.click();
+      await tick();
+
+      // Change the target value input from 4 to 10
+      const progressInputs = numericKR.querySelectorAll<HTMLInputElement>('.kr-progress-input');
+      expect(progressInputs.length).toBe(2);
+      const targetInput = progressInputs[1];
+      expect(targetInput.value).toBe('4');
+      await fireEvent.input(targetInput, { target: { value: '10' } });
+      await tick();
+
+      // Submit by clicking the save button
+      const saveButton = numericKR.querySelector<HTMLButtonElement>('.btn-icon.icon-save');
+      expect(saveButton).toBeTruthy();
+      saveButton!.click();
+      await tick();
+
+      // UpdateTheme should have been called with the full theme including updated targetValue
+      expect(mockBindings.UpdateTheme).toHaveBeenCalledOnce();
+      const calledTheme = mockBindings.UpdateTheme.mock.calls[0][0];
+      const updatedKR = calledTheme.objectives[0].keyResults[1];
+      expect(updatedKR.id).toBe('TST-KR2');
+      expect(updatedKR.targetValue).toBe(10);
+
+      // Wait for verifyThemeState (GetThemes called 1x initial load + 1x verify)
+      await vi.waitFor(() => {
+        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(2);
+      });
+
+      // Frontend state should reflect the updated target value
+      const targetLabel = container.querySelector('.kr-target-label');
+      expect(targetLabel?.textContent).toBe('/ 10');
+    });
+
+    it('editing description only calls UpdateKeyResult and reflects new description in frontend state', async () => {
+      await renderView();
+      await expandThemeAndObjective();
+
+      // After UpdateKeyResult, verifyThemeState calls GetThemes — return data matching the updated KR
+      const updatedData = makeTestThemes();
+      updatedData[0].objectives[0].keyResults[1].description = 'Updated KR description';
+      mockBindings.GetThemes.mockResolvedValueOnce(JSON.parse(JSON.stringify(updatedData)));
+
+      // Click edit on the numeric KR (second KR item)
+      const krItems = container.querySelectorAll('.tree-kr-item');
+      const numericKR = krItems[1];
+      const editButton = numericKR.querySelector<HTMLButtonElement>('.btn-icon.icon-edit');
+      expect(editButton).toBeTruthy();
+      editButton!.click();
+      await tick();
+
+      // Change only the description — leave start/target unchanged
+      const descInput = numericKR.querySelector<HTMLInputElement>('.inline-edit');
+      expect(descInput).toBeTruthy();
+      await fireEvent.input(descInput!, { target: { value: 'Updated KR description' } });
+      await tick();
+
+      // Submit by clicking the save button
+      const saveButton = numericKR.querySelector<HTMLButtonElement>('.btn-icon.icon-save');
+      expect(saveButton).toBeTruthy();
+      saveButton!.click();
+      await tick();
+
+      // UpdateKeyResult should have been called (description-only path, not UpdateTheme)
+      expect(mockBindings.UpdateKeyResult).toHaveBeenCalledWith('TST-KR2', 'Updated KR description');
+      expect(mockBindings.UpdateTheme).not.toHaveBeenCalled();
+
+      // Wait for verifyThemeState (GetThemes called 1x initial load + 1x verify)
+      await vi.waitFor(() => {
+        expect(mockBindings.GetThemes).toHaveBeenCalledTimes(2);
+      });
+      await tick();
+
+      // Frontend state should reflect the updated description
+      await vi.waitFor(() => {
+        const krDescriptions = container.querySelectorAll('.tree-kr-item .item-name');
+        const updatedKRDescription = Array.from(krDescriptions).find(el => el.textContent?.includes('Updated KR description'));
+        if (!updatedKRDescription) throw new Error('Updated description not found in DOM');
+      });
+    });
+  });
+
   describe('closing workflow', () => {
     it('opens close dialog when clicking Close button on active objective', async () => {
       await renderView();
