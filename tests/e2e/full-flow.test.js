@@ -599,6 +599,641 @@ export async function runTests() {
     }
 
     // ================================================================
+    // Phase 4d-4u: Field-level edits across OKR, Calendar, EisenKan
+    // ================================================================
+
+    // ---- 4d: Edit theme name ----
+    reporter.startTest('Phase 4d: Edit theme name and verify files')
+    try {
+      const themesForNameEdit = readThemes(DATA_DIR)
+      const themeForNameEdit = themesForNameEdit.find(t => t.name === 'E2E Theme')
+      if (!themeForNameEdit) throw new Error('Theme "E2E Theme" not found')
+
+      await page.evaluate(async (theme) => {
+        const app = window.go.main.App
+        await app.UpdateTheme({ ...theme, name: 'E2E Theme Renamed' })
+      }, themeForNameEdit)
+
+      const themesAfterRename = readThemes(DATA_DIR)
+      const renamedTheme = themesAfterRename.find(t => t.name === 'E2E Theme Renamed')
+      if (!renamedTheme) throw new Error('Theme "E2E Theme Renamed" not found after rename')
+
+      expectedCommits++
+      assertCommitCount('after rename theme')
+
+      // Rename back so later phases can find it by name
+      const themeForRevert = readThemes(DATA_DIR).find(t => t.name === 'E2E Theme Renamed')
+      await page.evaluate(async (theme) => {
+        const app = window.go.main.App
+        await app.UpdateTheme({ ...theme, name: 'E2E Theme' })
+      }, themeForRevert)
+
+      const themesAfterRevert = readThemes(DATA_DIR)
+      if (!themesAfterRevert.find(t => t.name === 'E2E Theme')) {
+        throw new Error('Theme "E2E Theme" not found after revert')
+      }
+
+      expectedCommits++
+      assertCommitCount('after revert theme name')
+
+      reporter.pass('Theme name edited and reverted')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4e: Edit theme color ----
+    reporter.startTest('Phase 4e: Edit theme color and verify files')
+    try {
+      const themesForColor = readThemes(DATA_DIR)
+      const themeForColor = themesForColor.find(t => t.name === 'E2E Theme')
+      const originalColor = themeForColor.color
+
+      await page.evaluate(async (theme) => {
+        const app = window.go.main.App
+        await app.UpdateTheme({ ...theme, color: '#ff5733' })
+      }, themeForColor)
+
+      const themesAfterColor = readThemes(DATA_DIR)
+      const coloredTheme = themesAfterColor.find(t => t.name === 'E2E Theme')
+      if (coloredTheme.color !== '#ff5733') {
+        throw new Error(`Expected color "#ff5733", got "${coloredTheme.color}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit theme color')
+
+      reporter.pass(`Theme color changed from "${originalColor}" to "#ff5733"`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4f: Edit objective title ----
+    reporter.startTest('Phase 4f: Edit objective title and verify files')
+    try {
+      const themesForObjTitle = readThemes(DATA_DIR)
+      const themeForObjTitle = themesForObjTitle.find(t => t.name === 'E2E Theme')
+      const objForTitle = themeForObjTitle.objectives.find(o => o.title === 'E2E Objective')
+      if (!objForTitle) throw new Error('Objective "E2E Objective" not found')
+
+      await page.evaluate(async (args) => {
+        const app = window.go.main.App
+        await app.UpdateObjective(args.id, 'Updated Obj Title', args.tags || [])
+      }, { id: objForTitle.id, tags: objForTitle.tags })
+
+      const themesAfterObjTitle = readThemes(DATA_DIR)
+      const themeAfterObjTitle = themesAfterObjTitle.find(t => t.name === 'E2E Theme')
+      const updatedObj = themeAfterObjTitle.objectives.find(o => o.id === objForTitle.id)
+      if (updatedObj.title !== 'Updated Obj Title') {
+        throw new Error(`Expected title "Updated Obj Title", got "${updatedObj.title}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit objective title')
+
+      // Rename back for later phases
+      await page.evaluate(async (args) => {
+        const app = window.go.main.App
+        await app.UpdateObjective(args.id, 'E2E Objective', args.tags || [])
+      }, { id: objForTitle.id, tags: objForTitle.tags })
+
+      expectedCommits++
+      assertCommitCount('after revert objective title')
+
+      reporter.pass('Objective title edited and reverted')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4g: Edit objective tags ----
+    reporter.startTest('Phase 4g: Edit objective tags and verify files')
+    try {
+      const themesForObjTags = readThemes(DATA_DIR)
+      const themeForObjTags = themesForObjTags.find(t => t.name === 'E2E Theme')
+      const objForTags = themeForObjTags.objectives.find(o => o.title === 'E2E Objective')
+
+      await page.evaluate(async (args) => {
+        const app = window.go.main.App
+        await app.UpdateObjective(args.id, args.title, ['e2e-tag1', 'e2e-tag2'])
+      }, { id: objForTags.id, title: objForTags.title })
+
+      const themesAfterObjTags = readThemes(DATA_DIR)
+      const themeAfterObjTags = themesAfterObjTags.find(t => t.name === 'E2E Theme')
+      const taggedObj = themeAfterObjTags.objectives.find(o => o.id === objForTags.id)
+      if (!taggedObj.tags || !taggedObj.tags.includes('e2e-tag1') || !taggedObj.tags.includes('e2e-tag2')) {
+        throw new Error(`Expected tags ["e2e-tag1", "e2e-tag2"], got ${JSON.stringify(taggedObj.tags)}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit objective tags')
+
+      reporter.pass('Objective tags updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4h: Edit KR description ----
+    reporter.startTest('Phase 4h: Edit key result description and verify files')
+    try {
+      const themesForKRDesc = readThemes(DATA_DIR)
+      const themeForKRDesc = themesForKRDesc.find(t => t.name === 'E2E Theme')
+      const objForKRDesc = themeForKRDesc.objectives.find(o => o.title === 'E2E Objective')
+      const krForDesc = objForKRDesc.keyResults[0]
+
+      await page.evaluate(async (args) => {
+        const app = window.go.main.App
+        await app.UpdateKeyResult(args.id, 'Updated KR Desc')
+      }, { id: krForDesc.id })
+
+      const themesAfterKRDesc = readThemes(DATA_DIR)
+      const themeAfterKRDesc = themesAfterKRDesc.find(t => t.name === 'E2E Theme')
+      const objAfterKRDesc = themeAfterKRDesc.objectives.find(o => o.title === 'E2E Objective')
+      const updatedKR = objAfterKRDesc.keyResults.find(k => k.id === krForDesc.id)
+      if (updatedKR.description !== 'Updated KR Desc') {
+        throw new Error(`Expected description "Updated KR Desc", got "${updatedKR.description}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit KR description')
+
+      reporter.pass('Key result description updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4i: Edit KR start/target values ----
+    reporter.startTest('Phase 4i: Edit KR start/target values and verify files')
+    try {
+      const themesForKRVals = readThemes(DATA_DIR)
+      const themeForKRVals = themesForKRVals.find(t => t.name === 'E2E Theme')
+      const objForKRVals = themeForKRVals.objectives.find(o => o.title === 'E2E Objective')
+      const krForVals = objForKRVals.keyResults[0]
+
+      // Modify KR values in the full theme tree and call UpdateTheme
+      const themeWithModifiedKR = JSON.parse(JSON.stringify(themeForKRVals))
+      themeWithModifiedKR.objectives[0].keyResults[0].startValue = 5
+      themeWithModifiedKR.objectives[0].keyResults[0].targetValue = 200
+
+      await page.evaluate(async (theme) => {
+        const app = window.go.main.App
+        await app.UpdateTheme(theme)
+      }, themeWithModifiedKR)
+
+      const themesAfterKRVals = readThemes(DATA_DIR)
+      const themeAfterKRVals = themesAfterKRVals.find(t => t.name === 'E2E Theme')
+      const objAfterKRVals = themeAfterKRVals.objectives.find(o => o.title === 'E2E Objective')
+      const krAfterVals = objAfterKRVals.keyResults.find(k => k.id === krForVals.id)
+      if (krAfterVals.startValue !== 5) {
+        throw new Error(`Expected startValue=5, got ${krAfterVals.startValue}`)
+      }
+      if (krAfterVals.targetValue !== 200) {
+        throw new Error(`Expected targetValue=200, got ${krAfterVals.targetValue}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit KR start/target values')
+
+      reporter.pass('KR start/target values updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4j: Set objective status to completed ----
+    reporter.startTest('Phase 4j: Set objective status to completed and verify files')
+    try {
+      const themesForObjStatus = readThemes(DATA_DIR)
+      const themeForObjStatus = themesForObjStatus.find(t => t.name === 'E2E Theme')
+      const objForStatus = themeForObjStatus.objectives.find(o => o.title === 'E2E Objective')
+      const krForObjStatus = objForStatus.keyResults[0]
+
+      // Must complete KR first (SetObjectiveStatus requires all children completed)
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.SetKeyResultStatus(id, 'completed')
+      }, krForObjStatus.id)
+
+      expectedCommits++
+      assertCommitCount('after complete KR for objective status')
+
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.SetObjectiveStatus(id, 'completed')
+      }, objForStatus.id)
+
+      const themesAfterObjStatus = readThemes(DATA_DIR)
+      const themeAfterObjStatus = themesAfterObjStatus.find(t => t.name === 'E2E Theme')
+      const objAfterStatus = themeAfterObjStatus.objectives.find(o => o.id === objForStatus.id)
+      if (objAfterStatus.status !== 'completed') {
+        throw new Error(`Expected status "completed", got "${objAfterStatus.status}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after set objective status')
+
+      // Revert objective to active for CloseObjective test
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.SetObjectiveStatus(id, 'active')
+      }, objForStatus.id)
+
+      expectedCommits++
+      assertCommitCount('after revert objective to active')
+
+      reporter.pass('Objective status set to completed and reverted')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4k: Close objective ----
+    reporter.startTest('Phase 4k: Close objective and verify files')
+    try {
+      const themesForClose = readThemes(DATA_DIR)
+      const themeForClose = themesForClose.find(t => t.name === 'E2E Theme')
+      const objForClose = themeForClose.objectives.find(o => o.title === 'E2E Objective')
+
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.CloseObjective(id, 'achieved', 'Test closing notes')
+      }, objForClose.id)
+
+      const themesAfterClose = readThemes(DATA_DIR)
+      const themeAfterClose = themesAfterClose.find(t => t.name === 'E2E Theme')
+      const objAfterClose = themeAfterClose.objectives.find(o => o.id === objForClose.id)
+      if (objAfterClose.closingStatus !== 'achieved') {
+        throw new Error(`Expected closingStatus "achieved", got "${objAfterClose.closingStatus}"`)
+      }
+      if (objAfterClose.closingNotes !== 'Test closing notes') {
+        throw new Error(`Expected closingNotes "Test closing notes", got "${objAfterClose.closingNotes}"`)
+      }
+      if (!objAfterClose.closedAt) {
+        throw new Error('Expected closedAt to be set')
+      }
+
+      expectedCommits++
+      assertCommitCount('after close objective')
+
+      reporter.pass('Objective closed with achieved status and notes')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4l: Reopen objective ----
+    reporter.startTest('Phase 4l: Reopen objective and verify files')
+    try {
+      const themesForReopen = readThemes(DATA_DIR)
+      const themeForReopen = themesForReopen.find(t => t.name === 'E2E Theme')
+      const objForReopen = themeForReopen.objectives.find(o => o.title === 'E2E Objective')
+
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.ReopenObjective(id)
+      }, objForReopen.id)
+
+      const themesAfterReopen = readThemes(DATA_DIR)
+      const themeAfterReopen = themesAfterReopen.find(t => t.name === 'E2E Theme')
+      const objAfterReopen = themeAfterReopen.objectives.find(o => o.id === objForReopen.id)
+      // ReopenObjective sets status to "" (empty = active)
+      if (objAfterReopen.status && objAfterReopen.status !== 'active') {
+        throw new Error(`Expected status empty or "active", got "${objAfterReopen.status}"`)
+      }
+      if (objAfterReopen.closingStatus) {
+        throw new Error(`Expected closingStatus to be cleared, got "${objAfterReopen.closingStatus}"`)
+      }
+      if (objAfterReopen.closingNotes) {
+        throw new Error(`Expected closingNotes to be cleared, got "${objAfterReopen.closingNotes}"`)
+      }
+      if (objAfterReopen.closedAt) {
+        throw new Error(`Expected closedAt to be cleared, got "${objAfterReopen.closedAt}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after reopen objective')
+
+      reporter.pass('Objective reopened, closing metadata cleared')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4m: Change KR status ----
+    reporter.startTest('Phase 4m: Change KR status and verify files')
+    try {
+      const themesForKRStatus = readThemes(DATA_DIR)
+      const themeForKRStatus = themesForKRStatus.find(t => t.name === 'E2E Theme')
+      const objForKRStatus = themeForKRStatus.objectives.find(o => o.title === 'E2E Objective')
+      const krForStatus = objForKRStatus.keyResults[0]
+
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.SetKeyResultStatus(id, 'completed')
+      }, krForStatus.id)
+
+      const themesAfterKRComplete = readThemes(DATA_DIR)
+      const themeAfterKRComplete = themesAfterKRComplete.find(t => t.name === 'E2E Theme')
+      const objAfterKRComplete = themeAfterKRComplete.objectives.find(o => o.title === 'E2E Objective')
+      const krAfterComplete = objAfterKRComplete.keyResults.find(k => k.id === krForStatus.id)
+      if (krAfterComplete.status !== 'completed') {
+        throw new Error(`Expected KR status "completed", got "${krAfterComplete.status}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after set KR status completed')
+
+      // Reset KR status back to active
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.SetKeyResultStatus(id, 'active')
+      }, krForStatus.id)
+
+      const themesAfterKRActive = readThemes(DATA_DIR)
+      const themeAfterKRActive = themesAfterKRActive.find(t => t.name === 'E2E Theme')
+      const objAfterKRActive = themeAfterKRActive.objectives.find(o => o.title === 'E2E Objective')
+      const krAfterActive = objAfterKRActive.keyResults.find(k => k.id === krForStatus.id)
+      if (krAfterActive.status !== 'active') {
+        throw new Error(`Expected KR status "active", got "${krAfterActive.status}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after reset KR status active')
+
+      reporter.pass('KR status toggled completed -> active')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4n: Create and edit routine ----
+    reporter.startTest('Phase 4n: Create and edit routine and verify files')
+    try {
+      await page.evaluate(async (tid) => {
+        const app = window.go.main.App
+        await app.AddRoutine(tid, 'E2E Routine', 10, 'at-or-above', 'times/week')
+      }, themeId)
+
+      const themesAfterRoutine = readThemes(DATA_DIR)
+      const themeAfterRoutine = themesAfterRoutine.find(t => t.name === 'E2E Theme')
+      if (!themeAfterRoutine.routines || themeAfterRoutine.routines.length < 1) {
+        throw new Error('Expected at least 1 routine')
+      }
+      const routine = themeAfterRoutine.routines[0]
+      if (routine.description !== 'E2E Routine') {
+        throw new Error(`Expected routine description "E2E Routine", got "${routine.description}"`)
+      }
+      if (routine.targetValue !== 10) {
+        throw new Error(`Expected routine targetValue=10, got ${routine.targetValue}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after create routine')
+
+      // Update routine
+      await page.evaluate(async (args) => {
+        const app = window.go.main.App
+        await app.UpdateRoutine(args.id, 'Updated Routine', 3, 15, 'at-or-above', 'hours')
+      }, { id: routine.id })
+
+      const themesAfterRoutineUpdate = readThemes(DATA_DIR)
+      const themeAfterRoutineUpdate = themesAfterRoutineUpdate.find(t => t.name === 'E2E Theme')
+      const updatedRoutine = themeAfterRoutineUpdate.routines.find(r => r.id === routine.id)
+      if (updatedRoutine.description !== 'Updated Routine') {
+        throw new Error(`Expected description "Updated Routine", got "${updatedRoutine.description}"`)
+      }
+      if (updatedRoutine.currentValue !== 3) {
+        throw new Error(`Expected currentValue=3, got ${updatedRoutine.currentValue}`)
+      }
+      if (updatedRoutine.targetValue !== 15) {
+        throw new Error(`Expected targetValue=15, got ${updatedRoutine.targetValue}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after update routine')
+
+      reporter.pass(`Routine created and updated: id=${routine.id}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4o: Delete routine ----
+    reporter.startTest('Phase 4o: Delete routine and verify files')
+    try {
+      const themesForRoutineDel = readThemes(DATA_DIR)
+      const themeForRoutineDel = themesForRoutineDel.find(t => t.name === 'E2E Theme')
+      const routineToDel = themeForRoutineDel.routines[0]
+
+      await page.evaluate(async (id) => {
+        const app = window.go.main.App
+        await app.DeleteRoutine(id)
+      }, routineToDel.id)
+
+      const themesAfterRoutineDel = readThemes(DATA_DIR)
+      const themeAfterRoutineDel = themesAfterRoutineDel.find(t => t.name === 'E2E Theme')
+      if (themeAfterRoutineDel.routines && themeAfterRoutineDel.routines.length > 0) {
+        throw new Error('Expected 0 routines after deletion')
+      }
+
+      expectedCommits++
+      assertCommitCount('after delete routine')
+
+      reporter.pass(`Routine deleted: ${routineToDel.id}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4p: Save personal vision ----
+    reporter.startTest('Phase 4p: Save personal vision and verify files')
+    try {
+      await page.evaluate(async () => {
+        const app = window.go.main.App
+        await app.SavePersonalVision('Test mission statement', 'Test vision text')
+      })
+
+      const vision = readJSON(DATA_DIR, 'vision.json')
+      if (vision.mission !== 'Test mission statement') {
+        throw new Error(`Expected mission "Test mission statement", got "${vision.mission}"`)
+      }
+      if (vision.vision !== 'Test vision text') {
+        throw new Error(`Expected vision "Test vision text", got "${vision.vision}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after save personal vision')
+
+      reporter.pass('Personal vision saved')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4q: Edit day focus text (different from 4c) ----
+    reporter.startTest('Phase 4q: Edit day focus text via binding and verify files')
+    try {
+      const year = new Date().getFullYear()
+      const calForQ = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entriesForQ = calForQ.entries || calForQ
+      const dayForQ = (Array.isArray(entriesForQ) ? entriesForQ : []).find(
+        e => e.text === 'Updated E2E text'
+      )
+      if (!dayForQ) throw new Error('Day with "Updated E2E text" not found')
+
+      await page.evaluate(async (day) => {
+        const app = window.go.main.App
+        await app.SaveDayFocus({
+          date: day.date,
+          themeIds: day.themeIds,
+          notes: 'Added notes via E2E',
+          text: 'Phase 4q updated text',
+          okrIds: day.okrIds || [],
+          tags: day.tags || [],
+        })
+      }, dayForQ)
+
+      const calAfterQ = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entriesAfterQ = calAfterQ.entries || calAfterQ
+      const updatedDayQ = (Array.isArray(entriesAfterQ) ? entriesAfterQ : []).find(
+        e => e.date === dayForQ.date
+      )
+      if (updatedDayQ.text !== 'Phase 4q updated text') {
+        throw new Error(`Expected text "Phase 4q updated text", got "${updatedDayQ.text}"`)
+      }
+      if (updatedDayQ.notes !== 'Added notes via E2E') {
+        throw new Error(`Expected notes "Added notes via E2E", got "${updatedDayQ.notes}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit day focus text 4q')
+
+      reporter.pass('Day focus text and notes updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4r: Edit day focus tags ----
+    reporter.startTest('Phase 4r: Edit day focus tags and verify files')
+    try {
+      const year = new Date().getFullYear()
+      const calForR = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entriesForR = calForR.entries || calForR
+      const dayForR = (Array.isArray(entriesForR) ? entriesForR : []).find(
+        e => e.text === 'Phase 4q updated text'
+      )
+      if (!dayForR) throw new Error('Day with "Phase 4q updated text" not found')
+
+      await page.evaluate(async (day) => {
+        const app = window.go.main.App
+        await app.SaveDayFocus({
+          date: day.date,
+          themeIds: day.themeIds,
+          notes: day.notes,
+          text: day.text,
+          okrIds: day.okrIds || [],
+          tags: ['e2e-day-tag1', 'e2e-day-tag2'],
+        })
+      }, dayForR)
+
+      const calAfterR = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entriesAfterR = calAfterR.entries || calAfterR
+      const updatedDayR = (Array.isArray(entriesAfterR) ? entriesAfterR : []).find(
+        e => e.date === dayForR.date
+      )
+      if (!updatedDayR.tags || !updatedDayR.tags.includes('e2e-day-tag1') || !updatedDayR.tags.includes('e2e-day-tag2')) {
+        throw new Error(`Expected tags ["e2e-day-tag1", "e2e-day-tag2"], got ${JSON.stringify(updatedDayR.tags)}`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit day focus tags')
+
+      reporter.pass('Day focus tags updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4s: Edit task title ----
+    reporter.startTest('Phase 4s: Edit task title and verify files')
+    try {
+      const taskBefore4s = readJSON(DATA_DIR, `tasks/todo/${task2Id}.json`)
+
+      await page.evaluate(async (taskId) => {
+        const app = window.go.main.App
+        const tasks = await app.GetTasks()
+        const task = tasks.find(t => t.id === taskId)
+        if (!task) throw new Error(`Task ${taskId} not found`)
+        await app.UpdateTask({
+          ...task,
+          title: 'E2E Task B Renamed',
+        })
+      }, task2Id)
+
+      const taskAfter4s = readJSON(DATA_DIR, `tasks/todo/${task2Id}.json`)
+      if (taskAfter4s.title !== 'E2E Task B Renamed') {
+        throw new Error(`Expected title "E2E Task B Renamed", got "${taskAfter4s.title}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit task title')
+
+      reporter.pass('Task title updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4t: Edit task priority ----
+    reporter.startTest('Phase 4t: Edit task priority and verify files')
+    try {
+      await page.evaluate(async (taskId) => {
+        const app = window.go.main.App
+        const tasks = await app.GetTasks()
+        const task = tasks.find(t => t.id === taskId)
+        if (!task) throw new Error(`Task ${taskId} not found`)
+        await app.UpdateTask({
+          ...task,
+          priority: 'important-not-urgent',
+        })
+      }, task2Id)
+
+      const taskAfter4t = readJSON(DATA_DIR, `tasks/todo/${task2Id}.json`)
+      if (taskAfter4t.priority !== 'important-not-urgent') {
+        throw new Error(`Expected priority "important-not-urgent", got "${taskAfter4t.priority}"`)
+      }
+
+      expectedCommits++
+      assertCommitCount('after edit task priority')
+
+      reporter.pass('Task priority updated')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ---- 4u: Archive and restore task ----
+    reporter.startTest('Phase 4u: Archive and restore task and verify files')
+    try {
+      // Use task1 which is in done status
+      await page.evaluate(async (taskId) => {
+        const app = window.go.main.App
+        await app.ArchiveTask(taskId)
+      }, task1Id)
+
+      assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
+      assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
+
+      // ArchiveTask = 2 commits (file move + task_order update)
+      expectedCommits += 2
+      assertCommitCount('after archive task 4u')
+
+      // Restore task
+      await page.evaluate(async (taskId) => {
+        const app = window.go.main.App
+        await app.RestoreTask(taskId)
+      }, task1Id)
+
+      assertFileNotExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
+      assertFileExists(DATA_DIR, `tasks/done/${task1Id}.json`)
+
+      // RestoreTask = 2 commits (file move + task_order update)
+      expectedCommits += 2
+      assertCommitCount('after restore task 4u')
+
+      reporter.pass(`Task archived and restored: ${task1Id}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ================================================================
     // Phase 5: Cleanup
     // ================================================================
 
@@ -613,7 +1248,7 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      // ArchiveTask produces 2 commits: file move + task_order update
+      // ArchiveTask = 2 commits (file move + task_order removal)
       expectedCommits += 2
       assertCommitCount('after archive task')
 
@@ -728,7 +1363,7 @@ export async function runTests() {
       const calBeforeClear = readJSON(DATA_DIR, `calendar/${year}.json`)
       const entriesBeforeClear = calBeforeClear.entries || calBeforeClear
       const dayToClear = (Array.isArray(entriesBeforeClear) ? entriesBeforeClear : []).find(
-        e => e.text === 'Updated E2E text'
+        e => e.text === 'Phase 4q updated text'
       )
       if (!dayToClear) throw new Error('Day to clear not found')
 

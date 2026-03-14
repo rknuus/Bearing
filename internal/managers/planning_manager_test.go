@@ -2605,6 +2605,45 @@ func TestRestoreTask(t *testing.T) {
 		t.Error("restored task not found")
 	})
 
+	t.Run("restores task into task_order", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		manager, _ := NewPlanningManager(mockAccess)
+
+		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
+		_, _ = manager.MoveTask(task.ID, "done", nil)
+		_ = manager.ArchiveTask(task.ID)
+
+		// Verify task is removed from task_order after archive
+		orderBefore, _ := mockAccess.LoadTaskOrder()
+		for zone, ids := range orderBefore {
+			for _, id := range ids {
+				if id == task.ID {
+					t.Errorf("archived task %s should not be in task_order zone %s", task.ID, zone)
+				}
+			}
+		}
+
+		err := manager.RestoreTask(task.ID)
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		// Verify task is back in task_order under the "done" zone
+		orderAfter, _ := mockAccess.LoadTaskOrder()
+		found := false
+		for _, id := range orderAfter["done"] {
+			if id == task.ID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("restored task %s should be in task_order zone 'done', got %v", task.ID, orderAfter)
+		}
+
+		assertTaskOrderConsistency(t, manager)
+	})
+
 	t.Run("rejects non-archived task", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)

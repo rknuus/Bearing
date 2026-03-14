@@ -1506,6 +1506,25 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("failed to restore task %s: %w", taskId, err)
 	}
 
+	// Add the restored task to the "done" zone in task_order.json
+	boardConfig, err := m.planAccess.GetBoardConfiguration()
+	if err != nil || boardConfig == nil {
+		boardConfig = access.DefaultBoardConfiguration()
+	}
+	targetZone := dropZoneForTask(string(access.TaskStatusDone), targetTask.Priority, todoSlugFromConfig(boardConfig))
+	m.taskOrderMu.Lock()
+	orderMap, err := m.planAccess.LoadTaskOrder()
+	if err != nil {
+		m.taskOrderMu.Unlock()
+		return fmt.Errorf("failed to load task order: %w", err)
+	}
+	orderMap[targetZone] = append(orderMap[targetZone], taskId)
+	if err := m.planAccess.SaveTaskOrder(orderMap); err != nil {
+		m.taskOrderMu.Unlock()
+		return fmt.Errorf("failed to save task order: %w", err)
+	}
+	m.taskOrderMu.Unlock()
+
 	return nil
 }
 
