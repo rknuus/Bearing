@@ -76,7 +76,7 @@ export async function runTests() {
       await page.click('.theme-form .color-option:nth-child(2)')
       await page.click('.theme-form .btn-primary:has-text("Create")')
       await page.waitForSelector(
-        '.tree-theme-edit:last-child .item-name:has-text("E2E Flow")',
+        '.tree-theme-edit:last-child .theme-pill:has-text("E2E Flow")',
         { timeout: 5000 }
       )
 
@@ -110,7 +110,7 @@ export async function runTests() {
 
       // Verify hierarchy text content
       const themeName = await page.$eval(
-        '.tree-theme-edit:last-child > .item-header .item-name',
+        '.tree-theme-edit:last-child > .item-header .theme-pill',
         el => el.textContent.trim()
       )
       if (themeName !== 'E2E Flow') {
@@ -329,7 +329,7 @@ export async function runTests() {
       }
 
       // Verify E2E Flow theme is visible in OKR view
-      await page.waitForSelector('.item-name:has-text("E2E Flow")', { timeout: 5000 })
+      await page.waitForSelector('.theme-pill:has-text("E2E Flow")', { timeout: 5000 })
 
       // Navigate to Calendar and verify themed day persists
       await page.keyboard.press('Control+2')
@@ -502,7 +502,7 @@ export async function runTests() {
 
       // Verify "E2E Flow" theme is gone
       await page.waitForFunction(() => {
-        const names = document.querySelectorAll('.item-name')
+        const names = document.querySelectorAll('.theme-pill')
         return !Array.from(names).some(n => n.textContent.trim() === 'E2E Flow')
       }, { timeout: 5000 })
 
