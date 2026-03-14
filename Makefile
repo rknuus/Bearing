@@ -69,7 +69,7 @@ stop: ## Stop any running dev/test server processes (ports 5173, 5174, 34115, 34
 ##@ Build
 
 .PHONY: build
-build: generate frontend-lint ## Build Wails desktop application
+build: generate frontend-lint $(BIN_DIR)/appicon.png ## Build Wails desktop application
 	@echo "Building $(APP_NAME)..."
 	@$(MAKE) --no-print-directory -C frontend check
 	@echo "Building Wails application..."
@@ -197,17 +197,20 @@ fmt: ## Format Go code
 	@echo "Formatting Go code..."
 	go fmt ./...
 
-# Render macOS app icon from SVG logo (with padding + rounded corners to match macOS style)
-$(BIN_DIR)/appicon.png: logo.svg
-	rsvg-convert -w 680 --keep-aspect-ratio $< -o $(BIN_DIR)/appicon-raw.png
+# Render macOS app icon from simplified SVG with squircle clipping and Apple HIG padding
+# Output: 1024x1024 PNG with 824x824 squircle content centered (100px transparent padding)
+$(BIN_DIR)/appicon.png: appicon.svg
+	rsvg-convert -w 824 -h 824 $< -o $(BIN_DIR)/appicon-raw.png
 	magick -size 1024x1024 xc:none \
-		-fill white -draw "roundrectangle 100,100 923,923 184,184" \
+		-fill white -draw "roundrectangle 100,100 923,923 185,185" \
+		$(BIN_DIR)/appicon-mask.png
+	magick -size 1024x1024 xc:none \
 		$(BIN_DIR)/appicon-raw.png -gravity center -compose Over -composite \
-		$@
-	rm -f $(BIN_DIR)/appicon-raw.png
+		$(BIN_DIR)/appicon-mask.png -compose DstIn -composite $@
+	rm -f $(BIN_DIR)/appicon-raw.png $(BIN_DIR)/appicon-mask.png
 
 .PHONY: icon
-icon: $(BIN_DIR)/appicon.png ## Generate macOS app icon from logo.svg
+icon: $(BIN_DIR)/appicon.png ## Generate macOS app icon from appicon.svg
 
 .PHONY: migrate-tasks
 migrate-tasks: ## Migrate task files from theme-scoped to flat structure

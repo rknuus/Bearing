@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="#F0EDE8"/>
+
+  <!-- Outer border ring -->
+  <circle cx="512" cy="512" r="440" fill="none" stroke="#6A9BBD" stroke-width="14"/>
+
+  <!-- Intercardinal points (NE/SE/SW/NW) — shorter than cardinals -->
+  <!-- Dark halves -->
+  <g fill="#5B8AAD">
+    <polygon points="512,512 512,440 730,294"/>
+    <polygon points="512,512 584,512 730,730"/>
+    <polygon points="512,512 512,584 294,730"/>
+    <polygon points="512,512 440,512 294,294"/>
+  </g>
+  <!-- Light halves -->
+  <g fill="#82B0CB">
+    <polygon points="512,512 584,512 730,294"/>
+    <polygon points="512,512 512,584 730,730"/>
+    <polygon points="512,512 440,512 294,730"/>
+    <polygon points="512,512 512,440 294,294"/>
+  </g>
+
+  <!-- Cardinal points (N/S/E/W) — long bold points reaching near the ring -->
+  <!-- Dark halves (left of N, right of S, bottom of E, top of W) -->
+  <g fill="#3B5F7F">
+    <polygon points="512,90 470,512 512,380"/>
+    <polygon points="512,934 554,512 512,644"/>
+    <polygon points="934,512 512,554 644,512"/>
+    <polygon points="90,512 512,470 380,512"/>
+  </g>
+  <!-- Full cardinal shapes underneath for solid base -->
+  <g fill="#3B5F7F">
+    <polygon points="512,90 554,512 470,512"/>
+    <polygon points="512,934 470,512 554,512"/>
+    <polygon points="934,512 512,470 512,554"/>
+    <polygon points="90,512 512,554 512,470"/>
+  </g>
+  <!-- Light halves (right of N, left of S, top of E, bottom of W) -->
+  <g fill="#5A84A5">
+    <polygon points="512,90 554,512 512,380"/>
+    <polygon points="512,934 470,512 512,644"/>
+    <polygon points="934,512 512,470 644,512"/>
+    <polygon points="90,512 512,554 380,512"/>
+  </g>
+
+  <!-- Center circle — outer ring -->
+  <circle cx="512" cy="512" r="56" fill="#3B5F7F"/>
+  <!-- Center circle — inner disc -->
+  <circle cx="512" cy="512" r="38" fill="#F0EDE8"/>
+  <!-- Center circle — core dot -->
+  <circle cx="512" cy="512" r="18" fill="#3B5F7F"/>
+</svg>
