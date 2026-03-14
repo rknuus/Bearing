@@ -368,6 +368,89 @@ func (m *mockPlanAccess) CommitAll(message string) error {
 	return nil
 }
 
+// assertTaskOrderConsistency verifies that the task order map is fully consistent
+// with the tasks on disk: every task appears in exactly one zone under the correct
+// key, there are no stale/orphaned IDs, and no duplicates across zones.
+func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
+	t.Helper()
+
+	// 1. Load board configuration to get column slugs and todoSlug
+	boardConfig, err := manager.planAccess.GetBoardConfiguration()
+	if err != nil || boardConfig == nil {
+		boardConfig = access.DefaultBoardConfiguration()
+	}
+	tSlug := todoSlugFromConfig(boardConfig)
+
+	// 2. Load task order map
+	orderMap, err := manager.planAccess.LoadTaskOrder()
+	if err != nil {
+		t.Errorf("assertTaskOrderConsistency: failed to load task order: %v", err)
+		return
+	}
+
+	// 3. Build expected zone mapping: taskID -> expectedZone
+	expectedZone := make(map[string]string)
+	allSlugs := make([]string, 0, len(boardConfig.ColumnDefinitions)+1)
+	for _, col := range boardConfig.ColumnDefinitions {
+		allSlugs = append(allSlugs, col.Name)
+	}
+	allSlugs = append(allSlugs, string(access.TaskStatusArchived))
+
+	for _, slug := range allSlugs {
+		tasks, err := manager.planAccess.GetTasksByStatus(slug)
+		if err != nil {
+			continue
+		}
+		for _, task := range tasks {
+			zone := dropZoneForTask(slug, task.Priority, tSlug)
+			expectedZone[task.ID] = zone
+		}
+	}
+
+	// 4. Check: every task on disk appears in exactly one zone under the correct key
+	for taskID, expZone := range expectedZone {
+		foundInZone := ""
+		for zone, ids := range orderMap {
+			for _, id := range ids {
+				if id == taskID {
+					if foundInZone != "" {
+						t.Errorf("assertTaskOrderConsistency: task %s found in multiple zones: %s and %s", taskID, foundInZone, zone)
+					}
+					foundInZone = zone
+				}
+			}
+		}
+		if foundInZone == "" {
+			t.Errorf("assertTaskOrderConsistency: task %s (expected zone %s) not found in any zone", taskID, expZone)
+		} else if foundInZone != expZone {
+			t.Errorf("assertTaskOrderConsistency: task %s in zone %s, expected zone %s", taskID, foundInZone, expZone)
+		}
+	}
+
+	// 5. Check: no stale/orphaned IDs in orderMap
+	for zone, ids := range orderMap {
+		for _, id := range ids {
+			expZone, exists := expectedZone[id]
+			if !exists {
+				t.Errorf("assertTaskOrderConsistency: orphaned ID %s in zone %s (task does not exist on disk)", id, zone)
+			} else if expZone != zone {
+				t.Errorf("assertTaskOrderConsistency: stale ID %s in zone %s, expected zone %s", id, zone, expZone)
+			}
+		}
+	}
+
+	// 6. Check: no duplicates across zones
+	seen := make(map[string]string)
+	for zone, ids := range orderMap {
+		for _, id := range ids {
+			if prevZone, dup := seen[id]; dup {
+				t.Errorf("assertTaskOrderConsistency: duplicate ID %s in zones %s and %s", id, prevZone, zone)
+			}
+			seen[id] = zone
+		}
+	}
+}
+
 // findKeyResultByID walks the objective tree and returns a pointer to the key result with the given ID.
 func findKeyResultByID(objectives []access.Objective, id string) *access.KeyResult {
 	for i := range objectives {
@@ -2220,6 +2303,8 @@ func TestMoveTask_UpdatesOrder(t *testing.T) {
 		if !found {
 			t.Errorf("expected task %s in doing zone, got %v", task.ID, doingTasks)
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 }
 
@@ -2243,6 +2328,8 @@ func TestDeleteTask_CleansUpOrder(t *testing.T) {
 				}
 			}
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 }
 
@@ -2264,6 +2351,8 @@ func TestCreateTask_AppendsToOrder(t *testing.T) {
 		if !found {
 			t.Errorf("expected task %s in important-urgent zone, got %v", task.ID, zone)
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 }
 
@@ -2377,6 +2466,8 @@ func TestUnit_CreateTask_BatchSequential(t *testing.T) {
 				t.Errorf("task %s (priority %s) not found in zone %s", createdIDs[i], spec.priority, zone)
 			}
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 }
 
@@ -2919,6 +3010,8 @@ func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
 	if !slices.Equal(finalOrder["important-urgent"], desiredOrder) {
 		t.Errorf("task_order.json mismatch in important-urgent zone:\n  got  %v\n  want %v", finalOrder["important-urgent"], desiredOrder)
 	}
+
+	assertTaskOrderConsistency(t, manager)
 }
 
 func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
@@ -2991,6 +3084,8 @@ func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
 	if len(finalOrder["doing"]) != 0 {
 		t.Errorf("doing zone should be empty, got %v", finalOrder["doing"])
 	}
+
+	assertTaskOrderConsistency(t, manager)
 }
 
 func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
@@ -3609,4 +3704,55 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 			t.Errorf("expected empty closedAt, got '%s'", found.ClosedAt)
 		}
 	})
+}
+
+func TestUnit_UpdateTaskPriority_ThenReorder(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, err := NewPlanningManager(mockAccess)
+	if err != nil {
+		t.Fatalf("expected no error creating manager, got %v", err)
+	}
+
+	// 1. Create task with priority "important-urgent"
+	task, err := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+	if task == nil {
+		t.Fatal("CreateTask returned nil task")
+	}
+
+	// 2. Assert consistency — should pass after creation
+	assertTaskOrderConsistency(t, manager)
+
+	// 3. Update task priority to "not-important-urgent"
+	task.Priority = "not-important-urgent"
+	err = manager.UpdateTask(*task)
+	if err != nil {
+		t.Fatalf("UpdateTask failed: %v", err)
+	}
+
+	// 4. Manually verify the inconsistency: task is still in old zone
+	orderMap, err := mockAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	if !slices.Contains(orderMap["important-urgent"], task.ID) {
+		t.Errorf("expected task %s still in stale important-urgent zone", task.ID)
+	}
+	if slices.Contains(orderMap["not-important-urgent"], task.ID) {
+		t.Errorf("expected task %s NOT yet in not-important-urgent zone", task.ID)
+	}
+
+	// 5. Call ReorderTasks to fix: move task from old zone to new zone
+	_, err = manager.ReorderTasks(map[string][]string{
+		"important-urgent":     {},
+		"not-important-urgent": {task.ID},
+	})
+	if err != nil {
+		t.Fatalf("ReorderTasks failed: %v", err)
+	}
+
+	// 6. Assert consistency — should pass again after reorder fix
+	assertTaskOrderConsistency(t, manager)
 }
