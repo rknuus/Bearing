@@ -517,6 +517,7 @@ func (a *App) CreateObjective(parentId, title string) (*Objective, error) {
 
 	return &Objective{
 		ID:         obj.ID,
+		ParentID:   obj.ParentID,
 		Title:      obj.Title,
 		KeyResults: []KeyResult{},
 	}, nil
@@ -565,6 +566,7 @@ func (a *App) CreateKeyResult(parentObjectiveId, description string, startValue,
 
 	return &KeyResult{
 		ID:           kr.ID,
+		ParentID:     kr.ParentID,
 		Description:  kr.Description,
 		Type:         kr.Type,
 		StartValue:   kr.StartValue,

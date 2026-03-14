@@ -85,6 +85,9 @@ export async function runTests() {
         if (text.includes('WebSocket')) return
         consoleErrors.push(text)
       }
+      if (msg.type() === 'warning' && msg.text().includes('[state-check]')) {
+        consoleErrors.push(msg.text())
+      }
     })
 
     await page.goto(TEST_CONFIG.WAILS_DEV_URL, {
