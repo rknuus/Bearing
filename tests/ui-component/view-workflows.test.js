@@ -333,8 +333,8 @@ export async function runTests() {
         throw new Error('Expected at least one task card from mock data')
       }
 
-      // Click the first task card to open the edit dialog
-      await taskCards[0].click()
+      // Double-click the first task card to open the edit dialog
+      await taskCards[0].dblclick()
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
       // Verify edit dialog title

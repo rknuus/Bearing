@@ -1183,7 +1183,7 @@
                       <TaskCard
                         {task}
                         {themes}
-                        onclick={() => handleTaskClick(task)}
+                        ondblclick={() => handleTaskClick(task)}
                         oncontextmenu={(e) => handleTaskContextMenu(e, task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         {onNavigateToTheme}
@@ -1206,7 +1206,7 @@
                 <TaskCard
                   {task}
                   {themes}
-                  onclick={() => handleTaskClick(task)}
+                  ondblclick={() => handleTaskClick(task)}
                   oncontextmenu={(e) => handleTaskContextMenu(e, task)}
                   onDelete={() => handleDeleteTask(task.id)}
                   onArchive={column.type === 'done' ? () => handleArchiveTask(task.id) : undefined}

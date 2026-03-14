@@ -203,8 +203,8 @@ export async function runTests() {
 
     reporter.startTest('Test 2: Edit task to add new tag via blur — round-trip')
     try {
-      // Click the task card to open EditTaskDialog
-      await page.click('.task-card:has-text("Tag Comma Test Task")')
+      // Double-click the task card to open EditTaskDialog
+      await page.dblclick('.task-card:has-text("Tag Comma Test Task")')
       await page.waitForSelector('#edit-task-title', { timeout: 5000 })
 
       // Verify the existing tag pill is active

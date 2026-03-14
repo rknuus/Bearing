@@ -363,7 +363,7 @@
           onTasksChange={(tasks) => handleQuadrantTasksChange(q.id, tasks)}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          onTaskClick={handlePendingTaskClick}
+          onTaskDblClick={handlePendingTaskClick}
           onTaskDelete={(taskId) => handlePendingTaskDelete(q.id, taskId)}
         />
       {/each}
