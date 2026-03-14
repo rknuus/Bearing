@@ -1224,8 +1224,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/done/${task1Id}.json`)
 
-      // RestoreTask = 1 commit (file move only, no task_order update)
-      expectedCommits++
+      // RestoreTask = 2 commits (file move + task_order update)
+      expectedCommits += 2
       assertCommitCount('after restore task 4u')
 
       reporter.pass(`Task archived and restored: ${task1Id}`)
@@ -1248,9 +1248,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      // ArchiveTask produces 1 commit here (file move only — task_order
-      // entry was already removed in Phase 4u's archive/restore cycle)
-      expectedCommits++
+      // ArchiveTask = 2 commits (file move + task_order removal)
+      expectedCommits += 2
       assertCommitCount('after archive task')
 
       reporter.pass(`Task 1 archived: ${task1Id}`)
