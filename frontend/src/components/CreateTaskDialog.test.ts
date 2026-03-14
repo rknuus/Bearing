@@ -436,7 +436,7 @@ describe('CreateTaskDialog', () => {
   });
 
   describe('edit pending task', () => {
-    it('clicking a pending task card opens edit modal with pre-populated fields', async () => {
+    it('double-clicking a pending task card opens edit modal with pre-populated fields', async () => {
       mockDraftsData = JSON.stringify({
         'important-urgent': [{ id: 'pending-1', title: 'My task', themeId: 'CG', description: 'A description', tags: ['tag1', 'tag2'] }],
       });
@@ -444,7 +444,7 @@ describe('CreateTaskDialog', () => {
       await renderDialog();
 
       const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
-      await fireEvent.click(taskCard!);
+      await fireEvent.dblClick(taskCard!);
       await tick();
 
       // Edit modal should be open
@@ -476,7 +476,7 @@ describe('CreateTaskDialog', () => {
 
       // Click the second task to edit it
       const taskCard = container.querySelector('[data-testid="pending-task-pending-2"]');
-      await fireEvent.click(taskCard!);
+      await fireEvent.dblClick(taskCard!);
       await tick();
 
       // Change the title
@@ -513,7 +513,7 @@ describe('CreateTaskDialog', () => {
 
       // Click task to open edit
       const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
-      await fireEvent.click(taskCard!);
+      await fireEvent.dblClick(taskCard!);
       await tick();
 
       // Change the title
@@ -544,7 +544,7 @@ describe('CreateTaskDialog', () => {
       mockSaveTaskDrafts.mockClear();
 
       const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
-      await fireEvent.click(taskCard!);
+      await fireEvent.dblClick(taskCard!);
       await tick();
 
       // Edit modal should be open
@@ -701,7 +701,7 @@ describe('CreateTaskDialog', () => {
 
       // Click the task to open edit
       const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
-      await fireEvent.click(taskCard!);
+      await fireEvent.dblClick(taskCard!);
       await tick();
 
       // TagEditor should show active pills for the tags

@@ -131,8 +131,8 @@ export async function runTests() {
         return Array.from(titles).some(el => el.textContent.trim() === 'Blur Tag Test Task')
       }, { timeout: 5000 })
 
-      // Click the pending task to open the edit-pending dialog and verify "blurtag" tag
-      await page.click('.pending-task:has(.task-title:has-text("Blur Tag Test Task"))')
+      // Double-click the pending task to open the edit-pending dialog and verify "blurtag" tag
+      await page.dblclick('.pending-task:has(.task-title:has-text("Blur Tag Test Task"))')
       await page.waitForSelector('[aria-labelledby="edit-pending-dialog-title"]', { timeout: 5000 })
 
       // Verify "blurtag" is an active pill in the edit-pending dialog's TagEditor
@@ -172,8 +172,8 @@ export async function runTests() {
     // ---- Test 3: EditTaskDialog — new tag via comma ----
     reporter.startTest('EditTaskDialog: new tag via comma')
     try {
-      // Click a task card to open the edit dialog (use CG-T1 "Complete project proposal")
-      await page.click('.task-card:has(.task-title:has-text("Complete project proposal"))')
+      // Double-click a task card to open the edit dialog (use CG-T1 "Complete project proposal")
+      await page.dblclick('.task-card:has(.task-title:has-text("Complete project proposal"))')
       await page.waitForSelector('[role="dialog"]', { timeout: 5000 })
 
       // Type "edittag," in the tag input
@@ -208,8 +208,8 @@ export async function runTests() {
     // ---- Test 4: EditTaskDialog — new tag via blur (click Save) ----
     reporter.startTest('EditTaskDialog: new tag via blur on Save click')
     try {
-      // Click a task card to open the edit dialog (use CG-T1 "Complete project proposal")
-      await page.click('.task-card:has(.task-title:has-text("Complete project proposal"))')
+      // Double-click a task card to open the edit dialog (use CG-T1 "Complete project proposal")
+      await page.dblclick('.task-card:has(.task-title:has-text("Complete project proposal"))')
       await page.waitForSelector('[role="dialog"]', { timeout: 5000 })
 
       // Type "savetag" in the tag input (no comma, no Enter)

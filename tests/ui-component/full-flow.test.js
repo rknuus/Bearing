@@ -380,8 +380,8 @@ export async function runTests() {
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
-      // Click Task A to open edit dialog
-      await page.click('.task-card:has(.task-title:has-text("Task A"))')
+      // Double-click Task A to open edit dialog
+      await page.dblclick('.task-card:has(.task-title:has-text("Task A"))')
       await page.waitForSelector('[role="dialog"]', { timeout: 5000 })
 
       // Verify fields are populated
