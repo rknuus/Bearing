@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-20T14:57:09Z
-version: 1.0
+last_updated: 2026-03-15T20:17:17Z
+version: 1.1
 author: Claude Code PM System
 ---
 
@@ -16,11 +16,13 @@ Bearing is a functional desktop application with all three planning views implem
 - Life theme management with color coding
 - Nested objectives with status tracking (active/completed/archived)
 - Key results with quantitative progress tracking (start/current/target)
+- Routines — ongoing health metrics per theme with on-track/off-track status indicators (goals for stability: maintain a metric at or above/below a threshold)
 
 ### Calendar View (Mid-term)
 - 12×31 yearly grid display
 - Daily focus assignment to themes
 - Theme color visualization across the year
+- Today highlighting with primary-600 blue styling
 - Cross-view navigation to related tasks
 
 ### EisenKan View (Short-term)
@@ -30,6 +32,8 @@ Bearing is a functional desktop application with all three planning views implem
 - Priority promotion automation (date-based priority escalation)
 - Subtask hierarchy with expand/collapse
 - Theme filtering and cross-view navigation
+- Tag management with badges and editor
+- Double-click to edit tasks
 
 ### Cross-Cutting
 - Navigation shell with breadcrumbs and keyboard shortcuts (Ctrl+1/2/3)

@@ -4,6 +4,11 @@ import { tick } from 'svelte';
 import type { LifeTheme } from '../lib/wails-mock';
 import OKRView from './OKRView.svelte';
 
+const { routinesEnabled } = vi.hoisted(() => ({ routinesEnabled: { value: false } }));
+vi.mock('../lib/constants/feature-flags', () => ({
+  get FEATURE_ROUTINES_ENABLED() { return routinesEnabled.value; },
+}));
+
 /** Build a fixture with one theme, one objective, and 4 KR variants. */
 function makeTestThemes(): LifeTheme[] {
   return [
@@ -984,6 +989,93 @@ describe('OKRView', () => {
         // GetThemes is called: 1x initial load, 1x verifyThemeState (no loadThemes after mutation)
         expect(mockBindings.GetThemes).toHaveBeenCalledTimes(2);
       });
+    });
+  });
+
+  describe('routine feature flag', () => {
+    function makeThemeWithRoutines(): LifeTheme[] {
+      return [
+        {
+          id: 'TST',
+          name: 'Test Theme',
+          color: '#dc2626',
+          objectives: [],
+          routines: [
+            { id: 'TST-R1', description: 'Exercise per week', currentValue: 3, targetValue: 3, targetType: 'at-or-above', unit: 'times/week' },
+          ],
+        },
+      ];
+    }
+
+    it('hides routine UI elements when FEATURE_ROUTINES_ENABLED is false (default)', async () => {
+      mockBindings = makeMockBindings(makeThemeWithRoutines());
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      // Expand the theme
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      // No "+ Routine" button
+      const routineButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-icon'))
+        .find(b => b.textContent?.includes('+ Routine'));
+      expect(routineButton).toBeUndefined();
+
+      // No routine cards or section content
+      expect(container.querySelector('.routine-card')).toBeNull();
+      expect(container.querySelector('.routine-display')).toBeNull();
+    });
+
+    it('shows "No objectives yet" without mentioning routines when flag is off', async () => {
+      const emptyThemes: LifeTheme[] = [
+        { id: 'TST', name: 'Test Theme', color: '#dc2626', objectives: [], routines: [] },
+      ];
+      mockBindings = makeMockBindings(emptyThemes);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      // Expand the theme
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      const emptyState = container.querySelector('.empty-state');
+      expect(emptyState).toBeTruthy();
+      expect(emptyState!.textContent).toContain('No objectives yet');
+      expect(emptyState!.textContent).not.toContain('routine');
+    });
+
+    it('shows routine UI elements when FEATURE_ROUTINES_ENABLED is true', async () => {
+      routinesEnabled.value = true;
+
+      const bindings = {
+        ...makeMockBindings(makeThemeWithRoutines()),
+        AddRoutine: vi.fn().mockResolvedValue(null),
+        UpdateRoutine: vi.fn().mockResolvedValue(undefined),
+        DeleteRoutine: vi.fn().mockResolvedValue(undefined),
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: bindings } };
+      await renderView();
+
+      // Expand the theme
+      const expandButtons = container.querySelectorAll<HTMLButtonElement>('.expand-button');
+      expandButtons[0]?.click();
+      await tick();
+
+      // "+ Routine" button should be present
+      const routineButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-icon'))
+        .find(b => b.textContent?.includes('+ Routine'));
+      expect(routineButton).toBeTruthy();
+
+      // Routine card should be rendered
+      expect(container.querySelector('.routine-display')).toBeTruthy();
+      expect(container.querySelector('.routine-description')?.textContent).toBe('Exercise per week');
+
+      routinesEnabled.value = false;
     });
   });
 });
