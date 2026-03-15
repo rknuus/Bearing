@@ -201,6 +201,30 @@ func (m *mockPlanAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 	return &saved, nil
 }
 
+func (m *mockPlanAccess) UpdateTaskWithOrderMove(task access.Task, oldZone, newZone string) error {
+	if err := m.SaveTask(task); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.taskOrder == nil {
+		m.taskOrder = make(map[string][]string)
+	}
+	// Remove from old zone
+	if ids, ok := m.taskOrder[oldZone]; ok {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if id != task.ID {
+				filtered = append(filtered, id)
+			}
+		}
+		m.taskOrder[oldZone] = filtered
+	}
+	// Append to new zone
+	m.taskOrder[newZone] = append(m.taskOrder[newZone], task.ID)
+	return nil
+}
+
 func (m *mockPlanAccess) MoveTask(taskID, newStatus string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -369,8 +393,10 @@ func (m *mockPlanAccess) CommitAll(message string) error {
 }
 
 // assertTaskOrderConsistency verifies that the task order map is fully consistent
-// with the tasks on disk: every task appears in exactly one zone under the correct
-// key, there are no stale/orphaned IDs, and no duplicates across zones.
+// with the active (non-archived) tasks on disk: every active task appears in
+// exactly one zone under the correct key, there are no stale/orphaned IDs, and
+// no duplicates across zones. Archived tasks are excluded — they are intentionally
+// removed from task_order.json when archived.
 func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
 	t.Helper()
 
@@ -388,21 +414,15 @@ func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
 		return
 	}
 
-	// 3. Build expected zone mapping: taskID -> expectedZone
+	// 3. Build expected zone mapping: taskID -> expectedZone (active columns only)
 	expectedZone := make(map[string]string)
-	allSlugs := make([]string, 0, len(boardConfig.ColumnDefinitions)+1)
 	for _, col := range boardConfig.ColumnDefinitions {
-		allSlugs = append(allSlugs, col.Name)
-	}
-	allSlugs = append(allSlugs, string(access.TaskStatusArchived))
-
-	for _, slug := range allSlugs {
-		tasks, err := manager.planAccess.GetTasksByStatus(slug)
+		tasks, err := manager.planAccess.GetTasksByStatus(col.Name)
 		if err != nil {
 			continue
 		}
 		for _, task := range tasks {
-			zone := dropZoneForTask(slug, task.Priority, tSlug)
+			zone := dropZoneForTask(col.Name, task.Priority, tSlug)
 			expectedZone[task.ID] = zone
 		}
 	}
@@ -2069,6 +2089,8 @@ func TestMoveTask(t *testing.T) {
 		if !result.Success {
 			t.Errorf("expected success, got violations: %v", result.Violations)
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 
 	t.Run("rejects invalid status", func(t *testing.T) {
@@ -2127,6 +2149,8 @@ func TestDeleteTask(t *testing.T) {
 		if len(tasks) != 0 {
 			t.Errorf("expected 0 tasks after delete, got %d", len(tasks))
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 
 	t.Run("returns error for empty ID", func(t *testing.T) {
@@ -2495,6 +2519,7 @@ func TestArchiveTask(t *testing.T) {
 				if tw.Status != "archived" {
 					t.Errorf("expected status 'archived', got '%s'", tw.Status)
 				}
+				assertTaskOrderConsistency(t, manager)
 				return
 			}
 		}
@@ -2559,6 +2584,8 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 		if todoCount != 1 {
 			t.Errorf("expected 1 todo task, got %d", todoCount)
 		}
+
+		assertTaskOrderConsistency(t, manager)
 	})
 
 	t.Run("no-op when no done tasks", func(t *testing.T) {
@@ -3745,7 +3772,7 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 	})
 }
 
-func TestUnit_UpdateTaskPriority_ThenReorder(t *testing.T) {
+func TestUnit_UpdateTaskPriority_MovesZone(t *testing.T) {
 	mockAccess := newMockPlanAccess()
 	manager, err := NewPlanningManager(mockAccess)
 	if err != nil {
@@ -3757,41 +3784,103 @@ func TestUnit_UpdateTaskPriority_ThenReorder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateTask failed: %v", err)
 	}
-	if task == nil {
-		t.Fatal("CreateTask returned nil task")
-	}
 
-	// 2. Assert consistency — should pass after creation
 	assertTaskOrderConsistency(t, manager)
 
-	// 3. Update task priority to "not-important-urgent"
+	// 2. Update task priority to "not-important-urgent"
 	task.Priority = "not-important-urgent"
 	err = manager.UpdateTask(*task)
 	if err != nil {
 		t.Fatalf("UpdateTask failed: %v", err)
 	}
 
-	// 4. Manually verify the inconsistency: task is still in old zone
+	// 3. Verify task moved from old zone to new zone in task_order.json
 	orderMap, err := mockAccess.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
-	if !slices.Contains(orderMap["important-urgent"], task.ID) {
-		t.Errorf("expected task %s still in stale important-urgent zone", task.ID)
+	if slices.Contains(orderMap["important-urgent"], task.ID) {
+		t.Errorf("task %s should NOT be in important-urgent zone after priority change", task.ID)
 	}
-	if slices.Contains(orderMap["not-important-urgent"], task.ID) {
-		t.Errorf("expected task %s NOT yet in not-important-urgent zone", task.ID)
+	if !slices.Contains(orderMap["not-important-urgent"], task.ID) {
+		t.Errorf("task %s should be in not-important-urgent zone after priority change", task.ID)
 	}
 
-	// 5. Call ReorderTasks to fix: move task from old zone to new zone
-	_, err = manager.ReorderTasks(map[string][]string{
-		"important-urgent":     {},
-		"not-important-urgent": {task.ID},
-	})
+	assertTaskOrderConsistency(t, manager)
+}
+
+func TestUnit_UpdateTaskPriority_NoZoneChangeForNonTodo(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Create task, move to doing
+	task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(task.ID, "doing", nil)
+
+	// Update priority on doing task — zone is status-based, not priority-based
+	task.Priority = "not-important-urgent"
+	err := manager.UpdateTask(*task)
 	if err != nil {
-		t.Fatalf("ReorderTasks failed: %v", err)
+		t.Fatalf("UpdateTask failed: %v", err)
 	}
 
-	// 6. Assert consistency — should pass again after reorder fix
+	assertTaskOrderConsistency(t, manager)
+}
+
+func TestUnit_UpdateTaskNoPriorityChange_NoOrderUpdate(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
+
+	// Update title only, same priority
+	task.Title = "Updated Title"
+	err := manager.UpdateTask(*task)
+	if err != nil {
+		t.Fatalf("UpdateTask failed: %v", err)
+	}
+
+	orderMap, _ := mockAccess.LoadTaskOrder()
+	if !slices.Contains(orderMap["important-urgent"], task.ID) {
+		t.Errorf("task %s should remain in important-urgent zone", task.ID)
+	}
+
+	assertTaskOrderConsistency(t, manager)
+}
+
+func TestUnit_ProcessPriorityPromotions_MovesZone(t *testing.T) {
+	mockAccess := newMockPlanAccess()
+	manager, _ := NewPlanningManager(mockAccess)
+
+	// Create task with promotion date in the past
+	task, err := manager.CreateTask("Promotable Task", "T", "important-not-urgent", "", "", "2020-01-01")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+
+	// Verify initial zone
+	orderBefore, _ := mockAccess.LoadTaskOrder()
+	if !slices.Contains(orderBefore["important-not-urgent"], task.ID) {
+		t.Fatalf("task should start in important-not-urgent zone")
+	}
+
+	// Process promotions
+	promoted, err := manager.ProcessPriorityPromotions()
+	if err != nil {
+		t.Fatalf("ProcessPriorityPromotions failed: %v", err)
+	}
+	if len(promoted) != 1 {
+		t.Fatalf("expected 1 promoted task, got %d", len(promoted))
+	}
+
+	// Verify zone moved
+	orderAfter, _ := mockAccess.LoadTaskOrder()
+	if slices.Contains(orderAfter["important-not-urgent"], task.ID) {
+		t.Errorf("task %s should NOT be in important-not-urgent zone after promotion", task.ID)
+	}
+	if !slices.Contains(orderAfter["important-urgent"], task.ID) {
+		t.Errorf("task %s should be in important-urgent zone after promotion", task.ID)
+	}
+
 	assertTaskOrderConsistency(t, manager)
 }
