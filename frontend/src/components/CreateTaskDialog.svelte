@@ -346,7 +346,7 @@
             style="background-color: {q.color};"
             onclick={() => handleAddTask(q.id)}
             disabled={isSubmitting || !newTaskTitle.trim()}
-          >Stage to <span class="nowrap">{q.title}</span></button>
+          >Stage to ⬇</button>
         {/each}
       </div>
     </fieldset>
@@ -454,10 +454,6 @@
     box-shadow:
       inset 3px 3px 0 rgba(255, 255, 255, 0.5),
       inset -3px -3px 0 rgba(0, 0, 0, 0.4);
-  }
-
-  .nowrap {
-    white-space: nowrap;
   }
 
   .btn-add:hover:not(:disabled) {
