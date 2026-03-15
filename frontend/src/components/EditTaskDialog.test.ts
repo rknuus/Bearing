@@ -160,6 +160,13 @@ describe('EditTaskDialog', () => {
     expect(saveBtn?.disabled).toBe(true);
   });
 
+  it('focuses the title input when dialog opens with a task', async () => {
+    await renderDialog({ task: makeTestTask() });
+
+    const titleInput = container.querySelector<HTMLInputElement>('#edit-task-title');
+    expect(document.activeElement).toBe(titleInput);
+  });
+
   it('displays error when onSave throws', async () => {
     const onSave = vi.fn<(t: Task) => Promise<void>>().mockRejectedValue(new Error('Rule violation: too many Q1 tasks'));
 
