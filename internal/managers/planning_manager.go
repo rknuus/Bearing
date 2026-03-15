@@ -1335,6 +1335,8 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 }
 
 // UpdateTask updates an existing task.
+// When the priority change moves a todo task to a different drop zone,
+// task_order.json is updated atomically with the task file.
 func (m *PlanningManager) UpdateTask(task access.Task) error {
 	if task.ID == "" {
 		return fmt.Errorf("task ID cannot be empty")
@@ -1345,6 +1347,17 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 	if err != nil {
 		return fmt.Errorf("failed to build task context: %w", err)
 	}
+
+	// Find existing task to detect zone changes
+	var oldPriority, oldStatus string
+	for _, t := range taskInfos {
+		if t.ID == task.ID {
+			oldPriority = t.Priority
+			oldStatus = t.Status
+			break
+		}
+	}
+
 	event := rule_engine.TaskEvent{
 		Type:     rule_engine.EventTaskUpdate,
 		Task:     &task,
@@ -1352,6 +1365,23 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 	}
 	if _, err := m.evaluateRules(event); err != nil {
 		return fmt.Errorf("%w", err)
+	}
+
+	// Check if priority change causes a zone change (only for todo tasks)
+	if oldPriority != "" && oldPriority != task.Priority {
+		config, _ := m.planAccess.GetBoardConfiguration()
+		todoSlug := todoSlugFromConfig(config)
+		oldZone := dropZoneForTask(oldStatus, oldPriority, todoSlug)
+		newZone := dropZoneForTask(oldStatus, task.Priority, todoSlug)
+		if oldZone != newZone {
+			m.taskOrderMu.Lock()
+			err := m.planAccess.UpdateTaskWithOrderMove(task, oldZone, newZone)
+			m.taskOrderMu.Unlock()
+			if err != nil {
+				return fmt.Errorf("failed to update task with zone move: %w", err)
+			}
+			return nil
+		}
 	}
 
 	if err := m.planAccess.SaveTask(task); err != nil {
@@ -1363,7 +1393,8 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 
 // ProcessPriorityPromotions promotes tasks whose PromotionDate has been reached.
 // Tasks with priority "important-not-urgent" are promoted to "important-urgent"
-// and their PromotionDate is cleared.
+// and their PromotionDate is cleared. The task_order.json is updated atomically
+// to move each promoted task from the old zone to the new zone.
 func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	allTasks, err := m.GetTasks()
 	if err != nil {
@@ -1373,6 +1404,8 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	var promoted []PromotedTask
+	config, _ := m.planAccess.GetBoardConfiguration()
+	todoSlug := todoSlugFromConfig(config)
 
 	for _, t := range allTasks {
 		if t.PromotionDate == "" {
@@ -1391,8 +1424,20 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		updatedTask.Priority = string(access.PriorityImportantUrgent)
 		updatedTask.PromotionDate = "" // Clear after promotion
 
-		if err := m.planAccess.SaveTask(updatedTask); err != nil {
-			return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
+		oldZone := dropZoneForTask(t.Status, oldPriority, todoSlug)
+		newZone := dropZoneForTask(t.Status, string(access.PriorityImportantUrgent), todoSlug)
+
+		if oldZone != newZone {
+			m.taskOrderMu.Lock()
+			err := m.planAccess.UpdateTaskWithOrderMove(updatedTask, oldZone, newZone)
+			m.taskOrderMu.Unlock()
+			if err != nil {
+				return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
+			}
+		} else {
+			if err := m.planAccess.SaveTask(updatedTask); err != nil {
+				return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
+			}
 		}
 
 		promoted = append(promoted, PromotedTask{

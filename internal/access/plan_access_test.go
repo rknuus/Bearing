@@ -1714,6 +1714,83 @@ func TestDeleteTaskWithOrder(t *testing.T) {
 	}
 }
 
+func TestUpdateTaskWithOrderMove(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create task in important-urgent zone
+	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
+	saved, err := pa.SaveTaskWithOrder(task, "important-urgent")
+	if err != nil {
+		t.Fatalf("SaveTaskWithOrder failed: %v", err)
+	}
+
+	// Verify initial zone
+	order, _ := pa.LoadTaskOrder()
+	if len(order["important-urgent"]) != 1 || order["important-urgent"][0] != saved.ID {
+		t.Fatalf("Expected task in important-urgent zone, got %v", order)
+	}
+
+	// Move to important-not-urgent zone
+	saved.Priority = string(PriorityImportantNotUrgent)
+	if err := pa.UpdateTaskWithOrderMove(*saved, "important-urgent", "important-not-urgent"); err != nil {
+		t.Fatalf("UpdateTaskWithOrderMove failed: %v", err)
+	}
+
+	// Verify task file updated
+	tasks, _ := pa.GetTasksByStatus("todo")
+	if len(tasks) != 1 {
+		t.Fatalf("Expected 1 task, got %d", len(tasks))
+	}
+	if tasks[0].Priority != string(PriorityImportantNotUrgent) {
+		t.Errorf("Expected priority important-not-urgent, got %s", tasks[0].Priority)
+	}
+
+	// Verify zone moved in task_order.json
+	orderAfter, _ := pa.LoadTaskOrder()
+	if len(orderAfter["important-urgent"]) != 0 {
+		t.Errorf("Expected empty important-urgent zone, got %v", orderAfter["important-urgent"])
+	}
+	if len(orderAfter["important-not-urgent"]) != 1 || orderAfter["important-not-urgent"][0] != saved.ID {
+		t.Errorf("Expected task in important-not-urgent zone, got %v", orderAfter["important-not-urgent"])
+	}
+}
+
+func TestUpdateTaskWithOrderMove_MissingFromOldZone(t *testing.T) {
+	pa, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	if err := pa.SaveTheme(theme); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	// Create task but DON'T add to order (simulating stale state)
+	task := Task{Title: "Orphan task", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
+	if err := pa.SaveTask(task); err != nil {
+		t.Fatalf("SaveTask failed: %v", err)
+	}
+
+	tasks, _ := pa.GetTasksByStatus("todo")
+	savedTask := tasks[0]
+
+	// Move from a zone the task isn't in — should still append to new zone
+	savedTask.Priority = string(PriorityImportantNotUrgent)
+	if err := pa.UpdateTaskWithOrderMove(savedTask, "important-urgent", "important-not-urgent"); err != nil {
+		t.Fatalf("UpdateTaskWithOrderMove failed: %v", err)
+	}
+
+	order, _ := pa.LoadTaskOrder()
+	if len(order["important-not-urgent"]) != 1 || order["important-not-urgent"][0] != savedTask.ID {
+		t.Errorf("Expected task in important-not-urgent zone, got %v", order)
+	}
+}
+
 func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
