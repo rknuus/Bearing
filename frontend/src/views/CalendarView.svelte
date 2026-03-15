@@ -474,7 +474,7 @@
             <div
               class="day-weekday"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {wdayCol}; {sundayBg}"
+              style="grid-row: {gridRow}; grid-column: {wdayCol}; {cell.today ? '' : sundayBg}"
             >
               {cell.weekdayName}
             </div>
@@ -483,7 +483,7 @@
             <button
               class="day-num"
               class:today={cell.today}
-              style="grid-row: {gridRow}; grid-column: {numCol}; {sundayBg}"
+              style="grid-row: {gridRow}; grid-column: {numCol}; {cell.today ? '' : sundayBg}"
               ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={displayDate(cell.month, cell.day)}
             >
@@ -718,15 +718,18 @@
   }
 
   .day-num.today {
-    outline: 2px solid var(--color-gray-400);
-    outline-offset: -2px;
+    background-color: var(--color-primary-600);
+    color: white;
     font-weight: bold;
-    color: var(--color-gray-800);
+  }
+
+  .day-num.today:hover {
+    background-color: var(--color-primary-700);
   }
 
   .day-weekday.today {
-    outline: 2px solid var(--color-gray-400);
-    outline-offset: -2px;
+    background-color: var(--color-primary-600);
+    color: white;
     font-weight: bold;
   }
 
