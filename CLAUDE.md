@@ -10,6 +10,7 @@
 - Always lint code before committing and only disable rules for genuine false positives, not for non-idiomatic code: `make lint` in the project root
 - Always run all tests before committing: `make test && make test-ui-component-headless && make test-e2e-headless` in the project root
 - Ensure backend state changes are atomic to avoid state inconstistencies between frontend and backend because of race conditions
+- Log all relevant events, especially errors with all relevant details except sensitive data like passwords
 - To analyze errors read the log file `~/.bearing/bearing.log`
 - For Svelte 5 questions, fetch and use: https://svelte.dev/llms-full.txt
 - For svelte-dnd-actions, refer to the local README snapshot at `tmp/docs/svelte-dnd-action/README.md`
