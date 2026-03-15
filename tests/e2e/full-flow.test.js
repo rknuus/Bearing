@@ -1191,6 +1191,17 @@ export async function runTests() {
         throw new Error(`Expected priority "important-not-urgent", got "${taskAfter4t.priority}"`)
       }
 
+      // Verify task_order.json: task must be in new zone, not old zone
+      const orderAfter4t = readJSON(DATA_DIR, 'task_order.json')
+      const oldZoneIds = orderAfter4t['important-urgent'] || []
+      const newZoneIds = orderAfter4t['important-not-urgent'] || []
+      if (oldZoneIds.includes(task2Id)) {
+        throw new Error(`Task ${task2Id} should NOT be in important-urgent zone after priority change`)
+      }
+      if (!newZoneIds.includes(task2Id)) {
+        throw new Error(`Task ${task2Id} should be in important-not-urgent zone after priority change`)
+      }
+
       expectedCommits++
       assertCommitCount('after edit task priority')
 

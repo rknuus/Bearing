@@ -32,6 +32,7 @@ type IPlanAccess interface {
 	GetTasksByStatus(status string) ([]Task, error)
 	SaveTask(task Task) error
 	SaveTaskWithOrder(task Task, dropZone string) (*Task, error)
+	UpdateTaskWithOrderMove(task Task, oldZone, newZone string) error
 	MoveTask(taskID, newStatus string) error
 	ArchiveTask(taskID string) error
 	RestoreTask(taskID string) error
@@ -599,6 +600,46 @@ func (pa *PlanAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, erro
 	}
 
 	return &task, nil
+}
+
+// UpdateTaskWithOrderMove atomically saves a task and moves its entry from
+// oldZone to newZone in task_order.json in a single git commit.
+func (pa *PlanAccess) UpdateTaskWithOrderMove(task Task, oldZone, newZone string) error {
+	taskPaths, _, err := pa.saveTaskFile(&task)
+	if err != nil {
+		return fmt.Errorf("PlanAccess.UpdateTaskWithOrderMove: %w", err)
+	}
+
+	orderMap, err := pa.LoadTaskOrder()
+	if err != nil {
+		return fmt.Errorf("PlanAccess.UpdateTaskWithOrderMove: failed to load task order: %w", err)
+	}
+
+	// Remove from old zone
+	if ids, ok := orderMap[oldZone]; ok {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if id != task.ID {
+				filtered = append(filtered, id)
+			}
+		}
+		orderMap[oldZone] = filtered
+	}
+
+	// Append to new zone
+	orderMap[newZone] = append(orderMap[newZone], task.ID)
+
+	orderFilePath := pa.taskOrderFilePath()
+	if err := writeJSON(orderFilePath, orderMap); err != nil {
+		return fmt.Errorf("PlanAccess.UpdateTaskWithOrderMove: failed to write task order: %w", err)
+	}
+
+	commitPaths := append(taskPaths, orderFilePath)
+	if err := pa.commitFiles(commitPaths, fmt.Sprintf("Update task: %s", task.Title)); err != nil {
+		return fmt.Errorf("PlanAccess.UpdateTaskWithOrderMove: %w", err)
+	}
+
+	return nil
 }
 
 // DeleteTaskWithOrder atomically deletes a task file and removes it from the
