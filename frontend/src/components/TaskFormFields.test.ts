@@ -72,4 +72,37 @@ describe('TaskFormFields', () => {
 
     expect(container.querySelector('input[id$="tags"]')).toBeNull();
   });
+
+  it('does not focus title input when focusTrigger is 0', async () => {
+    render(TaskFormFields, { target: container, props: { ...defaultProps(), focusTrigger: 0 } });
+    await tick();
+
+    const titleInput = container.querySelector<HTMLInputElement>('input[id$="title"]');
+    expect(document.activeElement).not.toBe(titleInput);
+  });
+
+  it('focuses title input when focusTrigger is greater than 0', async () => {
+    render(TaskFormFields, { target: container, props: { ...defaultProps(), focusTrigger: 1 } });
+    await tick();
+
+    const titleInput = container.querySelector<HTMLInputElement>('input[id$="title"]');
+    expect(document.activeElement).toBe(titleInput);
+  });
+
+  it('refocuses title input when focusTrigger increments', async () => {
+    const result = render(TaskFormFields, { target: container, props: { ...defaultProps(), focusTrigger: 1 } });
+    await tick();
+
+    // Focus something else
+    const desc = container.querySelector<HTMLTextAreaElement>('textarea[id$="description"]');
+    desc!.focus();
+    expect(document.activeElement).toBe(desc);
+
+    // Increment focusTrigger
+    result.rerender({ ...defaultProps(), focusTrigger: 2 });
+    await tick();
+
+    const titleInput = container.querySelector<HTMLInputElement>('input[id$="title"]');
+    expect(document.activeElement).toBe(titleInput);
+  });
 });

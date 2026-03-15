@@ -49,6 +49,8 @@
   let isSubmitting = $state(false);
   let error = $state<string | null>(null);
   let nextId = $state(1);
+  let focusTrigger = $state(0);
+  let editFocusTrigger = $state(0);
 
   // Edit pending task state
   let editingPendingTask = $state<PendingTask | null>(null);
@@ -153,6 +155,7 @@
         if (themes.length > 0) {
           selectedThemeId = themes[0].id;
         }
+        focusTrigger++;
         // Load drafts asynchronously
         getBindings().LoadTaskDrafts().then((data: string) => {
           try {
@@ -204,6 +207,7 @@
     newTaskTitle = '';
     newTaskDescription = '';
     newTaskTags = [];
+    focusTrigger++;
   }
 
   function handleQuadrantTasksChange(quadrantId: QuadrantId, tasks: PendingTask[]) {
@@ -264,6 +268,7 @@
     editThemeId = task.themeId ?? (themes.length > 0 ? themes[0].id : '');
     editDescription = task.description ?? '';
     editTags = task.tags ? [...task.tags] : [];
+    editFocusTrigger++;
   }
 
   async function handlePendingTaskEditSave() {
@@ -329,6 +334,7 @@
         {themes}
         disabled={isSubmitting}
         idPrefix="new-task"
+        {focusTrigger}
       />
       <div class="form-group">
         <label for="new-task-tags">Tags</label>
@@ -377,6 +383,7 @@
           bind:description={editDescription}
           {themes}
           idPrefix="edit-pending"
+          focusTrigger={editFocusTrigger}
         />
         <div class="form-group">
           <label for="edit-pending-tags">Tags</label>

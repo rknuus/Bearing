@@ -7,6 +7,7 @@
    * Tags are handled separately via the TagEditor component.
    */
 
+  import { tick } from 'svelte';
   import type { LifeTheme } from '../lib/wails-mock';
 
   interface Props {
@@ -16,6 +17,7 @@
     themes: LifeTheme[];
     disabled?: boolean;
     idPrefix?: string;
+    focusTrigger?: number;
   }
 
   let {
@@ -25,9 +27,18 @@
     themes,
     disabled = false,
     idPrefix = '',
+    focusTrigger = 0,
   }: Props = $props();
 
   const prefix = $derived(idPrefix ? `${idPrefix}-` : '');
+
+  let titleInput: HTMLInputElement;
+
+  $effect(() => {
+    if (focusTrigger > 0) {
+      tick().then(() => titleInput?.focus());
+    }
+  });
 </script>
 
 <div class="form-group">
@@ -38,6 +49,7 @@
     bind:value={title}
     placeholder="Task title"
     {disabled}
+    bind:this={titleInput}
   />
 </div>
 <div class="form-group">
