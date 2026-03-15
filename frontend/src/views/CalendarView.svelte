@@ -620,22 +620,11 @@
     border-radius: 4px;
     font-size: 1rem;
     cursor: pointer;
-    box-shadow:
-      inset 3px 3px 0 rgba(255, 255, 255, 0.5),
-      inset -3px -3px 0 rgba(0, 0, 0, 0.4);
+    transition: background-color 0.2s;
   }
 
   .nav-button:hover {
     background: var(--color-gray-300);
-    box-shadow:
-      inset 3px 3px 0 rgba(255, 255, 255, 0.75),
-      inset -3px -3px 0 rgba(0, 0, 0, 0.6);
-  }
-
-  .nav-button:active {
-    box-shadow:
-      inset -3px -3px 0 rgba(255, 255, 255, 0.5),
-      inset 3px 3px 0 rgba(0, 0, 0, 0.4);
   }
 
   .today-button {
@@ -646,22 +635,11 @@
     border-radius: 4px;
     font-size: 0.875rem;
     cursor: pointer;
-    box-shadow:
-      inset 3px 3px 0 rgba(255, 255, 255, 0.5),
-      inset -3px -3px 0 rgba(0, 0, 0, 0.4);
+    transition: background-color 0.2s;
   }
 
   .today-button:hover {
     background: var(--color-primary-700);
-    box-shadow:
-      inset 3px 3px 0 rgba(255, 255, 255, 0.75),
-      inset -3px -3px 0 rgba(0, 0, 0, 0.6);
-  }
-
-  .today-button:active {
-    box-shadow:
-      inset -3px -3px 0 rgba(255, 255, 255, 0.5),
-      inset 3px 3px 0 rgba(0, 0, 0, 0.4);
   }
 
   /* Loading state */
