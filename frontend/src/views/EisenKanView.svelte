@@ -1805,24 +1805,6 @@
     border-radius: 6px;
     font-size: 0.8125rem;
     cursor: pointer;
-    box-shadow:
-      inset 3px 3px 0 rgba(255, 255, 255, 0.5),
-      inset -3px -3px 0 rgba(0, 0, 0, 0.4);
-  }
-
-  .prompt-cancel,
-  .prompt-ok {
-    &:hover {
-      box-shadow:
-        inset 3px 3px 0 rgba(255, 255, 255, 0.75),
-        inset -3px -3px 0 rgba(0, 0, 0, 0.6);
-    }
-
-    &:active {
-      box-shadow:
-        inset -3px -3px 0 rgba(255, 255, 255, 0.5),
-        inset 3px 3px 0 rgba(0, 0, 0, 0.4);
-    }
   }
 
   .prompt-cancel {
