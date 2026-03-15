@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-02-28T15:17:06Z
-version: 1.1
+last_updated: 2026-03-15T20:17:17Z
+version: 1.2
 author: Claude Code PM System
 ---
 
@@ -63,12 +63,17 @@ frontend/src/
 │   └── TaskFormFields.svelte   # Shared form fields
 └── lib/
     ├── components/             # Reusable UI components
+    │   ├── BearingLogo.svelte
     │   ├── Breadcrumb.svelte
     │   ├── Button.svelte
     │   ├── Dialog.svelte
     │   ├── ErrorBanner.svelte
+    │   ├── index.ts
+    │   ├── TagBadges.svelte
+    │   ├── TagEditor.svelte
     │   ├── ThemeBadge.svelte
-    │   └── ThemedContainer.svelte
+    │   ├── ThemedContainer.svelte
+    │   └── ThemeOKRTree.svelte
     ├── utils/
     │   ├── bindings.ts         # Wails/mock binding abstraction
     │   ├── date-format.ts      # Locale-aware date formatting

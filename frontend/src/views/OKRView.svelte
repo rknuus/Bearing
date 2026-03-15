@@ -16,6 +16,7 @@
   import { getObjectiveStatus } from '../lib/utils/okr-status';
   import { checkStateFromData } from '../lib/utils/state-check';
   import { renderMarkdown } from '../lib/utils/markdown';
+  import { FEATURE_ROUTINES_ENABLED } from '../lib/constants/feature-flags';
 
   // Props for cross-view navigation
   interface Props {
@@ -1242,11 +1243,13 @@
                 onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
                 title="Add OKR"
               >+ OKR</Button>
-              <Button
-                variant="icon" color="add"
-                onclick={() => { addingRoutineToTheme = theme.id; expandId(theme.id); }}
-                title="Add Routine"
-              >+ Routine</Button>
+              {#if FEATURE_ROUTINES_ENABLED}
+                <Button
+                  variant="icon" color="add"
+                  onclick={() => { addingRoutineToTheme = theme.id; expandId(theme.id); }}
+                  title="Add Routine"
+                >+ Routine</Button>
+              {/if}
             </div>
           {/if}
         </div>
@@ -1266,97 +1269,108 @@
           </div>
         {/if}
 
-        {#if theme.objectives.length === 0 && !(theme.routines?.length) && addingObjectiveTo !== theme.id && addingRoutineToTheme !== theme.id}
-          <div class="empty-state">
-            No objectives or routines yet.
-            <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
-            or
-            <button class="link-button" onclick={() => { addingRoutineToTheme = theme.id; }}>add a routine</button>
-          </div>
-        {/if}
-
-        <!-- Routines Section -->
-        <div class="routine-section">
-          {#if addingRoutineToTheme === theme.id}
-            <div class="new-item-form routine-form">
-              <input
-                type="text"
-                placeholder="Routine description"
-                bind:value={newRoutineDescription}
-                onkeydown={(e) => { if (e.key === 'Enter') createRoutine(theme.id); if (e.key === 'Escape') { addingRoutineToTheme = null; newRoutineDescription = ''; } }}
-              />
-              <div class="routine-form-row">
-                <label class="routine-field-label">Target
-                  <input type="number" class="routine-field-input" bind:value={newRoutineTargetValue} min="1" />
-                </label>
-                <label class="routine-field-label routine-field-fixed">Type
-                  <select class="routine-field-select" bind:value={newRoutineTargetType}>
-                    <option value="at-or-above">&ge; (at or above)</option>
-                    <option value="at-or-below">&le; (at or below)</option>
-                  </select>
-                </label>
-                <label class="routine-field-label">Unit
-                  <input type="text" class="routine-field-input" bind:value={newRoutineUnit} placeholder="e.g. kg, %" />
-                </label>
-                <Button variant="primary" onclick={() => createRoutine(theme.id)}>Create</Button>
-                <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; newRoutineTargetValue = 1; newRoutineTargetType = 'at-or-above'; newRoutineUnit = ''; }}>Cancel</Button>
-              </div>
+        {#if FEATURE_ROUTINES_ENABLED}
+          {#if theme.objectives.length === 0 && !(theme.routines?.length) && addingObjectiveTo !== theme.id && addingRoutineToTheme !== theme.id}
+            <div class="empty-state">
+              No objectives or routines yet.
+              <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
+              or
+              <button class="link-button" onclick={() => { addingRoutineToTheme = theme.id; }}>add a routine</button>
             </div>
           {/if}
-
-          {#each theme.routines ?? [] as routine (routine.id)}
-            <div class="routine-card">
-              {#if editingRoutineId === routine.id}
-                <div class="routine-edit-form">
-                  <input type="text" class="inline-edit" bind:value={editRoutineDescription}
-                    onkeydown={(e) => { if (e.key === 'Enter') updateRoutine(routine.id); if (e.key === 'Escape') cancelEdit(); }} />
-                  <div class="routine-form-row">
-                    <label class="routine-field-label">Current
-                      <input type="number" class="routine-field-input" bind:value={editRoutineCurrentValue} />
-                    </label>
-                    <label class="routine-field-label">Target
-                      <input type="number" class="routine-field-input" bind:value={editRoutineTargetValue} min="1" />
-                    </label>
-                    <label class="routine-field-label routine-field-fixed">Type
-                      <select class="routine-field-select" bind:value={editRoutineTargetType}>
-                        <option value="at-or-above">&ge; (at or above)</option>
-                        <option value="at-or-below">&le; (at or below)</option>
-                      </select>
-                    </label>
-                    <label class="routine-field-label">Unit
-                      <input type="text" class="routine-field-input" bind:value={editRoutineUnit} placeholder="e.g. kg, %" />
-                    </label>
-                    <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
-                    <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
-                  </div>
-                </div>
-              {:else}
-                <div class="routine-display">
-                  <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
-                  <span class="routine-description">{routine.description}</span>
-                  <span class="routine-values">
-                    <input
-                      type="number"
-                      class="routine-current-input"
-                      value={routine.currentValue}
-                      onchange={(e) => updateRoutineCurrentValue(routine.id, parseInt((e.target as HTMLInputElement).value) || 0, routine)}
-                      title="Current value"
-                    />
-                    <span class="routine-direction">{routine.targetType === 'at-or-below' ? '\u2264' : '\u2265'}</span>
-                    <span class="routine-target">{routine.targetValue}</span>
-                    {#if routine.unit}
-                      <span class="routine-unit">{routine.unit}</span>
-                    {/if}
-                  </span>
-                  <div class="item-actions">
-                    <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
-                    <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
-                  </div>
-                </div>
-              {/if}
+        {:else}
+          {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
+            <div class="empty-state">
+              No objectives yet.
+              <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
             </div>
-          {/each}
-        </div>
+          {/if}
+        {/if}
+
+        {#if FEATURE_ROUTINES_ENABLED}
+          <!-- Routines Section -->
+          <div class="routine-section">
+            {#if addingRoutineToTheme === theme.id}
+              <div class="new-item-form routine-form">
+                <input
+                  type="text"
+                  placeholder="Routine description"
+                  bind:value={newRoutineDescription}
+                  onkeydown={(e) => { if (e.key === 'Enter') createRoutine(theme.id); if (e.key === 'Escape') { addingRoutineToTheme = null; newRoutineDescription = ''; } }}
+                />
+                <div class="routine-form-row">
+                  <label class="routine-field-label">Target
+                    <input type="number" class="routine-field-input" bind:value={newRoutineTargetValue} min="1" />
+                  </label>
+                  <label class="routine-field-label routine-field-fixed">Type
+                    <select class="routine-field-select" bind:value={newRoutineTargetType}>
+                      <option value="at-or-above">&ge; (at or above)</option>
+                      <option value="at-or-below">&le; (at or below)</option>
+                    </select>
+                  </label>
+                  <label class="routine-field-label">Unit
+                    <input type="text" class="routine-field-input" bind:value={newRoutineUnit} placeholder="e.g. kg, %" />
+                  </label>
+                  <Button variant="primary" onclick={() => createRoutine(theme.id)}>Create</Button>
+                  <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; newRoutineTargetValue = 1; newRoutineTargetType = 'at-or-above'; newRoutineUnit = ''; }}>Cancel</Button>
+                </div>
+              </div>
+            {/if}
+
+            {#each theme.routines ?? [] as routine (routine.id)}
+              <div class="routine-card">
+                {#if editingRoutineId === routine.id}
+                  <div class="routine-edit-form">
+                    <input type="text" class="inline-edit" bind:value={editRoutineDescription}
+                      onkeydown={(e) => { if (e.key === 'Enter') updateRoutine(routine.id); if (e.key === 'Escape') cancelEdit(); }} />
+                    <div class="routine-form-row">
+                      <label class="routine-field-label">Current
+                        <input type="number" class="routine-field-input" bind:value={editRoutineCurrentValue} />
+                      </label>
+                      <label class="routine-field-label">Target
+                        <input type="number" class="routine-field-input" bind:value={editRoutineTargetValue} min="1" />
+                      </label>
+                      <label class="routine-field-label routine-field-fixed">Type
+                        <select class="routine-field-select" bind:value={editRoutineTargetType}>
+                          <option value="at-or-above">&ge; (at or above)</option>
+                          <option value="at-or-below">&le; (at or below)</option>
+                        </select>
+                      </label>
+                      <label class="routine-field-label">Unit
+                        <input type="text" class="routine-field-input" bind:value={editRoutineUnit} placeholder="e.g. kg, %" />
+                      </label>
+                      <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
+                      <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+                    </div>
+                  </div>
+                {:else}
+                  <div class="routine-display">
+                    <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
+                    <span class="routine-description">{routine.description}</span>
+                    <span class="routine-values">
+                      <input
+                        type="number"
+                        class="routine-current-input"
+                        value={routine.currentValue}
+                        onchange={(e) => updateRoutineCurrentValue(routine.id, parseInt((e.target as HTMLInputElement).value) || 0, routine)}
+                        title="Current value"
+                      />
+                      <span class="routine-direction">{routine.targetType === 'at-or-below' ? '\u2264' : '\u2265'}</span>
+                      <span class="routine-target">{routine.targetValue}</span>
+                      {#if routine.unit}
+                        <span class="routine-unit">{routine.unit}</span>
+                      {/if}
+                    </span>
+                    <div class="item-actions">
+                      <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
+                      <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
       {/snippet}
 
       {#snippet objectiveHeader(objective: Objective, themeColor: string)}
