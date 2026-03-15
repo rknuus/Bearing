@@ -6,6 +6,7 @@
    * tags. Uses shared TaskFormFields component.
    */
 
+  import { untrack } from 'svelte';
   import type { Task, LifeTheme } from '../lib/wails-mock';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
@@ -28,6 +29,7 @@
   let editTags = $state<string[]>([]);
   let isSubmitting = $state(false);
   let errorMessage = $state('');
+  let focusTrigger = $state(0);
 
   // Populate form when task changes
   $effect(() => {
@@ -37,6 +39,7 @@
       editDescription = task.description ?? '';
       editTags = [...(task.tags ?? [])];
       errorMessage = '';
+      untrack(() => focusTrigger++);
     }
   });
 
@@ -77,6 +80,7 @@
       bind:description={editDescription}
       {themes}
       idPrefix="edit-task"
+      {focusTrigger}
     />
     <div class="form-group">
       <label for="edit-task-tags">Tags</label>

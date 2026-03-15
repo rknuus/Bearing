@@ -744,6 +744,39 @@ describe('CreateTaskDialog', () => {
     });
   });
 
+  describe('auto-focus title', () => {
+    it('focuses the title input when dialog opens', async () => {
+      await renderDialog();
+
+      const titleInput = container.querySelector<HTMLInputElement>('#new-task-title');
+      expect(document.activeElement).toBe(titleInput);
+    });
+
+    it('refocuses the title input after staging a task', async () => {
+      await renderDialog();
+
+      await addTask('Buy groceries');
+
+      const titleInput = container.querySelector<HTMLInputElement>('#new-task-title');
+      expect(document.activeElement).toBe(titleInput);
+    });
+
+    it('focuses the title input in the edit pending task dialog', async () => {
+      mockDraftsData = JSON.stringify({
+        'important-urgent': [{ id: 'pending-1', title: 'My task' }],
+      });
+
+      await renderDialog();
+
+      const taskCard = container.querySelector('[data-testid="pending-task-pending-1"]');
+      await fireEvent.dblClick(taskCard!);
+      await tick();
+
+      const editTitleInput = container.querySelector<HTMLInputElement>('#edit-pending-title');
+      expect(document.activeElement).toBe(editTitleInput);
+    });
+  });
+
   describe('draft migration', () => {
     it('migrates legacy string tags to string[] on load', async () => {
       mockDraftsData = JSON.stringify({
