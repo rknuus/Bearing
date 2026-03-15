@@ -1,28 +1,30 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-03-07T23:50:43Z
-version: 1.2
+last_updated: 2026-03-15T20:17:17Z
+version: 1.3
 author: Claude Code PM System
 ---
 
 # Progress
 
 ## Current State
-- Branch: `epic/select-custom-color-for-theme-does-not-work` (in progress)
-- All tests passing (372 frontend + Go suite)
-- Uncommitted changes: OKRView color input fix (WIP)
+- Branch: `main` (clean working tree)
+- All tests passing (frontend + Go suite)
+- Large .pm cleanup: archived old epics and PRDs
 
 ## Recent Completed Work
-- **Rename Eisenhower priority labels** — Q1/Q2/Q3 → I&U/nI&U/I&nU for clarity
-- **Fix tag All pill count in EisenKan** — Use theme All count for tag All pill
-- **Preserve NavigationContext across tab switches** — Fix view-specific fields lost when changing tabs
-- **Remove staging quadrant from CreateTaskDialog** — Replace Q4 staging + single button with 3 color-coded priority buttons (I&U, nI&U, I&nU) that place tasks directly into their target quadrant. Grid changed from 2×2 to 1×3.
-- **Fix custom color picker for themes (in progress)** — Native `<input type="color">` doesn't fire DOM events in WKWebView. Fix: read color from DOM element via `bind:this` at save time, add `onchange` fallback for real-time preview, show color input visibly (dashed border) instead of hiding behind ➕ icon.
+- **Right-align OKR action buttons** — Action buttons in OKR view item rows right-aligned for consistency
+- **Auto-focus title in task dialogs** — Title input auto-focused on open and after staging
+- **Today highlighting in Calendar** — Today's calendar cells styled with primary-600 blue background
+- **Stage button label cleanup** — Shortened labels to "Stage to ⬇", reverted 3D inset box-shadow effect
+- **Atomic task_order.json updates** — Atomically move task_order.json zones on priority change and promotion
+- **Edit task on double-click** — Changed from single to double-click
+- **Fix custom color picker for themes** — WebView input workaround for color picker
 
 ## Active Epics
-- `select-custom-color-for-theme-does-not-work` — In progress, color picker fix
-- Theme abbreviation update upon renaming (backlog, not decomposed)
+- `support-focussing-on-multiple-themes-per-day` — Decomposed (tasks 186-188)
+- `update-theme-abbreviation-upon-renaming` — Backlog
 
 ## Outstanding PRDs
-- 30+ PRDs in the system, mostly historical
-- Active area: EisenKan usability, OKR view fixes
+- Archived most historical PRDs
+- Active area: EisenKan usability, calendar improvements

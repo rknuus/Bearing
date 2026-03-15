@@ -1,7 +1,7 @@
 ---
 created: 2026-02-20T14:57:09Z
-last_updated: 2026-03-07T23:50:43Z
-version: 1.1
+last_updated: 2026-03-15T20:17:17Z
+version: 1.2
 author: Claude Code PM System
 ---
 
@@ -21,6 +21,7 @@ author: Claude Code PM System
 - Create and organize life themes (Health, Career, Learning, etc.)
 - Define objectives under themes with nested structure
 - Set measurable key results with progress tracking
+- Track routines — ongoing stability metrics (e.g., "exercise >= 3 times/week", "weight <= 80 kg") with on-track/off-track indicators
 
 ### 2. Daily Focus Assignment (Calendar View)
 - Assign a theme focus for each day of the year
