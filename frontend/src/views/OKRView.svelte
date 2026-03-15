@@ -1707,6 +1707,7 @@
   .item-actions {
     display: flex;
     gap: 0.25rem;
+    margin-left: auto;
     opacity: 0;
     transition: opacity 0.2s;
   }
