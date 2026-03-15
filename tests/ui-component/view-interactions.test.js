@@ -692,8 +692,8 @@ export async function runTests() {
 
     // ---- Task 205: Staging buttons and cross-view navigation ----
 
-    // Sub-test 19: Create dialog has 3 staging buttons with full labels
-    reporter.startTest('205a: Create dialog shows 3 staging buttons with full labels')
+    // Sub-test 19: Create dialog has 3 staging buttons with short labels
+    reporter.startTest('205a: Create dialog shows 3 staging buttons with short labels')
     try {
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
@@ -708,23 +708,15 @@ export async function runTests() {
         throw new Error(`Expected 3 staging buttons, got ${addButtons.length}`)
       }
 
-      // Verify button labels contain full priority names
+      // Verify all buttons have the short label "Stage to ⬇"
       const buttonTexts = await page.$$eval('.btn-add', els => els.map(el => el.textContent.trim()))
-      const expectedLabels = ['Important & Urgent', 'Not Important & Urgent', 'Important & Not Urgent']
-      for (const label of expectedLabels) {
-        if (!buttonTexts.some(t => t.includes(label))) {
-          throw new Error(`Expected button with label "${label}", got: [${buttonTexts.join(', ')}]`)
-        }
-      }
-
-      // Verify "Stage to" prefix
       for (const text of buttonTexts) {
-        if (!text.startsWith('Stage to')) {
-          throw new Error(`Expected "Stage to" prefix, got "${text}"`)
+        if (text !== 'Stage to ⬇') {
+          throw new Error(`Expected button text "Stage to ⬇", got "${text}"`)
         }
       }
 
-      reporter.pass('Create dialog has 3 staging buttons with "Stage to" prefix')
+      reporter.pass('Create dialog has 3 staging buttons with "Stage to ⬇" label')
     } catch (err) {
       reporter.fail(err)
     }
@@ -736,7 +728,7 @@ export async function runTests() {
       await page.fill('#new-task-title', 'Staged Test Task')
 
       // Click the first "Stage to" button (Important & Urgent)
-      await page.click('.btn-add:has-text("Important & Urgent")')
+      await page.click('.btn-add >> nth=0')
 
       // Verify task appears in the Important & Urgent quadrant as a pending task
       await page.waitForFunction(() => {

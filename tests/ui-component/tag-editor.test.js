@@ -123,7 +123,7 @@ export async function runTests() {
 
       // Click a Stage button — this blurs the input, triggering tag creation,
       // then the click handler stages the task with the committed tag
-      await page.click('.btn-add:has-text("Important & Urgent")')
+      await page.click('.btn-add >> nth=0')
 
       // Verify the pending task was created
       await page.waitForFunction(() => {

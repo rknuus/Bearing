@@ -76,13 +76,12 @@ describe('CreateTaskDialog', () => {
     return result;
   }
 
-  async function addTask(title: string, buttonLabel: string = 'Stage to Important & Urgent') {
+  async function addTask(title: string, buttonIndex: number = 0) {
     const input = container.querySelector<HTMLInputElement>('#new-task-title');
     await fireEvent.input(input!, { target: { value: title } });
     await tick();
     const buttons = container.querySelectorAll<HTMLButtonElement>('.btn-add');
-    const addBtn = Array.from(buttons).find(b => b.textContent?.trim() === buttonLabel);
-    await fireEvent.click(addBtn!);
+    await fireEvent.click(buttons[buttonIndex]!);
     await tick();
   }
 
@@ -131,9 +130,9 @@ describe('CreateTaskDialog', () => {
   it('adds tasks to different quadrants via respective buttons', async () => {
     await renderDialog();
 
-    await addTask('Task 1', 'Stage to Important & Urgent');
-    await addTask('Task 2', 'Stage to Not Important & Urgent');
-    await addTask('Task 3', 'Stage to Important & Not Urgent');
+    await addTask('Task 1', 0);
+    await addTask('Task 2', 1);
+    await addTask('Task 3', 2);
 
     const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
     expect(q1!.querySelectorAll('.task-title').length).toBe(1);
@@ -377,8 +376,8 @@ describe('CreateTaskDialog', () => {
       const createTask = makeCreateTaskMock();
       await renderDialog({ onDone, createTask });
 
-      await addTask('Task A', 'Stage to Important & Urgent');
-      await addTask('Task B', 'Stage to Important & Not Urgent');
+      await addTask('Task A', 0);
+      await addTask('Task B', 2);
 
       const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
       await fireEvent.click(doneBtn!);
@@ -397,8 +396,8 @@ describe('CreateTaskDialog', () => {
       const onDone = vi.fn();
       await renderDialog({ createTask, onDone });
 
-      await addTask('Task A', 'Stage to Important & Urgent');
-      await addTask('Task B', 'Stage to Important & Urgent');
+      await addTask('Task A', 0);
+      await addTask('Task B', 0);
 
       const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
       await fireEvent.click(doneBtn!);
@@ -419,7 +418,7 @@ describe('CreateTaskDialog', () => {
       const onDone = vi.fn();
       await renderDialog({ createTask, onDone });
 
-      await addTask('Task A', 'Stage to Important & Urgent');
+      await addTask('Task A', 0);
 
       const doneBtn = container.querySelector<HTMLButtonElement>('.btn-primary');
       await fireEvent.click(doneBtn!);

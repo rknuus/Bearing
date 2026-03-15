@@ -158,7 +158,7 @@ export async function runTests() {
       }
 
       // Stage task to Important & Urgent quadrant
-      await page.click('.btn-add:has-text("Important & Urgent")')
+      await page.click('.btn-add >> nth=0')
 
       // Verify task appears in the quadrant
       await page.waitForSelector('.quadrant:has-text("Tag Comma Test Task")', { timeout: 5000 })
