@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version string (e.g. 1.0.0)"
+        required: false
+        default: "dev"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            goos: darwin
+            goarch: arm64
+            artifact_name: Bearing-macos-arm64.dmg
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25.0"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Wails CLI
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.11.0
+
+      - name: Set version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          else
+            echo "VERSION=${{ github.event.inputs.version || 'dev' }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install icon dependencies
+        if: matrix.goos == 'darwin'
+        run: brew install librsvg imagemagick
+
+      - name: Generate app icon
+        run: make build/bin/appicon.png
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm ci
+
+      - name: Build with Wails
+        run: wails build -platform ${{ matrix.goos }}/${{ matrix.goarch }} -ldflags "-X main.version=${{ env.VERSION }}"
+
+      - name: Create DMG
+        if: matrix.goos == 'darwin'
+        run: |
+          hdiutil create -volname Bearing -srcfolder "build/bin/Bearing.app" -ov -format UDZO "${{ matrix.artifact_name }}"
+
+      - name: Upload release asset
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact_name }}
+
+      - name: Upload workflow artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}
