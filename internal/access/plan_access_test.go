@@ -100,29 +100,6 @@ func TestValidPriorities(t *testing.T) {
 	}
 }
 
-func TestIsValidPriority(t *testing.T) {
-	tests := []struct {
-		priority string
-		valid    bool
-	}{
-		{"important-urgent", true},
-		{"important-not-urgent", true},
-		{"not-important-urgent", true},
-		{"not-important-not-urgent", false},
-		{"invalid", false},
-		{"", false},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.priority, func(t *testing.T) {
-			result := IsValidPriority(tt.priority)
-			if result != tt.valid {
-				t.Errorf("IsValidPriority(%s) = %v, want %v", tt.priority, result, tt.valid)
-			}
-		})
-	}
-}
-
 // PlanAccess Constructor Tests
 
 func TestNewPlanAccess_EmptyDataPath(t *testing.T) {
@@ -182,6 +159,7 @@ func TestSaveTheme_NewTheme(t *testing.T) {
 	defer cleanup()
 
 	theme := LifeTheme{
+		ID:    "H",
 		Name:  "Health",
 		Color: "#00FF00",
 		Objectives: []Objective{
@@ -256,6 +234,7 @@ func TestSaveTheme_UpdateExisting(t *testing.T) {
 
 	// Create initial theme
 	theme := LifeTheme{
+		ID:    "H",
 		Name:  "Health",
 		Color: "#00FF00",
 	}
@@ -295,9 +274,9 @@ func TestSaveTheme_MultipleThemes(t *testing.T) {
 	defer cleanup()
 
 	themes := []LifeTheme{
-		{Name: "Health", Color: "#00FF00"},
-		{Name: "Career", Color: "#0000FF"},
-		{Name: "Family", Color: "#FF0000"},
+		{ID: "H", Name: "Health", Color: "#00FF00"},
+		{ID: "C", Name: "Career", Color: "#0000FF"},
+		{ID: "F", Name: "Family", Color: "#FF0000"},
 	}
 
 	for _, theme := range themes {
@@ -329,8 +308,8 @@ func TestDeleteTheme(t *testing.T) {
 	defer cleanup()
 
 	// Create themes
-	theme1 := LifeTheme{Name: "Health", Color: "#00FF00"}
-	theme2 := LifeTheme{Name: "Career", Color: "#0000FF"}
+	theme1 := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
+	theme2 := LifeTheme{ID: "C", Name: "Career", Color: "#0000FF"}
 
 	if err := pa.SaveTheme(theme1); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
@@ -391,7 +370,7 @@ func TestSaveDayFocus(t *testing.T) {
 	defer cleanup()
 
 	// Create a theme first
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -518,7 +497,7 @@ func TestSaveTask_NewTask(t *testing.T) {
 	defer cleanup()
 
 	// Create a theme first
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -559,10 +538,10 @@ func TestSaveTask_ThemeChange(t *testing.T) {
 	defer cleanup()
 
 	// Create two themes
-	if err := pa.SaveTheme(LifeTheme{Name: "Work", Color: "#0000FF"}); err != nil {
+	if err := pa.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#0000FF"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
-	if err := pa.SaveTheme(LifeTheme{Name: "Learning", Color: "#00FF00"}); err != nil {
+	if err := pa.SaveTheme(LifeTheme{ID: "L", Name: "Learning", Color: "#00FF00"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -636,7 +615,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -690,7 +669,7 @@ func TestMoveTask(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -750,7 +729,7 @@ func TestMoveTask_NotFound(t *testing.T) {
 	defer cleanup()
 
 	// Create theme to have something searchable
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -766,7 +745,7 @@ func TestDeleteTask(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -809,7 +788,7 @@ func TestDeleteTask_NotFound(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -827,6 +806,7 @@ func TestFlatIDGeneration(t *testing.T) {
 	defer cleanup()
 
 	theme := LifeTheme{
+		ID:    "H",
 		Name:  "Health",
 		Color: "#00FF00",
 		Objectives: []Objective{
@@ -905,7 +885,7 @@ func TestTaskIDGeneration(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -954,6 +934,7 @@ func TestFileStructure(t *testing.T) {
 
 	// Create theme
 	theme := LifeTheme{
+		ID:    "H",
 		Name:  "Health",
 		Color: "#00FF00",
 		Objectives: []Objective{
@@ -1020,7 +1001,7 @@ func TestGitVersioning_ThemeCommit(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1057,7 +1038,7 @@ func TestGitVersioning_MoveTaskUsesGitMv(t *testing.T) {
 	defer cleanup()
 
 	// Create theme and task
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1102,6 +1083,7 @@ func TestRecursiveObjectiveIDGeneration(t *testing.T) {
 	defer cleanup()
 
 	theme := LifeTheme{
+		ID:    "H",
 		Name:  "Health",
 		Color: "#00FF00",
 		Objectives: []Objective{
@@ -1218,6 +1200,7 @@ func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
 
 	// First save: create theme with initial objectives
 	theme := LifeTheme{
+		ID:    "C",
 		Name:  "Career",
 		Color: "#0000FF",
 		Objectives: []Objective{
@@ -1373,33 +1356,6 @@ func TestBackwardCompatibility_NoObjectivesField(t *testing.T) {
 
 // Theme-Scoped ID Tests
 
-func TestSuggestAbbreviation(t *testing.T) {
-	tests := []struct {
-		name     string
-		existing []LifeTheme
-		expected string
-	}{
-		{"Health", nil, "H"},
-		{"Career", nil, "C"},
-		{"Personal Finance", nil, "PF"},
-		{"Health And Wellness", nil, "HAW"},
-		// Collision: single-letter taken
-		{"Health", []LifeTheme{{ID: "H"}}, "HE"},
-		// Collision: first 2 letters taken
-		{"Health", []LifeTheme{{ID: "H"}, {ID: "HE"}}, "HEA"},
-		// Multi-word collision
-		{"Career Growth", []LifeTheme{{ID: "CG"}}, "C"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := SuggestAbbreviation(tt.name, tt.existing)
-			if result != tt.expected {
-				t.Errorf("SuggestAbbreviation(%q) = %q, want %q", tt.name, result, tt.expected)
-			}
-		})
-	}
-}
 
 func TestIsValidThemeID(t *testing.T) {
 	tests := []struct {
@@ -1584,7 +1540,7 @@ func TestSaveTaskWithOrder(t *testing.T) {
 	defer cleanup()
 
 	// Create a theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1627,7 +1583,7 @@ func TestSaveTaskWithOrder_Multiple(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1669,7 +1625,7 @@ func TestDeleteTaskWithOrder(t *testing.T) {
 	defer cleanup()
 
 	// Create a theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1718,7 +1674,7 @@ func TestUpdateTaskWithOrderMove(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1765,7 +1721,7 @@ func TestUpdateTaskWithOrderMove_MissingFromOldZone(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1822,7 +1778,7 @@ func TestArchiveTask(t *testing.T) {
 	pa, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1867,7 +1823,7 @@ func TestArchiveTask_AlreadyArchived(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1890,7 +1846,7 @@ func TestArchiveTask_NotFound(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1905,7 +1861,7 @@ func TestRestoreTask(t *testing.T) {
 	pa, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1948,7 +1904,7 @@ func TestRestoreTask_NotArchived(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1968,7 +1924,7 @@ func TestRestoreTask_NotFound(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -1983,7 +1939,7 @@ func TestGetTasksByStatus_Archived(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -2032,7 +1988,7 @@ func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -2079,7 +2035,7 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme := LifeTheme{Name: "Health", Color: "#00FF00"}
+	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	if err := pa.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -2131,10 +2087,10 @@ func TestGenerateTaskIDMismatchedThemeInFile(t *testing.T) {
 	defer cleanup()
 
 	// Create two themes
-	if err := pa.SaveTheme(LifeTheme{Name: "Work", Color: "#FF0000"}); err != nil {
+	if err := pa.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#FF0000"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
-	if err := pa.SaveTheme(LifeTheme{Name: "Life", Color: "#00FF00"}); err != nil {
+	if err := pa.SaveTheme(LifeTheme{ID: "L", Name: "Life", Color: "#00FF00"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -2188,7 +2144,7 @@ func TestIsAnyTaskStatus(t *testing.T) {
 
 // === Board Configuration Persistence Tests ===
 
-func TestUnit_GetBoardConfiguration_DefaultFallback(t *testing.T) {
+func TestUnit_GetBoardConfiguration_NilWhenNoFile(t *testing.T) {
 	pa, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
@@ -2196,11 +2152,8 @@ func TestUnit_GetBoardConfiguration_DefaultFallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetBoardConfiguration failed: %v", err)
 	}
-	if config.Name != "Bearing Board" {
-		t.Errorf("Expected default board name, got %q", config.Name)
-	}
-	if len(config.ColumnDefinitions) != 3 {
-		t.Errorf("Expected 3 default columns, got %d", len(config.ColumnDefinitions))
+	if config != nil {
+		t.Errorf("Expected nil config when no file exists, got %+v", config)
 	}
 }
 

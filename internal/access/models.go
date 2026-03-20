@@ -3,7 +3,9 @@
 // providing CRUD operations for plan-related entities with git-based versioning.
 package access
 
-import "strings"
+import (
+	"github.com/rkn/bearing/internal/utilities"
+)
 
 // LifeTheme represents a long-term life focus area with associated objectives.
 // Life themes are the top-level organizational unit for goals and tasks.
@@ -61,11 +63,6 @@ const (
 	RoutineTargetAtOrBelow = "at-or-below"
 )
 
-// IsValidRoutineTargetType checks if a routine target type string is valid.
-func IsValidRoutineTargetType(t string) bool {
-	return t == RoutineTargetAtOrAbove || t == RoutineTargetAtOrBelow
-}
-
 // IsOnTrack returns true if currentValue meets the target per targetType.
 func (k Routine) IsOnTrack() bool {
 	if k.TargetType == RoutineTargetAtOrBelow {
@@ -83,15 +80,6 @@ const (
 	ClosingStatusCanceled          = "canceled"
 )
 
-// IsValidClosingStatus checks if a closing status string is valid.
-func IsValidClosingStatus(status string) bool {
-	switch status {
-	case ClosingStatusAchieved, ClosingStatusPartiallyAchieved, ClosingStatusMissed, ClosingStatusPostponed, ClosingStatusCanceled:
-		return true
-	}
-	return false
-}
-
 // KRType constants for key result types
 const (
 	// KRTypeMetric is the default KR type with start/current/target values
@@ -99,16 +87,6 @@ const (
 	// KRTypeBinary is a binary KR type (done/not done) with fixed start=0, target=1
 	KRTypeBinary = "binary"
 )
-
-// IsValidKRType checks if a KR type string is valid.
-// Empty string is treated as valid (equivalent to "metric").
-func IsValidKRType(krType string) bool {
-	switch krType {
-	case "", KRTypeMetric, KRTypeBinary:
-		return true
-	}
-	return false
-}
 
 // DayFocus represents the daily focus on one or more life themes.
 // It links a calendar date to life themes with optional notes.
@@ -166,36 +144,6 @@ type ColumnDefinition struct {
 type BoardConfiguration struct {
 	Name              string             `json:"name"`
 	ColumnDefinitions []ColumnDefinition `json:"columnDefinitions"`
-}
-
-// DefaultBoardConfiguration returns the default board configuration with
-// three columns (todo with Eisenhower sections, doing, done).
-func DefaultBoardConfiguration() *BoardConfiguration {
-	return &BoardConfiguration{
-		Name: "Bearing Board",
-		ColumnDefinitions: []ColumnDefinition{
-			{
-				Name:  "todo",
-				Title: "TODO",
-				Type:  ColumnTypeTodo,
-				Sections: []SectionDefinition{
-					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
-					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#f59e0b"},
-					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#3b82f6"},
-				},
-			},
-			{
-				Name:  "doing",
-				Title: "DOING",
-				Type:  ColumnTypeDoing,
-			},
-			{
-				Name:  "done",
-				Title: "DONE",
-				Type:  ColumnTypeDone,
-			},
-		},
-	}
 }
 
 // QueryCriteria defines search parameters for filtered task retrieval.
@@ -262,50 +210,10 @@ const (
 	OKRStatusArchived OKRStatus = "archived"
 )
 
-// IsValidOKRStatus checks if a status string is valid.
-// Empty string is treated as valid (equivalent to "active").
-func IsValidOKRStatus(status string) bool {
-	if status == "" {
-		return true
-	}
-	switch OKRStatus(status) {
-	case OKRStatusActive, OKRStatusCompleted, OKRStatusArchived:
-		return true
-	}
-	return false
-}
-
-// EffectiveOKRStatus returns "active" if status is empty, otherwise the status as-is.
-func EffectiveOKRStatus(status string) string {
-	if status == "" {
-		return string(OKRStatusActive)
-	}
-	return status
-}
-
-// Slugify converts a title to a URL-friendly slug suitable for use as a
-// directory name and column identifier. It lowercases the input, replaces
-// non-alphanumeric characters with hyphens, collapses consecutive hyphens,
-// and trims leading/trailing hyphens. Returns empty string for empty input.
+// Slugify delegates to utilities.Slugify.
+// Deprecated: Use utilities.Slugify directly.
 func Slugify(title string) string {
-	s := strings.ToLower(strings.TrimSpace(title))
-	// Replace non-alphanumeric with hyphens
-	var b strings.Builder
-	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			b.WriteRune(r)
-		} else {
-			b.WriteByte('-')
-		}
-	}
-	s = b.String()
-	// Collapse consecutive hyphens
-	for strings.Contains(s, "--") {
-		s = strings.ReplaceAll(s, "--", "-")
-	}
-	// Trim leading/trailing hyphens
-	s = strings.Trim(s, "-")
-	return s
+	return utilities.Slugify(title)
 }
 
 // Priority represents the Eisenhower matrix priority levels
@@ -327,16 +235,6 @@ func ValidPriorities() []Priority {
 		PriorityImportantNotUrgent,
 		PriorityNotImportantUrgent,
 	}
-}
-
-// IsValidPriority checks if a priority string is valid
-func IsValidPriority(priority string) bool {
-	for _, valid := range ValidPriorities() {
-		if string(valid) == priority {
-			return true
-		}
-	}
-	return false
 }
 
 // ThemesFile represents the structure of the themes.json file

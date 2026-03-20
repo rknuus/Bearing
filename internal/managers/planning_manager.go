@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/rkn/bearing/internal/access"
+	"github.com/rkn/bearing/internal/engines/progress_engine"
 	"github.com/rkn/bearing/internal/engines/rule_engine"
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -242,12 +243,56 @@ type PersonalVision struct {
 	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
+// defaultAccessBoardConfiguration returns the default board configuration
+// using access-layer types for internal use within the Manager.
+func defaultAccessBoardConfiguration() *access.BoardConfiguration {
+	return &access.BoardConfiguration{
+		Name: "Bearing Board",
+		ColumnDefinitions: []access.ColumnDefinition{
+			{
+				Name:  "todo",
+				Title: "TODO",
+				Type:  access.ColumnTypeTodo,
+				Sections: []access.SectionDefinition{
+					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
+					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#f59e0b"},
+					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#3b82f6"},
+				},
+			},
+			{
+				Name:  "doing",
+				Title: "DOING",
+				Type:  access.ColumnTypeDoing,
+			},
+			{
+				Name:  "done",
+				Title: "DONE",
+				Type:  access.ColumnTypeDone,
+			},
+		},
+	}
+}
+
 // PlanningManager implements IPlanningManager with business logic.
 type PlanningManager struct {
 	planAccess        access.IPlanAccess
 	ruleEngine        rule_engine.IRuleEngine
+	progressEngine    progress_engine.IProgressEngine
 	navigationContext *NavigationContext
 	taskOrderMu       sync.Mutex
+}
+
+// getAccessBoardConfig returns the access-layer board configuration,
+// falling back to the default if none is stored.
+func (m *PlanningManager) getAccessBoardConfig() (*access.BoardConfiguration, error) {
+	config, err := m.planAccess.GetBoardConfiguration()
+	if err != nil {
+		return nil, err
+	}
+	if config == nil {
+		return defaultAccessBoardConfiguration(), nil
+	}
+	return config, nil
 }
 
 // NewPlanningManagerFromPath creates a PlanningManager from a data path and repository,
@@ -267,10 +312,12 @@ func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error)
 	}
 
 	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
+	progressEng := progress_engine.NewProgressEngine()
 
 	pm := &PlanningManager{
-		planAccess: planAccess,
-		ruleEngine: engine,
+		planAccess:     planAccess,
+		ruleEngine:     engine,
+		progressEngine: progressEng,
 	}
 
 	pm.validateTaskOrder()
@@ -320,7 +367,14 @@ func (m *PlanningManager) CreateTheme(name, color string) (*LifeTheme, error) {
 		return nil, fmt.Errorf("color cannot be empty")
 	}
 
+	// Get existing themes to generate unique abbreviation
+	existingThemes, err := m.planAccess.GetThemes()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
 	theme := access.LifeTheme{
+		ID:         SuggestAbbreviation(name, existingThemes),
 		Name:       name,
 		Color:      color,
 		Objectives: []access.Objective{},
@@ -725,7 +779,7 @@ func (m *PlanningManager) AddRoutine(themeId, description string, targetValue in
 	if strings.TrimSpace(description) == "" {
 		return nil, fmt.Errorf("description cannot be empty")
 	}
-	if !access.IsValidRoutineTargetType(targetType) {
+	if !IsValidRoutineTargetType(targetType) {
 		return nil, fmt.Errorf("invalid target type: %s", targetType)
 	}
 	if targetValue <= 0 {
@@ -774,7 +828,7 @@ func (m *PlanningManager) UpdateRoutine(routineId string, description string, cu
 	if strings.TrimSpace(description) == "" {
 		return fmt.Errorf("description cannot be empty")
 	}
-	if !access.IsValidRoutineTargetType(targetType) {
+	if !IsValidRoutineTargetType(targetType) {
 		return fmt.Errorf("invalid target type: %s", targetType)
 	}
 	if targetValue <= 0 {
@@ -830,11 +884,11 @@ func (m *PlanningManager) DeleteRoutine(routineId string) error {
 // validateOKRStatusTransition checks whether a status transition is allowed.
 // Returns an error if the transition is invalid.
 func validateOKRStatusTransition(currentStatus, newStatus string) error {
-	current := access.EffectiveOKRStatus(currentStatus)
-	if !access.IsValidOKRStatus(newStatus) {
+	current := EffectiveOKRStatus(currentStatus)
+	if !IsValidOKRStatus(newStatus) {
 		return fmt.Errorf("invalid status %q", newStatus)
 	}
-	target := access.EffectiveOKRStatus(newStatus)
+	target := EffectiveOKRStatus(newStatus)
 
 	if current == target {
 		return nil // No-op
@@ -876,15 +930,15 @@ func (m *PlanningManager) SetObjectiveStatus(objectiveId, status string) error {
 			}
 
 			// If completing, verify all direct children are completed or archived
-			if access.EffectiveOKRStatus(status) == string(access.OKRStatusCompleted) {
+			if EffectiveOKRStatus(status) == string(access.OKRStatusCompleted) {
 				var incompleteItems []string
 				for _, child := range obj.Objectives {
-					if access.EffectiveOKRStatus(child.Status) == string(access.OKRStatusActive) {
+					if EffectiveOKRStatus(child.Status) == string(access.OKRStatusActive) {
 						incompleteItems = append(incompleteItems, child.ID+" ("+child.Title+")")
 					}
 				}
 				for _, kr := range obj.KeyResults {
-					if access.EffectiveOKRStatus(kr.Status) == string(access.OKRStatusActive) {
+					if EffectiveOKRStatus(kr.Status) == string(access.OKRStatusActive) {
 						incompleteItems = append(incompleteItems, kr.ID+" ("+kr.Description+")")
 					}
 				}
@@ -942,7 +996,7 @@ func (m *PlanningManager) CloseObjective(objectiveId, closingStatus, closingNote
 	if objectiveId == "" {
 		return fmt.Errorf("objectiveId cannot be empty")
 	}
-	if !access.IsValidClosingStatus(closingStatus) {
+	if !IsValidClosingStatus(closingStatus) {
 		return fmt.Errorf("invalid closing status %q", closingStatus)
 	}
 
@@ -954,8 +1008,8 @@ func (m *PlanningManager) CloseObjective(objectiveId, closingStatus, closingNote
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
 			// Must be active to close
-			if access.EffectiveOKRStatus(obj.Status) != string(access.OKRStatusActive) {
-				return fmt.Errorf("cannot close: objective is not active (current status: %s)", access.EffectiveOKRStatus(obj.Status))
+			if EffectiveOKRStatus(obj.Status) != string(access.OKRStatusActive) {
+				return fmt.Errorf("cannot close: objective is not active (current status: %s)", EffectiveOKRStatus(obj.Status))
 			}
 
 			obj.Status = string(access.OKRStatusCompleted)
@@ -965,7 +1019,7 @@ func (m *PlanningManager) CloseObjective(objectiveId, closingStatus, closingNote
 
 			// Close all active direct child KRs
 			for j := range obj.KeyResults {
-				if access.EffectiveOKRStatus(obj.KeyResults[j].Status) == string(access.OKRStatusActive) {
+				if EffectiveOKRStatus(obj.KeyResults[j].Status) == string(access.OKRStatusActive) {
 					obj.KeyResults[j].Status = string(access.OKRStatusCompleted)
 				}
 			}
@@ -995,8 +1049,8 @@ func (m *PlanningManager) ReopenObjective(objectiveId string) error {
 	for i := range themes {
 		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
 			// Must be completed to reopen
-			if access.EffectiveOKRStatus(obj.Status) != string(access.OKRStatusCompleted) {
-				return fmt.Errorf("cannot reopen: objective is not completed (current status: %s)", access.EffectiveOKRStatus(obj.Status))
+			if EffectiveOKRStatus(obj.Status) != string(access.OKRStatusCompleted) {
+				return fmt.Errorf("cannot reopen: objective is not completed (current status: %s)", EffectiveOKRStatus(obj.Status))
 			}
 
 			obj.Status = ""
@@ -1102,11 +1156,47 @@ func todoSlugFromConfig(config *access.BoardConfiguration) string {
 	return string(access.TaskStatusTodo) // fallback
 }
 
+// reconcileTaskOrder takes the existing order map and a map of actual task zones
+// (taskID → correct zone) and returns the corrected order map.
+// It removes stale entries, deduplicates, and adds missing tasks to their correct zones.
+func reconcileTaskOrder(existingOrder map[string][]string, actualZone map[string]string) (map[string][]string, bool) {
+	changed := false
+
+	// Remove stale entries: keep only IDs whose actual zone matches the zone key
+	for zone, ids := range existingOrder {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if actualZone[id] == zone {
+				filtered = append(filtered, id)
+			} else {
+				changed = true
+			}
+		}
+		existingOrder[zone] = filtered
+	}
+
+	// Add missing tasks to their correct zone
+	present := make(map[string]bool)
+	for _, ids := range existingOrder {
+		for _, id := range ids {
+			present[id] = true
+		}
+	}
+	for id, zone := range actualZone {
+		if !present[id] {
+			existingOrder[zone] = append(existingOrder[zone], id)
+			changed = true
+		}
+	}
+
+	return existingOrder, changed
+}
+
 // validateTaskOrder repairs task_order.json so that each task appears in exactly
 // the zone that dropZoneForTask derives from its current (status, priority).
 // Removes duplicates and stale entries left by prior race conditions.
 func (m *PlanningManager) validateTaskOrder() {
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return
 	}
@@ -1136,33 +1226,7 @@ func (m *PlanningManager) validateTaskOrder() {
 		return
 	}
 
-	// Remove stale entries: keep only IDs whose actual zone matches the zone key
-	changed := false
-	for zone, ids := range orderMap {
-		filtered := make([]string, 0, len(ids))
-		for _, id := range ids {
-			if actualZone[id] == zone {
-				filtered = append(filtered, id)
-			} else {
-				changed = true
-			}
-		}
-		orderMap[zone] = filtered
-	}
-
-	// Add missing tasks to their correct zone
-	present := make(map[string]bool)
-	for _, ids := range orderMap {
-		for _, id := range ids {
-			present[id] = true
-		}
-	}
-	for id, zone := range actualZone {
-		if !present[id] {
-			orderMap[zone] = append(orderMap[zone], id)
-			changed = true
-		}
-	}
+	orderMap, changed := reconcileTaskOrder(orderMap, actualZone)
 
 	if changed {
 		slog.Info("validateTaskOrder: repaired task_order.json")
@@ -1175,7 +1239,7 @@ func (m *PlanningManager) validateTaskOrder() {
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	var allTasks []TaskWithStatus
 
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get board config: %w", err)
 	}
@@ -1282,7 +1346,7 @@ func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engi
 // Priority must be one of the valid Eisenhower priorities.
 // Optional fields: description, tags (comma-separated), promotionDate (YYYY-MM-DD).
 func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags, promotionDate string) (*Task, error) {
-	if !access.IsValidPriority(priority) {
+	if !IsValidPriority(priority) {
 		return nil, fmt.Errorf("invalid priority: %s", priority)
 	}
 
@@ -1325,7 +1389,7 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 	}
 
 	// Save task and update task order atomically in a single git commit
-	createConfig, _ := m.planAccess.GetBoardConfiguration()
+	createConfig, _ := m.getAccessBoardConfig()
 	accessTask := toAccessTask(task)
 	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority, todoSlugFromConfig(createConfig))
 	createdTask, err := m.planAccess.SaveTaskWithOrder(accessTask, zone)
@@ -1342,7 +1406,7 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 // with the move. When nil, the task is appended to the end of the target zone.
 // Returns a MoveTaskResult with violation details on rejection.
 func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error) {
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get board config: %w", err)
 	}
@@ -1490,7 +1554,7 @@ func (m *PlanningManager) UpdateTask(task Task) error {
 
 	// Check if priority change causes a zone change (only for todo tasks)
 	if oldPriority != "" && oldPriority != task.Priority {
-		config, _ := m.planAccess.GetBoardConfiguration()
+		config, _ := m.getAccessBoardConfig()
 		todoSlug := todoSlugFromConfig(config)
 		oldZone := dropZoneForTask(oldStatus, oldPriority, todoSlug)
 		newZone := dropZoneForTask(oldStatus, task.Priority, todoSlug)
@@ -1525,7 +1589,7 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	var promoted []PromotedTask
-	config, _ := m.planAccess.GetBoardConfiguration()
+	config, _ := m.getAccessBoardConfig()
 	todoSlug := todoSlugFromConfig(config)
 
 	for _, t := range allTasks {
@@ -1674,9 +1738,9 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 	}
 
 	// Add the restored task to the "done" zone in task_order.json
-	boardConfig, err := m.planAccess.GetBoardConfiguration()
-	if err != nil || boardConfig == nil {
-		boardConfig = access.DefaultBoardConfiguration()
+	boardConfig, _ := m.getAccessBoardConfig()
+	if boardConfig == nil {
+		boardConfig = defaultAccessBoardConfiguration()
 	}
 	targetZone := dropZoneForTask(string(access.TaskStatusDone), targetTask.Priority, todoSlugFromConfig(boardConfig))
 	m.taskOrderMu.Lock()
@@ -1782,8 +1846,9 @@ func toEngineTaskData(t Task) *rule_engine.TaskData {
 }
 
 // GetBoardConfiguration returns the board configuration.
+// Returns the default configuration if none is stored.
 func (m *PlanningManager) GetBoardConfiguration() (*BoardConfiguration, error) {
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -1797,7 +1862,7 @@ var reservedSlugs = map[string]bool{
 
 // AddColumn adds a new doing-type column after the specified column.
 func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, error) {
-	slug := access.Slugify(title)
+	slug := utilities.Slugify(title)
 	if slug == "" {
 		return nil, fmt.Errorf("column name must contain at least one letter or number")
 	}
@@ -1805,7 +1870,7 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*BoardConfig
 		return nil, fmt.Errorf("the name %q is reserved", slug)
 	}
 
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -1867,7 +1932,7 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*BoardConfig
 
 // RemoveColumn removes a doing-type column that has no tasks.
 func (m *PlanningManager) RemoveColumn(slug string) (*BoardConfiguration, error) {
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -1927,7 +1992,7 @@ func (m *PlanningManager) RemoveColumn(slug string) (*BoardConfiguration, error)
 
 // RenameColumn renames a column, migrating its directory and updating task order.
 func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*BoardConfiguration, error) {
-	newSlug := access.Slugify(newTitle)
+	newSlug := utilities.Slugify(newTitle)
 	if newSlug == "" {
 		return nil, fmt.Errorf("column name must contain at least one letter or number")
 	}
@@ -1936,7 +2001,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigur
 	}
 	if oldSlug == newSlug {
 		// Only title change, no slug change — just update the title
-		config, err := m.planAccess.GetBoardConfiguration()
+		config, err := m.getAccessBoardConfig()
 		if err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
@@ -1960,7 +2025,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigur
 		return toManagerBoardConfig(config), nil
 	}
 
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -2012,7 +2077,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigur
 
 // ReorderColumns reorders columns while enforcing bookend constraints.
 func (m *PlanningManager) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
-	config, err := m.planAccess.GetBoardConfiguration()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -2062,13 +2127,73 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*BoardConfiguration, e
 	return toManagerBoardConfig(config), nil
 }
 
+// SuggestAbbreviation generates a 1-3 letter abbreviation from a theme name,
+// ensuring uniqueness among existing themes.
+func SuggestAbbreviation(name string, existingThemes []access.LifeTheme) string {
+	existing := make(map[string]bool)
+	for _, t := range existingThemes {
+		existing[t.ID] = true
+	}
+
+	words := strings.Fields(name)
+
+	// Multi-word: take first letter of each word (up to 3)
+	if len(words) > 1 {
+		candidate := ""
+		for i, w := range words {
+			if i >= 3 {
+				break
+			}
+			candidate += strings.ToUpper(w[:1])
+		}
+		if !existing[candidate] {
+			return candidate
+		}
+	}
+
+	// Single word or multi-word collision: try first 1, 2, 3 letters of first word
+	upper := strings.ToUpper(words[0])
+	for length := 1; length <= 3 && length <= len(upper); length++ {
+		candidate := upper[:length]
+		if !existing[candidate] {
+			return candidate
+		}
+	}
+
+	// Fallback: try 2-letter combinations with second letter varying
+	if len(upper) >= 1 {
+		first := string(upper[0])
+		for c := 'A'; c <= 'Z'; c++ {
+			candidate := first + string(c)
+			if !existing[candidate] {
+				return candidate
+			}
+		}
+	}
+
+	// Last resort: try all 3-letter combinations starting with first letter
+	if len(upper) >= 1 {
+		first := string(upper[0])
+		for c1 := 'A'; c1 <= 'Z'; c1++ {
+			for c2 := 'A'; c2 <= 'Z'; c2++ {
+				candidate := first + string(c1) + string(c2)
+				if !existing[candidate] {
+					return candidate
+				}
+			}
+		}
+	}
+
+	return "X"
+}
+
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name.
 func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) {
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
 		return "", fmt.Errorf("%w", err)
 	}
-	return access.SuggestAbbreviation(name, themes), nil
+	return SuggestAbbreviation(name, themes), nil
 }
 
 // LoadNavigationContext retrieves the saved navigation context.
@@ -2153,79 +2278,6 @@ func (m *PlanningManager) SavePersonalVision(mission, vision string) error {
 	return m.planAccess.SaveVision(v)
 }
 
-// computeKRProgress computes the progress percentage of a single key result.
-// Returns -1 if the KR is untracked (targetValue == 0).
-func computeKRProgress(kr access.KeyResult) float64 {
-	if kr.TargetValue == 0 {
-		return -1
-	}
-	rangeVal := float64(kr.TargetValue - kr.StartValue)
-	if rangeVal == 0 {
-		return 0
-	}
-	progress := float64(kr.CurrentValue-kr.StartValue) / rangeVal * 100
-	if progress < 0 {
-		return 0
-	}
-	if progress > 100 {
-		return 100
-	}
-	return progress
-}
-
-// isActiveOKRStatus returns true if the status is active (empty or "active").
-func isActiveOKRStatus(status string) bool {
-	return status == "" || status == "active"
-}
-
-// computeObjectiveProgress recursively computes progress for an objective
-// and collects all nested objective progress entries.
-func computeObjectiveProgress(obj access.Objective) (float64, []ObjectiveProgress) {
-	var allObjProgress []ObjectiveProgress
-	var progressValues []float64
-
-	// Collect progress from active, tracked KRs
-	for _, kr := range obj.KeyResults {
-		if !isActiveOKRStatus(kr.Status) {
-			continue
-		}
-		p := computeKRProgress(kr)
-		if p >= 0 {
-			progressValues = append(progressValues, p)
-		}
-	}
-
-	// Collect progress from active child objectives
-	for _, child := range obj.Objectives {
-		if !isActiveOKRStatus(child.Status) {
-			continue
-		}
-		childProgress, childObjProgress := computeObjectiveProgress(child)
-		allObjProgress = append(allObjProgress, childObjProgress...)
-		if childProgress >= 0 {
-			progressValues = append(progressValues, childProgress)
-		}
-	}
-
-	var progress float64
-	if len(progressValues) == 0 {
-		progress = -1
-	} else {
-		var sum float64
-		for _, v := range progressValues {
-			sum += v
-		}
-		progress = sum / float64(len(progressValues))
-	}
-
-	allObjProgress = append(allObjProgress, ObjectiveProgress{
-		ObjectiveID: obj.ID,
-		Progress:    progress,
-	})
-
-	return progress, allObjProgress
-}
-
 // GetAllThemeProgress computes progress for all themes and their objectives.
 func (m *PlanningManager) GetAllThemeProgress() ([]ThemeProgress, error) {
 	themes, err := m.planAccess.GetThemes()
@@ -2233,42 +2285,30 @@ func (m *PlanningManager) GetAllThemeProgress() ([]ThemeProgress, error) {
 		return nil, err
 	}
 
-	result := make([]ThemeProgress, 0, len(themes))
-	for _, theme := range themes {
-		var themeObjProgress []ObjectiveProgress
-		var topLevelProgressValues []float64
+	// Convert access themes to engine DTOs
+	engineThemes := make([]progress_engine.ThemeData, len(themes))
+	for i, t := range themes {
+		engineThemes[i] = toEngineThemeData(t)
+	}
 
-		for _, obj := range theme.Objectives {
-			if !isActiveOKRStatus(obj.Status) {
-				continue
-			}
-			objProgress, nested := computeObjectiveProgress(obj)
-			themeObjProgress = append(themeObjProgress, nested...)
-			if objProgress >= 0 {
-				topLevelProgressValues = append(topLevelProgressValues, objProgress)
+	// Compute progress via engine
+	engineResult := m.progressEngine.ComputeAllThemeProgress(engineThemes)
+
+	// Convert engine output to manager DTOs
+	result := make([]ThemeProgress, len(engineResult))
+	for i, tp := range engineResult {
+		objectives := make([]ObjectiveProgress, len(tp.Objectives))
+		for j, op := range tp.Objectives {
+			objectives[j] = ObjectiveProgress{
+				ObjectiveID: op.ObjectiveID,
+				Progress:    op.Progress,
 			}
 		}
-
-		var themeProgress float64
-		if len(topLevelProgressValues) == 0 {
-			themeProgress = -1
-		} else {
-			var sum float64
-			for _, v := range topLevelProgressValues {
-				sum += v
-			}
-			themeProgress = sum / float64(len(topLevelProgressValues))
+		result[i] = ThemeProgress{
+			ThemeID:    tp.ThemeID,
+			Progress:   tp.Progress,
+			Objectives: objectives,
 		}
-
-		if themeObjProgress == nil {
-			themeObjProgress = []ObjectiveProgress{}
-		}
-
-		result = append(result, ThemeProgress{
-			ThemeID:    theme.ID,
-			Progress:   themeProgress,
-			Objectives: themeObjProgress,
-		})
 	}
 
 	return result, nil

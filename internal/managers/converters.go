@@ -1,6 +1,9 @@
 package managers
 
-import "github.com/rkn/bearing/internal/access"
+import (
+	"github.com/rkn/bearing/internal/access"
+	"github.com/rkn/bearing/internal/engines/progress_engine"
+)
 
 // toManagerLifeTheme converts an access.LifeTheme to the Manager's LifeTheme.
 func toManagerLifeTheme(a access.LifeTheme) LifeTheme {
@@ -241,4 +244,36 @@ func toManagerPersonalVision(a *access.PersonalVision) *PersonalVision {
 		Vision:    a.Vision,
 		UpdatedAt: a.UpdatedAt,
 	}
+}
+
+// toEngineThemeData converts an access.LifeTheme to a progress_engine.ThemeData.
+func toEngineThemeData(a access.LifeTheme) progress_engine.ThemeData {
+	return progress_engine.ThemeData{
+		ID:         a.ID,
+		Objectives: toEngineObjectiveDataSlice(a.Objectives),
+	}
+}
+
+// toEngineObjectiveDataSlice converts a slice of access.Objective to progress_engine.ObjectiveData.
+func toEngineObjectiveDataSlice(objectives []access.Objective) []progress_engine.ObjectiveData {
+	result := make([]progress_engine.ObjectiveData, len(objectives))
+	for i, obj := range objectives {
+		krs := make([]progress_engine.KeyResultData, len(obj.KeyResults))
+		for j, kr := range obj.KeyResults {
+			krs[j] = progress_engine.KeyResultData{
+				ID:           kr.ID,
+				Status:       kr.Status,
+				StartValue:   kr.StartValue,
+				CurrentValue: kr.CurrentValue,
+				TargetValue:  kr.TargetValue,
+			}
+		}
+		result[i] = progress_engine.ObjectiveData{
+			ID:         obj.ID,
+			Status:     obj.Status,
+			KeyResults: krs,
+			Objectives: toEngineObjectiveDataSlice(obj.Objectives),
+		}
+	}
+	return result
 }

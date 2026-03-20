@@ -109,8 +109,17 @@ func (pa *PlanAccess) ensureDirectoryStructure() error {
 		filepath.Join(pa.dataPath, "themes"),
 		filepath.Join(pa.dataPath, "calendar"),
 	}
-	for _, col := range config.ColumnDefinitions {
-		dirs = append(dirs, filepath.Join(pa.dataPath, "tasks", col.Name))
+	if config != nil {
+		for _, col := range config.ColumnDefinitions {
+			dirs = append(dirs, filepath.Join(pa.dataPath, "tasks", col.Name))
+		}
+	} else {
+		// Default column directories when no config file exists
+		dirs = append(dirs,
+			filepath.Join(pa.dataPath, "tasks", "todo"),
+			filepath.Join(pa.dataPath, "tasks", "doing"),
+			filepath.Join(pa.dataPath, "tasks", "done"),
+		)
 	}
 	dirs = append(dirs, filepath.Join(pa.dataPath, "tasks", string(TaskStatusArchived)))
 
@@ -238,9 +247,14 @@ func (pa *PlanAccess) findTaskInPlan(taskID string) (*Task, string, int, error) 
 // allStatusSlugs returns all status directory slugs from board config plus "archived".
 func (pa *PlanAccess) allStatusSlugs() []string {
 	config, _ := pa.GetBoardConfiguration()
-	slugs := make([]string, 0, len(config.ColumnDefinitions)+1)
-	for _, col := range config.ColumnDefinitions {
-		slugs = append(slugs, col.Name)
+	var slugs []string
+	if config != nil {
+		slugs = make([]string, 0, len(config.ColumnDefinitions)+1)
+		for _, col := range config.ColumnDefinitions {
+			slugs = append(slugs, col.Name)
+		}
+	} else {
+		slugs = []string{"todo", "doing", "done"}
 	}
 	slugs = append(slugs, string(TaskStatusArchived))
 	return slugs
@@ -267,16 +281,15 @@ func (pa *PlanAccess) GetThemes() ([]LifeTheme, error) {
 }
 
 // SaveTheme saves or updates a life theme.
-// If the theme ID is empty, a new ID will be generated.
+// The theme ID must be set by the caller.
 func (pa *PlanAccess) SaveTheme(theme LifeTheme) error {
+	if theme.ID == "" {
+		return fmt.Errorf("PlanAccess.SaveTheme: theme ID cannot be empty")
+	}
+
 	themes, err := pa.GetThemes()
 	if err != nil {
 		return fmt.Errorf("PlanAccess.SaveTheme: failed to get existing themes: %w", err)
-	}
-
-	// Generate ID if not provided
-	if theme.ID == "" {
-		theme.ID = SuggestAbbreviation(theme.Name, themes)
 	}
 
 	// Ensure objective and key result IDs are generated
@@ -850,13 +863,13 @@ func (pa *PlanAccess) TaskDirPath(status string) string {
 }
 
 // GetBoardConfiguration returns the board configuration.
-// Reads from board_config.json if it exists, falls back to DefaultBoardConfiguration().
+// Reads from board_config.json if it exists, returns nil if no config file.
 func (pa *PlanAccess) GetBoardConfiguration() (*BoardConfiguration, error) {
 	filePath := pa.boardConfigFilePath()
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return DefaultBoardConfiguration(), nil
+			return nil, nil
 		}
 		return nil, fmt.Errorf("PlanAccess.GetBoardConfiguration: failed to read config file: %w", err)
 	}
@@ -966,66 +979,6 @@ func ExtractThemeAbbr(id string) string {
 		return matches[1]
 	}
 	return ""
-}
-
-// SuggestAbbreviation generates a 1-3 letter abbreviation from a theme name,
-// ensuring uniqueness among existing themes.
-func SuggestAbbreviation(name string, existingThemes []LifeTheme) string {
-	existing := make(map[string]bool)
-	for _, t := range existingThemes {
-		existing[t.ID] = true
-	}
-
-	words := strings.Fields(name)
-
-	// Multi-word: take first letter of each word (up to 3)
-	if len(words) > 1 {
-		candidate := ""
-		for i, w := range words {
-			if i >= 3 {
-				break
-			}
-			candidate += strings.ToUpper(w[:1])
-		}
-		if !existing[candidate] {
-			return candidate
-		}
-	}
-
-	// Single word or multi-word collision: try first 1, 2, 3 letters of first word
-	upper := strings.ToUpper(words[0])
-	for length := 1; length <= 3 && length <= len(upper); length++ {
-		candidate := upper[:length]
-		if !existing[candidate] {
-			return candidate
-		}
-	}
-
-	// Fallback: try 2-letter combinations with second letter varying
-	if len(upper) >= 1 {
-		first := string(upper[0])
-		for c := 'A'; c <= 'Z'; c++ {
-			candidate := first + string(c)
-			if !existing[candidate] {
-				return candidate
-			}
-		}
-	}
-
-	// Last resort: try all 3-letter combinations starting with first letter
-	if len(upper) >= 1 {
-		first := string(upper[0])
-		for c1 := 'A'; c1 <= 'Z'; c1++ {
-			for c2 := 'A'; c2 <= 'Z'; c2++ {
-				candidate := first + string(c1) + string(c2)
-				if !existing[candidate] {
-					return candidate
-				}
-			}
-		}
-	}
-
-	return "X"
 }
 
 // ensureThemeIDs ensures all objectives and key results within a theme have proper IDs.

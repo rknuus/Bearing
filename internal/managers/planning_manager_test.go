@@ -106,7 +106,7 @@ func (m *mockPlanAccess) SaveTheme(theme access.LifeTheme) error {
 		}
 	}
 	if theme.ID == "" {
-		theme.ID = access.SuggestAbbreviation(theme.Name, m.themes)
+		theme.ID = SuggestAbbreviation(theme.Name, m.themes)
 	}
 	maxO := collectMockMaxObjNum(theme.ID, theme.Objectives)
 	maxKR := collectMockMaxKRNum(theme.ID, theme.Objectives)
@@ -313,7 +313,7 @@ func (m *mockPlanAccess) GetBoardConfiguration() (*access.BoardConfiguration, er
 	if m.boardConfig != nil {
 		return m.boardConfig, nil
 	}
-	return access.DefaultBoardConfiguration(), nil
+	return nil, nil
 }
 
 func (m *mockPlanAccess) LoadNavigationContext() (*access.NavigationContext, error) {
@@ -401,9 +401,9 @@ func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
 	t.Helper()
 
 	// 1. Load board configuration to get column slugs and todoSlug
-	boardConfig, err := manager.planAccess.GetBoardConfiguration()
+	boardConfig, err := manager.getAccessBoardConfig()
 	if err != nil || boardConfig == nil {
-		boardConfig = access.DefaultBoardConfiguration()
+		boardConfig = defaultAccessBoardConfiguration()
 	}
 	tSlug := todoSlugFromConfig(boardConfig)
 
