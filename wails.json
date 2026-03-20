@@ -19,7 +19,7 @@
   },
   "assetdir": "./frontend/dist",
   "reloaddirs": "./frontend/src",
-  "build:dir": "build/bin",
+  "build:dir": "build",
   "frontend:dir": "frontend",
   "wailsjsdir": "./frontend/src/lib/wails",
   "debounceMS": 100
