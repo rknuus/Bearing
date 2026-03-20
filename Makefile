@@ -69,11 +69,11 @@ stop: ## Stop any running dev/test server processes (ports 5173, 5174, 34115, 34
 ##@ Build
 
 .PHONY: build
-build: generate frontend-lint $(BIN_DIR)/appicon.png ## Build Wails desktop application
+build: generate frontend-lint build/appicon.png ## Build Wails desktop application
 	@echo "Building $(APP_NAME)..."
 	@$(MAKE) --no-print-directory -C frontend check
 	@echo "Building Wails application..."
-	~/go/bin/wails build
+	~/go/bin/wails build -ldflags "-X main.version=$(VERSION)"
 	@echo "Build complete: $(OUTPUT)"
 
 .PHONY: build-go
@@ -199,19 +199,36 @@ fmt: ## Format Go code
 
 # Render macOS app icon from simplified SVG with squircle clipping and Apple HIG padding
 # Output: 1024x1024 PNG with 824x824 squircle content centered (100px transparent padding)
-$(BIN_DIR)/appicon.png: appicon.svg
-	rsvg-convert -w 824 -h 824 $< -o $(BIN_DIR)/appicon-raw.png
+build/appicon.png: appicon.svg
+	rsvg-convert -w 824 -h 824 $< -o build/appicon-raw.png
 	magick -size 1024x1024 xc:none \
 		-fill white -draw "roundrectangle 100,100 923,923 185,185" \
-		$(BIN_DIR)/appicon-mask.png
+		build/appicon-mask.png
 	magick -size 1024x1024 xc:none \
-		$(BIN_DIR)/appicon-raw.png -gravity center -compose Over -composite \
-		$(BIN_DIR)/appicon-mask.png -compose DstIn -composite $@
-	rm -f $(BIN_DIR)/appicon-raw.png $(BIN_DIR)/appicon-mask.png
+		build/appicon-raw.png -gravity center -compose Over -composite \
+		build/appicon-mask.png -compose DstIn -composite $@
+	rm -f build/appicon-raw.png build/appicon-mask.png
 
 .PHONY: icon
-icon: $(BIN_DIR)/appicon.png ## Generate macOS app icon from appicon.svg
+icon: build/appicon.png ## Generate macOS app icon from appicon.svg
 
 .PHONY: migrate-tasks
 migrate-tasks: ## Migrate task files from theme-scoped to flat structure
 	@bash scripts/migrate-task-structure.sh
+
+.PHONY: release-test
+release-test: ## Validate release pipeline locally (YAML syntax, build, tests)
+	@echo "Validating workflow YAML..."
+	@command -v actionlint >/dev/null 2>&1 || { echo "Error: actionlint not found. Install with: brew install actionlint"; exit 1; }
+	actionlint .github/workflows/release.yml
+	@echo "Building with test version..."
+	@$(MAKE) --no-print-directory build VERSION=0.0.0-test
+	@echo "Running all tests..."
+	@$(MAKE) --no-print-directory test
+	@$(MAKE) --no-print-directory test-ui-component-headless
+	@$(MAKE) --no-print-directory test-e2e-headless
+	@echo "Release pipeline validation complete."
+
+.PHONY: trigger-test-release
+trigger-test-release: ## Push a test tag to trigger release pipeline on GitHub, then clean up
+	@bash scripts/trigger-test-release.sh
