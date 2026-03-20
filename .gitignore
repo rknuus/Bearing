@@ -30,3 +30,6 @@ tests/ui-component/playwright-report/
 
 # Project management
 .pm/
+
+# TheAgent — transient history backups
+.theagent/history/

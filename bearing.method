@@ -1,0 +1,722 @@
+project:
+  name: "Bearing"
+  stage: "volatility-analysis"
+volatilities:
+  identified:
+    - id: "vol-okr-hierarchy"
+      name: "OKR Hierarchy Structure"
+      description: "How life themes, objectives, key results, and routines are organized, nested, and related to each other.
+        The tree structure, nesting depth, and entity relationships may change."
+      evidence: "Same customer over time: user restructures their OKR tree as priorities evolve — adding themes, nesting
+        objectives deeper, changing KR metrics. Different customers at same time: some users have flat structures (few
+        themes, many KRs), others have deep hierarchies (nested objectives). Currently 6 entity types in a recursive
+        tree with themes as roots."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "high"
+    - id: "vol-okr-lifecycle"
+      name: "OKR Lifecycle and Status Transitions"
+      description: "How objectives and key results move through status states (active, completed, archived) including
+        validation of allowed transitions, cascading close/reopen of children, and closing metadata."
+      evidence: "Same customer over time: status transition rules may become stricter or more permissive, closing workflows
+        may add approval steps. Different customers at same time: some users need simple active/done, others want full
+        lifecycle with closing notes. Currently validated by PlanningManager with validateOKRStatusTransition()."
+      encapsulated_by:
+        - "PlanningManager"
+      confidence: "high"
+    - id: "vol-task-board-rules"
+      name: "Task Board Rules"
+      description: "Business rules governing task lifecycle on the kanban board: WIP limits, allowed column transitions, max
+        task age, required fields on creation. Rules are evaluated on create, move, and update operations."
+      evidence: "Same customer over time: user adjusts WIP limits, adds new transition constraints, changes max age policies.
+        Different customers at same time: some users want strict WIP enforcement, others want permissive boards.
+        Currently encapsulated by RuleEngine with filterApplicableRules() and
+        checkWIPLimit/checkAllowedTransition/checkMaxAge."
+      encapsulated_by:
+        - "RuleEngine"
+      confidence: "high"
+    - id: "vol-task-management"
+      name: "Task Management"
+      description: "How tasks are created, updated, moved between columns, deleted, archived, restored, and reordered on the
+        Eisenhower-Kanban board. Includes priority-based zone assignment, batch creation from drafts, and priority
+        promotion scheduling."
+      evidence: "Same customer over time: task workflows evolve — new priority schemes, different archival policies, changing
+        promotion rules. Different customers at same time: some users batch-create tasks, others create one at a time;
+        some use priority promotions, others do not. Currently orchestrated by PlanningManager with 10+ task methods."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "high"
+    - id: "vol-board-configuration"
+      name: "Board Configuration"
+      description: "How the kanban board columns are structured: adding, removing, renaming, and reordering columns. Includes
+        slug generation, bookend validation (todo must be first, done must be last), directory creation for new
+        statuses, and zone migration in task ordering."
+      evidence: "Same customer over time: user customizes their board layout — adds columns for review stages, renames
+        columns, reorders workflow. Different customers at same time: some users want minimal todo/done, others want
+        multi-stage pipelines. Currently managed by PlanningManager with 4 board config methods."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "high"
+    - id: "vol-calendar-focus"
+      name: "Calendar Day Focus"
+      description: "How daily focus entries are managed: associating days with themes, OKR IDs, tags, notes, and focus text.
+        Includes year-based storage partitioning, copy-paste of focus entries within and across days, and clearing focus
+        assignments."
+      evidence: "Same customer over time: the fields tracked per day evolve (added okrIds and tags over time). Different
+        customers at same time: some users assign themes only, others use full OKR tagging with notes. Currently managed
+        by PlanningManager and PlanAccess with year-partitioned JSON files."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "high"
+    - id: "vol-progress-computation"
+      name: "Progress Computation"
+      description: "How progress is calculated for key results, objectives, and themes. KR progress is computed from
+        start/current/target values. Objective progress aggregates child KR progress. Theme progress aggregates
+        top-level objective progress. Currently misplaced in PlanningManager — should be in an Engine."
+      evidence: "Same customer over time: progress formulas may change (weighted averages, different rollup strategies).
+        Different customers at same time: some users want simple percentage, others may want weighted or custom
+        aggregation. Currently computed by PlanningManager via computeKRProgress() and computeObjectiveProgress() —
+        assessment identifies this as misplaced business logic."
+      encapsulated_by:
+        - "PlanningManager"
+      confidence: "high"
+    - id: "vol-persistence-strategy"
+      name: "Persistence Strategy"
+      description: "How data is stored and retrieved: file-based JSON storage with git-backed versioning, directory-per-status
+        organization for tasks, year-partitioned calendar files, atomic transactions via git commit. Includes ID
+        generation, slug generation, and directory structure management."
+      evidence: "Same customer over time: storage backend could change from file-based to database, git strategy may change.
+        Different customers at same time: not applicable (single deployment). Currently encapsulated by PlanAccess and
+        Repository utility, though PlanAccess also contains business logic (SuggestAbbreviation,
+        DefaultBoardConfiguration) that the assessment identifies as misplaced."
+      encapsulated_by:
+        - "PlanAccess"
+        - "Repository"
+      confidence: "high"
+    - id: "vol-ui-state-persistence"
+      name: "UI State Persistence"
+      description: "How transient UI state is persisted across sessions without git versioning: navigation context (current
+        view, filter state, today focus active flag) and task drafts (staged tasks not yet committed to the board).
+        These are pass-through operations with no business logic."
+      evidence: "Same customer over time: new UI state fields are added as views evolve (todayFocusActive, filterThemeIds
+        added over time). Different customers at same time: not applicable. Currently pass-through from PlanningManager
+        to PlanAccess — assessment notes these are toll-booth methods adding no value at the Manager layer."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "medium"
+    - id: "vol-state-verification"
+      name: "State Verification"
+      description: "How frontend-backend state consistency is verified after mutations. The client performs optimistic
+        updates, then re-fetches backend state and compares field-by-field. Mismatches trigger error banners and
+        logging. Applied across all three views (OKR, EisenKan, Calendar)."
+      evidence: "Same customer over time: verification strategies may change (polling, WebSocket push, conflict resolution).
+        Different customers at same time: not applicable. Currently implemented entirely in the Svelte client with
+        checkFullState() and checkStateFromData() utilities."
+      encapsulated_by:
+        - "BearingClient"
+      confidence: "medium"
+    - id: "vol-today-focus-filtering"
+      name: "Today Focus Auto-Filtering"
+      description: "How the calendar day focus drives automatic filtering on the EisenKan board. When today has a calendar
+        assignment, the board auto-filters tasks by the assigned themes and tags. Cross-view coordination between
+        Calendar and EisenKan views."
+      evidence: "Same customer over time: filter criteria may expand beyond themes and tags. Different customers at same time:
+        some users rely on auto-filtering, others prefer manual control. Currently implemented in the Svelte client with
+        resolveTodayFocus() and coordination between views."
+      encapsulated_by:
+        - "BearingClient"
+      confidence: "medium"
+    - id: "vol-personal-vision"
+      name: "Personal Vision"
+      description: "How the user's personal mission and vision statements are managed. Simple CRUD with timestamp tracking.
+        Serves as the root motivational context for the entire OKR hierarchy."
+      evidence: "Same customer over time: vision and mission evolve as user's life direction changes. Different customers at
+        same time: each user has different vision content. Currently a simple read/write through PlanningManager and
+        PlanAccess to vision.json."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "medium"
+    - id: "vol-task-ordering"
+      name: "Task Ordering"
+      description: "How tasks are ordered within drop zones on the board. Tasks are organized by priority-based zones within
+        columns. Order is persisted separately from tasks in task_order.json. Includes reorder operations, zone
+        migration on priority change, and startup repair of stale entries."
+      evidence: "Same customer over time: ordering schemes may change (manual drag-drop, auto-sort by date, priority-based
+        grouping). Different customers at same time: some users manually order, others rely on defaults. Currently
+        managed jointly by PlanningManager (zone computation, merge logic) and PlanAccess (persistence of
+        task_order.json)."
+      encapsulated_by:
+        - "PlanningManager"
+        - "PlanAccess"
+      confidence: "high"
+  rejected:
+    - name: "Eisenhower Priority Matrix"
+      reason: "The four-quadrant Eisenhower priority model (important-urgent, important-not-urgent, not-important-urgent,
+        not-important-not-urgent) is the nature of the business — it is the foundational organizing principle of the
+        task board. Changing this would change the nature of the system. It would be done poorly if encapsulated."
+    - name: "Theme-Objective-KR Nesting Model"
+      reason: "The three-level OKR nesting (Themes contain Objectives contain Key Results) is the nature of the OKR
+        methodology. While the depth of nesting varies (objectives can nest recursively), the fundamental hierarchy
+        model is the core business concept. Encapsulating it away would strip the system of its identity."
+    - name: "Desktop Application Platform"
+      reason: "Bearing is designed as a local-first desktop application using Wails. While the UI framework could change, the
+        fundamental commitment to local-first (no cloud, no server, git-backed local persistence) is a product decision,
+        not a volatility. Moving to a web SaaS would be a fundamentally different product."
+components:
+  clients:
+    - id: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+      name: "BearingClient"
+      description: "Svelte 5 frontend application providing three views: OKRView (theme/objective/key result/routine
+        management), EisenKanView (Eisenhower-Kanban task board with priority quadrants), and CalendarView (day focus
+        with copy-paste). Implements optimistic UI updates with state verification, today-focus auto-filtering, batch
+        task creation from drafts, and cross-view navigation coordination. Communicates with backend through Wails
+        bindings (native) or mock bindings (browser testing)."
+    - id: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+      name: "App"
+      description: "Wails binding gateway (main.go App struct). Exposes 40+ public methods as Wails bindings for the Svelte
+        frontend. Performs DTO conversion between Wails-serializable types and internal access-layer types
+        (convertObjective, convertObjectiveToAccess, convertBoardConfig). Handles startup initialization (data directory
+        resolution, logger setup, repository initialization, component wiring). Also contains GetLocale() with
+        OS-specific fallback and LogFrontend() for frontend error logging. Assessment notes: this is a God Gateway with
+        logic — DTO conversion and business decisions should not live here."
+  managers:
+    - id: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+      name: "PlanningManager"
+      description: "Single Manager component (IPlanningManager) orchestrating ALL system operations. 2138 lines, 38 methods
+        spanning: theme CRUD, objective CRUD with tree-walk, key result CRUD, routine CRUD, task CRUD with rule
+        evaluation and zone assignment, task archive/restore, task reordering, board configuration
+        (add/remove/rename/reorder columns), calendar day focus, navigation context, task drafts, personal vision,
+        progress computation, priority promotions, and startup task order validation. Assessment notes: this is a God
+        Manager encapsulating at least 5 distinct volatility axes. Progress computation (computeKRProgress,
+        computeObjectiveProgress) is business logic that belongs in an Engine. validateTaskOrder() startup repair is
+        also misplaced Engine logic."
+  engines:
+    - id: "59843c4a-d1d8-4663-abdf-6b4aa93e7099"
+      name: "RuleEngine"
+      description: "Stateless engine (IRuleEngine) that evaluates board rules against task events. Receives TaskEvent with
+        event type and all tasks context. Filters applicable rules by event type, then evaluates: checkRequiredFields
+        (task creation), checkWIPLimit (doing column max 20), checkAllowedTransition (column moves), checkMaxAge (30
+        days). Returns RuleEvaluationResult with Allowed flag and Violations list. Genuinely stateless — receives all
+        context through parameters. Assessment notes: has a dependency inversion violation — imports access.Task types
+        directly instead of defining its own input contract."
+  resource_access:
+    - id: "a947363b-6670-45b3-8e89-127b3864ec28"
+      name: "PlanAccess"
+      description: "Single Resource Access component (IPlanAccess) handling ALL data persistence. 30+ methods spanning: theme
+        read/write (themes.json), task CRUD with file-per-task in status directories, task ordering (task_order.json),
+        board configuration (board_config.json), calendar day focus (calendar/{year}.json), personal vision
+        (vision.json), navigation context (navigation_context.json), and task drafts (tasks/drafts.json). Uses
+        git-backed transactions via Repository for versioned data. Assessment notes: this is a God RA accessing 7+
+        distinct resources through one interface. Contains misplaced business logic: SuggestAbbreviation() (ID
+        generation), ensureThemeIDs() (ID assignment), DefaultBoardConfiguration() (business defaults),
+        IsValidPriority/IsValidOKRStatus (validation), Slugify() (utility function), and ensureDirectoryStructure()
+        (infrastructure concern)."
+  resources: []
+  utilities:
+    - id: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+      name: "Repository"
+      description: "Git-backed versioning utility (IRepository, ITransaction). Provides ACID-like transaction semantics for
+        file-based persistence: Begin() starts a transaction with canonical-path-keyed mutex, Stage() adds files to git
+        index, Commit() creates a git commit with descriptive message. InitializeRepositoryWithConfig() handles
+        repository initialization (open existing or init new). Serializes writes per repository path to prevent
+        concurrent modification."
+      type: "git-repository"
+topology:
+  architecture_type: "closed"
+use_cases:
+  core:
+    - id: "uc-1"
+      name: "Manage OKR Hierarchy"
+      description: "User creates, updates, and deletes life themes, objectives (with recursive nesting), key results, and
+        routines. Includes status lifecycle management (activate, complete, close with notes, reopen) with cascading
+        effects on children. Derived from diagrams 01-04."
+      sequences:
+        - name: "Create Theme"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "CreateTheme(name, color)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "CreateTheme(name, color)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTheme(theme) — PlanAccess generates ID via SuggestAbbreviation()"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(themes.json) -> Commit('Add theme')"
+        - name: "Create Objective"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "CreateObjective(parentId, title)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "CreateObjective(parentId, title)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetThemes() — Manager tree-walks to find parent"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTheme(modifiedTheme) — PlanAccess assigns ID via ensureThemeIDs()"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+        - name: "Close Objective with Cascading KR Close"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "CloseObjective(objectiveId, closingStatus, closingNotes)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "CloseObjective(objectiveId, closingStatus, closingNotes)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetThemes() — Manager tree-walks, validates, sets status, auto-closes child KRs"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTheme(modifiedTheme)"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+        - name: "Create Key Result"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "CreateKeyResult(parentObjId, description, startValue, targetValue)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "CreateKeyResult(parentObjId, description, startValue, targetValue)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetThemes() — Manager validates, tree-walks, appends KR"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTheme(modifiedTheme)"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+        - name: "Add Routine"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "AddRoutine(themeId, description, targetValue, targetType, unit)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "AddRoutine(themeId, description, targetValue, targetType, unit)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetThemes() — Manager validates, finds theme, generates routine ID"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTheme(modifiedTheme)"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+    - id: "uc-2"
+      name: "Manage Tasks"
+      description: "User creates, updates, moves, deletes, archives, and restores tasks on the Eisenhower-Kanban board. Task
+        operations are validated by the RuleEngine (WIP limits, allowed transitions, max age, required fields). Tasks
+        are organized by priority-based drop zones within columns. Includes priority promotion scheduling. Derived from
+        diagrams 05-06."
+      sequences:
+        - name: "Create Task with Rule Evaluation"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "CreateTask(title, themeId, priority, description, tags, promotionDate)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "CreateTask(...) — validates priority, parses tags, builds task info"
+            - from: "PlanningManager"
+              to: "RuleEngine"
+              note: "EvaluateTaskChange(EventTaskCreate) — checks required fields"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskWithOrder(task, dropZone) — generates ID, sets timestamps, updates task_order.json"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(task file + task_order.json) -> Commit('Add task')"
+        - name: "Move Task with Rule Evaluation"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "MoveTask(taskId, newStatus, positions)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "MoveTask(taskId, newStatus, positions)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetBoardConfiguration() — Manager validates newStatus against columns"
+            - from: "PlanningManager"
+              to: "RuleEngine"
+              note: "EvaluateTaskChange(EventTaskMove) — checkWIPLimit, checkAllowedTransition, checkMaxAge"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "MoveTask(taskId, newStatus) — renames file between status directories"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(old+new paths) -> Commit()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskOrder(orderMap) — zone migration in task_order.json"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+        - name: "Archive Task"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "ArchiveTask(taskId)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "ArchiveTask(taskId) — verifies task is done"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "ArchiveTask(taskId) — moves file from done/ to archived/"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(old+new) -> Commit()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskOrder(filtered) — removes from order map"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+        - name: "Process Priority Promotions"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "ProcessPriorityPromotions()"
+            - from: "App"
+              to: "PlanningManager"
+              note: "ProcessPriorityPromotions() — finds tasks with promotionDate <= today"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "UpdateTaskWithOrderMove(task, oldZone, newZone) — for each promoted task"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(task + task_order.json) -> Commit()"
+    - id: "uc-3"
+      name: "Focus Daily Work"
+      description: "User assigns themes, OKR IDs, and tags to calendar days to focus daily work. Calendar entries drive
+        automatic task filtering on the EisenKan board. Includes copy-paste of focus entries within and across days
+        (single and multi-cell). Derived from diagrams 08, 13, 14, 17."
+      sequences:
+        - name: "Save Day Focus with OKR Tags"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveDayFocus({date, themeIds, notes, text, okrIds, tags})"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveDayFocus(access.DayFocus) — validates date non-empty"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveDayFocus(day) — extracts year, upserts entry, sorts by date"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(calendar/{year}.json) -> Commit()"
+        - name: "Today Focus Auto-Filter on EisenKan"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "GetYearFocus(currentYear)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "GetYearFocus(currentYear)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetYearFocus(currentYear) — reads calendar/{year}.json"
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveNavigationContext({todayFocusActive, filterThemeIds}) — client resolves today's focus and applies filter"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveNavigationContext(ctx)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveNavigationContext(ctx) — write without git commit"
+        - name: "Calendar Copy-Paste (Multi-Cell)"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveDayFocus({targetDate, source.themeIds, source.text, target.notes, source.okrIds, source.tags}) — for each day
+                in range"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveDayFocus(access.DayFocus)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveDayFocus(day) — upsert, preserving target notes"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit() — per day in range"
+  regular:
+    - id: "uc-4"
+      name: "Configure Board"
+      description: "User customizes the kanban board layout by adding, removing, renaming, and reordering columns. Board has
+        bookend constraints (todo first, done last). Column operations manage status directories, zone keys in task
+        ordering, and slug generation. Derived from diagram 07."
+      sequences:
+        - name: "Add Column"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "AddColumn(title, insertAfterSlug)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "AddColumn(title, insertAfterSlug) — slugifies title, validates uniqueness and bookends"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetBoardConfiguration()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "EnsureStatusDirectory(slug) — creates tasks/{slug}/"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveBoardConfiguration(config)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "CommitAll('Add column: X')"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage('.') -> Commit()"
+        - name: "Remove Column"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "RemoveColumn(slug)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "RemoveColumn(slug) — validates column exists, is doing type, has no tasks"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetTasksByStatus(slug) — verify empty"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "RemoveStatusDirectory(slug)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveBoardConfiguration(config)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "CommitAll('Remove column')"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage('.') -> Commit()"
+        - name: "Rename Column"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "RenameColumn(oldSlug, newTitle)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "RenameColumn(oldSlug, newTitle) — slugifies, validates uniqueness"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "RenameStatusDirectory(oldSlug, newSlug) — if slug changed"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveBoardConfiguration(config)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "CommitAll('Rename column')"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage('.') -> Commit()"
+    - id: "uc-5"
+      name: "Batch Create Tasks"
+      description: "User stages multiple tasks across priority quadrants in a draft dialog, then commits all to the board in
+        one batch. Drafts are persisted between dialog sessions without git versioning. Partial failure leaves failed
+        tasks staged for retry. Derived from diagram 15."
+      sequences:
+        - name: "Stage and Commit Batch"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "LoadTaskDrafts() — load previously saved drafts"
+            - from: "App"
+              to: "PlanningManager"
+              note: "LoadTaskDrafts()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "LoadTaskDrafts() — reads tasks/drafts.json"
+            - from: "BearingClient"
+              to: "App"
+              note: "CreateTask(title, themeId, priority, ...) — for each staged task"
+            - from: "App"
+              to: "PlanningManager"
+              note: "CreateTask(...)"
+            - from: "PlanningManager"
+              to: "RuleEngine"
+              note: "EvaluateTaskChange(EventTaskCreate)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskWithOrder(task, dropZone)"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveTaskDrafts('{}') — clear drafts on success"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveTaskDrafts(json.RawMessage)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskDrafts() — write without git commit"
+    - id: "uc-6"
+      name: "Compute Progress"
+      description: "System computes progress for all themes by recursively calculating KR progress (from start/current/target
+        values), objective progress (average of child KR progress), and theme progress (average of top-level objective
+        progress). Read-only computation with no persistence. Assessment notes this logic is misplaced in
+        PlanningManager and should be in an Engine. Derived from diagram 10."
+      sequences:
+        - name: "Get All Theme Progress"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "GetAllThemeProgress()"
+            - from: "App"
+              to: "PlanningManager"
+              note: "GetAllThemeProgress() — computes progress inline (should be Engine)"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetThemes() — Manager does recursive progress computation on the result"
+    - id: "uc-7"
+      name: "Initialize System"
+      description: "System starts up: resolves data directory, initializes logger, creates or opens git repository, creates
+        PlanAccess (ensures directory structure), creates PlanningManager (wires RuleEngine with default rules), and
+        validates/repairs task order against actual files. Derived from diagram 12."
+      sequences:
+        - name: "Startup Sequence"
+          steps:
+            - from: "App"
+              to: "Repository"
+              note: "InitializeRepositoryWithConfig(repoPath, gitConfig) — open or init git repo"
+            - from: "App"
+              to: "PlanAccess"
+              note: "NewPlanAccess(repoPath, repo) — ensures directory structure (themes/, calendar/, tasks/...)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "NewPlanningManager(planAccess) — creates RuleEngine, validates task order"
+            - from: "PlanningManager"
+              to: "RuleEngine"
+              note: "NewRuleEngine(DefaultRules())"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetBoardConfiguration(), GetTasksByStatus() for each column, LoadTaskOrder()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskOrder() — if repair needed (stale/missing entries)"
+    - id: "uc-8"
+      name: "Verify Frontend-Backend State"
+      description: "After every mutation, client performs optimistic UI update then re-fetches backend state to verify
+        consistency. Applied across all three views: OKRView compares themes/objectives/KRs, EisenKanView compares tasks
+        with per-zone ordering, CalendarView compares day focus entries. Mismatches trigger error banners and frontend
+        logging. Derived from diagram 16."
+      sequences:
+        - name: "Verify Task State (EisenKan)"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "GetTasks() — re-fetch after mutation"
+            - from: "App"
+              to: "PlanningManager"
+              note: "GetTasks()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetBoardConfiguration(), GetTasksByStatus() per column, LoadTaskOrder()"
+            - from: "BearingClient"
+              to: "App"
+              note: "LogFrontend('error', mismatchDetails, 'state-check') — if mismatch detected"
+        - name: "Verify OKR State"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "GetThemes() — re-fetch after mutation"
+            - from: "App"
+              to: "PlanningManager"
+              note: "GetThemes()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "GetThemes() — reads themes.json"
+            - from: "BearingClient"
+              to: "App"
+              note: "LogFrontend('error', mismatchDetails, 'state-check') — if mismatch detected"
+    - id: "uc-9"
+      name: "Manage Personal Vision"
+      description: "User reads and updates their personal mission and vision statements. Simple CRUD with timestamp tracking.
+        Vision serves as root motivational context for the OKR hierarchy. Derived from diagram 10."
+      sequences:
+        - name: "Save Personal Vision"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SavePersonalVision(mission, vision)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SavePersonalVision(mission, vision) — sets UpdatedAt timestamp"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveVision(*PersonalVision)"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(vision.json) -> Commit('Update personal vision')"
+    - id: "uc-10"
+      name: "Persist UI State"
+      description: "System persists transient UI state across sessions: navigation context (current view, filter state, today
+        focus flag) and task drafts (staged tasks). Not git-versioned. Manager is a pass-through with no business logic.
+        Assessment notes these are toll-booth operations. Derived from diagram 09."
+      sequences:
+        - name: "Save Navigation Context"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveNavigationContext(ctx)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveNavigationContext(ctx) — pass-through, no logic"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveNavigationContext(ctx) — writes JSON, no git commit"
+        - name: "Save Task Drafts"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveTaskDrafts(data)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveTaskDrafts(json.RawMessage) — pass-through, no logic"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskDrafts(json.RawMessage) — writes file, no git commit"
+    - id: "uc-11"
+      name: "Reorder Tasks"
+      description: "User reorders tasks within drop zones via drag-and-drop. Client sends position updates which the Manager
+        merges into the full order map. Derived from diagram 06."
+      sequences:
+        - name: "Reorder Tasks"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "ReorderTasks(positions)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "ReorderTasks(positions) — merges proposed positions into full order map"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "LoadTaskOrder()"
+            - from: "PlanningManager"
+              to: "PlanAccess"
+              note: "SaveTaskOrder(mergedMap)"
+            - from: "PlanAccess"
+              to: "Repository"
+              note: "Begin() -> Stage() -> Commit()"

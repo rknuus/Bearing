@@ -1,0 +1,41 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+
+    Note over C,PA: LoadNavigationContext
+    C->>A: LoadNavigationContext()
+    A->>PM: LoadNavigationContext()
+    PM->>PA: LoadNavigationContext()
+    PA->>PA: ReadFile(navigation_context.json)
+    PA-->>PM: *NavigationContext (or nil)
+    PM-->>A: *NavigationContext [defaults to {currentView:"okr"}]
+    A-->>C: *NavigationContext (Wails DTO)
+
+    Note over C,PA: SaveNavigationContext [NOT git-versioned]
+    C->>A: SaveNavigationContext(ctx)
+    A->>PM: SaveNavigationContext(managers.NavigationContext)
+    PM->>PA: SaveNavigationContext(access.NavigationContext)
+    PA->>PA: WriteJSON(navigation_context.json) [no git commit]
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,PA: LoadTaskDrafts [NOT git-versioned]
+    C->>A: LoadTaskDrafts()
+    A->>PM: LoadTaskDrafts()
+    PM->>PA: LoadTaskDrafts()
+    PA->>PA: ReadFile(tasks/drafts.json)
+    PA-->>PM: json.RawMessage
+    PM-->>A: json.RawMessage
+    A-->>C: string (JSON)
+
+    Note over C,PA: SaveTaskDrafts [NOT git-versioned]
+    C->>A: SaveTaskDrafts(data)
+    A->>PM: SaveTaskDrafts(json.RawMessage)
+    PM->>PA: SaveTaskDrafts(json.RawMessage)
+    PA->>PA: WriteFile(tasks/drafts.json)
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil

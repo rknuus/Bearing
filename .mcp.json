@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "theagent": {
+      "command": "theagent-mcp-server",
+      "args": [
+        "--file",
+        "bearing.method"
+      ]
+    }
+  }
+}

@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant Wails as Wails Runtime
+    participant A as App
+    participant U as Versioning Utility
+    participant PA as PlanAccess
+    participant PM as PlanningManager
+    participant RE as RuleEngine
+
+    Wails->>A: startup(ctx)
+    A->>A: Resolve data directory (~/.bearing/ or BEARING_DATA_DIR)
+    A->>A: Initialize slog file logger
+    A->>U: InitializeRepositoryWithConfig(repoPath, gitConfig)
+    U->>U: git.PlainOpen(path) or git.PlainInit(path)
+    U-->>A: IRepository
+    A->>PA: NewPlanAccess(repoPath, repo)
+    PA->>PA: ensureDirectoryStructure()
+    PA->>PA: MkdirAll(themes/, calendar/, tasks/todo/...)
+    PA-->>A: *PlanAccess
+    A->>PM: NewPlanningManager(planAccess)
+    PM->>RE: NewRuleEngine(DefaultRules())
+    RE-->>PM: *RuleEngine
+    PM->>PM: validateTaskOrder()
+    PM->>PA: GetBoardConfiguration()
+    loop For each column + "archived"
+        PM->>PA: GetTasksByStatus(status)
+    end
+    PM->>PA: LoadTaskOrder()
+    PM->>PM: Repair stale/missing entries
+    PM-->>A: *PlanningManager
+    A-->>Wails: startup complete

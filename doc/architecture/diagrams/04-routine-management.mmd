@@ -1,0 +1,43 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: AddRoutine
+    C->>A: AddRoutine(themeId, description, targetValue, targetType, unit)
+    A->>PM: AddRoutine(themeId, description, targetValue, targetType, unit)
+    PM->>PM: Validate inputs (non-empty, valid targetType, positive targetValue)
+    PM->>PA: GetThemes()
+    PM->>PM: Find theme by ID
+    PM->>PM: getMaxRoutineNum() [find next R{n}]
+    PM->>PM: Generate routine ID: {themeId}-R{n+1}
+    PM->>PM: Append routine to theme
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: *Routine
+    A-->>C: *Routine (Wails DTO)
+
+    Note over C,R: UpdateRoutine
+    C->>A: UpdateRoutine(routineId, description, currentValue, targetValue, targetType, unit)
+    A->>PM: UpdateRoutine(...)
+    PM->>PM: Validate inputs
+    PM->>PA: GetThemes()
+    PM->>PM: findThemeForRoutine() [scan themes]
+    PM->>PM: Update all routine fields
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: DeleteRoutine
+    C->>A: DeleteRoutine(routineId)
+    A->>PM: DeleteRoutine(routineId)
+    PM->>PA: GetThemes()
+    PM->>PM: findThemeForRoutine() [scan themes]
+    PM->>PM: Remove routine from slice
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil

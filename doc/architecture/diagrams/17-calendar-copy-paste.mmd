@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant C as Client (Svelte CalendarView)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: Single cell copy-paste
+
+    C->>C: Click day text cell → select cell
+    C->>C: Ctrl+C → copy selected DayFocus data to clipboard
+    C->>C: Click target day text cell → select target
+    C->>C: Ctrl+V → paste
+
+    C->>A: SaveDayFocus({targetDate, source.themeIds, source.text, target.notes, source.okrIds, source.tags})
+    A->>PM: SaveDayFocus(access.DayFocus)
+    PM->>PA: SaveDayFocus(day)
+    PA->>PA: GetYearFocus(year) [read existing]
+    PA->>PA: Upsert entry, preserving target notes
+    PA->>PA: WriteJSON(calendar/{year}.json)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: Multi-cell range copy-paste (clamped to month)
+
+    C->>C: Click day 1 text cell → select anchor
+    C->>C: Shift+Click day 3 text cell → extend selection (within same month)
+    C->>C: Ctrl+C → copy 3 DayFocus entries to clipboard
+    C->>C: Click target day text cell (e.g. day 30)
+    C->>C: Ctrl+V → paste range starting at target
+
+    loop For each source day offset (0, 1, 2)
+        C->>C: Compute target date = target + offset
+        alt Target date within same month
+            C->>A: SaveDayFocus({targetDate, source[offset].themeIds, source[offset].text, existing.notes, ...})
+            A->>PM: SaveDayFocus(access.DayFocus)
+            PM->>PA: SaveDayFocus(day)
+            PA->>R: Begin() -> Stage() -> Commit()
+            PA-->>PM: nil
+            PM-->>A: nil
+            A-->>C: nil
+        else Target date exceeds month boundary
+            C->>C: Skip — paste clamped to month
+        end
+    end
+
+    Note over C,R: Selection management
+    C->>C: Escape key → clear all selection
+    C->>C: Click outside grid → clear all selection
+    C->>C: Shift+Click across months → treated as single click (no range)

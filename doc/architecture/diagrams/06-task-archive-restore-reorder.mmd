@@ -1,0 +1,69 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: ArchiveTask
+    C->>A: ArchiveTask(taskId)
+    A->>PM: ArchiveTask(taskId)
+    PM->>PM: GetTasks() [verify task exists & is "done"]
+    PM->>PA: ArchiveTask(taskId)
+    PA->>PA: os.Rename(done/{id}.json -> archived/{id}.json)
+    PA->>R: Begin() -> Stage(old+new) -> Commit()
+    PM->>PM: removeFromTaskOrder([taskId])
+    PM->>PA: SaveTaskOrder(filtered)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: ArchiveAllDoneTasks
+    C->>A: ArchiveAllDoneTasks()
+    A->>PM: ArchiveAllDoneTasks()
+    PM->>PM: GetTasks()
+    loop For each task with status "done"
+        PM->>PM: ArchiveTask(taskId)
+    end
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: RestoreTask
+    C->>A: RestoreTask(taskId)
+    A->>PM: RestoreTask(taskId)
+    PM->>PA: RestoreTask(taskId)
+    PA->>PA: os.Rename(archived/{id}.json -> done/{id}.json)
+    PA->>R: Begin() -> Stage(old+new) -> Commit()
+    PM->>PA: LoadTaskOrder()
+    PM->>PM: Append taskId to "done" zone
+    PM->>PA: SaveTaskOrder(orderMap)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: ReorderTasks
+    C->>A: ReorderTasks(positions)
+    A->>PM: ReorderTasks(positions)
+    PM->>PA: LoadTaskOrder()
+    PM->>PM: Merge proposed positions into full order map
+    PM->>PA: SaveTaskOrder(mergedMap)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: ReorderResult{Success, Positions}
+    A-->>C: *ReorderResult
+
+    Note over C,R: ProcessPriorityPromotions
+    C->>A: ProcessPriorityPromotions()
+    A->>PM: ProcessPriorityPromotions()
+    PM->>PM: GetTasks() [all tasks]
+    loop For each task with promotionDate <= today & priority = important-not-urgent
+        PM->>PM: Promote to important-urgent, clear promotionDate
+        alt Zone change needed
+            PM->>PA: UpdateTaskWithOrderMove(task, oldZone, newZone)
+            PA->>R: Begin() -> Stage() -> Commit()
+        else Same zone
+            PM->>PA: SaveTask(task)
+            PA->>R: Begin() -> Stage() -> Commit()
+        end
+    end
+    PM-->>A: []PromotedTask
+    A-->>C: []PromotedTask

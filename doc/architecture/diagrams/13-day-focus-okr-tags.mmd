@@ -1,0 +1,48 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: SaveDayFocus with OKR IDs and Tags
+    C->>A: SaveDayFocus({date, themeIds, notes, text, okrIds, tags})
+    A->>PM: SaveDayFocus(access.DayFocus)
+    PM->>PM: Validate date non-empty
+    PM->>PA: SaveDayFocus(day)
+    PA->>PA: extractYearFromDate()
+    PA->>PA: GetYearFocus(year) [read existing]
+    PA->>PA: Upsert entry (themeIds, okrIds, tags all persisted)
+    PA->>PA: Sort by date
+    PA->>PA: WriteJSON(calendar/{year}.json)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: Client-side: OKR picker in day editor dialog
+    C->>A: GetThemes()
+    A-->>C: []LifeTheme (with objectives, key results)
+    C->>C: Render ThemeOKRTree with checkboxes
+    C->>C: User checks KR checkbox
+    C->>C: Auto-select parent objective + theme (ancestor propagation)
+    C->>C: Collect selected OKR IDs into okrIds[]
+
+    Note over C,R: Client-side: Tag picker in day editor dialog
+    C->>A: GetTasks()
+    A->>PM: GetTasks()
+    PM-->>A: []TaskWithStatus
+    A-->>C: []TaskWithStatus
+    C->>C: Extract unique tags from all tasks
+    C->>C: Render tag pills (toggle) + tag text input (create new)
+    C->>C: Auto-derive text field from selected tags
+    C->>C: Collect active tags into tags[]
+
+    Note over C,R: Combined save with all fields
+    C->>A: SaveDayFocus({date, themeIds, text, notes, okrIds, tags})
+    A->>PM: SaveDayFocus(access.DayFocus)
+    PM->>PA: SaveDayFocus(day)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil

@@ -1,0 +1,68 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: GetThemes
+    C->>A: GetThemes()
+    A->>PM: GetThemes()
+    PM->>PA: GetThemes()
+    PA->>PA: ReadFile(themes/themes.json)
+    PA-->>PM: []LifeTheme
+    PM-->>A: []LifeTheme
+    A->>A: convertObjective() [recursive DTO conversion]
+    A-->>C: []LifeTheme (Wails DTO)
+
+    Note over C,R: CreateTheme
+    C->>A: CreateTheme(name, color)
+    A->>PM: CreateTheme(name, color)
+    PM->>PM: Validate name & color non-empty
+    PM->>PA: SaveTheme(theme)
+    PA->>PA: GetThemes() [read existing]
+    PA->>PA: SuggestAbbreviation() [generate ID]
+    PA->>PA: WriteJSON(themes.json)
+    PA->>R: Begin() transaction
+    R-->>PA: ITransaction
+    PA->>R: tx.Stage(themes.json)
+    PA->>R: tx.Commit("Add theme: X")
+    PA-->>PM: nil
+    PM->>PA: GetThemes() [re-read to get generated ID]
+    PA-->>PM: []LifeTheme
+    PM-->>A: *LifeTheme
+    A-->>C: *LifeTheme (Wails DTO)
+
+    Note over C,R: UpdateTheme
+    C->>A: UpdateTheme(theme)
+    A->>A: convertObjectiveToAccess() [recursive]
+    A->>PM: UpdateTheme(access.LifeTheme)
+    PM->>PA: SaveTheme(theme)
+    PA->>PA: GetThemes() [read existing]
+    PA->>PA: ensureThemeIDs() [assign missing IDs]
+    PA->>PA: WriteJSON(themes.json)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: DeleteTheme
+    C->>A: DeleteTheme(id)
+    A->>PM: DeleteTheme(id)
+    PM->>PA: DeleteTheme(id)
+    PA->>PA: GetThemes() [read existing]
+    PA->>PA: Filter out theme by ID
+    PA->>PA: WriteJSON(themes.json)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: SuggestThemeAbbreviation
+    C->>A: SuggestThemeAbbreviation(name)
+    A->>PM: SuggestThemeAbbreviation(name)
+    PM->>PA: GetThemes()
+    PA-->>PM: []LifeTheme
+    PM->>PM: access.SuggestAbbreviation(name, themes)
+    PM-->>A: string
+    A-->>C: string

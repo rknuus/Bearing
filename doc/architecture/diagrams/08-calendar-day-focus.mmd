@@ -1,0 +1,44 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: GetYearFocus
+    C->>A: GetYearFocus(year)
+    A->>PM: GetYearFocus(year)
+    PM->>PM: Validate year 1900-9999
+    PM->>PA: GetYearFocus(year)
+    PA->>PA: ReadFile(calendar/{year}.json)
+    PA-->>PM: []DayFocus
+    PM-->>A: []DayFocus
+    A->>A: Convert to Wails DTOs
+    A-->>C: []DayFocus (Wails DTO)
+
+    Note over C,R: SaveDayFocus
+    C->>A: SaveDayFocus(day)
+    A->>PM: SaveDayFocus(access.DayFocus)
+    PM->>PM: Validate date non-empty
+    PM->>PA: SaveDayFocus(day)
+    PA->>PA: extractYearFromDate()
+    PA->>PA: GetYearFocus(year) [read existing]
+    PA->>PA: Upsert entry, sort by date
+    PA->>PA: WriteJSON(calendar/{year}.json)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: ClearDayFocus
+    C->>A: ClearDayFocus(date)
+    A->>PM: ClearDayFocus(date)
+    PM->>PA: GetDayFocus(date)
+    PA->>PA: GetYearFocus() -> find by date
+    PA-->>PM: *DayFocus (or nil)
+    alt Entry exists
+        PM->>PA: SaveDayFocus({date, nil themeIDs, preserve notes/text})
+        PA->>R: Begin() -> Stage() -> Commit()
+    end
+    PM-->>A: nil
+    A-->>C: nil

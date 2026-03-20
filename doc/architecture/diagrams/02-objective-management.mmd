@@ -1,0 +1,82 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: CreateObjective
+    C->>A: CreateObjective(parentId, title)
+    A->>PM: CreateObjective(parentId, title)
+    PM->>PA: GetThemes()
+    PA-->>PM: []LifeTheme
+    PM->>PM: Find parent (theme ID or objective ID via tree-walk)
+    PM->>PM: Append new Objective to parent
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>PA: ensureThemeIDs() [generate objective ID]
+    PA->>PA: WriteJSON(themes.json)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM->>PA: GetThemes() [re-read for generated ID]
+    PM-->>A: *Objective
+    A-->>C: *Objective (Wails DTO)
+
+    Note over C,R: UpdateObjective
+    C->>A: UpdateObjective(objectiveId, title, tags)
+    A->>PM: UpdateObjective(objectiveId, title, tags)
+    PM->>PM: validateTags(tags) [trim, dedup]
+    PM->>PA: GetThemes()
+    PM->>PM: findObjectiveByID() [tree-walk]
+    PM->>PM: Update title & tags on found objective
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: DeleteObjective
+    C->>A: DeleteObjective(objectiveId)
+    A->>PM: DeleteObjective(objectiveId)
+    PM->>PA: GetThemes()
+    PM->>PM: findObjectiveParent() [tree-walk]
+    PM->>PM: Remove objective from parent slice
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: SetObjectiveStatus
+    C->>A: SetObjectiveStatus(objectiveId, status)
+    A->>PM: SetObjectiveStatus(objectiveId, status)
+    PM->>PA: GetThemes()
+    PM->>PM: findObjectiveByID() [tree-walk]
+    PM->>PM: validateOKRStatusTransition(current, new)
+    PM->>PM: [if completing] Check all children completed/archived
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: CloseObjective
+    C->>A: CloseObjective(objectiveId, closingStatus, closingNotes)
+    A->>PM: CloseObjective(objectiveId, closingStatus, closingNotes)
+    PM->>PA: GetThemes()
+    PM->>PM: findObjectiveByID() [tree-walk]
+    PM->>PM: Verify objective is active
+    PM->>PM: Set status=completed, closingStatus, closingNotes, closedAt
+    PM->>PM: Auto-close all active child KRs
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: ReopenObjective
+    C->>A: ReopenObjective(objectiveId)
+    A->>PM: ReopenObjective(objectiveId)
+    PM->>PA: GetThemes()
+    PM->>PM: findObjectiveByID() [tree-walk]
+    PM->>PM: Verify objective is completed
+    PM->>PM: Clear status, closingStatus, closingNotes, closedAt
+    PM->>PM: Reopen all completed child KRs
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil

@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+
+    Note over C,A: GetLocale [direct OS interaction]
+    C->>A: GetLocale()
+    A->>A: Check LC_ALL, LANG env vars
+    A->>A: Fallback: exec("defaults read NSGlobalDomain AppleLocale")
+    A->>A: Fallback: "en-US"
+    A-->>C: string (BCP 47 locale tag)
+
+    Note over C,A: LogFrontend [direct slog]
+    C->>A: LogFrontend(level, message, source)
+    A->>A: slog.Error/Warn/Info(message, source, "frontend")
+    A-->>C: void

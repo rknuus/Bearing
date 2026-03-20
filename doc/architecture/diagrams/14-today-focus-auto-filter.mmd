@@ -1,0 +1,45 @@
+sequenceDiagram
+    participant C as Client (Svelte App)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+
+    Note over C,PA: Today's Focus: cross-view coordination on EisenKan navigation
+
+    C->>C: User navigates to EisenKan view (click or Ctrl+3)
+
+    C->>A: LoadNavigationContext()
+    A->>PM: LoadNavigationContext()
+    PM->>PA: LoadNavigationContext()
+    PA-->>PM: *NavigationContext
+    PM-->>A: *NavigationContext
+    A-->>C: *NavigationContext
+
+    C->>A: GetYearFocus(currentYear)
+    A->>PM: GetYearFocus(currentYear)
+    PM->>PA: GetYearFocus(currentYear)
+    PA->>PA: ReadFile(calendar/{year}.json)
+    PA-->>PM: []DayFocus
+    PM-->>A: []DayFocus
+    A-->>C: []DayFocus
+
+    C->>C: resolveTodayFocus(): find entry where date == today
+    C->>C: Extract themeIds and tags from today's DayFocus
+
+    alt Today has calendar assignment
+        C->>C: Set todayFocusActive = true
+        C->>C: Set filterThemeIds = todayFocus.themeIds
+        C->>C: Set filterTagIds = todayFocus.tags
+        C->>C: EisenKan board shows only matching tasks
+    else No calendar assignment for today
+        C->>C: todayFocusActive remains false
+        C->>C: No auto-filter applied
+    end
+
+    C->>A: SaveNavigationContext({todayFocusActive, filterThemeIds, ...})
+    A->>PM: SaveNavigationContext(ctx)
+    PM->>PA: SaveNavigationContext(ctx)
+    PA->>PA: WriteJSON(navigation_context.json) [no git commit]
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil

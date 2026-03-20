@@ -1,0 +1,65 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: CreateKeyResult
+    C->>A: CreateKeyResult(parentObjId, description, startValue, targetValue)
+    A->>PM: CreateKeyResult(parentObjId, description, startValue, targetValue)
+    PM->>PM: Validate startValue <= targetValue
+    PM->>PA: GetThemes()
+    PM->>PM: findObjectiveByID() [tree-walk]
+    PM->>PM: Append new KeyResult to objective
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>PA: ensureThemeIDs() [generate KR ID]
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM->>PA: GetThemes() [re-read for generated ID]
+    PM-->>A: *KeyResult
+    A-->>C: *KeyResult (Wails DTO)
+
+    Note over C,R: UpdateKeyResult
+    C->>A: UpdateKeyResult(keyResultId, description)
+    A->>PM: UpdateKeyResult(keyResultId, description)
+    PM->>PA: GetThemes()
+    PM->>PM: findKeyResultParent() [tree-walk]
+    PM->>PM: Update description
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: UpdateKeyResultProgress
+    C->>A: UpdateKeyResultProgress(keyResultId, currentValue)
+    A->>PM: UpdateKeyResultProgress(keyResultId, currentValue)
+    PM->>PA: GetThemes()
+    PM->>PM: findKeyResultParent() [tree-walk]
+    PM->>PM: Update currentValue
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: DeleteKeyResult
+    C->>A: DeleteKeyResult(keyResultId)
+    A->>PM: DeleteKeyResult(keyResultId)
+    PM->>PA: GetThemes()
+    PM->>PM: findKeyResultParent() [tree-walk]
+    PM->>PM: Remove KR from parent objective
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: SetKeyResultStatus
+    C->>A: SetKeyResultStatus(keyResultId, status)
+    A->>PM: SetKeyResultStatus(keyResultId, status)
+    PM->>PA: GetThemes()
+    PM->>PM: findKeyResultParent() [tree-walk]
+    PM->>PM: validateOKRStatusTransition(current, new)
+    PM->>PM: Update KR status
+    PM->>PA: SaveTheme(modifiedTheme)
+    PA->>R: Begin() -> Stage() -> Commit()
+    PM-->>A: nil
+    A-->>C: nil

@@ -1,0 +1,42 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: GetPersonalVision
+    C->>A: GetPersonalVision()
+    A->>PM: GetPersonalVision()
+    PM->>PA: LoadVision()
+    PA->>PA: ReadFile(vision.json)
+    PA-->>PM: *PersonalVision
+    PM-->>A: *PersonalVision
+    A-->>C: *PersonalVision (Wails DTO)
+
+    Note over C,R: SavePersonalVision
+    C->>A: SavePersonalVision(mission, vision)
+    A->>PM: SavePersonalVision(mission, vision)
+    PM->>PM: Set UpdatedAt = now()
+    PM->>PA: SaveVision(*PersonalVision)
+    PA->>PA: WriteJSON(vision.json)
+    PA->>R: Begin() -> Stage() -> Commit("Update personal vision")
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: GetAllThemeProgress [computation only, no persistence]
+    C->>A: GetAllThemeProgress()
+    A->>PM: GetAllThemeProgress()
+    PM->>PA: GetThemes()
+    PA-->>PM: []LifeTheme
+    loop For each theme
+        loop For each active objective (recursive)
+            PM->>PM: computeObjectiveProgress()
+            PM->>PM: computeKRProgress() for each active KR
+        end
+        PM->>PM: Average top-level objective progress
+    end
+    PM-->>A: []ThemeProgress
+    A->>A: Convert to Wails DTOs
+    A-->>C: []ThemeProgress (Wails DTO)

@@ -1,0 +1,111 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant RE as RuleEngine
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: GetTasks
+    C->>A: GetTasks()
+    A->>PM: GetTasks()
+    PM->>PA: GetBoardConfiguration()
+    PA->>PA: ReadFile(board_config.json)
+    PA-->>PM: *BoardConfiguration
+    loop For each column + "archived"
+        PM->>PA: GetTasksByStatus(status)
+        PA->>PA: ReadDir(tasks/{status}/)
+        PA->>PA: ReadFile each .json
+        PA-->>PM: []Task
+    end
+    PM->>PA: LoadTaskOrder()
+    PA->>PA: ReadFile(task_order.json)
+    PA-->>PM: map[zone][]taskId
+    PM->>PM: Sort tasks by persisted order within drop zones
+    PM-->>A: []TaskWithStatus
+    A->>A: Convert to Wails DTOs
+    A-->>C: []TaskWithStatus (Wails DTO)
+
+    Note over C,R: CreateTask (with rule evaluation)
+    C->>A: CreateTask(title, themeId, priority, description, tags, promotionDate)
+    A->>PM: CreateTask(...)
+    PM->>PM: Validate priority, promotionDate format, parse tags
+    PM->>PM: buildTaskInfoList()
+    PM->>PM: GetTasks() [internal]
+    PM->>RE: EvaluateTaskChange(EventTaskCreate)
+    RE->>RE: filterApplicableRules("task_create")
+    RE->>RE: checkRequiredFields(title)
+    RE-->>PM: RuleEvaluationResult{Allowed: true}
+    PM->>PM: Compute dropZone from todoSlug + priority
+    PM->>PA: SaveTaskWithOrder(task, dropZone)
+    PA->>PA: saveTaskFile() [generate ID, set timestamps]
+    PA->>PA: LoadTaskOrder()
+    PA->>PA: Append task to order[dropZone]
+    PA->>PA: WriteJSON(task file + task_order.json)
+    PA->>R: Begin() -> Stage(both files) -> Commit("Add task: X")
+    PA-->>PM: *Task
+    PM-->>A: *Task
+    A-->>C: *Task (Wails DTO)
+
+    Note over C,R: MoveTask (with rule evaluation)
+    C->>A: MoveTask(taskId, newStatus, positions)
+    A->>PM: MoveTask(taskId, newStatus, positions)
+    PM->>PA: GetBoardConfiguration()
+    PM->>PM: Validate newStatus against board columns
+    PM->>PM: GetTasks() [find task, build context]
+    PM->>RE: EvaluateTaskChange(EventTaskMove)
+    RE->>RE: filterApplicableRules("task_move")
+    RE->>RE: checkWIPLimit(doing column, max 20)
+    RE->>RE: checkAllowedTransition(allow_all=true)
+    RE->>RE: checkMaxAge(30 days)
+    alt Rule violation
+        RE-->>PM: {Allowed: false, Violations: [...]}
+        PM-->>A: MoveTaskResult{Success: false, Violations}
+        A-->>C: *MoveTaskResult
+    else Rules pass
+        RE-->>PM: {Allowed: true}
+        PM->>PA: MoveTask(taskId, newStatus)
+        PA->>PA: findTaskInPlan() [locate file]
+        PA->>PA: os.Rename(old path, new path)
+        PA->>R: Begin() -> Stage(old+new) -> Commit()
+        PM->>PA: LoadTaskOrder()
+        PM->>PM: Remove from source zone
+        PM->>PM: Apply positions or append to target zone
+        PM->>PA: SaveTaskOrder(orderMap)
+        PA->>R: Begin() -> Stage() -> Commit()
+        PM-->>A: MoveTaskResult{Success: true, Positions}
+        A-->>C: *MoveTaskResult
+    end
+
+    Note over C,R: UpdateTask (with rule evaluation + zone migration)
+    C->>A: UpdateTask(task)
+    A->>PM: UpdateTask(access.Task)
+    PM->>PM: buildTaskInfoList() [get all tasks]
+    PM->>PM: Find old priority/status for zone change detection
+    PM->>RE: EvaluateTaskChange(EventTaskUpdate)
+    RE-->>PM: RuleEvaluationResult
+    alt Priority changed & zone changed (todo task)
+        PM->>PA: UpdateTaskWithOrderMove(task, oldZone, newZone)
+        PA->>PA: saveTaskFile()
+        PA->>PA: LoadTaskOrder() -> move ID between zones
+        PA->>PA: WriteJSON(task file + task_order.json)
+        PA->>R: Begin() -> Stage(both) -> Commit()
+    else No zone change
+        PM->>PA: SaveTask(task)
+        PA->>PA: saveTaskFile()
+        PA->>R: Begin() -> Stage() -> Commit()
+    end
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: DeleteTask
+    C->>A: DeleteTask(taskId)
+    A->>PM: DeleteTask(taskId)
+    PM->>PA: DeleteTaskWithOrder(taskId)
+    PA->>PA: findTaskInPlan()
+    PA->>PA: os.Remove(task file)
+    PA->>PA: LoadTaskOrder() -> remove from all zones
+    PA->>PA: WriteJSON(task_order.json)
+    PA->>R: Begin() -> Stage(both) -> Commit()
+    PM-->>A: nil
+    A-->>C: nil

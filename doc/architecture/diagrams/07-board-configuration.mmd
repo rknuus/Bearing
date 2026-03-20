@@ -1,0 +1,80 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: GetBoardConfiguration
+    C->>A: GetBoardConfiguration()
+    A->>PM: GetBoardConfiguration()
+    PM->>PA: GetBoardConfiguration()
+    PA->>PA: ReadFile(board_config.json) [or DefaultBoardConfiguration()]
+    PA-->>PM: *BoardConfiguration
+    PM-->>A: *BoardConfiguration
+    A->>A: convertBoardConfig()
+    A-->>C: *BoardConfiguration (Wails DTO)
+
+    Note over C,R: AddColumn
+    C->>A: AddColumn(title, insertAfterSlug)
+    A->>PM: AddColumn(title, insertAfterSlug)
+    PM->>PM: Slugify(title), validate uniqueness & reserved names
+    PM->>PA: GetBoardConfiguration()
+    PM->>PM: Find insertion position, validate bookends
+    PM->>PM: Insert new ColumnDefinition (type=doing)
+    PM->>PA: EnsureStatusDirectory(slug)
+    PA->>PA: os.MkdirAll(tasks/{slug})
+    PM->>PA: SaveBoardConfiguration(config)
+    PA->>PA: WriteJSON(board_config.json)
+    PM->>PA: CommitAll("Add column: X")
+    PA->>R: Begin() -> Stage(".") -> Commit()
+    PM-->>A: *BoardConfiguration
+    A-->>C: *BoardConfiguration (Wails DTO)
+
+    Note over C,R: RemoveColumn
+    C->>A: RemoveColumn(slug)
+    A->>PM: RemoveColumn(slug)
+    PM->>PA: GetBoardConfiguration()
+    PM->>PM: Validate column exists, type=doing, no tasks
+    PM->>PA: GetTasksByStatus(slug) [verify empty]
+    PM->>PA: RemoveStatusDirectory(slug)
+    PA->>PA: os.Remove(tasks/{slug})
+    PM->>PA: LoadTaskOrder() -> delete zone -> WriteTaskOrder()
+    PM->>PM: Remove column from config
+    PM->>PA: SaveBoardConfiguration(config)
+    PM->>PA: CommitAll("Remove column: X")
+    PA->>R: Begin() -> Stage(".") -> Commit()
+    PM-->>A: *BoardConfiguration
+    A-->>C: *BoardConfiguration (Wails DTO)
+
+    Note over C,R: RenameColumn
+    C->>A: RenameColumn(oldSlug, newTitle)
+    A->>PM: RenameColumn(oldSlug, newTitle)
+    PM->>PM: Slugify(newTitle), validate uniqueness
+    alt Slug unchanged (title-only change)
+        PM->>PA: GetBoardConfiguration()
+        PM->>PM: Update title in config
+        PM->>PA: SaveBoardConfiguration(config)
+        PM->>PA: CommitAll("Rename column title")
+    else Slug changed
+        PM->>PA: RenameStatusDirectory(oldSlug, newSlug)
+        PA->>PA: os.Rename(tasks/{old}, tasks/{new})
+        PM->>PA: LoadTaskOrder() -> migrate zone key -> WriteTaskOrder()
+        PM->>PA: SaveBoardConfiguration(config)
+        PM->>PA: CommitAll("Rename column: old -> new")
+        PA->>R: Begin() -> Stage(".") -> Commit()
+    end
+    PM-->>A: *BoardConfiguration
+    A-->>C: *BoardConfiguration (Wails DTO)
+
+    Note over C,R: ReorderColumns
+    C->>A: ReorderColumns(slugs)
+    A->>PM: ReorderColumns(slugs)
+    PM->>PA: GetBoardConfiguration()
+    PM->>PM: Validate all slugs present, no duplicates
+    PM->>PM: Validate bookends (first=todo, last=done)
+    PM->>PA: SaveBoardConfiguration(reorderedConfig)
+    PM->>PA: CommitAll("Reorder columns")
+    PA->>R: Begin() -> Stage(".") -> Commit()
+    PM-->>A: *BoardConfiguration
+    A-->>C: *BoardConfiguration (Wails DTO)

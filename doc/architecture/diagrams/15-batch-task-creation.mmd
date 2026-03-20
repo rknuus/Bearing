@@ -1,0 +1,57 @@
+sequenceDiagram
+    participant C as Client (Svelte)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+    participant R as Repository (Git)
+
+    Note over C,R: Open CreateTaskDialog — load saved drafts
+    C->>A: LoadTaskDrafts()
+    A->>PM: LoadTaskDrafts()
+    PM->>PA: LoadTaskDrafts()
+    PA->>PA: ReadFile(tasks/drafts.json)
+    PA-->>PM: json.RawMessage
+    PM-->>A: json.RawMessage
+    A-->>C: string (JSON)
+    C->>C: Parse drafts, populate priority quadrants
+    C->>C: Migrate legacy string tags to string[]
+
+    Note over C,R: Stage tasks (client-only, no backend calls)
+    C->>C: User fills title, theme, description, tags
+    C->>C: User clicks "Stage to ⬇" button (1 of 3 quadrants)
+    C->>C: Task added to selected priority quadrant
+    C->>C: Input fields cleared, title input re-focused
+
+    Note over C,R: Close dialog — persist drafts
+    C->>A: SaveTaskDrafts(JSON)
+    A->>PM: SaveTaskDrafts(json.RawMessage)
+    PM->>PA: SaveTaskDrafts(json.RawMessage)
+    PA->>PA: WriteFile(tasks/drafts.json) [no git commit]
+    PA-->>PM: nil
+    PM-->>A: nil
+    A-->>C: nil
+
+    Note over C,R: Commit to Todo — batch create all staged tasks
+    C->>C: User clicks "Commit to Todo"
+    loop For each task across all priority quadrants
+        C->>A: CreateTask(title, themeId, priority, description, tags)
+        A->>PM: CreateTask(...)
+        PM->>PM: Validate, build task
+        PM->>PA: SaveTaskWithOrder(task, dropZone)
+        PA->>R: Begin() -> Stage() -> Commit()
+        PM-->>A: *Task
+        A-->>C: *Task
+        alt CreateTask succeeds
+            C->>C: Remove task from pending list
+        else CreateTask fails
+            C->>C: Keep task in pending list (partial failure)
+        end
+    end
+
+    alt All tasks created successfully
+        C->>A: SaveTaskDrafts("{}") [clear drafts]
+        C->>C: Close dialog, trigger EisenKan refresh
+    else Partial failure
+        C->>C: Show error: "N of M tasks failed to create"
+        C->>C: Failed tasks remain staged for retry
+    end

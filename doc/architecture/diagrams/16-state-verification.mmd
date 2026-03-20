@@ -1,0 +1,52 @@
+sequenceDiagram
+    participant C as Client (Svelte View)
+    participant A as App (Wails Binding)
+    participant PM as PlanningManager
+    participant PA as PlanAccess
+
+    Note over C,PA: State Verification Pattern (all three views)
+    Note over C,PA: Applied after every mutation: create, update, delete, move, archive, restore
+
+    C->>C: Step 1: Optimistic UI update (modify local state immediately)
+
+    C->>A: Step 2: Backend mutation call (e.g. UpdateTask, CreateTheme, SaveDayFocus)
+    A->>PM: [mutation method]
+    PM->>PA: [persistence method]
+    PA-->>PM: result
+    PM-->>A: result
+    A-->>C: result
+
+    Note over C,PA: Step 3: Verify frontend matches backend
+
+    alt OKRView (verifyThemeState)
+        C->>A: GetThemes()
+        A->>PM: GetThemes()
+        PM->>PA: GetThemes()
+        PA-->>PM: []LifeTheme
+        PM-->>A: []LifeTheme
+        A-->>C: []LifeTheme (backend truth)
+        C->>C: checkStateFromData('theme', frontendThemes, backendThemes)
+        C->>C: checkStateFromData('objective', flattenObjectives(...))
+        C->>C: checkStateFromData('key-result', flattenKeyResults(...))
+    else EisenKanView (verifyTaskState)
+        C->>A: GetTasks()
+        A->>PM: GetTasks()
+        PM-->>A: []TaskWithStatus
+        A-->>C: []TaskWithStatus (backend truth)
+        C->>C: checkFullState('task', frontendTasks, backendTasks)
+        C->>C: Compare fields + per-zone ordering
+    else CalendarView (verifyCalendarState)
+        C->>A: GetYearFocus(year)
+        A->>PM: GetYearFocus(year)
+        PM-->>A: []DayFocus
+        A-->>C: []DayFocus (backend truth)
+        C->>C: checkStateFromData('dayFocus', frontendEntries, backendEntries)
+    end
+
+    alt No mismatches
+        C->>C: Continue normally
+    else Mismatch detected
+        C->>C: Show ErrorBanner: "Internal state mismatch detected"
+        C->>A: LogFrontend('error', mismatchDetails, 'state-check')
+        A->>A: slog.Error(message, source, "frontend")
+    end
