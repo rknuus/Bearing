@@ -471,8 +471,21 @@ func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
 	}
 }
 
-// findKeyResultByID walks the objective tree and returns a pointer to the key result with the given ID.
-func findKeyResultByID(objectives []access.Objective, id string) *access.KeyResult {
+// findManagerObjectiveByID walks the manager Objective tree and returns a pointer to the objective with the given ID.
+func findManagerObjectiveByID(objectives []Objective, id string) *Objective {
+	for i := range objectives {
+		if objectives[i].ID == id {
+			return &objectives[i]
+		}
+		if found := findManagerObjectiveByID(objectives[i].Objectives, id); found != nil {
+			return found
+		}
+	}
+	return nil
+}
+
+// findKeyResultByID walks the manager Objective tree and returns a pointer to the key result with the given ID.
+func findKeyResultByID(objectives []Objective, id string) *KeyResult {
 	for i := range objectives {
 		for j := range objectives[i].KeyResults {
 			if objectives[i].KeyResults[j].ID == id {
@@ -551,7 +564,7 @@ func TestUpdateTheme(t *testing.T) {
 		// Now do a theme-level update (modify start=2, target=20 on the KR)
 		themes, _ := manager.GetThemes()
 		theme := themes[0]
-		krObj := findObjectiveByID(theme.Objectives, obj.ID)
+		krObj := findManagerObjectiveByID(theme.Objectives, obj.ID)
 		krObj.KeyResults[0].StartValue = 2
 		krObj.KeyResults[0].TargetValue = 20
 
@@ -562,7 +575,7 @@ func TestUpdateTheme(t *testing.T) {
 
 		// Verify all three fields survive
 		themes, _ = manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].StartValue != 2 {
 			t.Errorf("expected startValue 2, got %d", found.KeyResults[0].StartValue)
 		}
@@ -578,7 +591,7 @@ func TestUpdateTheme(t *testing.T) {
 		mockAccess := newMockPlanAccess()
 		manager, _ := NewPlanningManager(mockAccess)
 
-		err := manager.UpdateTheme(access.LifeTheme{ID: "", Name: "Test"})
+		err := manager.UpdateTheme(LifeTheme{ID: "", Name: "Test"})
 		if err == nil {
 			t.Fatal("expected error for empty theme ID")
 		}
@@ -608,11 +621,11 @@ func TestUpdateTheme(t *testing.T) {
 		if themes[0].Name != "Renamed Theme" {
 			t.Errorf("expected 'Renamed Theme', got '%s'", themes[0].Name)
 		}
-		l1 := findObjectiveByID(themes[0].Objectives, obj1.ID)
+		l1 := findManagerObjectiveByID(themes[0].Objectives, obj1.ID)
 		if l1 == nil {
 			t.Fatal("expected Level 1 objective to survive")
 		}
-		l2 := findObjectiveByID(themes[0].Objectives, obj2.ID)
+		l2 := findManagerObjectiveByID(themes[0].Objectives, obj2.ID)
 		if l2 == nil {
 			t.Fatal("expected Level 2 objective to survive")
 		}
@@ -732,7 +745,7 @@ func TestUpdateObjective(t *testing.T) {
 
 		// Verify the update
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
 		}
@@ -754,7 +767,7 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, child.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if found == nil {
 			t.Fatal("nested objective not found after update")
 		}
@@ -794,7 +807,7 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
 		}
@@ -815,8 +828,8 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		// Re-read from access layer to verify persistence
-		themes, _ := mockAccess.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		accessThemes, _ := mockAccess.GetThemes()
+		found := findObjectiveByID(accessThemes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found in access layer")
 		}
@@ -836,7 +849,7 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
 		}
@@ -857,7 +870,7 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
 		}
@@ -877,7 +890,7 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
 		}
@@ -897,7 +910,7 @@ func TestUpdateObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
 		}
@@ -959,7 +972,7 @@ func TestDeleteObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		l1After := findObjectiveByID(themes[0].Objectives, l1.ID)
+		l1After := findManagerObjectiveByID(themes[0].Objectives, l1.ID)
 		if l1After == nil {
 			t.Fatal("expected Level 1 to still exist")
 		}
@@ -968,7 +981,7 @@ func TestDeleteObjective(t *testing.T) {
 		}
 
 		// Verify the grandchild is truly gone
-		l3After := findObjectiveByID(themes[0].Objectives, l3.ID)
+		l3After := findManagerObjectiveByID(themes[0].Objectives, l3.ID)
 		if l3After != nil {
 			t.Error("expected Level 3 to be gone after deleting Level 2")
 		}
@@ -1091,7 +1104,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 		// Verify the parent still has both children and the key result
 		themes, _ := manager.GetThemes()
-		parentObj := findObjectiveByID(themes[0].Objectives, parent.ID)
+		parentObj := findManagerObjectiveByID(themes[0].Objectives, parent.ID)
 		if len(parentObj.Objectives) != 1 {
 			t.Errorf("expected 1 child objective, got %d", len(parentObj.Objectives))
 		}
@@ -1197,7 +1210,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Description != "Updated" {
 			t.Errorf("expected description 'Updated', got '%s'", found.KeyResults[0].Description)
 		}
@@ -1217,7 +1230,7 @@ func TestUpdateKeyResult(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		childObj := findObjectiveByID(themes[0].Objectives, child.ID)
+		childObj := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if childObj.KeyResults[0].Description != "Updated Nested" {
 			t.Errorf("expected 'Updated Nested', got '%s'", childObj.KeyResults[0].Description)
 		}
@@ -1258,7 +1271,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].CurrentValue != 5 {
 			t.Errorf("expected currentValue 5, got %d", found.KeyResults[0].CurrentValue)
 		}
@@ -1278,7 +1291,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		childObj := findObjectiveByID(themes[0].Objectives, child.ID)
+		childObj := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if childObj.KeyResults[0].CurrentValue != 10 {
 			t.Errorf("expected currentValue 10, got %d", childObj.KeyResults[0].CurrentValue)
 		}
@@ -1319,7 +1332,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if len(found.KeyResults) != 0 {
 			t.Errorf("expected 0 key results after delete, got %d", len(found.KeyResults))
 		}
@@ -1339,7 +1352,7 @@ func TestDeleteKeyResult(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		childObj := findObjectiveByID(themes[0].Objectives, child.ID)
+		childObj := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if len(childObj.KeyResults) != 0 {
 			t.Errorf("expected 0 key results after delete, got %d", len(childObj.KeyResults))
 		}
@@ -1384,7 +1397,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.KeyResults[0].Status)
 		}
@@ -1404,7 +1417,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "archived" {
 			t.Errorf("expected status 'archived', got '%s'", found.KeyResults[0].Status)
 		}
@@ -1424,7 +1437,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "active" {
 			t.Errorf("expected status 'active', got '%s'", found.KeyResults[0].Status)
 		}
@@ -1445,7 +1458,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "active" {
 			t.Errorf("expected status 'active', got '%s'", found.KeyResults[0].Status)
 		}
@@ -1518,7 +1531,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.Status)
 		}
@@ -1596,7 +1609,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "archived" {
 			t.Errorf("expected status 'archived', got '%s'", found.Status)
 		}
@@ -1615,7 +1628,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "active" {
 			t.Errorf("expected status 'active', got '%s'", found.Status)
 		}
@@ -2774,7 +2787,7 @@ func TestUnit_AddColumn(t *testing.T) {
 	if config.ColumnDefinitions[2].Title != "In Review" {
 		t.Errorf("Expected title 'In Review', got %q", config.ColumnDefinitions[2].Title)
 	}
-	if config.ColumnDefinitions[2].Type != access.ColumnTypeDoing {
+	if config.ColumnDefinitions[2].Type != "doing" {
 		t.Errorf("Expected doing type, got %q", config.ColumnDefinitions[2].Type)
 	}
 }
@@ -3529,7 +3542,7 @@ func TestCloseObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.Status)
 		}
@@ -3628,7 +3641,7 @@ func TestCloseObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.ClosingNotes != "" {
 			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
 		}
@@ -3652,7 +3665,7 @@ func TestReopenObjective(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "" {
 			t.Errorf("expected empty status, got '%s'", found.Status)
 		}
@@ -3755,7 +3768,7 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 		}
 
 		themes, _ := manager.GetThemes()
-		found := findObjectiveByID(themes[0].Objectives, obj.ID)
+		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.Status)
 		}

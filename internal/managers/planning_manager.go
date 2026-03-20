@@ -14,11 +14,12 @@ import (
 
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/rule_engine"
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 // TaskWithStatus represents a task with its current status.
 type TaskWithStatus struct {
-	access.Task
+	Task
 	Status string `json:"status"`
 }
 
@@ -39,19 +40,19 @@ type NavigationContext struct {
 // IPlanningManager defines the interface for planning business logic.
 type IPlanningManager interface {
 	// Themes
-	GetThemes() ([]access.LifeTheme, error)
-	CreateTheme(name, color string) (*access.LifeTheme, error)
-	UpdateTheme(theme access.LifeTheme) error
-	SaveTheme(theme access.LifeTheme) error
+	GetThemes() ([]LifeTheme, error)
+	CreateTheme(name, color string) (*LifeTheme, error)
+	UpdateTheme(theme LifeTheme) error
+	SaveTheme(theme LifeTheme) error
 	DeleteTheme(id string) error
 
 	// Objectives — parentId can be a theme ID or any objective ID
-	CreateObjective(parentId, title string) (*access.Objective, error)
+	CreateObjective(parentId, title string) (*Objective, error)
 	UpdateObjective(objectiveId, title string, tags []string) error
 	DeleteObjective(objectiveId string) error
 
 	// Key Results — parentObjectiveId / keyResultId found by tree-walking
-	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error)
+	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error)
 	UpdateKeyResult(keyResultId, description string) error
 	UpdateKeyResultProgress(keyResultId string, currentValue int) error
 	DeleteKeyResult(keyResultId string) error
@@ -65,15 +66,15 @@ type IPlanningManager interface {
 	ReopenObjective(objectiveId string) error
 
 	// Calendar
-	GetYearFocus(year int) ([]access.DayFocus, error)
-	SaveDayFocus(day access.DayFocus) error
+	GetYearFocus(year int) ([]DayFocus, error)
+	SaveDayFocus(day DayFocus) error
 	ClearDayFocus(date string) error
 
 	// Tasks
 	GetTasks() ([]TaskWithStatus, error)
-	CreateTask(title, themeId, priority, description, tags, promotionDate string) (*access.Task, error)
+	CreateTask(title, themeId, priority, description, tags, promotionDate string) (*Task, error)
 	MoveTask(taskId, newStatus string) (*MoveTaskResult, error)
-	UpdateTask(task access.Task) error
+	UpdateTask(task Task) error
 	DeleteTask(taskId string) error
 	ArchiveTask(taskId string) error
 	ArchiveAllDoneTasks() error
@@ -84,7 +85,7 @@ type IPlanningManager interface {
 	ProcessPriorityPromotions() ([]PromotedTask, error)
 
 	// Board Configuration
-	GetBoardConfiguration() (*access.BoardConfiguration, error)
+	GetBoardConfiguration() (*BoardConfiguration, error)
 
 	// Theme Abbreviation
 	SuggestThemeAbbreviation(name string) (string, error)
@@ -98,12 +99,12 @@ type IPlanningManager interface {
 	SaveTaskDrafts(data json.RawMessage) error
 
 	// Routines — ongoing health metrics per theme
-	AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*access.Routine, error)
+	AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error)
 	UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error
 	DeleteRoutine(routineId string) error
 
 	// Vision
-	GetPersonalVision() (*access.PersonalVision, error)
+	GetPersonalVision() (*PersonalVision, error)
 	SavePersonalVision(mission, vision string) error
 
 	// Progress Rollup
@@ -145,12 +146,118 @@ type ThemeProgress struct {
 	Objectives []ObjectiveProgress `json:"objectives"`
 }
 
+// Task represents a task in the Manager layer's public interface.
+type Task struct {
+	ID            string   `json:"id"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	ThemeID       string   `json:"themeId"`
+	Priority      string   `json:"priority"`
+	Tags          []string `json:"tags,omitempty"`
+	PromotionDate string   `json:"promotionDate,omitempty"`
+	CreatedAt     string   `json:"createdAt,omitempty"`
+	UpdatedAt     string   `json:"updatedAt,omitempty"`
+}
+
+// KeyResult represents a measurable outcome in the Manager layer's public interface.
+type KeyResult struct {
+	ID           string `json:"id"`
+	ParentID     string `json:"parentId"`
+	Description  string `json:"description"`
+	Type         string `json:"type,omitempty"`
+	Status       string `json:"status,omitempty"`
+	StartValue   int    `json:"startValue,omitempty"`
+	CurrentValue int    `json:"currentValue,omitempty"`
+	TargetValue  int    `json:"targetValue,omitempty"`
+}
+
+// Objective represents a medium-term goal in the Manager layer's public interface.
+type Objective struct {
+	ID            string      `json:"id"`
+	ParentID      string      `json:"parentId"`
+	Title         string      `json:"title"`
+	Status        string      `json:"status,omitempty"`
+	Tags          []string    `json:"tags,omitempty"`
+	ClosingStatus string      `json:"closingStatus,omitempty"`
+	ClosingNotes  string      `json:"closingNotes,omitempty"`
+	ClosedAt      string      `json:"closedAt,omitempty"`
+	KeyResults    []KeyResult `json:"keyResults"`
+	Objectives    []Objective `json:"objectives,omitempty"`
+}
+
+// Routine represents an ongoing health metric in the Manager layer's public interface.
+type Routine struct {
+	ID           string `json:"id"`
+	Description  string `json:"description"`
+	CurrentValue int    `json:"currentValue"`
+	TargetValue  int    `json:"targetValue"`
+	TargetType   string `json:"targetType"`
+	Unit         string `json:"unit,omitempty"`
+}
+
+// LifeTheme represents a life focus area in the Manager layer's public interface.
+type LifeTheme struct {
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	Color      string      `json:"color"`
+	Objectives []Objective `json:"objectives"`
+	Routines   []Routine   `json:"routines,omitempty"`
+}
+
+// DayFocus represents a daily focus entry in the Manager layer's public interface.
+type DayFocus struct {
+	Date     string   `json:"date"`
+	ThemeIDs []string `json:"themeIds,omitempty"`
+	Notes    string   `json:"notes"`
+	Text     string   `json:"text"`
+	OkrIDs   []string `json:"okrIds,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
+}
+
+// SectionDefinition defines a priority section within a column.
+type SectionDefinition struct {
+	Name  string `json:"name"`
+	Title string `json:"title"`
+	Color string `json:"color"`
+}
+
+// ColumnDefinition defines a single column's structure.
+type ColumnDefinition struct {
+	Name     string              `json:"name"`
+	Title    string              `json:"title"`
+	Type     string              `json:"type"`
+	Sections []SectionDefinition `json:"sections,omitempty"`
+}
+
+// BoardConfiguration defines the board structure and column layout.
+type BoardConfiguration struct {
+	Name              string             `json:"name"`
+	ColumnDefinitions []ColumnDefinition `json:"columnDefinitions"`
+}
+
+// PersonalVision stores the user's personal mission and vision statements.
+type PersonalVision struct {
+	Mission   string `json:"mission"`
+	Vision    string `json:"vision"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
 // PlanningManager implements IPlanningManager with business logic.
 type PlanningManager struct {
 	planAccess        access.IPlanAccess
 	ruleEngine        rule_engine.IRuleEngine
 	navigationContext *NavigationContext
 	taskOrderMu       sync.Mutex
+}
+
+// NewPlanningManagerFromPath creates a PlanningManager from a data path and repository,
+// constructing the internal access layer. This allows callers to avoid importing the access package.
+func NewPlanningManagerFromPath(dataPath string, repo utilities.IRepository) (*PlanningManager, error) {
+	planAccess, err := access.NewPlanAccess(dataPath, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize PlanAccess: %w", err)
+	}
+	return NewPlanningManager(planAccess)
 }
 
 // NewPlanningManager creates a new PlanningManager instance.
@@ -172,17 +279,21 @@ func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error)
 }
 
 // GetThemes returns all life themes.
-func (m *PlanningManager) GetThemes() ([]access.LifeTheme, error) {
+func (m *PlanningManager) GetThemes() ([]LifeTheme, error) {
 	themes, err := m.planAccess.GetThemes()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-	return themes, nil
+	result := make([]LifeTheme, len(themes))
+	for i, t := range themes {
+		result[i] = toManagerLifeTheme(t)
+	}
+	return result, nil
 }
 
 // SaveTheme saves or updates a life theme.
-func (m *PlanningManager) SaveTheme(theme access.LifeTheme) error {
-	if err := m.planAccess.SaveTheme(theme); err != nil {
+func (m *PlanningManager) SaveTheme(theme LifeTheme) error {
+	if err := m.planAccess.SaveTheme(toAccessLifeTheme(theme)); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 	return nil
@@ -201,7 +312,7 @@ func (m *PlanningManager) DeleteTheme(id string) error {
 
 // CreateTheme creates a new life theme with the given name and color.
 // Returns the created theme with its generated ID.
-func (m *PlanningManager) CreateTheme(name, color string) (*access.LifeTheme, error) {
+func (m *PlanningManager) CreateTheme(name, color string) (*LifeTheme, error) {
 	if name == "" {
 		return nil, fmt.Errorf("name cannot be empty")
 	}
@@ -228,7 +339,8 @@ func (m *PlanningManager) CreateTheme(name, color string) (*access.LifeTheme, er
 	// Find the theme we just created (the one with matching name and color)
 	for i := range themes {
 		if themes[i].Name == name && themes[i].Color == color {
-			return &themes[i], nil
+			result := toManagerLifeTheme(themes[i])
+			return &result, nil
 		}
 	}
 
@@ -236,21 +348,21 @@ func (m *PlanningManager) CreateTheme(name, color string) (*access.LifeTheme, er
 }
 
 // UpdateTheme updates an existing life theme.
-func (m *PlanningManager) UpdateTheme(theme access.LifeTheme) error {
+func (m *PlanningManager) UpdateTheme(theme LifeTheme) error {
 	if theme.ID == "" {
 		return fmt.Errorf("theme ID cannot be empty")
 	}
 
-	if err := m.planAccess.SaveTheme(theme); err != nil {
+	if err := m.planAccess.SaveTheme(toAccessLifeTheme(theme)); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
 	return nil
 }
 
-// findObjectiveByID walks the objective tree and returns a pointer to the objective with the given ID.
+// findObjectiveByID walks the access.Objective tree and returns a pointer to the objective with the given ID.
 // Returns nil if not found.
-func findObjectiveByID(objectives []Objective, id string) *Objective {
+func findObjectiveByID(objectives []access.Objective, id string) *access.Objective {
 	for i := range objectives {
 		if objectives[i].ID == id {
 			return &objectives[i]
@@ -262,9 +374,9 @@ func findObjectiveByID(objectives []Objective, id string) *Objective {
 	return nil
 }
 
-// findObjectiveParent walks the objective tree and returns the parent's Objectives slice and the index
+// findObjectiveParent walks the access.Objective tree and returns the parent's Objectives slice and the index
 // of the objective with the given ID within that slice. Returns nil, -1 if not found.
-func findObjectiveParent(objectives *[]Objective, id string) (*[]Objective, int) {
+func findObjectiveParent(objectives *[]access.Objective, id string) (*[]access.Objective, int) {
 	for i := range *objectives {
 		if (*objectives)[i].ID == id {
 			return objectives, i
@@ -276,10 +388,10 @@ func findObjectiveParent(objectives *[]Objective, id string) (*[]Objective, int)
 	return nil, -1
 }
 
-// findKeyResultParent walks the objective tree and returns a pointer to the objective
+// findKeyResultParent walks the access.Objective tree and returns a pointer to the objective
 // containing the key result with the given ID, and the index of the key result.
 // Returns nil, -1 if not found.
-func findKeyResultParent(objectives []Objective, krID string) (*Objective, int) {
+func findKeyResultParent(objectives []access.Objective, krID string) (*access.Objective, int) {
 	for i := range objectives {
 		for j := range objectives[i].KeyResults {
 			if objectives[i].KeyResults[j].ID == krID {
@@ -293,13 +405,10 @@ func findKeyResultParent(objectives []Objective, krID string) (*Objective, int) 
 	return nil, -1
 }
 
-// Objective is an alias for access.Objective used in tree-walking helpers.
-type Objective = access.Objective
-
 // CreateObjective creates a new objective under a parent (theme or objective).
 // parentId can be a theme ID or any objective ID at any depth.
 // Returns the created objective with its generated ID.
-func (m *PlanningManager) CreateObjective(parentId, title string) (*access.Objective, error) {
+func (m *PlanningManager) CreateObjective(parentId, title string) (*Objective, error) {
 	if parentId == "" {
 		return nil, fmt.Errorf("parentId cannot be empty")
 	}
@@ -358,13 +467,15 @@ func (m *PlanningManager) CreateObjective(parentId, title string) (*access.Objec
 			// If parent was the theme itself
 			if theme.ID == parentId {
 				if len(theme.Objectives) > 0 {
-					return &theme.Objectives[len(theme.Objectives)-1], nil
+					result := toManagerObjective(theme.Objectives[len(theme.Objectives)-1])
+					return &result, nil
 				}
 			}
 			// If parent was an objective
 			if parentObj := findObjectiveByID(theme.Objectives, parentId); parentObj != nil {
 				if len(parentObj.Objectives) > 0 {
-					return &parentObj.Objectives[len(parentObj.Objectives)-1], nil
+					result := toManagerObjective(parentObj.Objectives[len(parentObj.Objectives)-1])
+					return &result, nil
 				}
 			}
 		}
@@ -450,7 +561,7 @@ func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 
 // CreateKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
-func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*access.KeyResult, error) {
+func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
 	if parentObjectiveId == "" {
 		return nil, fmt.Errorf("parentObjectiveId cannot be empty")
 	}
@@ -493,7 +604,8 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 		if theme.ID == targetTheme.ID {
 			if obj := findObjectiveByID(theme.Objectives, parentObjectiveId); obj != nil {
 				if len(obj.KeyResults) > 0 {
-					return &obj.KeyResults[len(obj.KeyResults)-1], nil
+					result := toManagerKeyResult(obj.KeyResults[len(obj.KeyResults)-1])
+					return &result, nil
 				}
 			}
 		}
@@ -606,7 +718,7 @@ func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.L
 }
 
 // AddRoutine creates a new routine under the specified theme.
-func (m *PlanningManager) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*access.Routine, error) {
+func (m *PlanningManager) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
 	if themeId == "" {
 		return nil, fmt.Errorf("themeId cannot be empty")
 	}
@@ -650,7 +762,8 @@ func (m *PlanningManager) AddRoutine(themeId, description string, targetValue in
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	return &routine, nil
+	result := toManagerRoutine(routine)
+	return &result, nil
 }
 
 // UpdateRoutine updates all fields of an existing routine.
@@ -909,7 +1022,7 @@ func (m *PlanningManager) ReopenObjective(objectiveId string) error {
 }
 
 // GetYearFocus returns all day focus entries for a specific year.
-func (m *PlanningManager) GetYearFocus(year int) ([]access.DayFocus, error) {
+func (m *PlanningManager) GetYearFocus(year int) ([]DayFocus, error) {
 	if year < 1900 || year > 9999 {
 		return nil, fmt.Errorf("invalid year %d", year)
 	}
@@ -917,15 +1030,19 @@ func (m *PlanningManager) GetYearFocus(year int) ([]access.DayFocus, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-	return entries, nil
+	result := make([]DayFocus, len(entries))
+	for i, e := range entries {
+		result[i] = toManagerDayFocus(e)
+	}
+	return result, nil
 }
 
 // SaveDayFocus saves or updates a day focus entry.
-func (m *PlanningManager) SaveDayFocus(day access.DayFocus) error {
+func (m *PlanningManager) SaveDayFocus(day DayFocus) error {
 	if day.Date == "" {
 		return fmt.Errorf("date cannot be empty")
 	}
-	if err := m.planAccess.SaveDayFocus(day); err != nil {
+	if err := m.planAccess.SaveDayFocus(toAccessDayFocus(day)); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 	return nil
@@ -1078,7 +1195,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 
 		for _, task := range tasks {
 			allTasks = append(allTasks, TaskWithStatus{
-				Task:   task,
+				Task:   toManagerTask(task),
 				Status: status,
 			})
 		}
@@ -1164,7 +1281,7 @@ func (m *PlanningManager) evaluateRules(event rule_engine.TaskEvent) (*rule_engi
 // CreateTask creates a new task with the given properties.
 // Priority must be one of the valid Eisenhower priorities.
 // Optional fields: description, tags (comma-separated), promotionDate (YYYY-MM-DD).
-func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags, promotionDate string) (*access.Task, error) {
+func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags, promotionDate string) (*Task, error) {
 	if !access.IsValidPriority(priority) {
 		return nil, fmt.Errorf("invalid priority: %s", priority)
 	}
@@ -1184,7 +1301,7 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 		}
 	}
 
-	task := access.Task{
+	task := Task{
 		Title:         title,
 		ThemeID:       themeId,
 		Priority:      priority,
@@ -1209,13 +1326,15 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 
 	// Save task and update task order atomically in a single git commit
 	createConfig, _ := m.planAccess.GetBoardConfiguration()
+	accessTask := toAccessTask(task)
 	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority, todoSlugFromConfig(createConfig))
-	createdTask, err := m.planAccess.SaveTaskWithOrder(task, zone)
+	createdTask, err := m.planAccess.SaveTaskWithOrder(accessTask, zone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save task: %w", err)
 	}
 
-	return createdTask, nil
+	result := toManagerTask(*createdTask)
+	return &result, nil
 }
 
 // MoveTask moves a task to a new status (todo, doing, done).
@@ -1245,7 +1364,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	}
 
 	// Find the task being moved (prefer active copy over archived when IDs collide)
-	var movingTask *access.Task
+	var movingTask *Task
 	var oldStatus string
 	for _, t := range allTasks {
 		if t.ID == taskId && t.Status != string(access.TaskStatusArchived) {
@@ -1337,7 +1456,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 // UpdateTask updates an existing task.
 // When the priority change moves a todo task to a different drop zone,
 // task_order.json is updated atomically with the task file.
-func (m *PlanningManager) UpdateTask(task access.Task) error {
+func (m *PlanningManager) UpdateTask(task Task) error {
 	if task.ID == "" {
 		return fmt.Errorf("task ID cannot be empty")
 	}
@@ -1367,6 +1486,8 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 		return fmt.Errorf("%w", err)
 	}
 
+	accessTask := toAccessTask(task)
+
 	// Check if priority change causes a zone change (only for todo tasks)
 	if oldPriority != "" && oldPriority != task.Priority {
 		config, _ := m.planAccess.GetBoardConfiguration()
@@ -1375,7 +1496,7 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 		newZone := dropZoneForTask(oldStatus, task.Priority, todoSlug)
 		if oldZone != newZone {
 			m.taskOrderMu.Lock()
-			err := m.planAccess.UpdateTaskWithOrderMove(task, oldZone, newZone)
+			err := m.planAccess.UpdateTaskWithOrderMove(accessTask, oldZone, newZone)
 			m.taskOrderMu.Unlock()
 			if err != nil {
 				return fmt.Errorf("failed to update task with zone move: %w", err)
@@ -1384,7 +1505,7 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 		}
 	}
 
-	if err := m.planAccess.SaveTask(task); err != nil {
+	if err := m.planAccess.SaveTask(accessTask); err != nil {
 		return fmt.Errorf("failed to update task: %w", err)
 	}
 
@@ -1424,18 +1545,19 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		updatedTask.Priority = string(access.PriorityImportantUrgent)
 		updatedTask.PromotionDate = "" // Clear after promotion
 
+		accessTask := toAccessTask(updatedTask)
 		oldZone := dropZoneForTask(t.Status, oldPriority, todoSlug)
 		newZone := dropZoneForTask(t.Status, string(access.PriorityImportantUrgent), todoSlug)
 
 		if oldZone != newZone {
 			m.taskOrderMu.Lock()
-			err := m.planAccess.UpdateTaskWithOrderMove(updatedTask, oldZone, newZone)
+			err := m.planAccess.UpdateTaskWithOrderMove(accessTask, oldZone, newZone)
 			m.taskOrderMu.Unlock()
 			if err != nil {
 				return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
 			}
 		} else {
-			if err := m.planAccess.SaveTask(updatedTask); err != nil {
+			if err := m.planAccess.SaveTask(accessTask); err != nil {
 				return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
 			}
 		}
@@ -1647,9 +1769,9 @@ func removeFromSlice(s []string, val string) []string {
 	return result
 }
 
-// toEngineTaskData converts an access.Task to a rule_engine.TaskData
+// toEngineTaskData converts a Task to a rule_engine.TaskData
 // for rule evaluation. The Manager owns this transformation.
-func toEngineTaskData(t access.Task) *rule_engine.TaskData {
+func toEngineTaskData(t Task) *rule_engine.TaskData {
 	return &rule_engine.TaskData{
 		ID:          t.ID,
 		Title:       t.Title,
@@ -1660,12 +1782,12 @@ func toEngineTaskData(t access.Task) *rule_engine.TaskData {
 }
 
 // GetBoardConfiguration returns the board configuration.
-func (m *PlanningManager) GetBoardConfiguration() (*access.BoardConfiguration, error) {
+func (m *PlanningManager) GetBoardConfiguration() (*BoardConfiguration, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-	return config, nil
+	return toManagerBoardConfig(config), nil
 }
 
 // reservedSlugs are column slugs that cannot be used for custom columns.
@@ -1674,7 +1796,7 @@ var reservedSlugs = map[string]bool{
 }
 
 // AddColumn adds a new doing-type column after the specified column.
-func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.BoardConfiguration, error) {
+func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, error) {
 	slug := access.Slugify(title)
 	if slug == "" {
 		return nil, fmt.Errorf("column name must contain at least one letter or number")
@@ -1740,11 +1862,11 @@ func (m *PlanningManager) AddColumn(title, insertAfterSlug string) (*access.Boar
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	return config, nil
+	return toManagerBoardConfig(config), nil
 }
 
 // RemoveColumn removes a doing-type column that has no tasks.
-func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration, error) {
+func (m *PlanningManager) RemoveColumn(slug string) (*BoardConfiguration, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
@@ -1800,11 +1922,11 @@ func (m *PlanningManager) RemoveColumn(slug string) (*access.BoardConfiguration,
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	return config, nil
+	return toManagerBoardConfig(config), nil
 }
 
 // RenameColumn renames a column, migrating its directory and updating task order.
-func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardConfiguration, error) {
+func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*BoardConfiguration, error) {
 	newSlug := access.Slugify(newTitle)
 	if newSlug == "" {
 		return nil, fmt.Errorf("column name must contain at least one letter or number")
@@ -1835,7 +1957,7 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 		if err := m.planAccess.CommitAll(fmt.Sprintf("Rename column title: %s", strings.TrimSpace(newTitle))); err != nil {
 			return nil, fmt.Errorf("%w", err)
 		}
-		return config, nil
+		return toManagerBoardConfig(config), nil
 	}
 
 	config, err := m.planAccess.GetBoardConfiguration()
@@ -1885,11 +2007,11 @@ func (m *PlanningManager) RenameColumn(oldSlug, newTitle string) (*access.BoardC
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	return config, nil
+	return toManagerBoardConfig(config), nil
 }
 
 // ReorderColumns reorders columns while enforcing bookend constraints.
-func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfiguration, error) {
+func (m *PlanningManager) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
 	config, err := m.planAccess.GetBoardConfiguration()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
@@ -1937,7 +2059,7 @@ func (m *PlanningManager) ReorderColumns(slugs []string) (*access.BoardConfigura
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	return config, nil
+	return toManagerBoardConfig(config), nil
 }
 
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name.
@@ -2013,8 +2135,12 @@ func (m *PlanningManager) SaveTaskDrafts(data json.RawMessage) error {
 }
 
 // GetPersonalVision retrieves the saved personal vision.
-func (m *PlanningManager) GetPersonalVision() (*access.PersonalVision, error) {
-	return m.planAccess.LoadVision()
+func (m *PlanningManager) GetPersonalVision() (*PersonalVision, error) {
+	v, err := m.planAccess.LoadVision()
+	if err != nil {
+		return nil, err
+	}
+	return toManagerPersonalVision(v), nil
 }
 
 // SavePersonalVision saves the personal mission and vision statements.

@@ -104,7 +104,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 
 	// Step 2: Assign January 15th to theme "Health"
-	dayFocus := access.DayFocus{
+	dayFocus := managers.DayFocus{
 		Date:     "2026-01-15",
 		ThemeIDs: []string{theme.ID},
 		Notes:    "Focus on health today",
@@ -145,7 +145,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 
 	// Find the theme and verify color
-	var foundTheme *access.LifeTheme
+	var foundTheme *managers.LifeTheme
 	for i := range themes {
 		if themes[i].ID == theme.ID {
 			foundTheme = &themes[i]
@@ -417,8 +417,8 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	_, _ = manager1.CreateObjective(theme1.ID, "Fitness Goals")
 	_, _ = manager1.CreateObjective(theme2.ID, "Career Growth")
 
-	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-15", ThemeIDs: []string{theme1.ID}, Notes: "Health day"})
-	_ = manager1.SaveDayFocus(access.DayFocus{Date: "2026-01-16", ThemeIDs: []string{theme2.ID}, Notes: "Career day"})
+	_ = manager1.SaveDayFocus(managers.DayFocus{Date: "2026-01-15", ThemeIDs: []string{theme1.ID}, Notes: "Health day"})
+	_ = manager1.SaveDayFocus(managers.DayFocus{Date: "2026-01-16", ThemeIDs: []string{theme2.ID}, Notes: "Career day"})
 
 	// Create all tasks in the same theme to avoid task ID collision issue
 	// (Task IDs are unique within a theme, but MoveTask searches across all themes)
@@ -744,7 +744,7 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 	for _, m := range months {
 		for day := 1; day <= m.days; day++ {
 			date := time.Date(2026, time.Month(m.month), day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
-			_ = manager.SaveDayFocus(access.DayFocus{
+			_ = manager.SaveDayFocus(managers.DayFocus{
 				Date:     date,
 				ThemeIDs: []string{theme.ID},
 				Notes:    "Daily focus",

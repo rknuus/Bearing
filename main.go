@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/managers"
 	"github.com/rkn/bearing/internal/utilities"
 	"github.com/wailsapp/wails/v2"
@@ -87,15 +86,8 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	// Initialize PlanAccess
-	planAccess, err := access.NewPlanAccess(repoPath, repo)
-	if err != nil {
-		slog.Warn("Failed to initialize PlanAccess", "error", err)
-		return
-	}
-
 	// Initialize PlanningManager
-	planningManager, err := managers.NewPlanningManager(planAccess)
+	planningManager, err := managers.NewPlanningManagerFromPath(repoPath, repo)
 	if err != nil {
 		slog.Warn("Failed to initialize PlanningManager", "error", err)
 		return
@@ -294,8 +286,8 @@ type NavigationContext struct {
 	VisionCollapsed   *bool    `json:"visionCollapsed,omitempty"`
 }
 
-// convertObjective recursively converts an access.Objective to a Wails Objective
-func convertObjective(o access.Objective) Objective {
+// convertObjective recursively converts a managers.Objective to a Wails Objective
+func convertObjective(o managers.Objective) Objective {
 	keyResults := make([]KeyResult, len(o.KeyResults))
 	for i, kr := range o.KeyResults {
 		keyResults[i] = KeyResult{
@@ -330,11 +322,11 @@ func convertObjective(o access.Objective) Objective {
 	return result
 }
 
-// convertObjectiveToAccess recursively converts a Wails Objective to an access.Objective
-func convertObjectiveToAccess(o Objective) access.Objective {
-	keyResults := make([]access.KeyResult, len(o.KeyResults))
+// convertObjectiveToManager recursively converts a Wails Objective to a managers.Objective
+func convertObjectiveToManager(o Objective) managers.Objective {
+	keyResults := make([]managers.KeyResult, len(o.KeyResults))
 	for i, kr := range o.KeyResults {
-		keyResults[i] = access.KeyResult{
+		keyResults[i] = managers.KeyResult{
 			ID:           kr.ID,
 			ParentID:     kr.ParentID,
 			Description:  kr.Description,
@@ -345,11 +337,11 @@ func convertObjectiveToAccess(o Objective) access.Objective {
 			TargetValue:  kr.TargetValue,
 		}
 	}
-	objectives := make([]access.Objective, len(o.Objectives))
+	objectives := make([]managers.Objective, len(o.Objectives))
 	for i, child := range o.Objectives {
-		objectives[i] = convertObjectiveToAccess(child)
+		objectives[i] = convertObjectiveToManager(child)
 	}
-	result := access.Objective{
+	result := managers.Objective{
 		ID:            o.ID,
 		ParentID:      o.ParentID,
 		Title:         o.Title,
@@ -440,14 +432,14 @@ func (a *App) UpdateTheme(theme LifeTheme) error {
 	}
 
 	// Convert objectives and key results recursively
-	objectives := make([]access.Objective, len(theme.Objectives))
+	objectives := make([]managers.Objective, len(theme.Objectives))
 	for i, o := range theme.Objectives {
-		objectives[i] = convertObjectiveToAccess(o)
+		objectives[i] = convertObjectiveToManager(o)
 	}
 
-	var routines []access.Routine
+	var routines []managers.Routine
 	for _, routine := range theme.Routines {
-		routines = append(routines, access.Routine{
+		routines = append(routines, managers.Routine{
 			ID:           routine.ID,
 			Description:  routine.Description,
 			CurrentValue: routine.CurrentValue,
@@ -457,7 +449,7 @@ func (a *App) UpdateTheme(theme LifeTheme) error {
 		})
 	}
 
-	err := a.planningManager.UpdateTheme(access.LifeTheme{
+	err := a.planningManager.UpdateTheme(managers.LifeTheme{
 		ID:         theme.ID,
 		Name:       theme.Name,
 		Color:      theme.Color,
@@ -477,7 +469,7 @@ func (a *App) SaveTheme(theme LifeTheme) error {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	err := a.planningManager.SaveTheme(access.LifeTheme{
+	err := a.planningManager.SaveTheme(managers.LifeTheme{
 		ID:    theme.ID,
 		Name:  theme.Name,
 		Color: theme.Color,
@@ -773,7 +765,7 @@ func (a *App) SaveDayFocus(day DayFocus) error {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	err := a.planningManager.SaveDayFocus(access.DayFocus{
+	err := a.planningManager.SaveDayFocus(managers.DayFocus{
 		Date:     day.Date,
 		ThemeIDs: day.ThemeIDs,
 		Notes:    day.Notes,
@@ -867,7 +859,7 @@ func (a *App) UpdateTask(task Task) error {
 		return fmt.Errorf("planning manager not initialized")
 	}
 
-	err := a.planningManager.UpdateTask(access.Task{
+	err := a.planningManager.UpdateTask(managers.Task{
 		ID:            task.ID,
 		Title:         task.Title,
 		Description:   task.Description,
@@ -1045,8 +1037,8 @@ func (a *App) ReorderTasks(positions map[string][]string) (*ReorderResult, error
 	}, nil
 }
 
-// convertBoardConfig converts an access.BoardConfiguration to the Wails binding type.
-func convertBoardConfig(config *access.BoardConfiguration) *BoardConfiguration {
+// convertBoardConfig converts a managers.BoardConfiguration to the Wails binding type.
+func convertBoardConfig(config *managers.BoardConfiguration) *BoardConfiguration {
 	columns := make([]ColumnDefinition, len(config.ColumnDefinitions))
 	for i, col := range config.ColumnDefinitions {
 		sections := make([]SectionDefinition, len(col.Sections))
@@ -1060,7 +1052,7 @@ func convertBoardConfig(config *access.BoardConfiguration) *BoardConfiguration {
 		columns[i] = ColumnDefinition{
 			Name:     col.Name,
 			Title:    col.Title,
-			Type:     string(col.Type),
+			Type:     col.Type,
 			Sections: sections,
 		}
 	}
