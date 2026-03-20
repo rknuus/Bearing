@@ -64,6 +64,14 @@ jobs:
       - name: Build with Wails
         run: wails build -platform ${{ matrix.goos }}/${{ matrix.goarch }} -ldflags "-X main.version=${{ env.VERSION }}"
 
+      - name: Ad-hoc sign app bundle
+        if: matrix.goos == 'darwin'
+        run: codesign --force --deep -s - "build/bin/Bearing.app"
+
+      - name: Verify signature
+        if: matrix.goos == 'darwin'
+        run: codesign --verify --verbose "build/bin/Bearing.app"
+
       - name: Create DMG
         if: matrix.goos == 'darwin'
         run: |
