@@ -1200,7 +1200,7 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 	}
 	event := rule_engine.TaskEvent{
 		Type:     rule_engine.EventTaskCreate,
-		Task:     &task,
+		Task:     toEngineTaskData(task),
 		AllTasks: taskInfos,
 	}
 	if _, err := m.evaluateRules(event); err != nil {
@@ -1285,7 +1285,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	// Evaluate rules before moving
 	event := rule_engine.TaskEvent{
 		Type:      rule_engine.EventTaskMove,
-		Task:      movingTask,
+		Task:      toEngineTaskData(*movingTask),
 		OldStatus: oldStatus,
 		NewStatus: newStatus,
 		AllTasks:  taskInfos,
@@ -1360,7 +1360,7 @@ func (m *PlanningManager) UpdateTask(task access.Task) error {
 
 	event := rule_engine.TaskEvent{
 		Type:     rule_engine.EventTaskUpdate,
-		Task:     &task,
+		Task:     toEngineTaskData(task),
 		AllTasks: taskInfos,
 	}
 	if _, err := m.evaluateRules(event); err != nil {
@@ -1645,6 +1645,18 @@ func removeFromSlice(s []string, val string) []string {
 		}
 	}
 	return result
+}
+
+// toEngineTaskData converts an access.Task to a rule_engine.TaskData
+// for rule evaluation. The Manager owns this transformation.
+func toEngineTaskData(t access.Task) *rule_engine.TaskData {
+	return &rule_engine.TaskData{
+		ID:          t.ID,
+		Title:       t.Title,
+		Description: t.Description,
+		Priority:    t.Priority,
+		CreatedAt:   t.CreatedAt,
+	}
 }
 
 // GetBoardConfiguration returns the board configuration.

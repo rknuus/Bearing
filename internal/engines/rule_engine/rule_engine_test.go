@@ -3,8 +3,6 @@ package rule_engine
 import (
 	"testing"
 	"time"
-
-	"github.com/rkn/bearing/internal/access"
 )
 
 // =============================================================================
@@ -71,7 +69,7 @@ func TestUnit_RequiredFields(t *testing.T) {
 	t.Run("allows task with title", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "My Task", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "My Task", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -85,7 +83,7 @@ func TestUnit_RequiredFields(t *testing.T) {
 	t.Run("rejects task with empty title", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -105,7 +103,7 @@ func TestUnit_RequiredFields(t *testing.T) {
 	t.Run("rejects task with whitespace-only title", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "   ", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "   ", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -136,7 +134,7 @@ func TestUnit_RequiredFieldsDescription(t *testing.T) {
 	t.Run("rejects task missing description", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "Task", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "Task", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -154,7 +152,7 @@ func TestUnit_RequiredFieldsDescription(t *testing.T) {
 	t.Run("allows task with all required fields", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "Task", Description: "A description", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "Task", Description: "A description", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -190,7 +188,7 @@ func TestUnit_WIPLimit(t *testing.T) {
 	t.Run("allows move when under WIP limit", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T3", Title: "Task 3", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T3", Title: "Task 3"},
 			OldStatus: "todo",
 			NewStatus: "doing",
 			AllTasks: []TaskInfo{
@@ -211,7 +209,7 @@ func TestUnit_WIPLimit(t *testing.T) {
 	t.Run("rejects move when at WIP limit", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T3", Title: "Task 3", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T3", Title: "Task 3"},
 			OldStatus: "todo",
 			NewStatus: "doing",
 			AllTasks: []TaskInfo{
@@ -235,7 +233,7 @@ func TestUnit_WIPLimit(t *testing.T) {
 	t.Run("allows move to non-limited column", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task 1", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task 1"},
 			OldStatus: "doing",
 			NewStatus: "done",
 			AllTasks: []TaskInfo{
@@ -255,7 +253,7 @@ func TestUnit_WIPLimit(t *testing.T) {
 	t.Run("ignores WIP rule for non-move events", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "New Task", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "New Task", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -294,7 +292,7 @@ func TestUnit_AllowedTransitions(t *testing.T) {
 	t.Run("allows valid transition todo->doing", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task"},
 			OldStatus: "todo",
 			NewStatus: "doing",
 		}
@@ -310,7 +308,7 @@ func TestUnit_AllowedTransitions(t *testing.T) {
 	t.Run("rejects invalid transition todo->done", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task"},
 			OldStatus: "todo",
 			NewStatus: "done",
 		}
@@ -326,7 +324,7 @@ func TestUnit_AllowedTransitions(t *testing.T) {
 	t.Run("allows valid transition doing->done", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task"},
 			OldStatus: "doing",
 			NewStatus: "done",
 		}
@@ -342,7 +340,7 @@ func TestUnit_AllowedTransitions(t *testing.T) {
 	t.Run("allows same-column no-op", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task"},
 			OldStatus: "doing",
 			NewStatus: "doing",
 		}
@@ -363,7 +361,7 @@ func TestUnit_AllowedTransitions_Archived(t *testing.T) {
 	t.Run("allows transition archived->todo", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task"},
 			OldStatus: "archived",
 			NewStatus: "todo",
 		}
@@ -379,7 +377,7 @@ func TestUnit_AllowedTransitions_Archived(t *testing.T) {
 	t.Run("allows transition archived->doing with permissive policy", func(t *testing.T) {
 		event := TaskEvent{
 			Type:      EventTaskMove,
-			Task:      &access.Task{ID: "T-T1", Title: "Task", ThemeID: "T"},
+			Task:      &TaskData{ID: "T-T1", Title: "Task"},
 			OldStatus: "archived",
 			NewStatus: "doing",
 		}
@@ -417,10 +415,9 @@ func TestUnit_MaxAge(t *testing.T) {
 	t.Run("no violation for recent task", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskMove,
-			Task: &access.Task{
+			Task: &TaskData{
 				ID:        "T-T1",
 				Title:     "Recent Task",
-				ThemeID:   "T",
 				CreatedAt: time.Now().Add(-24 * time.Hour).Format(time.RFC3339),
 			},
 			OldStatus: "todo",
@@ -438,10 +435,9 @@ func TestUnit_MaxAge(t *testing.T) {
 	t.Run("violation for old task", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskMove,
-			Task: &access.Task{
+			Task: &TaskData{
 				ID:        "T-T1",
 				Title:     "Old Task",
-				ThemeID:   "T",
 				CreatedAt: time.Now().Add(-10 * 24 * time.Hour).Format(time.RFC3339),
 			},
 			OldStatus: "todo",
@@ -459,10 +455,9 @@ func TestUnit_MaxAge(t *testing.T) {
 	t.Run("no violation when createdAt is empty", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskMove,
-			Task: &access.Task{
-				ID:      "T-T1",
-				Title:   "Task",
-				ThemeID: "T",
+			Task: &TaskData{
+				ID:    "T-T1",
+				Title: "Task",
 			},
 			OldStatus: "todo",
 			NewStatus: "doing",
@@ -519,7 +514,7 @@ func TestUnit_DisabledRules(t *testing.T) {
 	t.Run("disabled rules are not evaluated", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {
@@ -554,7 +549,7 @@ func TestUnit_MultipleViolations(t *testing.T) {
 	t.Run("returns multiple violations", func(t *testing.T) {
 		event := TaskEvent{
 			Type: EventTaskCreate,
-			Task: &access.Task{Title: "", Description: "", ThemeID: "T", Priority: "important-urgent"},
+			Task: &TaskData{Title: "", Description: "", Priority: "important-urgent"},
 		}
 		result, err := engine.EvaluateTaskChange(event)
 		if err != nil {

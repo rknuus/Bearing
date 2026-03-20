@@ -3,10 +3,6 @@
 // allowed transitions, and required fields.
 package rule_engine
 
-import (
-	"github.com/rkn/bearing/internal/access"
-)
-
 // EventType identifies the kind of task state change being evaluated.
 type EventType string
 
@@ -19,13 +15,23 @@ const (
 	EventTaskMove EventType = "task_move"
 )
 
+// TaskData contains the task fields needed for rule evaluation.
+// This is the Engine's own input DTO — it does not depend on access layer types.
+type TaskData struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Priority    string `json:"priority"`
+	CreatedAt   string `json:"createdAt,omitempty"`
+}
+
 // TaskEvent represents a task state change event for rule evaluation.
 type TaskEvent struct {
-	Type      EventType    `json:"type"`
-	Task      *access.Task `json:"task"`                // The task being created/updated
-	OldStatus string       `json:"oldStatus,omitempty"` // Current column (for moves)
-	NewStatus string       `json:"newStatus,omitempty"` // Target column (for moves)
-	AllTasks  []TaskInfo   `json:"allTasks,omitempty"`  // All tasks for context
+	Type      EventType  `json:"type"`
+	Task      *TaskData  `json:"task"`                // The task being created/updated
+	OldStatus string     `json:"oldStatus,omitempty"` // Current column (for moves)
+	NewStatus string     `json:"newStatus,omitempty"` // Target column (for moves)
+	AllTasks  []TaskInfo `json:"allTasks,omitempty"`  // All tasks for context
 }
 
 // TaskInfo is a lightweight task representation with status for rule context.
