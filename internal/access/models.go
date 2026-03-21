@@ -4,6 +4,8 @@
 package access
 
 import (
+	"regexp"
+
 	"github.com/rkn/bearing/internal/utilities"
 )
 
@@ -214,6 +216,27 @@ const (
 // Deprecated: Use utilities.Slugify directly.
 func Slugify(title string) string {
 	return utilities.Slugify(title)
+}
+
+// IsValidThemeID checks whether an ID matches the theme abbreviation format (1-3 uppercase letters).
+func IsValidThemeID(id string) bool {
+	matched, _ := regexp.MatchString(`^[A-Z]{1,3}$`, id)
+	return matched
+}
+
+// ExtractThemeAbbr extracts the theme abbreviation from any theme-scoped ID.
+// For a theme ID like "H", returns "H". For "H-O1", returns "H". For "CF-KR2", returns "CF".
+// Returns empty string if the ID doesn't match any known pattern.
+func ExtractThemeAbbr(id string) string {
+	if IsValidThemeID(id) {
+		return id
+	}
+	re := regexp.MustCompile(`^([A-Z]{1,3})-(?:O|KR|T)\d+$`)
+	matches := re.FindStringSubmatch(id)
+	if len(matches) == 2 {
+		return matches[1]
+	}
+	return ""
 }
 
 // Priority represents the Eisenhower matrix priority levels

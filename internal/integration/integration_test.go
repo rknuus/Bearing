@@ -24,8 +24,8 @@ func verifyParentID(t *testing.T, entityType, entityID, gotParentID, expectedPar
 	}
 }
 
-// Test helper to set up the complete system (PlanAccess + PlanningManager)
-func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.PlanAccess, utilities.IRepository, string, func()) {
+// Test helper to set up the complete system with individual RAs + PlanningManager
+func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.TaskAccess, utilities.IRepository, string, func()) {
 	t.Helper()
 
 	// Create temporary directory for the test
@@ -53,17 +53,38 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Plan
 		t.Fatalf("Failed to initialize repository: %v", err)
 	}
 
-	// Create PlanAccess
-	planAccess, err := access.NewPlanAccess(dataDir, repo)
+	// Create individual Resource Access components
+	themeAccess, err := access.NewThemeAccess(dataDir, repo)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
-		t.Fatalf("Failed to create PlanAccess: %v", err)
+		t.Fatalf("Failed to create ThemeAccess: %v", err)
 	}
 
-	// Create UIStateAccess and PlanningManager
+	taskAccess, err := access.NewTaskAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create TaskAccess: %v", err)
+	}
+
+	calendarAccess, err := access.NewCalendarAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create CalendarAccess: %v", err)
+	}
+
+	visionAccess, err := access.NewVisionAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create VisionAccess: %v", err)
+	}
+
 	uiStateAccess := access.NewUIStateAccess(dataDir)
-	manager, err := managers.NewPlanningManager(planAccess, uiStateAccess)
+
+	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
@@ -75,7 +96,7 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Plan
 		os.RemoveAll(tmpDir)
 	}
 
-	return manager, planAccess, repo, tmpDir, cleanup
+	return manager, taskAccess, repo, tmpDir, cleanup
 }
 
 // =============================================================================
@@ -85,7 +106,7 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Plan
 // TestIntegration_FullLinkingChain tests the complete linking mechanism:
 // Theme -> Day Focus -> Task with color propagation and hierarchical IDs
 func TestIntegration_FullLinkingChain(t *testing.T) {
-	manager, planAccess, _, tmpDir, cleanup := setupIntegrationTest(t)
+	manager, _, _, tmpDir, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
 	// Step 1: Create a Life Theme "Health" with color #22c55e
@@ -115,9 +136,16 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 
 	// Verify day focus was saved with correct theme IDs
-	savedDayFocus, err := planAccess.GetDayFocus("2026-01-15")
+	yearEntries, err := manager.GetYearFocus(2026)
 	if err != nil {
-		t.Fatalf("Failed to get day focus: %v", err)
+		t.Fatalf("Failed to get year focus: %v", err)
+	}
+	var savedDayFocus *managers.DayFocus
+	for i := range yearEntries {
+		if yearEntries[i].Date == "2026-01-15" {
+			savedDayFocus = &yearEntries[i]
+			break
+		}
 	}
 	if savedDayFocus == nil {
 		t.Fatal("Day focus not found")
@@ -352,7 +380,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 
 // TestIntegration_TaskMovePreservesContent verifies task data is unchanged after move
 func TestIntegration_TaskMovePreservesContent(t *testing.T) {
-	manager, planAccess, _, _, cleanup := setupIntegrationTest(t)
+	manager, taskAccess, _, _, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
 	// Create theme and task with all fields populated
@@ -360,7 +388,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 	task, _ := manager.CreateTask("Complex task", theme.ID, "important-not-urgent", "", "", "")
 
 	// Get original task details
-	originalTasks, _ := planAccess.GetTasksByStatus("todo")
+	originalTasks, _ := taskAccess.GetTasksByStatus("todo")
 	var originalTask access.Task
 	for _, t := range originalTasks {
 		if t.ID == task.ID {
@@ -381,7 +409,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 		}
 
 		// Verify task content after each move
-		tasks, _ := planAccess.GetTasksByStatus(status)
+		tasks, _ := taskAccess.GetTasksByStatus(status)
 		var movedTask access.Task
 		for _, t := range tasks {
 			if t.ID == task.ID {
@@ -452,13 +480,24 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	defer repo2.Close()
 
 	dataDir := filepath.Join(tmpDir, "data")
-	planAccess2, err := access.NewPlanAccess(dataDir, repo2)
+	themeAccess2, err := access.NewThemeAccess(dataDir, repo2)
 	if err != nil {
-		t.Fatalf("Failed to reopen PlanAccess: %v", err)
+		t.Fatalf("Failed to reopen ThemeAccess: %v", err)
 	}
-
+	taskAccess2, err := access.NewTaskAccess(dataDir, repo2)
+	if err != nil {
+		t.Fatalf("Failed to reopen TaskAccess: %v", err)
+	}
+	calendarAccess2, err := access.NewCalendarAccess(dataDir, repo2)
+	if err != nil {
+		t.Fatalf("Failed to reopen CalendarAccess: %v", err)
+	}
+	visionAccess2, err := access.NewVisionAccess(dataDir, repo2)
+	if err != nil {
+		t.Fatalf("Failed to reopen VisionAccess: %v", err)
+	}
 	uiStateAccess2 := access.NewUIStateAccess(dataDir)
-	manager2, err := managers.NewPlanningManager(planAccess2, uiStateAccess2)
+	manager2, err := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, visionAccess2, uiStateAccess2)
 	if err != nil {
 		t.Fatalf("Failed to reopen PlanningManager: %v", err)
 	}
@@ -552,9 +591,12 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	defer repo2.Close()
 
 	dataDir2 := filepath.Join(tmpDir, "data")
-	planAccess2, _ := access.NewPlanAccess(dataDir2, repo2)
+	themeAccess2, _ := access.NewThemeAccess(dataDir2, repo2)
+	taskAccess2, _ := access.NewTaskAccess(dataDir2, repo2)
+	calendarAccess2, _ := access.NewCalendarAccess(dataDir2, repo2)
+	visionAccess2, _ := access.NewVisionAccess(dataDir2, repo2)
 	uiStateAccess2 := access.NewUIStateAccess(dataDir2)
-	manager2, _ := managers.NewPlanningManager(planAccess2, uiStateAccess2)
+	manager2, _ := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, visionAccess2, uiStateAccess2)
 
 	// Load and verify
 	loadedCtx, err := manager2.LoadNavigationContext()
@@ -588,7 +630,7 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 
 // TestIntegration_DeleteTheme tests theme deletion behavior
 func TestIntegration_DeleteTheme(t *testing.T) {
-	manager, planAccess, _, _, cleanup := setupIntegrationTest(t)
+	manager, taskAccess, _, _, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
 	// Create themes
@@ -618,7 +660,7 @@ func TestIntegration_DeleteTheme(t *testing.T) {
 
 	// Note: Current implementation does not cascade delete tasks.
 	// Tasks under deleted theme remain orphaned (design decision to prevent data loss)
-	orphanedTasks, _ := planAccess.GetTasksByTheme(theme1.ID)
+	orphanedTasks, _ := taskAccess.GetTasksByTheme(theme1.ID)
 	// The tasks still exist but the theme is gone
 	t.Logf("Orphaned tasks after theme deletion: %d", len(orphanedTasks))
 }
@@ -911,10 +953,16 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 // =============================================================================
 
 func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
-	manager, _, repo, tmpDir, cleanup := setupIntegrationTest(t)
+	manager, taskAccess, repo, tmpDir, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
 	dataDir := filepath.Join(tmpDir, "data")
+
+	// Create workspace manager sharing the same task access
+	wm, err := managers.NewWorkspaceManager(taskAccess)
+	if err != nil {
+		t.Fatalf("Failed to create WorkspaceManager: %v", err)
+	}
 
 	theme, err := manager.CreateTheme("Work", "#3b82f6")
 	if err != nil {
@@ -922,7 +970,7 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	}
 
 	// Step 1: AddColumn — insert "Review" after "doing"
-	_, err = manager.AddColumn("Review", "doing")
+	_, err = wm.AddColumn("Review", "doing")
 	if err != nil {
 		t.Fatalf("Failed to add column: %v", err)
 	}
@@ -983,7 +1031,7 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	}
 
 	// Step 3: RenameColumn — rename "review" to "QA Check"
-	_, err = manager.RenameColumn("review", "QA Check")
+	_, err = wm.RenameColumn("review", "QA Check")
 	if err != nil {
 		t.Fatalf("Failed to rename column: %v", err)
 	}
@@ -1037,7 +1085,7 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	}
 
 	// Step 4: ReorderColumns — move qa-check before doing
-	_, err = manager.ReorderColumns([]string{"todo", "qa-check", "doing", "done"})
+	_, err = wm.ReorderColumns([]string{"todo", "qa-check", "doing", "done"})
 	if err != nil {
 		t.Fatalf("Failed to reorder columns: %v", err)
 	}
@@ -1070,7 +1118,7 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 		t.Fatalf("Failed to move task2 to doing: %v", err)
 	}
 
-	_, err = manager.RemoveColumn("qa-check")
+	_, err = wm.RemoveColumn("qa-check")
 	if err != nil {
 		t.Fatalf("Failed to remove column: %v", err)
 	}

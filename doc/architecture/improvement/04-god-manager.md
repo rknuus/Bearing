@@ -1,3 +1,5 @@
+> **RESOLVED** -- PlanningManager split into 7 facet interfaces (IGoalStructure, IGoalLifecycle, ITaskExecution, IFocusPlanning, IVision, IProgress, IUIState) + WorkspaceManager extracted for board column configuration.
+
 # 04 — PlanningManager Is a God Manager
 
 ## Finding

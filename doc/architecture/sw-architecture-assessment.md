@@ -127,6 +127,8 @@ Every single save operation creates a git commit. Updating a key result's `curre
 | 01 | RuleEngine dependency inversion | `91382a4` | Engine defines own `TaskData` DTO; no `access` import in engines |
 | 02 | Shared DTOs across layers | `942fef8` | Manager defines own types; `IPlanningManager` no longer exposes `access.*` |
 | 03 | Misplaced business logic (Phase 1+2) | `a03a2a6` | Validators, `Slugify`, `SuggestAbbreviation`, `DefaultBoardConfiguration` moved to correct layers; `ProgressEngine` created |
+| 04 | God Manager | 2026-03-21 | `PlanningManager` decomposed into 7 facet interfaces + `WorkspaceManager` extracted for board column config |
+| 05 | God Resource Access | 2026-03-21 | `PlanAccess` split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess` (+ existing `UIStateAccess`) |
 | 08 | Progress computation in Manager | `a03a2a6` | New `ProgressEngine` at `internal/engines/progress_engine/` |
 | 09 | Pass-through toll booths | 2026-03-21 | New `UIStateAccess` RA; Manager stays in path (closed architecture); fixed lossy DTO conversion (7 fields were silently dropped) |
 
@@ -134,19 +136,18 @@ Every single save operation creates a git commit. Updating a key result's `curre
 
 | Priority | # | Finding | Severity | Urgency | Next action |
 |----------|---|---------|----------|---------|-------------|
-| 1 | 04 | God Manager | High | Soon | Split `PlanningManager` into OKRManager, TaskBoardManager, CalendarManager |
-| 2 | 05 | God Resource Access | High | Soon | Split `PlanAccess` into ThemeAccess, TaskAccess, CalendarAccess (in tandem with 04) |
-| 3 | 06 | God Gateway | High | Soon | Extract startup orchestration and `GetLocale`; full resolution depends on 04 |
-| 4 | 07 | No subsystem boundaries | Medium | Soon | Emerges naturally from 04+05; formalize in topology |
-| 5 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
-| 6 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
-| — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager during 04 decomposition |
+| 1 | 06 | God Gateway | High | Soon | Extract startup orchestration and `GetLocale`; now unblocked by 04 |
+| 2 | 07 | No subsystem boundaries | Medium | Soon | Formalize topology now that Manager/RA decomposition exists |
+| 3 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
+| 4 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
+| — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager to Engine |
+| — | — | IGoalStructure CRUD consolidation | Medium | When convenient | Consolidate 16 CRUD methods into fewer behavioral verbs |
 
 ### Recommended execution order
 
-1. **Findings 04 + 05** together — the central refactoring; split Manager and RA in tandem
-2. **Finding 06** (gateway) — simplifies naturally after Manager decomposition
-3. **Finding 07** (subsystems) — formalize the boundaries that now exist
+1. **Finding 06** (gateway) — simplifies naturally after Manager decomposition
+2. **Finding 07** (subsystems) — formalize the boundaries that now exist
+3. **IGoalStructure consolidation** — reduce CRUD interface to behavioral verbs
 4. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
 
 ---
@@ -155,6 +156,6 @@ Every single save operation creates a git commit. Updating a key result's `curre
 
 The codebase has sound instincts — interface-driven design, downward-only dependencies, atomic transactions, and state verification. These reflect genuine architectural thinking.
 
-The most critical layering violations have been resolved: the Engine no longer imports access-layer types (Finding 01), the Manager defines its own DTOs instead of leaking access types (Finding 02), business logic has been moved to the correct layers (Finding 03), and progress computation now lives in a dedicated `ProgressEngine` (Finding 08).
+The critical layering violations have been resolved (Findings 01, 02, 03, 08, 09). The structural decomposition is now complete: `PlanningManager` exposes 7 volatility-driven facet interfaces (`IGoalStructure`, `IGoalLifecycle`, `ITaskExecution`, `IFocusPlanning`, `IVision`, `IProgress`, `IUIState`), workspace configuration is encapsulated by `WorkspaceManager`, and `PlanAccess` has been split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess`, and `UIStateAccess` (Findings 04, 05).
 
-The remaining work is structural decomposition. The God Manager (38 methods, 13+ concerns) and God Resource Access (30+ methods, 8 resources) are the central problems. Splitting them into concern-aligned components — OKRManager, TaskBoardManager, CalendarManager with corresponding RAs — will establish proper subsystem boundaries and complete the transition from "well-organized feature code" to "architecture with good code."
+The remaining work is gateway cleanup (Finding 06), formalizing subsystem boundaries in the topology (Finding 07), and consolidating the `IGoalStructure` facet from 16 CRUD-style methods into fewer behavioral verbs.

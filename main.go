@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/managers"
 	"github.com/rkn/bearing/internal/utilities"
 	"github.com/wailsapp/wails/v2"
@@ -27,9 +28,10 @@ var assets embed.FS
 
 // App struct holds the application state
 type App struct {
-	ctx             context.Context
-	planningManager *managers.PlanningManager
-	logFile         *os.File
+	ctx              context.Context
+	planningManager  *managers.PlanningManager
+	workspaceManager *managers.WorkspaceManager
+	logFile          *os.File
 }
 
 // NewApp creates a new App application struct
@@ -86,15 +88,45 @@ func (a *App) startup(ctx context.Context) {
 		return
 	}
 
-	// Initialize PlanningManager
-	planningManager, err := managers.NewPlanningManagerFromPath(repoPath, repo)
+	// Initialize Resource Access components
+	dataPath := repoPath
+	themeAccess, err := access.NewThemeAccess(dataPath, repo)
+	if err != nil {
+		slog.Warn("Failed to initialize ThemeAccess", "error", err)
+		return
+	}
+	taskAccess, err := access.NewTaskAccess(dataPath, repo)
+	if err != nil {
+		slog.Warn("Failed to initialize TaskAccess", "error", err)
+		return
+	}
+	calendarAccess, err := access.NewCalendarAccess(dataPath, repo)
+	if err != nil {
+		slog.Warn("Failed to initialize CalendarAccess", "error", err)
+		return
+	}
+	visionAccess, err := access.NewVisionAccess(dataPath, repo)
+	if err != nil {
+		slog.Warn("Failed to initialize VisionAccess", "error", err)
+		return
+	}
+	uiStateAccess := access.NewUIStateAccess(dataPath)
+
+	// Initialize Managers
+	planningManager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess)
 	if err != nil {
 		slog.Warn("Failed to initialize PlanningManager", "error", err)
 		return
 	}
+	workspaceManager, err := managers.NewWorkspaceManager(taskAccess)
+	if err != nil {
+		slog.Warn("Failed to initialize WorkspaceManager", "error", err)
+		return
+	}
 
 	a.planningManager = planningManager
-	slog.Info("Bearing initialized", "dataDir", repoPath)
+	a.workspaceManager = workspaceManager
+	slog.Info("Bearing initialized", "dataDir", dataPath)
 }
 
 // shutdown is called when the app is closing
@@ -1072,12 +1104,12 @@ func convertBoardConfig(config *managers.BoardConfiguration) *BoardConfiguration
 
 // GetBoardConfiguration returns the board structure and column layout
 func (a *App) GetBoardConfiguration() (*BoardConfiguration, error) {
-	if a.planningManager == nil {
-		slog.Warn("GetBoardConfiguration: planning manager not initialized")
-		return nil, fmt.Errorf("planning manager not initialized")
+	if a.workspaceManager == nil {
+		slog.Warn("GetBoardConfiguration: workspace manager not initialized")
+		return nil, fmt.Errorf("workspace manager not initialized")
 	}
 
-	config, err := a.planningManager.GetBoardConfiguration()
+	config, err := a.workspaceManager.GetBoardConfiguration()
 	if err != nil {
 		slog.Error("GetBoardConfiguration failed", "error", err)
 		return nil, err
@@ -1088,12 +1120,12 @@ func (a *App) GetBoardConfiguration() (*BoardConfiguration, error) {
 
 // AddColumn adds a new doing-type column after the specified column
 func (a *App) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, error) {
-	if a.planningManager == nil {
-		slog.Warn("AddColumn: planning manager not initialized")
-		return nil, fmt.Errorf("planning manager not initialized")
+	if a.workspaceManager == nil {
+		slog.Warn("AddColumn: workspace manager not initialized")
+		return nil, fmt.Errorf("workspace manager not initialized")
 	}
 
-	config, err := a.planningManager.AddColumn(title, insertAfterSlug)
+	config, err := a.workspaceManager.AddColumn(title, insertAfterSlug)
 	if err != nil {
 		slog.Error("AddColumn failed", "error", err, "title", title, "insertAfter", insertAfterSlug)
 		return nil, err
@@ -1104,12 +1136,12 @@ func (a *App) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, err
 
 // RemoveColumn removes an empty doing-type column
 func (a *App) RemoveColumn(slug string) (*BoardConfiguration, error) {
-	if a.planningManager == nil {
-		slog.Warn("RemoveColumn: planning manager not initialized")
-		return nil, fmt.Errorf("planning manager not initialized")
+	if a.workspaceManager == nil {
+		slog.Warn("RemoveColumn: workspace manager not initialized")
+		return nil, fmt.Errorf("workspace manager not initialized")
 	}
 
-	config, err := a.planningManager.RemoveColumn(slug)
+	config, err := a.workspaceManager.RemoveColumn(slug)
 	if err != nil {
 		slog.Error("RemoveColumn failed", "error", err, "slug", slug)
 		return nil, err
@@ -1120,12 +1152,12 @@ func (a *App) RemoveColumn(slug string) (*BoardConfiguration, error) {
 
 // RenameColumn renames a column, migrating its directory and task data
 func (a *App) RenameColumn(oldSlug, newTitle string) (*BoardConfiguration, error) {
-	if a.planningManager == nil {
-		slog.Warn("RenameColumn: planning manager not initialized")
-		return nil, fmt.Errorf("planning manager not initialized")
+	if a.workspaceManager == nil {
+		slog.Warn("RenameColumn: workspace manager not initialized")
+		return nil, fmt.Errorf("workspace manager not initialized")
 	}
 
-	config, err := a.planningManager.RenameColumn(oldSlug, newTitle)
+	config, err := a.workspaceManager.RenameColumn(oldSlug, newTitle)
 	if err != nil {
 		slog.Error("RenameColumn failed", "error", err, "oldSlug", oldSlug, "newTitle", newTitle)
 		return nil, err
@@ -1136,12 +1168,12 @@ func (a *App) RenameColumn(oldSlug, newTitle string) (*BoardConfiguration, error
 
 // ReorderColumns reorders columns while keeping TODO first and DONE last
 func (a *App) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
-	if a.planningManager == nil {
-		slog.Warn("ReorderColumns: planning manager not initialized")
-		return nil, fmt.Errorf("planning manager not initialized")
+	if a.workspaceManager == nil {
+		slog.Warn("ReorderColumns: workspace manager not initialized")
+		return nil, fmt.Errorf("workspace manager not initialized")
 	}
 
-	config, err := a.planningManager.ReorderColumns(slugs)
+	config, err := a.workspaceManager.ReorderColumns(slugs)
 	if err != nil {
 		slog.Error("ReorderColumns failed", "error", err)
 		return nil, err

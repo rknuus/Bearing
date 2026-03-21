@@ -17,7 +17,7 @@ type IUIStateAccess interface {
 }
 
 // UIStateAccess implements IUIStateAccess with file-based storage.
-// Unlike PlanAccess, writes are not git-versioned.
+// Writes are not git-versioned.
 type UIStateAccess struct {
 	dataPath string
 }

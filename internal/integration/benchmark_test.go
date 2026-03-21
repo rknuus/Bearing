@@ -16,7 +16,7 @@ import (
 )
 
 // setupBenchmarkEnvironment creates a test environment for benchmarking
-func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access.PlanAccess, utilities.IRepository, string, func()) {
+func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access.TaskAccess, utilities.IRepository, string, func()) {
 	b.Helper()
 
 	tmpDir, err := os.MkdirTemp("", "bearing_benchmark_*")
@@ -41,15 +41,36 @@ func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access
 		b.Fatalf("Failed to initialize repository: %v", err)
 	}
 
-	planAccess, err := access.NewPlanAccess(dataDir, repo)
+	themeAccess, err := access.NewThemeAccess(dataDir, repo)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
-		b.Fatalf("Failed to create PlanAccess: %v", err)
+		b.Fatalf("Failed to create ThemeAccess: %v", err)
+	}
+
+	taskAccess, err := access.NewTaskAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		b.Fatalf("Failed to create TaskAccess: %v", err)
+	}
+
+	calendarAccess, err := access.NewCalendarAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		b.Fatalf("Failed to create CalendarAccess: %v", err)
+	}
+
+	visionAccess, err := access.NewVisionAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		b.Fatalf("Failed to create VisionAccess: %v", err)
 	}
 
 	uiStateAccess := access.NewUIStateAccess(dataDir)
-	manager, err := managers.NewPlanningManager(planAccess, uiStateAccess)
+	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
@@ -61,7 +82,7 @@ func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access
 		os.RemoveAll(tmpDir)
 	}
 
-	return manager, planAccess, repo, tmpDir, cleanup
+	return manager, taskAccess, repo, tmpDir, cleanup
 }
 
 // =============================================================================

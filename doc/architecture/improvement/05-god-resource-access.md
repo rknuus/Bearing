@@ -1,3 +1,5 @@
+> **RESOLVED** -- PlanAccess split into ThemeAccess, TaskAccess, CalendarAccess, VisionAccess (UIStateAccess already existed).
+
 # 05 — PlanAccess Is a God Resource Access
 
 ## Finding

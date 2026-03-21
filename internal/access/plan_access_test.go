@@ -9,41 +9,67 @@ import (
 	"github.com/rkn/bearing/internal/utilities"
 )
 
-// Test helper to create a test repository and PlanAccess instance
-func setupTestPlanAccess(t *testing.T) (*PlanAccess, string, func()) {
+// testEnv holds all resource access components for testing.
+type testEnv struct {
+	themes   *ThemeAccess
+	tasks    *TaskAccess
+	calendar *CalendarAccess
+	vision   *VisionAccess
+	dataDir  string
+}
+
+// setupTestEnv creates a test repository with all resource access instances.
+// The returned testEnv.tasks also serves as "pa" for backward compat in tests.
+func setupTestEnv(t *testing.T) (*testEnv, string, func()) {
 	t.Helper()
 
-	// Create temporary directory
-	tmpDir, err := os.MkdirTemp("", "plan_access_test_*")
+	tmpDir, err := os.MkdirTemp("", "access_test_*")
 	if err != nil {
 		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 
-	// Create data subdirectory
 	dataDir := filepath.Join(tmpDir, "data")
 	if err := os.MkdirAll(dataDir, 0755); err != nil {
 		os.RemoveAll(tmpDir)
 		t.Fatalf("Failed to create data dir: %v", err)
 	}
 
-	// Initialize git repository
 	gitConfig := &utilities.AuthorConfiguration{
 		User:  "Test User",
 		Email: "test@example.com",
 	}
-
 	repo, err := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
 	if err != nil {
 		os.RemoveAll(tmpDir)
 		t.Fatalf("Failed to initialize repository: %v", err)
 	}
 
-	// Create PlanAccess
-	pa, err := NewPlanAccess(dataDir, repo)
+	themes, err := NewThemeAccess(dataDir, repo)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
-		t.Fatalf("Failed to create PlanAccess: %v", err)
+		t.Fatalf("Failed to create ThemeAccess: %v", err)
+	}
+
+	tasks, err := NewTaskAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create TaskAccess: %v", err)
+	}
+
+	cal, err := NewCalendarAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create CalendarAccess: %v", err)
+	}
+
+	vis, err := NewVisionAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create VisionAccess: %v", err)
 	}
 
 	cleanup := func() {
@@ -51,7 +77,14 @@ func setupTestPlanAccess(t *testing.T) (*PlanAccess, string, func()) {
 		os.RemoveAll(tmpDir)
 	}
 
-	return pa, tmpDir, cleanup
+	return &testEnv{themes: themes, tasks: tasks, calendar: cal, vision: vis, dataDir: dataDir}, tmpDir, cleanup
+}
+
+// setupTestPlanAccess is a backward-compatible helper that returns a TaskAccess
+// (which implements most of the old PlanAccess interface methods used in tests).
+func setupTestPlanAccess(t *testing.T) (*testEnv, string, func()) {
+	t.Helper()
+	return setupTestEnv(t)
 }
 
 // Model Tests
@@ -102,22 +135,22 @@ func TestValidPriorities(t *testing.T) {
 
 // PlanAccess Constructor Tests
 
-func TestNewPlanAccess_EmptyDataPath(t *testing.T) {
-	_, err := NewPlanAccess("", nil)
+func TestNewThemeAccess_EmptyDataPath(t *testing.T) {
+	_, err := NewThemeAccess("", nil)
 	if err == nil {
 		t.Error("Expected error for empty dataPath")
 	}
 }
 
-func TestNewPlanAccess_NilRepo(t *testing.T) {
-	_, err := NewPlanAccess("/tmp/test", nil)
+func TestNewTaskAccess_NilRepo(t *testing.T) {
+	_, err := NewTaskAccess("/tmp/test", nil)
 	if err == nil {
 		t.Error("Expected error for nil repo")
 	}
 }
 
-func TestNewPlanAccess_CreatesDirectoryStructure(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+func TestNewTaskAccess_CreatesDirectoryStructure(t *testing.T) {
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	dataDir := filepath.Join(tmpDir, "data")
@@ -135,16 +168,16 @@ func TestNewPlanAccess_CreatesDirectoryStructure(t *testing.T) {
 		}
 	}
 
-	_ = pa // Use pa to avoid unused variable warning
+	_ = env // Use env to avoid unused variable warning
 }
 
 // Theme Tests
 
 func TestGetThemes_EmptyRepository(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	themes, err := pa.GetThemes()
+	themes, err := env.themes.GetThemes()
 	if err != nil {
 		t.Fatalf("GetThemes failed: %v", err)
 	}
@@ -155,7 +188,7 @@ func TestGetThemes_EmptyRepository(t *testing.T) {
 }
 
 func TestSaveTheme_NewTheme(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{
@@ -173,13 +206,13 @@ func TestSaveTheme_NewTheme(t *testing.T) {
 		},
 	}
 
-	err := pa.SaveTheme(theme)
+	err := env.themes.SaveTheme(theme)
 	if err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Verify theme was saved
-	themes, err := pa.GetThemes()
+	themes, err := env.themes.GetThemes()
 	if err != nil {
 		t.Fatalf("GetThemes failed: %v", err)
 	}
@@ -229,7 +262,7 @@ func TestSaveTheme_NewTheme(t *testing.T) {
 }
 
 func TestSaveTheme_UpdateExisting(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create initial theme
@@ -238,7 +271,7 @@ func TestSaveTheme_UpdateExisting(t *testing.T) {
 		Name:  "Health",
 		Color: "#00FF00",
 	}
-	err := pa.SaveTheme(theme)
+	err := env.themes.SaveTheme(theme)
 	if err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
@@ -249,13 +282,13 @@ func TestSaveTheme_UpdateExisting(t *testing.T) {
 		Name:  "Health & Wellness",
 		Color: "#00FF99",
 	}
-	err = pa.SaveTheme(updatedTheme)
+	err = env.themes.SaveTheme(updatedTheme)
 	if err != nil {
 		t.Fatalf("SaveTheme update failed: %v", err)
 	}
 
 	// Verify update
-	themes, err := pa.GetThemes()
+	themes, err := env.themes.GetThemes()
 	if err != nil {
 		t.Fatalf("GetThemes failed: %v", err)
 	}
@@ -270,7 +303,7 @@ func TestSaveTheme_UpdateExisting(t *testing.T) {
 }
 
 func TestSaveTheme_MultipleThemes(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	themes := []LifeTheme{
@@ -280,12 +313,12 @@ func TestSaveTheme_MultipleThemes(t *testing.T) {
 	}
 
 	for _, theme := range themes {
-		if err := pa.SaveTheme(theme); err != nil {
+		if err := env.themes.SaveTheme(theme); err != nil {
 			t.Fatalf("SaveTheme failed: %v", err)
 		}
 	}
 
-	saved, err := pa.GetThemes()
+	saved, err := env.themes.GetThemes()
 	if err != nil {
 		t.Fatalf("GetThemes failed: %v", err)
 	}
@@ -304,28 +337,28 @@ func TestSaveTheme_MultipleThemes(t *testing.T) {
 }
 
 func TestDeleteTheme(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create themes
 	theme1 := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
 	theme2 := LifeTheme{ID: "C", Name: "Career", Color: "#0000FF"}
 
-	if err := pa.SaveTheme(theme1); err != nil {
+	if err := env.themes.SaveTheme(theme1); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
-	if err := pa.SaveTheme(theme2); err != nil {
+	if err := env.themes.SaveTheme(theme2); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Delete first theme
-	err := pa.DeleteTheme("H")
+	err := env.themes.DeleteTheme("H")
 	if err != nil {
 		t.Fatalf("DeleteTheme failed: %v", err)
 	}
 
 	// Verify deletion
-	themes, err := pa.GetThemes()
+	themes, err := env.themes.GetThemes()
 	if err != nil {
 		t.Fatalf("GetThemes failed: %v", err)
 	}
@@ -340,10 +373,10 @@ func TestDeleteTheme(t *testing.T) {
 }
 
 func TestDeleteTheme_NotFound(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	err := pa.DeleteTheme("ZZZ")
+	err := env.themes.DeleteTheme("ZZZ")
 	if err == nil {
 		t.Error("Expected error when deleting non-existent theme")
 	}
@@ -352,10 +385,10 @@ func TestDeleteTheme_NotFound(t *testing.T) {
 // DayFocus Tests
 
 func TestGetDayFocus_NotFound(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	dayFocus, err := pa.GetDayFocus("2026-01-15")
+	dayFocus, err := env.calendar.GetDayFocus("2026-01-15")
 	if err != nil {
 		t.Fatalf("GetDayFocus failed: %v", err)
 	}
@@ -366,12 +399,12 @@ func TestGetDayFocus_NotFound(t *testing.T) {
 }
 
 func TestSaveDayFocus(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create a theme first
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -382,13 +415,13 @@ func TestSaveDayFocus(t *testing.T) {
 		Notes:    "Focus on morning exercise",
 	}
 
-	err := pa.SaveDayFocus(dayFocus)
+	err := env.calendar.SaveDayFocus(dayFocus)
 	if err != nil {
 		t.Fatalf("SaveDayFocus failed: %v", err)
 	}
 
 	// Retrieve and verify
-	retrieved, err := pa.GetDayFocus("2026-01-15")
+	retrieved, err := env.calendar.GetDayFocus("2026-01-15")
 	if err != nil {
 		t.Fatalf("GetDayFocus failed: %v", err)
 	}
@@ -409,7 +442,7 @@ func TestSaveDayFocus(t *testing.T) {
 }
 
 func TestSaveDayFocus_Update(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Save initial day focus
@@ -419,18 +452,18 @@ func TestSaveDayFocus_Update(t *testing.T) {
 		Notes:    "Initial notes",
 	}
 
-	if err := pa.SaveDayFocus(dayFocus); err != nil {
+	if err := env.calendar.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("SaveDayFocus failed: %v", err)
 	}
 
 	// Update
 	dayFocus.Notes = "Updated notes"
-	if err := pa.SaveDayFocus(dayFocus); err != nil {
+	if err := env.calendar.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("SaveDayFocus update failed: %v", err)
 	}
 
 	// Verify
-	retrieved, err := pa.GetDayFocus("2026-01-15")
+	retrieved, err := env.calendar.GetDayFocus("2026-01-15")
 	if err != nil {
 		t.Fatalf("GetDayFocus failed: %v", err)
 	}
@@ -441,7 +474,7 @@ func TestSaveDayFocus_Update(t *testing.T) {
 }
 
 func TestGetYearFocus(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Save multiple day focuses
@@ -452,13 +485,13 @@ func TestGetYearFocus(t *testing.T) {
 	}
 
 	for _, day := range days {
-		if err := pa.SaveDayFocus(day); err != nil {
+		if err := env.calendar.SaveDayFocus(day); err != nil {
 			t.Fatalf("SaveDayFocus failed: %v", err)
 		}
 	}
 
 	// Get year focus
-	yearFocus, err := pa.GetYearFocus(2026)
+	yearFocus, err := env.calendar.GetYearFocus(2026)
 	if err != nil {
 		t.Fatalf("GetYearFocus failed: %v", err)
 	}
@@ -477,10 +510,10 @@ func TestGetYearFocus(t *testing.T) {
 }
 
 func TestGetYearFocus_EmptyYear(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	yearFocus, err := pa.GetYearFocus(2025)
+	yearFocus, err := env.calendar.GetYearFocus(2025)
 	if err != nil {
 		t.Fatalf("GetYearFocus failed: %v", err)
 	}
@@ -493,12 +526,12 @@ func TestGetYearFocus_EmptyYear(t *testing.T) {
 // Task Tests
 
 func TestSaveTask_NewTask(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create a theme first
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -509,13 +542,13 @@ func TestSaveTask_NewTask(t *testing.T) {
 		Priority: string(PriorityImportantUrgent),
 	}
 
-	err := pa.SaveTask(task)
+	err := env.tasks.SaveTask(task)
 	if err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Retrieve and verify
-	tasks, err := pa.GetTasksByTheme("H")
+	tasks, err := env.tasks.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -534,14 +567,14 @@ func TestSaveTask_NewTask(t *testing.T) {
 }
 
 func TestSaveTask_ThemeChange(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create two themes
-	if err := pa.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#0000FF"}); err != nil {
+	if err := env.themes.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#0000FF"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
-	if err := pa.SaveTheme(LifeTheme{ID: "L", Name: "Learning", Color: "#00FF00"}); err != nil {
+	if err := env.themes.SaveTheme(LifeTheme{ID: "L", Name: "Learning", Color: "#00FF00"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -551,12 +584,12 @@ func TestSaveTask_ThemeChange(t *testing.T) {
 		ThemeID:  "W",
 		Priority: string(PriorityImportantUrgent),
 	}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Verify task exists under Work
-	workTasks, err := pa.GetTasksByTheme("W")
+	workTasks, err := env.tasks.GetTasksByTheme("W")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -567,12 +600,12 @@ func TestSaveTask_ThemeChange(t *testing.T) {
 	// Move task to Learning theme by updating themeId
 	movedTask := workTasks[0]
 	movedTask.ThemeID = "L"
-	if err := pa.SaveTask(movedTask); err != nil {
+	if err := env.tasks.SaveTask(movedTask); err != nil {
 		t.Fatalf("SaveTask (theme change) failed: %v", err)
 	}
 
 	// Old theme should have no tasks
-	workTasks, err = pa.GetTasksByTheme("W")
+	workTasks, err = env.tasks.GetTasksByTheme("W")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -581,7 +614,7 @@ func TestSaveTask_ThemeChange(t *testing.T) {
 	}
 
 	// New theme should have the task
-	learnTasks, err := pa.GetTasksByTheme("L")
+	learnTasks, err := env.tasks.GetTasksByTheme("L")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -597,26 +630,26 @@ func TestSaveTask_ThemeChange(t *testing.T) {
 }
 
 func TestSaveTask_EmptyThemeID(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	task := Task{
 		Title: "Test task",
 	}
 
-	err := pa.SaveTask(task)
+	err := env.tasks.SaveTask(task)
 	if err == nil {
 		t.Error("Expected error for empty themeID")
 	}
 }
 
 func TestGetTasksByStatus(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -626,12 +659,12 @@ func TestGetTasksByStatus(t *testing.T) {
 		ThemeID: "H",
 	}
 
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Get tasks by status
-	todoTasks, err := pa.GetTasksByStatus("todo")
+	todoTasks, err := env.tasks.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -641,7 +674,7 @@ func TestGetTasksByStatus(t *testing.T) {
 	}
 
 	// No doing tasks
-	doingTasks, err := pa.GetTasksByStatus("doing")
+	doingTasks, err := env.tasks.GetTasksByStatus("doing")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -652,10 +685,10 @@ func TestGetTasksByStatus(t *testing.T) {
 }
 
 func TestGetTasksByStatus_UnknownStatus_ReturnsEmpty(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	tasks, err := pa.GetTasksByStatus("nonexistent-column")
+	tasks, err := env.tasks.GetTasksByStatus("nonexistent-column")
 	if err != nil {
 		t.Errorf("Expected no error for unknown status directory, got: %v", err)
 	}
@@ -665,12 +698,12 @@ func TestGetTasksByStatus_UnknownStatus_ReturnsEmpty(t *testing.T) {
 }
 
 func TestMoveTask(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -680,19 +713,19 @@ func TestMoveTask(t *testing.T) {
 		ThemeID: "H",
 	}
 
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Move to doing
-	err := pa.MoveTask("H-T1", "doing")
+	err := env.tasks.MoveTask("H-T1", "doing")
 	if err != nil {
 		t.Fatalf("MoveTask failed: %v", err)
 	}
 
 	// Verify task moved
-	todoTasks, _ := pa.GetTasksByStatus("todo")
-	doingTasks, _ := pa.GetTasksByStatus("doing")
+	todoTasks, _ := env.tasks.GetTasksByStatus("todo")
+	doingTasks, _ := env.tasks.GetTasksByStatus("doing")
 
 	if len(todoTasks) != 0 {
 		t.Errorf("Expected 0 todo tasks, got %d", len(todoTasks))
@@ -715,38 +748,38 @@ func TestMoveTask(t *testing.T) {
 }
 
 func TestMoveTask_InvalidStatus(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	err := pa.MoveTask("H-T1", "invalid")
+	err := env.tasks.MoveTask("H-T1", "invalid")
 	if err == nil {
 		t.Error("Expected error for invalid status")
 	}
 }
 
 func TestMoveTask_NotFound(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme to have something searchable
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	err := pa.MoveTask("H-T999", "doing")
+	err := env.tasks.MoveTask("H-T999", "doing")
 	if err == nil {
 		t.Error("Expected error for non-existent task")
 	}
 }
 
 func TestDeleteTask(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -756,18 +789,18 @@ func TestDeleteTask(t *testing.T) {
 		ThemeID: "H",
 	}
 
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Delete task
-	err := pa.DeleteTask("H-T1")
+	err := env.tasks.DeleteTask("H-T1")
 	if err != nil {
 		t.Fatalf("DeleteTask failed: %v", err)
 	}
 
 	// Verify deletion
-	tasks, err := pa.GetTasksByTheme("H")
+	tasks, err := env.tasks.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -784,16 +817,16 @@ func TestDeleteTask(t *testing.T) {
 }
 
 func TestDeleteTask_NotFound(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	err := pa.DeleteTask("H-T999")
+	err := env.tasks.DeleteTask("H-T999")
 	if err == nil {
 		t.Error("Expected error for non-existent task")
 	}
@@ -802,7 +835,7 @@ func TestDeleteTask_NotFound(t *testing.T) {
 // Flat ID Generation Tests
 
 func TestFlatIDGeneration(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{
@@ -826,12 +859,12 @@ func TestFlatIDGeneration(t *testing.T) {
 		},
 	}
 
-	err := pa.SaveTheme(theme)
+	err := env.themes.SaveTheme(theme)
 	if err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	themes, _ := pa.GetThemes()
+	themes, _ := env.themes.GetThemes()
 	saved := themes[0]
 
 	// Theme ID
@@ -881,12 +914,12 @@ func TestFlatIDGeneration(t *testing.T) {
 // Task ID Generation Tests
 
 func TestTaskIDGeneration(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -896,12 +929,12 @@ func TestTaskIDGeneration(t *testing.T) {
 			Title:   "Task",
 			ThemeID: "H",
 		}
-		if err := pa.SaveTask(task); err != nil {
+		if err := env.tasks.SaveTask(task); err != nil {
 			t.Fatalf("SaveTask failed: %v", err)
 		}
 	}
 
-	tasks, err := pa.GetTasksByTheme("H")
+	tasks, err := env.tasks.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -927,7 +960,7 @@ func TestTaskIDGeneration(t *testing.T) {
 // File Structure Tests
 
 func TestFileStructure(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	dataDir := filepath.Join(tmpDir, "data")
@@ -946,7 +979,7 @@ func TestFileStructure(t *testing.T) {
 			},
 		},
 	}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -973,7 +1006,7 @@ func TestFileStructure(t *testing.T) {
 
 	// Save day focus and verify calendar structure
 	dayFocus := DayFocus{Date: "2026-01-15", ThemeIDs: []string{"H"}, Notes: "Test"}
-	if err := pa.SaveDayFocus(dayFocus); err != nil {
+	if err := env.calendar.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("SaveDayFocus failed: %v", err)
 	}
 
@@ -984,7 +1017,7 @@ func TestFileStructure(t *testing.T) {
 
 	// Save task and verify task structure
 	task := Task{Title: "Test task", ThemeID: "H"}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
@@ -997,12 +1030,12 @@ func TestFileStructure(t *testing.T) {
 // Git Versioning Tests
 
 func TestGitVersioning_ThemeCommit(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -1034,22 +1067,22 @@ func TestGitVersioning_ThemeCommit(t *testing.T) {
 }
 
 func TestGitVersioning_MoveTaskUsesGitMv(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme and task
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	task := Task{Title: "Test task", ThemeID: "H"}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Move task
-	if err := pa.MoveTask("H-T1", "doing"); err != nil {
+	if err := env.tasks.MoveTask("H-T1", "doing"); err != nil {
 		t.Fatalf("MoveTask failed: %v", err)
 	}
 
@@ -1079,7 +1112,7 @@ func TestGitVersioning_MoveTaskUsesGitMv(t *testing.T) {
 // Recursive Flat ID Generation Tests
 
 func TestRecursiveObjectiveIDGeneration(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{
@@ -1119,12 +1152,12 @@ func TestRecursiveObjectiveIDGeneration(t *testing.T) {
 		},
 	}
 
-	err := pa.SaveTheme(theme)
+	err := env.themes.SaveTheme(theme)
 	if err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	themes, _ := pa.GetThemes()
+	themes, _ := env.themes.GetThemes()
 	saved := themes[0]
 
 	// Top-level objective: H-O1 (Fitness), parentId = H
@@ -1195,7 +1228,7 @@ func TestRecursiveObjectiveIDGeneration(t *testing.T) {
 }
 
 func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// First save: create theme with initial objectives
@@ -1218,13 +1251,13 @@ func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
 		},
 	}
 
-	err := pa.SaveTheme(theme)
+	err := env.themes.SaveTheme(theme)
 	if err != nil {
 		t.Fatalf("SaveTheme (initial) failed: %v", err)
 	}
 
 	// Read back the saved theme to get assigned IDs
-	themes, _ := pa.GetThemes()
+	themes, _ := env.themes.GetThemes()
 	initial := themes[0]
 
 	// Verify initial IDs: C-O1, C-O2, C-KR1
@@ -1267,12 +1300,12 @@ func TestRecursiveIDGeneration_PreservesExistingIDs(t *testing.T) {
 		},
 	}
 
-	err = pa.SaveTheme(updated)
+	err = env.themes.SaveTheme(updated)
 	if err != nil {
 		t.Fatalf("SaveTheme (update) failed: %v", err)
 	}
 
-	themes, _ = pa.GetThemes()
+	themes, _ = env.themes.GetThemes()
 	saved := themes[0]
 
 	// Existing IDs preserved
@@ -1410,10 +1443,10 @@ func TestExtractThemeAbbr(t *testing.T) {
 // Task Order Tests
 
 func TestLoadTaskOrder_Missing(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	order, err := pa.LoadTaskOrder()
+	order, err := env.tasks.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
@@ -1423,7 +1456,7 @@ func TestLoadTaskOrder_Missing(t *testing.T) {
 }
 
 func TestSaveAndLoadTaskOrder(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	order := map[string][]string{
@@ -1431,11 +1464,11 @@ func TestSaveAndLoadTaskOrder(t *testing.T) {
 		"important-urgent": {"H-T3", "H-T4", "H-T5"},
 	}
 
-	if err := pa.SaveTaskOrder(order); err != nil {
+	if err := env.tasks.SaveTaskOrder(order); err != nil {
 		t.Fatalf("SaveTaskOrder failed: %v", err)
 	}
 
-	loaded, err := pa.LoadTaskOrder()
+	loaded, err := env.tasks.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
@@ -1455,22 +1488,22 @@ func TestSaveAndLoadTaskOrder(t *testing.T) {
 }
 
 func TestSaveTaskOrder_Overwrite(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Save initial order
 	order1 := map[string][]string{"doing": {"H-T1"}}
-	if err := pa.SaveTaskOrder(order1); err != nil {
+	if err := env.tasks.SaveTaskOrder(order1); err != nil {
 		t.Fatalf("SaveTaskOrder failed: %v", err)
 	}
 
 	// Overwrite
 	order2 := map[string][]string{"doing": {"H-T2", "H-T1"}}
-	if err := pa.SaveTaskOrder(order2); err != nil {
+	if err := env.tasks.SaveTaskOrder(order2); err != nil {
 		t.Fatalf("SaveTaskOrder failed: %v", err)
 	}
 
-	loaded, err := pa.LoadTaskOrder()
+	loaded, err := env.tasks.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
@@ -1481,7 +1514,7 @@ func TestSaveTaskOrder_Overwrite(t *testing.T) {
 }
 
 func TestSaveTaskOrder_Idempotent(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	order := map[string][]string{
@@ -1490,12 +1523,12 @@ func TestSaveTaskOrder_Idempotent(t *testing.T) {
 	}
 
 	// First save — should commit
-	if err := pa.SaveTaskOrder(order); err != nil {
+	if err := env.tasks.SaveTaskOrder(order); err != nil {
 		t.Fatalf("First SaveTaskOrder failed: %v", err)
 	}
 
 	// Second save with identical data — should succeed (no error)
-	if err := pa.SaveTaskOrder(order); err != nil {
+	if err := env.tasks.SaveTaskOrder(order); err != nil {
 		t.Fatalf("Second SaveTaskOrder with identical data should not fail, got: %v", err)
 	}
 
@@ -1521,10 +1554,10 @@ func TestSaveTaskOrder_Idempotent(t *testing.T) {
 }
 
 func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
+	gitignorePath := filepath.Join(env.tasks.dataPath, ".gitignore")
 	data, err := os.ReadFile(gitignorePath)
 	if err != nil {
 		t.Fatalf("Expected .gitignore to exist: %v", err)
@@ -1536,12 +1569,12 @@ func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
 }
 
 func TestSaveTaskWithOrder(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create a theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -1551,7 +1584,7 @@ func TestSaveTaskWithOrder(t *testing.T) {
 		Priority: string(PriorityImportantUrgent),
 	}
 
-	saved, err := pa.SaveTaskWithOrder(task, "important-urgent")
+	saved, err := env.tasks.SaveTaskWithOrder(task, "important-urgent")
 	if err != nil {
 		t.Fatalf("SaveTaskWithOrder failed: %v", err)
 	}
@@ -1561,7 +1594,7 @@ func TestSaveTaskWithOrder(t *testing.T) {
 	}
 
 	// Verify task was saved
-	tasks, err := pa.GetTasksByTheme("H")
+	tasks, err := env.tasks.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -1570,7 +1603,7 @@ func TestSaveTaskWithOrder(t *testing.T) {
 	}
 
 	// Verify task order was updated
-	order, err := pa.LoadTaskOrder()
+	order, err := env.tasks.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
@@ -1580,11 +1613,11 @@ func TestSaveTaskWithOrder(t *testing.T) {
 }
 
 func TestSaveTaskWithOrder_Multiple(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
@@ -1595,14 +1628,14 @@ func TestSaveTaskWithOrder_Multiple(t *testing.T) {
 			ThemeID:  "H",
 			Priority: string(PriorityImportantUrgent),
 		}
-		_, err := pa.SaveTaskWithOrder(task, "important-urgent")
+		_, err := env.tasks.SaveTaskWithOrder(task, "important-urgent")
 		if err != nil {
 			t.Fatalf("SaveTaskWithOrder #%d failed: %v", i+1, err)
 		}
 	}
 
 	// Verify all 5 tasks exist
-	tasks, err := pa.GetTasksByTheme("H")
+	tasks, err := env.tasks.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -1611,7 +1644,7 @@ func TestSaveTaskWithOrder_Multiple(t *testing.T) {
 	}
 
 	// Verify task order contains all 5
-	order, err := pa.LoadTaskOrder()
+	order, err := env.tasks.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
@@ -1621,35 +1654,35 @@ func TestSaveTaskWithOrder_Multiple(t *testing.T) {
 }
 
 func TestDeleteTaskWithOrder(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create a theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Create tasks with order
 	task1 := Task{Title: "Task 1", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	saved1, err := pa.SaveTaskWithOrder(task1, "important-urgent")
+	saved1, err := env.tasks.SaveTaskWithOrder(task1, "important-urgent")
 	if err != nil {
 		t.Fatalf("SaveTaskWithOrder failed: %v", err)
 	}
 
 	task2 := Task{Title: "Task 2", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	_, err = pa.SaveTaskWithOrder(task2, "important-urgent")
+	_, err = env.tasks.SaveTaskWithOrder(task2, "important-urgent")
 	if err != nil {
 		t.Fatalf("SaveTaskWithOrder failed: %v", err)
 	}
 
 	// Delete first task
-	if err := pa.DeleteTaskWithOrder(saved1.ID); err != nil {
+	if err := env.tasks.DeleteTaskWithOrder(saved1.ID); err != nil {
 		t.Fatalf("DeleteTaskWithOrder failed: %v", err)
 	}
 
 	// Verify task was deleted
-	tasks, err := pa.GetTasksByTheme("H")
+	tasks, err := env.tasks.GetTasksByTheme("H")
 	if err != nil {
 		t.Fatalf("GetTasksByTheme failed: %v", err)
 	}
@@ -1658,7 +1691,7 @@ func TestDeleteTaskWithOrder(t *testing.T) {
 	}
 
 	// Verify task order was updated
-	order, err := pa.LoadTaskOrder()
+	order, err := env.tasks.LoadTaskOrder()
 	if err != nil {
 		t.Fatalf("LoadTaskOrder failed: %v", err)
 	}
@@ -1671,35 +1704,35 @@ func TestDeleteTaskWithOrder(t *testing.T) {
 }
 
 func TestUpdateTaskWithOrderMove(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Create task in important-urgent zone
 	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	saved, err := pa.SaveTaskWithOrder(task, "important-urgent")
+	saved, err := env.tasks.SaveTaskWithOrder(task, "important-urgent")
 	if err != nil {
 		t.Fatalf("SaveTaskWithOrder failed: %v", err)
 	}
 
 	// Verify initial zone
-	order, _ := pa.LoadTaskOrder()
+	order, _ := env.tasks.LoadTaskOrder()
 	if len(order["important-urgent"]) != 1 || order["important-urgent"][0] != saved.ID {
 		t.Fatalf("Expected task in important-urgent zone, got %v", order)
 	}
 
 	// Move to important-not-urgent zone
 	saved.Priority = string(PriorityImportantNotUrgent)
-	if err := pa.UpdateTaskWithOrderMove(*saved, "important-urgent", "important-not-urgent"); err != nil {
+	if err := env.tasks.UpdateTaskWithOrderMove(*saved, "important-urgent", "important-not-urgent"); err != nil {
 		t.Fatalf("UpdateTaskWithOrderMove failed: %v", err)
 	}
 
 	// Verify task file updated
-	tasks, _ := pa.GetTasksByStatus("todo")
+	tasks, _ := env.tasks.GetTasksByStatus("todo")
 	if len(tasks) != 1 {
 		t.Fatalf("Expected 1 task, got %d", len(tasks))
 	}
@@ -1708,7 +1741,7 @@ func TestUpdateTaskWithOrderMove(t *testing.T) {
 	}
 
 	// Verify zone moved in task_order.json
-	orderAfter, _ := pa.LoadTaskOrder()
+	orderAfter, _ := env.tasks.LoadTaskOrder()
 	if len(orderAfter["important-urgent"]) != 0 {
 		t.Errorf("Expected empty important-urgent zone, got %v", orderAfter["important-urgent"])
 	}
@@ -1718,48 +1751,48 @@ func TestUpdateTaskWithOrderMove(t *testing.T) {
 }
 
 func TestUpdateTaskWithOrderMove_MissingFromOldZone(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Create task but DON'T add to order (simulating stale state)
 	task := Task{Title: "Orphan task", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
-	tasks, _ := pa.GetTasksByStatus("todo")
+	tasks, _ := env.tasks.GetTasksByStatus("todo")
 	savedTask := tasks[0]
 
 	// Move from a zone the task isn't in — should still append to new zone
 	savedTask.Priority = string(PriorityImportantNotUrgent)
-	if err := pa.UpdateTaskWithOrderMove(savedTask, "important-urgent", "important-not-urgent"); err != nil {
+	if err := env.tasks.UpdateTaskWithOrderMove(savedTask, "important-urgent", "important-not-urgent"); err != nil {
 		t.Fatalf("UpdateTaskWithOrderMove failed: %v", err)
 	}
 
-	order, _ := pa.LoadTaskOrder()
+	order, _ := env.tasks.LoadTaskOrder()
 	if len(order["important-not-urgent"]) != 1 || order["important-not-urgent"][0] != savedTask.ID {
 		t.Errorf("Expected task in important-not-urgent zone, got %v", order)
 	}
 }
 
 func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Overwrite with custom content that already includes tasks/drafts.json
-	gitignorePath := filepath.Join(pa.dataPath, ".gitignore")
+	gitignorePath := filepath.Join(env.tasks.dataPath, ".gitignore")
 	custom := "custom_file.txt\nnavigation_context.json\ntasks/drafts.json\n"
 	if err := os.WriteFile(gitignorePath, []byte(custom), 0644); err != nil {
 		t.Fatalf("Failed to write custom .gitignore: %v", err)
 	}
 
 	// Re-run ensureDirectoryStructure
-	if err := pa.ensureDirectoryStructure(); err != nil {
+	if err := env.tasks.ensureDirectoryStructure(); err != nil {
 		t.Fatalf("ensureDirectoryStructure failed: %v", err)
 	}
 
@@ -1775,30 +1808,30 @@ func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) 
 // --- Archive / Restore tests ---
 
 func TestArchiveTask(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Move to done first, then archive
-	if err := pa.MoveTask("H-T1", "done"); err != nil {
+	if err := env.tasks.MoveTask("H-T1", "done"); err != nil {
 		t.Fatalf("MoveTask failed: %v", err)
 	}
 
-	if err := pa.ArchiveTask("H-T1"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
 		t.Fatalf("ArchiveTask failed: %v", err)
 	}
 
 	// Verify task is in archived
-	archivedTasks, err := pa.GetTasksByStatus("archived")
+	archivedTasks, err := env.tasks.GetTasksByStatus("archived")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -1807,7 +1840,7 @@ func TestArchiveTask(t *testing.T) {
 	}
 
 	// Verify removed from done
-	doneTasks, _ := pa.GetTasksByStatus("done")
+	doneTasks, _ := env.tasks.GetTasksByStatus("done")
 	if len(doneTasks) != 0 {
 		t.Errorf("Expected 0 done tasks, got %d", len(doneTasks))
 	}
@@ -1820,66 +1853,66 @@ func TestArchiveTask(t *testing.T) {
 }
 
 func TestArchiveTask_AlreadyArchived(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	task := Task{Title: "Test", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
-	if err := pa.ArchiveTask("H-T1"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
 		t.Fatalf("ArchiveTask failed: %v", err)
 	}
 
 	// Archiving again should be a no-op
-	if err := pa.ArchiveTask("H-T1"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
 		t.Errorf("ArchiveTask on already archived task should not error, got: %v", err)
 	}
 }
 
 func TestArchiveTask_NotFound(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	err := pa.ArchiveTask("H-T999")
+	err := env.tasks.ArchiveTask("H-T999")
 	if err == nil {
 		t.Error("Expected error for non-existent task")
 	}
 }
 
 func TestRestoreTask(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
-	if err := pa.ArchiveTask("H-T1"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
 		t.Fatalf("ArchiveTask failed: %v", err)
 	}
 
-	if err := pa.RestoreTask("H-T1"); err != nil {
+	if err := env.tasks.RestoreTask("H-T1"); err != nil {
 		t.Fatalf("RestoreTask failed: %v", err)
 	}
 
 	// Verify task is in done
-	doneTasks, err := pa.GetTasksByStatus("done")
+	doneTasks, err := env.tasks.GetTasksByStatus("done")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -1888,7 +1921,7 @@ func TestRestoreTask(t *testing.T) {
 	}
 
 	// Verify removed from archived
-	archivedTasks, _ := pa.GetTasksByStatus("archived")
+	archivedTasks, _ := env.tasks.GetTasksByStatus("archived")
 	if len(archivedTasks) != 0 {
 		t.Errorf("Expected 0 archived tasks, got %d", len(archivedTasks))
 	}
@@ -1901,64 +1934,64 @@ func TestRestoreTask(t *testing.T) {
 }
 
 func TestRestoreTask_NotArchived(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	task := Task{Title: "Test", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task); err != nil {
+	if err := env.tasks.SaveTask(task); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
-	err := pa.RestoreTask("H-T1")
+	err := env.tasks.RestoreTask("H-T1")
 	if err == nil {
 		t.Error("Expected error when restoring non-archived task")
 	}
 }
 
 func TestRestoreTask_NotFound(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
-	err := pa.RestoreTask("H-T999")
+	err := env.tasks.RestoreTask("H-T999")
 	if err == nil {
 		t.Error("Expected error for non-existent task")
 	}
 }
 
 func TestGetTasksByStatus_Archived(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Create two tasks, archive one
 	t1 := Task{Title: "Task 1", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	t2 := Task{Title: "Task 2", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(t1); err != nil {
+	if err := env.tasks.SaveTask(t1); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
-	if err := pa.SaveTask(t2); err != nil {
+	if err := env.tasks.SaveTask(t2); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
-	if err := pa.ArchiveTask("H-T1"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
 		t.Fatalf("ArchiveTask failed: %v", err)
 	}
 
 	// Should find only the archived task
-	archivedTasks, err := pa.GetTasksByStatus("archived")
+	archivedTasks, err := env.tasks.GetTasksByStatus("archived")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -1985,40 +2018,40 @@ func TestAllTaskStatuses_IncludesArchived(t *testing.T) {
 }
 
 func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Create two tasks: H-T1 and H-T2
 	task1 := Task{Title: "Task one", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task1); err != nil {
+	if err := env.tasks.SaveTask(task1); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 	task2 := Task{Title: "Task two", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task2); err != nil {
+	if err := env.tasks.SaveTask(task2); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Archive both tasks
-	if err := pa.ArchiveTask("H-T1"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
 		t.Fatalf("ArchiveTask H-T1 failed: %v", err)
 	}
-	if err := pa.ArchiveTask("H-T2"); err != nil {
+	if err := env.tasks.ArchiveTask("H-T2"); err != nil {
 		t.Fatalf("ArchiveTask H-T2 failed: %v", err)
 	}
 
 	// Create a new task — should get H-T3, not H-T1 (collision with archived)
 	task3 := Task{Title: "Task three", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task3); err != nil {
+	if err := env.tasks.SaveTask(task3); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Verify new task got H-T3
-	todoTasks, err := pa.GetTasksByStatus("todo")
+	todoTasks, err := env.tasks.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -2031,29 +2064,29 @@ func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
 }
 
 func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create theme
 	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := pa.SaveTheme(theme); err != nil {
+	if err := env.themes.SaveTheme(theme); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Create a task normally — gets H-T1
 	task1 := Task{Title: "Task one", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task1); err != nil {
+	if err := env.tasks.SaveTask(task1); err != nil {
 		t.Fatalf("SaveTask failed: %v", err)
 	}
 
 	// Manually place a rogue file at H-T2 in archived (simulating corruption)
-	archivedDir := pa.taskDirPath("archived")
+	archivedDir := env.tasks.taskDirPath("archived")
 	if err := os.MkdirAll(archivedDir, 0755); err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
 	rogueTask := Task{ID: "H-T2", Title: "Rogue", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
 	rogueData, _ := json.Marshal(rogueTask)
-	roguePath := pa.taskFilePath("archived", "H-T2")
+	roguePath := env.tasks.taskFilePath("archived", "H-T2")
 	if err := os.WriteFile(roguePath, rogueData, 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
@@ -2062,12 +2095,12 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 	// H-T2 in archived — even if H-T2's internal themeId doesn't match.
 	// It generates H-T3 (max=2, next=3).
 	task2 := Task{Title: "Task two", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(task2); err != nil {
+	if err := env.tasks.SaveTask(task2); err != nil {
 		t.Fatalf("SaveTask should succeed (generateTaskID returns H-T3, no conflict): %v", err)
 	}
 
 	// Verify H-T3 was created (H-T2 was seen in archived, so max=2, next=3)
-	todoTasks, err := pa.GetTasksByStatus("todo")
+	todoTasks, err := env.tasks.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -2083,35 +2116,35 @@ func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
 }
 
 func TestGenerateTaskIDMismatchedThemeInFile(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Create two themes
-	if err := pa.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#FF0000"}); err != nil {
+	if err := env.themes.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#FF0000"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
-	if err := pa.SaveTheme(LifeTheme{ID: "L", Name: "Life", Color: "#00FF00"}); err != nil {
+	if err := env.themes.SaveTheme(LifeTheme{ID: "L", Name: "Life", Color: "#00FF00"}); err != nil {
 		t.Fatalf("SaveTheme failed: %v", err)
 	}
 
 	// Place a file named W-T1.json in archived with themeId "L" (data inconsistency)
-	archivedDir := pa.taskDirPath("archived")
+	archivedDir := env.tasks.taskDirPath("archived")
 	if err := os.MkdirAll(archivedDir, 0755); err != nil {
 		t.Fatalf("MkdirAll failed: %v", err)
 	}
 	rogueTask := Task{ID: "W-T1", Title: "Mismatched", ThemeID: "L", Priority: string(PriorityImportantUrgent)}
 	rogueData, _ := json.Marshal(rogueTask)
-	if err := os.WriteFile(pa.taskFilePath("archived", "W-T1"), rogueData, 0644); err != nil {
+	if err := os.WriteFile(env.tasks.taskFilePath("archived", "W-T1"), rogueData, 0644); err != nil {
 		t.Fatalf("WriteFile failed: %v", err)
 	}
 
 	// Creating a new W task should skip W-T1 and produce W-T2
 	newTask := Task{Title: "New work task", ThemeID: "W", Priority: string(PriorityImportantUrgent)}
-	if err := pa.SaveTask(newTask); err != nil {
+	if err := env.tasks.SaveTask(newTask); err != nil {
 		t.Fatalf("SaveTask should succeed but got: %v", err)
 	}
 
-	todoTasks, err := pa.GetTasksByStatus("todo")
+	todoTasks, err := env.tasks.GetTasksByStatus("todo")
 	if err != nil {
 		t.Fatalf("GetTasksByStatus failed: %v", err)
 	}
@@ -2145,10 +2178,10 @@ func TestIsAnyTaskStatus(t *testing.T) {
 // === Board Configuration Persistence Tests ===
 
 func TestUnit_GetBoardConfiguration_NilWhenNoFile(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	config, err := pa.GetBoardConfiguration()
+	config, err := env.tasks.GetBoardConfiguration()
 	if err != nil {
 		t.Fatalf("GetBoardConfiguration failed: %v", err)
 	}
@@ -2158,7 +2191,7 @@ func TestUnit_GetBoardConfiguration_NilWhenNoFile(t *testing.T) {
 }
 
 func TestUnit_SaveAndGetBoardConfiguration(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	custom := &BoardConfiguration{
@@ -2171,11 +2204,11 @@ func TestUnit_SaveAndGetBoardConfiguration(t *testing.T) {
 		},
 	}
 
-	if err := pa.SaveBoardConfiguration(custom); err != nil {
+	if err := env.tasks.SaveBoardConfiguration(custom); err != nil {
 		t.Fatalf("SaveBoardConfiguration failed: %v", err)
 	}
 
-	loaded, err := pa.GetBoardConfiguration()
+	loaded, err := env.tasks.GetBoardConfiguration()
 	if err != nil {
 		t.Fatalf("GetBoardConfiguration failed: %v", err)
 	}
@@ -2191,7 +2224,7 @@ func TestUnit_SaveAndGetBoardConfiguration(t *testing.T) {
 }
 
 func TestUnit_FindTaskInPlan_DynamicStatuses(t *testing.T) {
-	pa, _, cleanup := setupTestPlanAccess(t)
+	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Save a custom config with an extra column
@@ -2203,22 +2236,22 @@ func TestUnit_FindTaskInPlan_DynamicStatuses(t *testing.T) {
 			{Name: "done", Title: "Done", Type: ColumnTypeDone},
 		},
 	}
-	if err := pa.SaveBoardConfiguration(custom); err != nil {
+	if err := env.tasks.SaveBoardConfiguration(custom); err != nil {
 		t.Fatalf("SaveBoardConfiguration failed: %v", err)
 	}
 
 	// Create the review directory and put a task in it
-	if err := pa.EnsureStatusDirectory("review"); err != nil {
+	if err := env.tasks.EnsureStatusDirectory("review"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 
 	task := Task{ID: "T-T1", ThemeID: "T", Title: "Review task", Priority: "important-urgent"}
-	if err := writeJSON(pa.taskFilePath("review", "T-T1"), task); err != nil {
+	if err := writeJSON(env.tasks.taskFilePath("review", "T-T1"), task); err != nil {
 		t.Fatalf("Failed to write task: %v", err)
 	}
 
 	// findTaskInPlan should find it in the "review" status
-	found, status, _, err := pa.findTaskInPlan("T-T1")
+	found, status, _, err := env.tasks.findTaskInPlan("T-T1")
 	if err != nil {
 		t.Fatalf("findTaskInPlan failed: %v", err)
 	}
@@ -2231,19 +2264,19 @@ func TestUnit_FindTaskInPlan_DynamicStatuses(t *testing.T) {
 }
 
 func TestUnit_EnsureStatusDirectory(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	dirPath := filepath.Join(tmpDir, "data", "tasks", "in-review")
 
-	if err := pa.EnsureStatusDirectory("in-review"); err != nil {
+	if err := env.tasks.EnsureStatusDirectory("in-review"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		t.Error("Expected directory to exist after EnsureStatusDirectory")
 	}
 
-	if err := pa.EnsureStatusDirectory("in-review"); err != nil {
+	if err := env.tasks.EnsureStatusDirectory("in-review"); err != nil {
 		t.Fatalf("Idempotent EnsureStatusDirectory failed: %v", err)
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
@@ -2252,13 +2285,13 @@ func TestUnit_EnsureStatusDirectory(t *testing.T) {
 }
 
 func TestUnit_RemoveStatusDirectory(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	if err := pa.EnsureStatusDirectory("empty-col"); err != nil {
+	if err := env.tasks.EnsureStatusDirectory("empty-col"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
-	if err := pa.RemoveStatusDirectory("empty-col"); err != nil {
+	if err := env.tasks.RemoveStatusDirectory("empty-col"); err != nil {
 		t.Fatalf("RemoveStatusDirectory on empty dir failed: %v", err)
 	}
 	dirPath := filepath.Join(tmpDir, "data", "tasks", "empty-col")
@@ -2266,23 +2299,23 @@ func TestUnit_RemoveStatusDirectory(t *testing.T) {
 		t.Error("Expected directory to be removed")
 	}
 
-	if err := pa.EnsureStatusDirectory("non-empty"); err != nil {
+	if err := env.tasks.EnsureStatusDirectory("non-empty"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	filePath := filepath.Join(tmpDir, "data", "tasks", "non-empty", "task.json")
 	if err := os.WriteFile(filePath, []byte("{}"), 0644); err != nil {
 		t.Fatalf("Failed to create file in directory: %v", err)
 	}
-	if err := pa.RemoveStatusDirectory("non-empty"); err == nil {
+	if err := env.tasks.RemoveStatusDirectory("non-empty"); err == nil {
 		t.Error("Expected error when removing non-empty directory")
 	}
 }
 
 func TestUnit_RenameStatusDirectory(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	if err := pa.EnsureStatusDirectory("old-name"); err != nil {
+	if err := env.tasks.EnsureStatusDirectory("old-name"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	filePath := filepath.Join(tmpDir, "data", "tasks", "old-name", "task.json")
@@ -2290,7 +2323,7 @@ func TestUnit_RenameStatusDirectory(t *testing.T) {
 		t.Fatalf("Failed to create file: %v", err)
 	}
 
-	if err := pa.RenameStatusDirectory("old-name", "new-name"); err != nil {
+	if err := env.tasks.RenameStatusDirectory("old-name", "new-name"); err != nil {
 		t.Fatalf("RenameStatusDirectory failed: %v", err)
 	}
 
@@ -2313,7 +2346,7 @@ func TestUnit_RenameStatusDirectory(t *testing.T) {
 }
 
 func TestUnit_CommitAll(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
@@ -2326,7 +2359,7 @@ func TestUnit_CommitAll(t *testing.T) {
 	}
 	baseCount := len(baseHistory)
 
-	configPath := pa.boardConfigFilePath()
+	configPath := env.tasks.boardConfigFilePath()
 	if err := writeJSON(configPath, map[string]string{"name": "modified"}); err != nil {
 		t.Fatalf("Failed to write board config: %v", err)
 	}
@@ -2335,7 +2368,7 @@ func TestUnit_CommitAll(t *testing.T) {
 		t.Fatalf("Failed to write task file: %v", err)
 	}
 
-	if err := pa.CommitAll("batch update"); err != nil {
+	if err := env.tasks.CommitAll("batch update"); err != nil {
 		t.Fatalf("CommitAll failed: %v", err)
 	}
 
@@ -2360,7 +2393,7 @@ func TestUnit_CommitAll(t *testing.T) {
 }
 
 func TestUnit_WriteTaskOrder(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
@@ -2374,7 +2407,7 @@ func TestUnit_WriteTaskOrder(t *testing.T) {
 	beforeCount := len(beforeHistory)
 
 	order := map[string][]string{"todo": {"H-T1", "H-T2"}}
-	if err := pa.WriteTaskOrder(order); err != nil {
+	if err := env.tasks.WriteTaskOrder(order); err != nil {
 		t.Fatalf("WriteTaskOrder failed: %v", err)
 	}
 
@@ -2420,7 +2453,7 @@ func TestUnit_Slugify(t *testing.T) {
 }
 
 func TestUnit_EnsureDirectoryStructure_CustomConfig(t *testing.T) {
-	pa, tmpDir, cleanup := setupTestPlanAccess(t)
+	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	// Save custom config before calling ensureDirectoryStructure
@@ -2433,12 +2466,12 @@ func TestUnit_EnsureDirectoryStructure_CustomConfig(t *testing.T) {
 			{Name: "shipped", Title: "Shipped", Type: ColumnTypeDone},
 		},
 	}
-	if err := pa.SaveBoardConfiguration(custom); err != nil {
+	if err := env.tasks.SaveBoardConfiguration(custom); err != nil {
 		t.Fatalf("SaveBoardConfiguration failed: %v", err)
 	}
 
 	// Re-run ensureDirectoryStructure
-	if err := pa.ensureDirectoryStructure(); err != nil {
+	if err := env.tasks.ensureDirectoryStructure(); err != nil {
 		t.Fatalf("ensureDirectoryStructure failed: %v", err)
 	}
 
