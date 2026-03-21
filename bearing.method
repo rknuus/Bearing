@@ -72,13 +72,12 @@ volatilities:
       name: "Progress Computation"
       description: "How progress is calculated for key results, objectives, and themes. KR progress is computed from
         start/current/target values. Objective progress aggregates child KR progress. Theme progress aggregates
-        top-level objective progress. Currently misplaced in PlanningManager — should be in an Engine."
+        top-level objective progress."
       evidence: "Same customer over time: progress formulas may change (weighted averages, different rollup strategies).
         Different customers at same time: some users want simple percentage, others may want weighted or custom
-        aggregation. Currently computed by PlanningManager via computeKRProgress() and computeObjectiveProgress() —
-        assessment identifies this as misplaced business logic."
+        aggregation. Encapsulated by ProgressEngine with ComputeThemeProgress()."
       encapsulated_by:
-        - "PlanningManager"
+        - "ProgressEngine"
       confidence: "high"
     - id: "vol-persistence-strategy"
       name: "Persistence Strategy"
@@ -204,6 +203,13 @@ components:
         days). Returns RuleEvaluationResult with Allowed flag and Violations list. Genuinely stateless — receives all
         context through parameters. Assessment notes: has a dependency inversion violation — imports access.Task types
         directly instead of defining its own input contract."
+    - id: "beed2b93-c608-4e01-a939-03483ae204a2"
+      name: "ProgressEngine"
+      description: "Stateless engine (IProgressEngine) that computes progress metrics for the OKR hierarchy. Calculates KR
+        progress from start/current/target values, objective progress as aggregate of child KR progress, and theme
+        progress as aggregate of top-level objective progress. Encapsulates progress computation volatility — formulas,
+        rollup strategies, and weighting may change independently from OKR structure management. Receives all data
+        through parameters, produces computed results with no persistence."
   resource_access:
     - id: "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
       name: "UIStateAccess"
@@ -246,6 +252,26 @@ components:
       type: "git-repository"
 topology:
   architecture_type: "closed"
+  subsystems:
+    - name: "OKR"
+      components:
+        - "PlanningManager"
+        - "ProgressEngine"
+        - "ThemeAccess"
+        - "VisionAccess"
+    - name: "TaskBoard"
+      components:
+        - "PlanningManager"
+        - "WorkspaceManager"
+        - "RuleEngine"
+        - "TaskAccess"
+    - name: "Calendar"
+      components:
+        - "PlanningManager"
+        - "CalendarAccess"
+    - name: "CrossCutting"
+      components:
+        - "UIStateAccess"
 use_cases:
   core:
     - id: "uc-1"
@@ -504,10 +530,14 @@ use_cases:
               note: "GetAllThemeProgress()"
             - from: "App"
               to: "PlanningManager"
-              note: "GetAllThemeProgress() — computes progress inline (should be Engine)"
+              note: "GetAllThemeProgress() — fetches themes then delegates computation to ProgressEngine"
             - from: "PlanningManager"
               to: "ThemeAccess"
-              note: "GetThemes() — Manager delegates to ProgressEngine for recursive computation"
+              note: "GetThemes() — reads full theme tree for progress computation"
+            - from: "PlanningManager"
+              to: "ProgressEngine"
+              note: "ComputeThemeProgress(themes) — recursive computation: KR progress from start/current/target, objective progress
+                as child KR average, theme progress as objective average"
     - id: "uc-8"
       name: "Verify Frontend-Backend State"
       description: "After every mutation, client performs optimistic UI update then re-fetches backend state to verify
