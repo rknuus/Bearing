@@ -1306,38 +1306,66 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 
-	if len(orderMap) > 0 {
-		// Build position index: taskID -> position within its drop zone
-		posIndex := make(map[string]int)
-		for _, ids := range orderMap {
-			for i, id := range ids {
-				posIndex[id] = i
-			}
+	// Load archived order for archived task sorting
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load archived order: %w", err)
+	}
+	archivePosIndex := make(map[string]int, len(archivedOrder))
+	for i, id := range archivedOrder {
+		archivePosIndex[id] = i
+	}
+
+	// Build position index for active tasks: taskID -> position within its drop zone
+	posIndex := make(map[string]int)
+	for _, ids := range orderMap {
+		for i, id := range ids {
+			posIndex[id] = i
+		}
+	}
+
+	archivedStatus := string(access.TaskStatusArchived)
+	tSlug := todoSlugFromConfig(config)
+	sort.SliceStable(allTasks, func(i, j int) bool {
+		a, b := allTasks[i], allTasks[j]
+		zoneA := dropZoneForTask(a.Status, a.Priority, tSlug)
+		zoneB := dropZoneForTask(b.Status, b.Priority, tSlug)
+		if zoneA != zoneB {
+			return zoneA < zoneB // Total order across zones for sort correctness
 		}
 
-		tSlug := todoSlugFromConfig(config)
-		sort.SliceStable(allTasks, func(i, j int) bool {
-			a, b := allTasks[i], allTasks[j]
-			zoneA := dropZoneForTask(a.Status, a.Priority, tSlug)
-			zoneB := dropZoneForTask(b.Status, b.Priority, tSlug)
-			if zoneA != zoneB {
-				return zoneA < zoneB // Total order across zones for sort correctness
-			}
-			posA, okA := posIndex[a.ID]
-			posB, okB := posIndex[b.ID]
+		// Archived tasks: sort by archived order position
+		if a.Status == archivedStatus {
+			posA, okA := archivePosIndex[a.ID]
+			posB, okB := archivePosIndex[b.ID]
 			if okA && okB {
 				return posA < posB
 			}
 			if okA {
-				return true // Known tasks before unknown
+				return true // Known position before unknown
 			}
 			if okB {
 				return false
 			}
-			// Both unknown: sort by CreatedAt
-			return a.CreatedAt < b.CreatedAt
-		})
-	}
+			// Both unknown: sort by CreatedAt descending (newest first)
+			return a.CreatedAt > b.CreatedAt
+		}
+
+		// Active tasks: sort by task_order.json position
+		posA, okA := posIndex[a.ID]
+		posB, okB := posIndex[b.ID]
+		if okA && okB {
+			return posA < posB
+		}
+		if okA {
+			return true // Known tasks before unknown
+		}
+		if okB {
+			return false
+		}
+		// Both unknown: sort by CreatedAt
+		return a.CreatedAt < b.CreatedAt
+	})
 
 	return allTasks, nil
 }
@@ -1729,6 +1757,16 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("%w", err)
 	}
 
+	// Prepend to archived order (newest archived first)
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load archived order: %w", err)
+	}
+	archivedOrder = append([]string{taskId}, archivedOrder...)
+	if err := m.taskAccess.SaveArchivedOrder(archivedOrder); err != nil {
+		return fmt.Errorf("failed to save archived order: %w", err)
+	}
+
 	return nil
 }
 
@@ -1739,13 +1777,36 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
+	// Collect done task IDs in their current display order
+	var doneIDs []string
 	for _, t := range allTasks {
 		if t.Status != string(access.TaskStatusDone) {
 			continue
 		}
-		if err := m.ArchiveTask(t.ID); err != nil {
-			return fmt.Errorf("%w", err)
+		doneIDs = append(doneIDs, t.ID)
+	}
+	if len(doneIDs) == 0 {
+		return nil
+	}
+
+	// Archive each task file and remove from task order
+	for _, id := range doneIDs {
+		if err := m.taskAccess.ArchiveTask(id); err != nil {
+			return fmt.Errorf("failed to archive task %s: %w", id, err)
 		}
+	}
+	if err := m.removeFromTaskOrder(doneIDs); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	// Batch-prepend to archived order preserving their relative display order
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load archived order: %w", err)
+	}
+	archivedOrder = append(doneIDs, archivedOrder...)
+	if err := m.taskAccess.SaveArchivedOrder(archivedOrder); err != nil {
+		return fmt.Errorf("failed to save archived order: %w", err)
 	}
 
 	return nil
@@ -1799,6 +1860,23 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("failed to save task order: %w", err)
 	}
 	m.taskOrderMu.Unlock()
+
+	// Remove from archived order
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load archived order: %w", err)
+	}
+	filtered := make([]string, 0, len(archivedOrder))
+	for _, id := range archivedOrder {
+		if id != taskId {
+			filtered = append(filtered, id)
+		}
+	}
+	if len(filtered) != len(archivedOrder) {
+		if err := m.taskAccess.SaveArchivedOrder(filtered); err != nil {
+			return fmt.Errorf("failed to save archived order: %w", err)
+		}
+	}
 
 	return nil
 }

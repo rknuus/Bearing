@@ -118,11 +118,12 @@ func (m *mockThemeAccess) DeleteTheme(id string) error {
 
 // mockTaskAccess implements access.ITaskAccess for testing.
 type mockTaskAccess struct {
-	mu          sync.Mutex
-	tasks       map[string][]access.Task
-	taskOrder   map[string][]string
-	nextTaskNum int
-	boardConfig *access.BoardConfiguration
+	mu            sync.Mutex
+	tasks         map[string][]access.Task
+	taskOrder     map[string][]string
+	archivedOrder []string
+	nextTaskNum   int
+	boardConfig   *access.BoardConfiguration
 }
 
 func newMockTaskAccess() *mockTaskAccess {
@@ -318,10 +319,27 @@ func (m *mockTaskAccess) TaskOrderFilePath() string          { return "task_orde
 func (m *mockTaskAccess) TaskDirPath(status string) string   { return status }
 func (m *mockTaskAccess) CommitFiles(paths []string, message string) error { return nil }
 func (m *mockTaskAccess) CommitAll(message string) error     { return nil }
-func (m *mockTaskAccess) ArchivedOrderFilePath() string      { return "archived_order.json" }
-func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) { return []string{}, nil }
-func (m *mockTaskAccess) WriteArchivedOrder(order []string) error { return nil }
-func (m *mockTaskAccess) SaveArchivedOrder(order []string) error  { return nil }
+func (m *mockTaskAccess) ArchivedOrderFilePath() string { return "archived_order.json" }
+func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.archivedOrder == nil {
+		return []string{}, nil
+	}
+	return append([]string{}, m.archivedOrder...), nil
+}
+func (m *mockTaskAccess) WriteArchivedOrder(order []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.archivedOrder = append([]string{}, order...)
+	return nil
+}
+func (m *mockTaskAccess) SaveArchivedOrder(order []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.archivedOrder = append([]string{}, order...)
+	return nil
+}
 
 // mockCalendarAccess implements access.ICalendarAccess for testing.
 type mockCalendarAccess struct{}
