@@ -8,31 +8,31 @@ import {
   getThemeAbbr,
   buildBreadcrumbs,
 } from './id-parser';
-import { main } from '../wails/wailsjs/go/models';
+import { managers } from '../wails/wailsjs/go/models';
 
 // Helper to create test theme data
-function makeThemes(): main.LifeTheme[] {
+function makeThemes(): managers.LifeTheme[] {
   return [
-    new main.LifeTheme({
+    new managers.LifeTheme({
       id: 'H',
       name: 'Health',
       color: '#ff0000',
       objectives: [
-        new main.Objective({
+        new managers.Objective({
           id: 'H-O1',
           parentId: 'H',
           title: 'Get fit',
           keyResults: [
-            new main.KeyResult({ id: 'H-KR1', parentId: 'H-O1', description: 'Run 5k' }),
-            new main.KeyResult({ id: 'H-KR2', parentId: 'H-O1', description: 'Lose weight' }),
+            new managers.KeyResult({ id: 'H-KR1', parentId: 'H-O1', description: 'Run 5k' }),
+            new managers.KeyResult({ id: 'H-KR2', parentId: 'H-O1', description: 'Lose weight' }),
           ],
           objectives: [
-            new main.Objective({
+            new managers.Objective({
               id: 'H-O2',
               parentId: 'H-O1',
               title: 'Nested objective',
               keyResults: [
-                new main.KeyResult({ id: 'H-KR3', parentId: 'H-O2', description: 'Nested KR' }),
+                new managers.KeyResult({ id: 'H-KR3', parentId: 'H-O2', description: 'Nested KR' }),
               ],
               objectives: [],
             }),
@@ -40,17 +40,17 @@ function makeThemes(): main.LifeTheme[] {
         }),
       ],
     }),
-    new main.LifeTheme({
+    new managers.LifeTheme({
       id: 'C',
       name: 'Career',
       color: '#00ff00',
       objectives: [
-        new main.Objective({
+        new managers.Objective({
           id: 'C-O1',
           parentId: 'C',
           title: 'Get promoted',
           keyResults: [
-            new main.KeyResult({ id: 'C-KR1', parentId: 'C-O1', description: 'Ship project' }),
+            new managers.KeyResult({ id: 'C-KR1', parentId: 'C-O1', description: 'Ship project' }),
           ],
           objectives: [],
         }),

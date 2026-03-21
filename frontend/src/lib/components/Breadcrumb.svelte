@@ -7,13 +7,13 @@
    */
 
   import { buildBreadcrumbs, type BreadcrumbSegment } from '../utils/id-parser';
-  import type { main } from '../wails/wailsjs/go/models';
+  import type { managers } from '../wails/wailsjs/go/models';
 
   interface Props {
     /** Theme-scoped entity ID (e.g., "H-O2", "CF-KR3") */
     itemId: string;
     /** Theme data for building breadcrumb path */
-    themes?: main.LifeTheme[];
+    themes?: managers.LifeTheme[];
     /** Callback when a segment is clicked */
     onNavigate: (segmentId: string) => void;
   }

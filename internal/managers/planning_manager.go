@@ -124,12 +124,20 @@ type IPlanningManager interface {
 	IUIState
 }
 
+// RuleViolation represents a single rule violation in the Manager layer's public interface.
+type RuleViolation struct {
+	RuleID   string `json:"ruleId"`
+	Priority int    `json:"priority"`
+	Message  string `json:"message"`
+	Category string `json:"category"`
+}
+
 // MoveTaskResult contains the result of a MoveTask operation,
 // including any rule violations that caused rejection.
 type MoveTaskResult struct {
-	Success    bool                        `json:"success"`
-	Violations []rule_engine.RuleViolation `json:"violations,omitempty"`
-	Positions  map[string][]string         `json:"positions,omitempty"`
+	Success    bool                `json:"success"`
+	Violations []RuleViolation     `json:"violations,omitempty"`
+	Positions  map[string][]string `json:"positions,omitempty"`
 }
 
 // ReorderResult contains the authoritative task positions after a reorder operation.
@@ -1505,9 +1513,18 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		return nil, fmt.Errorf("rule evaluation failed: %w", evalErr)
 	}
 	if !result.Allowed {
+		violations := make([]RuleViolation, len(result.Violations))
+		for i, v := range result.Violations {
+			violations[i] = RuleViolation{
+				RuleID:   v.RuleID,
+				Priority: v.Priority,
+				Message:  v.Message,
+				Category: v.Category,
+			}
+		}
 		return &MoveTaskResult{
 			Success:    false,
-			Violations: result.Violations,
+			Violations: violations,
 		}, nil
 	}
 

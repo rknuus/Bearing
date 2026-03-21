@@ -1,5 +1,8 @@
 # 06 — App Struct Is a God Gateway with Logic
 
+> **Status: RESOLVED** — 2026-03-21
+> Gateway reduced from ~1385 to ~290 lines. `GetLocale()` → `utilities.DetectLocale()`. Startup → `bootstrap.Initialize()`. All 14 gateway DTOs eliminated (methods return `managers.*` types directly). Per-method nil-checks removed (bootstrap fail-fast). `RuleViolation` type added to managers (no longer leaks `rule_engine` types).
+
 ## Finding
 
 `main.go` is 1337 lines. The `App` struct defines 40+ public methods, performs DTO conversion (business transformation), initialization orchestration, error handling, and logging — all inline. The Method says: "Never put code in the Gateway."

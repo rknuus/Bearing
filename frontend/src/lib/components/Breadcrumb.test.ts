@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import Breadcrumb from './Breadcrumb.svelte';
-import { main } from '../wails/wailsjs/go/models';
+import { managers } from '../wails/wailsjs/go/models';
 
 describe('Breadcrumb', () => {
   let container: HTMLDivElement;
@@ -16,21 +16,21 @@ describe('Breadcrumb', () => {
     document.body.removeChild(container);
   });
 
-  function makeTheme(id: string, name: string, objectives: main.Objective[] = []): main.LifeTheme {
-    return new main.LifeTheme({ id, name, color: '#3b82f6', objectives });
+  function makeTheme(id: string, name: string, objectives: managers.Objective[] = []): managers.LifeTheme {
+    return new managers.LifeTheme({ id, name, color: '#3b82f6', objectives });
   }
 
-  function makeObjective(id: string, parentId: string, keyResults: main.KeyResult[] = []): main.Objective {
-    return new main.Objective({ id, parentId, title: `Objective ${id}`, keyResults, objectives: [] });
+  function makeObjective(id: string, parentId: string, keyResults: managers.KeyResult[] = []): managers.Objective {
+    return new managers.Objective({ id, parentId, title: `Objective ${id}`, keyResults, objectives: [] });
   }
 
-  function makeKeyResult(id: string, parentId: string): main.KeyResult {
-    return new main.KeyResult({ id, parentId, description: `Key Result ${id}` });
+  function makeKeyResult(id: string, parentId: string): managers.KeyResult {
+    return new managers.KeyResult({ id, parentId, description: `Key Result ${id}` });
   }
 
   async function renderBreadcrumb(props: {
     itemId: string;
-    themes?: main.LifeTheme[];
+    themes?: managers.LifeTheme[];
     onNavigate: (segmentId: string) => void;
   }) {
     const result = render(Breadcrumb, { target: container, props });

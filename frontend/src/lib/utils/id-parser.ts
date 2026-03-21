@@ -5,7 +5,7 @@
  * Builds breadcrumb trails by walking the nested theme/objective/key-result hierarchy.
  */
 
-import type { main } from '../wails/wailsjs/go/models';
+import type { managers } from '../wails/wailsjs/go/models';
 
 export type SegmentType = 'theme' | 'okr' | 'kr' | 'task';
 
@@ -92,7 +92,7 @@ function makeLabel(id: string, type: SegmentType): string {
  * //   { id: "H-KR1", type: "kr", label: "KR 1" }
  * // ]
  */
-export function buildBreadcrumbs(id: string, themes: main.LifeTheme[]): BreadcrumbSegment[] {
+export function buildBreadcrumbs(id: string, themes: managers.LifeTheme[]): BreadcrumbSegment[] {
   if (!id || !themes) return [];
 
   for (const theme of themes) {
@@ -111,7 +111,7 @@ export function buildBreadcrumbs(id: string, themes: main.LifeTheme[]): Breadcru
 /**
  * Searches for an entity ID within a theme and returns the breadcrumb path if found.
  */
-function findPathInTheme(targetId: string, theme: main.LifeTheme): BreadcrumbSegment[] {
+function findPathInTheme(targetId: string, theme: managers.LifeTheme): BreadcrumbSegment[] {
   const themeSeg: BreadcrumbSegment = {
     id: theme.id,
     type: 'theme',
@@ -133,7 +133,7 @@ function findPathInTheme(targetId: string, theme: main.LifeTheme): BreadcrumbSeg
 /**
  * Searches for an entity ID within an objective tree (including nested objectives and KRs).
  */
-function findPathInObjective(targetId: string, obj: main.Objective): BreadcrumbSegment[] {
+function findPathInObjective(targetId: string, obj: managers.Objective): BreadcrumbSegment[] {
   const objSeg: BreadcrumbSegment = {
     id: obj.id,
     type: 'okr',

@@ -131,24 +131,23 @@ Every single save operation creates a git commit. Updating a key result's `curre
 | 05 | God Resource Access | 2026-03-21 | `PlanAccess` split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess` (+ existing `UIStateAccess`) |
 | 08 | Progress computation in Manager | `a03a2a6` | New `ProgressEngine` at `internal/engines/progress_engine/` |
 | 09 | Pass-through toll booths | 2026-03-21 | New `UIStateAccess` RA; Manager stays in path (closed architecture); fixed lossy DTO conversion (7 fields were silently dropped) |
+| 06 | God Gateway | 2026-03-21 | Gateway reduced to thin pass-through; `GetLocale()` → utilities; startup → bootstrap; DTOs eliminated; nil-checks removed |
 
 ### Remaining — Prioritized
 
 | Priority | # | Finding | Severity | Urgency | Next action |
 |----------|---|---------|----------|---------|-------------|
-| 1 | 06 | God Gateway | High | Soon | Extract startup orchestration and `GetLocale`; now unblocked by 04 |
-| 2 | 07 | No subsystem boundaries | Medium | Soon | Formalize topology now that Manager/RA decomposition exists |
-| 3 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
-| 4 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
+| 1 | 07 | No subsystem boundaries | Medium | Soon | Formalize topology now that Manager/RA decomposition exists |
+| 2 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
+| 3 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
 | — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager to Engine |
 | — | — | IGoalStructure CRUD consolidation | Medium | When convenient | Consolidate 16 CRUD methods into fewer behavioral verbs |
 
 ### Recommended execution order
 
-1. **Finding 06** (gateway) — simplifies naturally after Manager decomposition
-2. **Finding 07** (subsystems) — formalize the boundaries that now exist
-3. **IGoalStructure consolidation** — reduce CRUD interface to behavioral verbs
-4. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
+1. **Finding 07** (subsystems) — formalize the boundaries that now exist
+2. **IGoalStructure consolidation** — reduce CRUD interface to behavioral verbs
+3. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
 
 ---
 
@@ -158,4 +157,4 @@ The codebase has sound instincts — interface-driven design, downward-only depe
 
 The critical layering violations have been resolved (Findings 01, 02, 03, 08, 09). The structural decomposition is now complete: `PlanningManager` exposes 7 volatility-driven facet interfaces (`IGoalStructure`, `IGoalLifecycle`, `ITaskExecution`, `IFocusPlanning`, `IVision`, `IProgress`, `IUIState`), workspace configuration is encapsulated by `WorkspaceManager`, and `PlanAccess` has been split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess`, and `UIStateAccess` (Findings 04, 05).
 
-The remaining work is gateway cleanup (Finding 06), formalizing subsystem boundaries in the topology (Finding 07), and consolidating the `IGoalStructure` facet from 16 CRUD-style methods into fewer behavioral verbs.
+The remaining work is formalizing subsystem boundaries in the topology (Finding 07) and consolidating the `IGoalStructure` facet from 16 CRUD-style methods into fewer behavioral verbs.
