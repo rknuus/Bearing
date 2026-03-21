@@ -292,7 +292,7 @@
   }
 
   async function fetchThemes(): Promise<Theme[]> {
-    return getBindings().GetThemes();
+    return getBindings().GetGoalHierarchy();
   }
 
   async function fetchBoardConfig(): Promise<BoardConfiguration> {

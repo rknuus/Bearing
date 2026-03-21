@@ -42,7 +42,7 @@ function makeTestBoardConfig(): BoardConfiguration {
 
 // Mock the wails-mock module since EisenKanView uses mockAppBindings directly
 const mockGetTasks = vi.fn<() => Promise<TaskWithStatus[]>>();
-const mockGetThemes = vi.fn<() => Promise<LifeTheme[]>>();
+const mockGetGoalHierarchy = vi.fn<() => Promise<LifeTheme[]>>();
 const mockGetBoardConfiguration = vi.fn<() => Promise<BoardConfiguration>>();
 const mockCreateTask = vi.fn();
 const mockMoveTask = vi.fn();
@@ -64,7 +64,7 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
     mockAppBindings: {
       ...orig.mockAppBindings,
       GetTasks: (...args: unknown[]) => mockGetTasks(...args as []),
-      GetThemes: (...args: unknown[]) => mockGetThemes(...args as []),
+      GetGoalHierarchy: (...args: unknown[]) => mockGetGoalHierarchy(...args as []),
       GetBoardConfiguration: (...args: unknown[]) => mockGetBoardConfiguration(...args as []),
       CreateTask: (...args: unknown[]) => mockCreateTask(...args),
       MoveTask: (...args: unknown[]) => mockMoveTask(...args),
@@ -108,7 +108,7 @@ describe('EisenKanView', () => {
     document.body.appendChild(container);
     currentTasks = JSON.parse(JSON.stringify(makeTestTasks()));
     mockGetTasks.mockImplementation(async () => JSON.parse(JSON.stringify(currentTasks)));
-    mockGetThemes.mockResolvedValue(JSON.parse(JSON.stringify(makeTestThemes())));
+    mockGetGoalHierarchy.mockResolvedValue(JSON.parse(JSON.stringify(makeTestThemes())));
     mockGetBoardConfiguration.mockResolvedValue(JSON.parse(JSON.stringify(makeTestBoardConfig())));
     mockCreateTask.mockImplementation(async (title: string, themeId: string, priority: string) => {
       const task = { id: 'T-NEW', title, themeId, priority, status: 'todo' } as TaskWithStatus;

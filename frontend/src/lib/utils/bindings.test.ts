@@ -34,7 +34,7 @@ describe('getBindings', () => {
 
   it('returns an object with expected binding methods', () => {
     const bindings = getBindings();
-    expect(typeof bindings.GetThemes).toBe('function');
+    expect(typeof bindings.GetGoalHierarchy).toBe('function');
     expect(typeof bindings.GetTasks).toBe('function');
     expect(typeof bindings.CreateTask).toBe('function');
     expect(typeof bindings.Greet).toBe('function');

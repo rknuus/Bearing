@@ -50,6 +50,41 @@ export interface LifeTheme {
   routines?: Routine[];
 }
 
+export type GoalType = 'theme' | 'objective' | 'key-result' | 'routine';
+
+export interface EstablishGoalRequest {
+  parentId: string;
+  goalType: GoalType;
+  name?: string;
+  color?: string;
+  title?: string;
+  description?: string;
+  startValue?: number;
+  targetValue?: number;
+  targetType?: string;
+  unit?: string;
+}
+
+export interface EstablishGoalResult {
+  theme?: LifeTheme;
+  objective?: Objective;
+  keyResult?: KeyResult;
+  routine?: Routine;
+}
+
+export interface ReviseGoalRequest {
+  goalId: string;
+  name?: string;
+  color?: string;
+  title?: string;
+  tags?: string[];
+  description?: string;
+  startValue?: number;
+  targetValue?: number;
+  targetType?: string;
+  unit?: string;
+}
+
 export interface DayFocus {
   date: string;
   themeIds?: string[];
@@ -1127,6 +1162,106 @@ export const mockAppBindings = {
       }
     }
     throw new Error(`Routine ${routineId} not found`);
+  },
+
+  // --- Behavioral goal operations ---
+
+  GetGoalHierarchy: async (): Promise<LifeTheme[]> => {
+    return JSON.parse(JSON.stringify(mockThemes));
+  },
+
+  EstablishGoal: async (req: EstablishGoalRequest): Promise<EstablishGoalResult> => {
+    switch (req.goalType) {
+      case 'theme': {
+        const theme = await mockAppBindings.CreateTheme(req.name ?? '', req.color ?? '');
+        return { theme };
+      }
+      case 'objective': {
+        const objective = await mockAppBindings.CreateObjective(req.parentId, req.title ?? '');
+        return { objective };
+      }
+      case 'key-result': {
+        const keyResult = await mockAppBindings.CreateKeyResult(req.parentId, req.description ?? '', req.startValue ?? 0, req.targetValue ?? 1);
+        return { keyResult };
+      }
+      case 'routine': {
+        const routine = await mockAppBindings.AddRoutine(req.parentId, req.description ?? '', req.targetValue ?? 0, req.targetType ?? 'at-or-above', req.unit ?? '');
+        return { routine };
+      }
+      default:
+        throw new Error(`Unknown goal type: ${req.goalType}`);
+    }
+  },
+
+  ReviseGoal: async (req: ReviseGoalRequest): Promise<void> => {
+    const id = req.goalId;
+    // Detect type by ID convention
+    if (id.includes('-KR')) {
+      // Key Result
+      const result = findKeyResultParent(mockThemes, id);
+      if (!result) throw new Error(`KeyResult ${id} not found`);
+      const kr = result.objective.keyResults[result.index];
+      if (req.description !== undefined) kr.description = req.description;
+      if (req.startValue !== undefined) kr.startValue = req.startValue;
+      if (req.targetValue !== undefined) kr.targetValue = req.targetValue;
+    } else if (id.includes('-O')) {
+      // Objective
+      const obj = findObjectiveById(mockThemes, id);
+      if (!obj) throw new Error(`Objective ${id} not found`);
+      if (req.title !== undefined) obj.title = req.title;
+      if (req.tags !== undefined) obj.tags = req.tags;
+    } else if (id.includes('-R')) {
+      // Routine
+      for (const theme of mockThemes) {
+        const r = (theme.routines ?? []).find(r => r.id === id);
+        if (r) {
+          if (req.description !== undefined) r.description = req.description;
+          if (req.targetValue !== undefined) r.targetValue = req.targetValue;
+          if (req.targetType !== undefined) r.targetType = req.targetType;
+          if (req.unit !== undefined) r.unit = req.unit;
+          return;
+        }
+      }
+      throw new Error(`Routine ${id} not found`);
+    } else {
+      // Theme (no hyphen pattern)
+      const theme = mockThemes.find(t => t.id === id);
+      if (!theme) throw new Error(`Theme ${id} not found`);
+      if (req.name !== undefined) theme.name = req.name;
+      if (req.color !== undefined) theme.color = req.color;
+    }
+  },
+
+  RecordProgress: async (goalId: string, value: number): Promise<void> => {
+    if (goalId.includes('-KR')) {
+      const result = findKeyResultParent(mockThemes, goalId);
+      if (!result) throw new Error(`KeyResult ${goalId} not found`);
+      result.objective.keyResults[result.index].currentValue = value;
+    } else if (goalId.includes('-R')) {
+      for (const theme of mockThemes) {
+        const r = (theme.routines ?? []).find(r => r.id === goalId);
+        if (r) { r.currentValue = value; return; }
+      }
+      throw new Error(`Routine ${goalId} not found`);
+    } else {
+      throw new Error(`RecordProgress not supported for goal type of ${goalId}`);
+    }
+  },
+
+  DismissGoal: async (goalId: string): Promise<void> => {
+    if (goalId.includes('-KR')) {
+      await mockAppBindings.DeleteKeyResult(goalId);
+    } else if (goalId.includes('-O')) {
+      await mockAppBindings.DeleteObjective(goalId);
+    } else if (goalId.includes('-R')) {
+      await mockAppBindings.DeleteRoutine(goalId);
+    } else {
+      await mockAppBindings.DeleteTheme(goalId);
+    }
+  },
+
+  SuggestAbbreviation: async (name: string): Promise<string> => {
+    return suggestAbbreviation(name, mockThemes);
   },
 };
 

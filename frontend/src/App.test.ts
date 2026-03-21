@@ -19,19 +19,13 @@ function makeMockBindings() {
       lastAccessed: '',
     }),
     SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
-    // OKRView APIs
-    GetThemes: vi.fn().mockResolvedValue([]),
-    CreateTheme: vi.fn().mockResolvedValue(null),
-    UpdateTheme: vi.fn().mockResolvedValue(undefined),
-    SaveTheme: vi.fn().mockResolvedValue(undefined),
-    DeleteTheme: vi.fn().mockResolvedValue(undefined),
-    CreateObjective: vi.fn().mockResolvedValue(null),
-    UpdateObjective: vi.fn().mockResolvedValue(undefined),
-    DeleteObjective: vi.fn().mockResolvedValue(undefined),
-    CreateKeyResult: vi.fn().mockResolvedValue(null),
-    UpdateKeyResult: vi.fn().mockResolvedValue(undefined),
-    UpdateKeyResultProgress: vi.fn().mockResolvedValue(undefined),
-    DeleteKeyResult: vi.fn().mockResolvedValue(undefined),
+    // OKRView APIs (behavioral)
+    GetGoalHierarchy: vi.fn().mockResolvedValue([]),
+    EstablishGoal: vi.fn().mockResolvedValue({}),
+    ReviseGoal: vi.fn().mockResolvedValue(undefined),
+    RecordProgress: vi.fn().mockResolvedValue(undefined),
+    DismissGoal: vi.fn().mockResolvedValue(undefined),
+    SuggestAbbreviation: vi.fn().mockResolvedValue('T'),
     // CalendarView APIs
     GetYearFocus: vi.fn().mockResolvedValue([]),
     SaveDayFocus: vi.fn().mockResolvedValue(undefined),
@@ -56,7 +50,6 @@ function makeMockBindings() {
     SetKeyResultStatus: vi.fn().mockResolvedValue(undefined),
     CloseObjective: vi.fn().mockResolvedValue(undefined),
     ReopenObjective: vi.fn().mockResolvedValue(undefined),
-    SuggestThemeAbbreviation: vi.fn().mockResolvedValue('T'),
     GetAllThemeProgress: vi.fn().mockResolvedValue([]),
     GetPersonalVision: vi.fn().mockResolvedValue({ mission: '', vision: '' }),
     SavePersonalVision: vi.fn().mockResolvedValue(undefined),
@@ -318,7 +311,7 @@ describe('App', () => {
         { date: todayDateString(), themeIds: ['HF'], notes: '', text: '' },
       ]);
       // Provide themes so ThemeFilterBar renders in EisenKanView
-      mockBindings.GetThemes.mockResolvedValue([
+      mockBindings.GetGoalHierarchy.mockResolvedValue([
         { id: 'HF', name: 'Health & Fitness', color: '#22c55e', objectives: [] },
       ]);
     }
