@@ -337,8 +337,10 @@
 
   const TASK_FIELDS = ['id', 'title', 'themeId', 'priority', 'tags', 'description', 'status'];
 
-  const taskDropZone = (t: Record<string, unknown>) =>
-    t.status === 'todo' ? (String(t.priority) || 'todo') : String(t.status);
+  const taskDropZone = (t: Record<string, unknown>) => {
+    if (t.status === 'archived') return undefined;
+    return t.status === 'todo' ? (String(t.priority) || 'todo') : String(t.status);
+  };
 
   async function verifyTaskState() {
     const mismatches = await checkFullState('task', tasks, fetchTasks, 'id', TASK_FIELDS, taskDropZone);

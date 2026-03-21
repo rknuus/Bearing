@@ -19,10 +19,11 @@ export function checkEntity(type: string, id: string, frontend: Entity, backend:
 }
 
 /** Group entity IDs by a key function. */
-function groupIds(list: Entity[], idKey: string, groupByFn: (e: Entity) => string): Map<string, string[]> {
+function groupIds(list: Entity[], idKey: string, groupByFn: (e: Entity) => string | undefined): Map<string, string[]> {
   const groups = new Map<string, string[]>();
   for (const e of list) {
     const zone = groupByFn(e);
+    if (zone === undefined) continue;
     const ids = groups.get(zone);
     if (ids) ids.push(String(e[idKey]));
     else groups.set(zone, [String(e[idKey])]);
@@ -31,7 +32,7 @@ function groupIds(list: Entity[], idKey: string, groupByFn: (e: Entity) => strin
 }
 
 /** Compare frontend and backend entity lists without fetching. */
-export function checkStateFromData(type: string, frontendList: Entity[], backendList: Entity[], idKey: string, fields: string[], groupByFn?: (e: Entity) => string): string[] {
+export function checkStateFromData(type: string, frontendList: Entity[], backendList: Entity[], idKey: string, fields: string[], groupByFn?: (e: Entity) => string | undefined): string[] {
   const mismatches: string[] = [];
   const backendMap = new Map(backendList.map(e => [String(e[idKey]), e]));
   const frontendMap = new Map(frontendList.map(e => [String(e[idKey]), e]));
@@ -79,7 +80,7 @@ export function checkStateFromData(type: string, frontendList: Entity[], backend
 }
 
 /** Re-fetch the full list and compare against frontend state. */
-export async function checkFullState(type: string, frontendList: Entity[], fetchFn: () => Promise<Entity[]>, idKey: string, fields: string[], groupByFn?: (e: Entity) => string): Promise<string[]> {
+export async function checkFullState(type: string, frontendList: Entity[], fetchFn: () => Promise<Entity[]>, idKey: string, fields: string[], groupByFn?: (e: Entity) => string | undefined): Promise<string[]> {
   const backendList = await fetchFn();
   return checkStateFromData(type, frontendList, backendList, idKey, fields, groupByFn);
 }
