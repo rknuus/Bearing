@@ -611,7 +611,7 @@ export async function runTests() {
 
       await page.evaluate(async (theme) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: theme.id, name: 'E2E Theme Renamed' })
+        await app.Revise({ goalId: theme.id, name: 'E2E Theme Renamed' })
       }, themeForNameEdit)
 
       const themesAfterRename = readThemes(DATA_DIR)
@@ -625,7 +625,7 @@ export async function runTests() {
       const themeForRevert = readThemes(DATA_DIR).find(t => t.name === 'E2E Theme Renamed')
       await page.evaluate(async (theme) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: theme.id, name: 'E2E Theme' })
+        await app.Revise({ goalId: theme.id, name: 'E2E Theme' })
       }, themeForRevert)
 
       const themesAfterRevert = readThemes(DATA_DIR)
@@ -650,7 +650,7 @@ export async function runTests() {
 
       await page.evaluate(async (theme) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: theme.id, color: '#ff5733' })
+        await app.Revise({ goalId: theme.id, color: '#ff5733' })
       }, themeForColor)
 
       const themesAfterColor = readThemes(DATA_DIR)
@@ -677,7 +677,7 @@ export async function runTests() {
 
       await page.evaluate(async (args) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: args.id, title: 'Updated Obj Title', tags: args.tags || [] })
+        await app.Revise({ goalId: args.id, title: 'Updated Obj Title', tags: args.tags || [] })
       }, { id: objForTitle.id, tags: objForTitle.tags })
 
       const themesAfterObjTitle = readThemes(DATA_DIR)
@@ -693,7 +693,7 @@ export async function runTests() {
       // Rename back for later phases
       await page.evaluate(async (args) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: args.id, title: 'E2E Objective', tags: args.tags || [] })
+        await app.Revise({ goalId: args.id, title: 'E2E Objective', tags: args.tags || [] })
       }, { id: objForTitle.id, tags: objForTitle.tags })
 
       expectedCommits++
@@ -713,7 +713,7 @@ export async function runTests() {
 
       await page.evaluate(async (args) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: args.id, tags: ['e2e-tag1', 'e2e-tag2'] })
+        await app.Revise({ goalId: args.id, tags: ['e2e-tag1', 'e2e-tag2'] })
       }, { id: objForTags.id })
 
       const themesAfterObjTags = readThemes(DATA_DIR)
@@ -741,7 +741,7 @@ export async function runTests() {
 
       await page.evaluate(async (args) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: args.id, description: 'Updated KR Desc' })
+        await app.Revise({ goalId: args.id, description: 'Updated KR Desc' })
       }, { id: krForDesc.id })
 
       const themesAfterKRDesc = readThemes(DATA_DIR)
@@ -768,10 +768,10 @@ export async function runTests() {
       const objForKRVals = themeForKRVals.objectives.find(o => o.title === 'E2E Objective')
       const krForVals = objForKRVals.keyResults[0]
 
-      // Modify KR values via ReviseGoal
+      // Modify KR values via Revise
       await page.evaluate(async (krId) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: krId, startValue: 5, targetValue: 200 })
+        await app.Revise({ goalId: krId, startValue: 5, targetValue: 200 })
       }, krForVals.id)
 
       const themesAfterKRVals = readThemes(DATA_DIR)
@@ -960,7 +960,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.EstablishGoal({ parentId: tid, goalType: 'routine', description: 'E2E Routine', targetValue: 10, targetType: 'at-or-above', unit: 'times/week' })
+        await app.Establish({ parentId: tid, goalType: 'routine', description: 'E2E Routine', targetValue: 10, targetType: 'at-or-above', unit: 'times/week' })
       }, themeId)
 
       const themesAfterRoutine = readThemes(DATA_DIR)
@@ -982,7 +982,7 @@ export async function runTests() {
       // Update routine
       await page.evaluate(async (args) => {
         const app = window.go.main.App
-        await app.ReviseGoal({ goalId: args.id, description: 'Updated Routine', targetValue: 15, targetType: 'at-or-above', unit: 'hours' })
+        await app.Revise({ goalId: args.id, description: 'Updated Routine', targetValue: 15, targetType: 'at-or-above', unit: 'hours' })
         await app.RecordProgress(args.id, 3)
       }, { id: routine.id })
 
@@ -999,7 +999,7 @@ export async function runTests() {
         throw new Error(`Expected targetValue=15, got ${updatedRoutine.targetValue}`)
       }
 
-      expectedCommits += 2 // ReviseGoal + RecordProgress each produce a commit
+      expectedCommits += 2 // Revise + RecordProgress each produce a commit
       assertCommitCount('after update routine')
 
       reporter.pass(`Routine created and updated: id=${routine.id}`)
@@ -1016,7 +1016,7 @@ export async function runTests() {
 
       await page.evaluate(async (id) => {
         const app = window.go.main.App
-        await app.DismissGoal(id)
+        await app.Dismiss(id)
       }, routineToDel.id)
 
       const themesAfterRoutineDel = readThemes(DATA_DIR)
@@ -1275,7 +1275,7 @@ export async function runTests() {
 
       await page.evaluate(async (id) => {
         const app = window.go.main.App
-        await app.DismissGoal(id)
+        await app.Dismiss(id)
       }, krIdToDel)
 
       const themesAfterDel = readThemes(DATA_DIR)
@@ -1302,7 +1302,7 @@ export async function runTests() {
 
       await page.evaluate(async (id) => {
         const app = window.go.main.App
-        await app.DismissGoal(id)
+        await app.Dismiss(id)
       }, objIdToDel)
 
       const themesAfterObjDel = readThemes(DATA_DIR)
@@ -1324,7 +1324,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (id) => {
         const app = window.go.main.App
-        await app.DismissGoal(id)
+        await app.Dismiss(id)
       }, themeId)
 
       const themesAfterThemeDel = readThemes(DATA_DIR)
@@ -1347,7 +1347,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (id) => {
         const app = window.go.main.App
-        await app.DismissGoal(id)
+        await app.Dismiss(id)
       }, theme2Id)
 
       const themesAfterTheme2Del = readThemes(DATA_DIR)

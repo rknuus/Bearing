@@ -52,7 +52,7 @@ export interface LifeTheme {
 
 export type GoalType = 'theme' | 'objective' | 'key-result' | 'routine';
 
-export interface EstablishGoalRequest {
+export interface EstablishRequest {
   parentId: string;
   goalType: GoalType;
   name?: string;
@@ -65,14 +65,14 @@ export interface EstablishGoalRequest {
   unit?: string;
 }
 
-export interface EstablishGoalResult {
+export interface EstablishResult {
   theme?: LifeTheme;
   objective?: Objective;
   keyResult?: KeyResult;
   routine?: Routine;
 }
 
-export interface ReviseGoalRequest {
+export interface ReviseRequest {
   goalId: string;
   name?: string;
   color?: string;
@@ -960,11 +960,11 @@ export const mockAppBindings = {
 
   // --- Behavioral goal operations ---
 
-  GetGoalHierarchy: async (): Promise<LifeTheme[]> => {
+  GetHierarchy: async (): Promise<LifeTheme[]> => {
     return JSON.parse(JSON.stringify(mockThemes));
   },
 
-  EstablishGoal: async (req: EstablishGoalRequest): Promise<EstablishGoalResult> => {
+  Establish: async (req: EstablishRequest): Promise<EstablishResult> => {
     switch (req.goalType) {
       case 'theme': {
         const name = req.name ?? '';
@@ -1059,7 +1059,7 @@ export const mockAppBindings = {
     }
   },
 
-  ReviseGoal: async (req: ReviseGoalRequest): Promise<void> => {
+  Revise: async (req: ReviseRequest): Promise<void> => {
     const id = req.goalId;
     // Detect type by ID convention
     if (id.includes('-KR')) {
@@ -1114,7 +1114,7 @@ export const mockAppBindings = {
     }
   },
 
-  DismissGoal: async (goalId: string): Promise<void> => {
+  Dismiss: async (goalId: string): Promise<void> => {
     if (goalId.includes('-KR')) {
       const result = findKeyResultParent(mockThemes, goalId);
       if (!result) throw new Error(`KeyResult ${goalId} not found`);

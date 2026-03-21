@@ -104,24 +104,24 @@ func (a *App) ReopenObjective(objectiveId string) error {
 
 // --- Behavioral goal operations ---
 
-func (a *App) GetGoalHierarchy() ([]managers.LifeTheme, error) {
-	return a.planningManager.GetGoalHierarchy()
+func (a *App) GetHierarchy() ([]managers.LifeTheme, error) {
+	return a.planningManager.GetHierarchy()
 }
 
-func (a *App) EstablishGoal(req managers.EstablishGoalRequest) (*managers.EstablishGoalResult, error) {
-	return a.planningManager.EstablishGoal(req)
+func (a *App) Establish(req managers.EstablishRequest) (*managers.EstablishResult, error) {
+	return a.planningManager.Establish(req)
 }
 
-func (a *App) ReviseGoal(req managers.ReviseGoalRequest) error {
-	return a.planningManager.ReviseGoal(req)
+func (a *App) Revise(req managers.ReviseRequest) error {
+	return a.planningManager.Revise(req)
 }
 
 func (a *App) RecordProgress(goalId string, value int) error {
 	return a.planningManager.RecordProgress(goalId, value)
 }
 
-func (a *App) DismissGoal(goalId string) error {
-	return a.planningManager.DismissGoal(goalId)
+func (a *App) Dismiss(goalId string) error {
+	return a.planningManager.Dismiss(goalId)
 }
 
 func (a *App) SuggestAbbreviation(name string) (string, error) {

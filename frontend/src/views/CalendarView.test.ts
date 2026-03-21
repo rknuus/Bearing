@@ -36,7 +36,7 @@ describe('CalendarView', () => {
   function makeMockBindings(themes = makeTestThemes(), yearFocus = makeTestYearFocus()) {
     currentYearFocus = JSON.parse(JSON.stringify(yearFocus));
     return {
-      GetGoalHierarchy: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(themes))),
+      GetHierarchy: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(themes))),
       GetYearFocus: vi.fn().mockImplementation(async () => JSON.parse(JSON.stringify(currentYearFocus))),
       SaveDayFocus: vi.fn().mockImplementation(async (day: DayFocus) => {
         const idx = currentYearFocus.findIndex(e => e.date === day.date);
@@ -355,8 +355,8 @@ describe('CalendarView', () => {
   });
 
   it('shows loading state during data fetch', async () => {
-    // Make GetGoalHierarchy hang to observe loading state
-    mockBindings.GetGoalHierarchy.mockReturnValue(new Promise(() => {}));
+    // Make GetHierarchy hang to observe loading state
+    mockBindings.GetHierarchy.mockReturnValue(new Promise(() => {}));
 
     render(CalendarView, {
       target: container,
@@ -371,7 +371,7 @@ describe('CalendarView', () => {
 
   it('shows error banner on fetch failure', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    mockBindings.GetGoalHierarchy.mockRejectedValue(new Error('Network error'));
+    mockBindings.GetHierarchy.mockRejectedValue(new Error('Network error'));
 
     render(CalendarView, {
       target: container,

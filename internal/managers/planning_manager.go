@@ -46,11 +46,11 @@ type NavigationContext struct {
 
 // IGoalStructure defines behavioral operations for managing the OKR hierarchy.
 type IGoalStructure interface {
-	GetGoalHierarchy() ([]LifeTheme, error)
-	EstablishGoal(req EstablishGoalRequest) (*EstablishGoalResult, error)
-	ReviseGoal(req ReviseGoalRequest) error
+	GetHierarchy() ([]LifeTheme, error)
+	Establish(req EstablishRequest) (*EstablishResult, error)
+	Revise(req ReviseRequest) error
 	RecordProgress(goalId string, value int) error
-	DismissGoal(goalId string) error
+	Dismiss(goalId string) error
 	SuggestAbbreviation(name string) (string, error)
 }
 
@@ -263,8 +263,8 @@ const (
 	GoalTypeRoutine   GoalType = "routine"
 )
 
-// EstablishGoalRequest carries the fields needed to create any goal node.
-type EstablishGoalRequest struct {
+// EstablishRequest carries the fields needed to create any goal node.
+type EstablishRequest struct {
 	ParentID    string   `json:"parentId"`
 	GoalType    GoalType `json:"goalType"`
 	Name        string   `json:"name,omitempty"`
@@ -277,17 +277,17 @@ type EstablishGoalRequest struct {
 	Unit        string   `json:"unit,omitempty"`
 }
 
-// EstablishGoalResult contains the created goal node.
-type EstablishGoalResult struct {
+// EstablishResult contains the created goal node.
+type EstablishResult struct {
 	Theme     *LifeTheme `json:"theme,omitempty"`
 	Objective *Objective `json:"objective,omitempty"`
 	KeyResult *KeyResult `json:"keyResult,omitempty"`
 	Routine   *Routine   `json:"routine,omitempty"`
 }
 
-// ReviseGoalRequest carries partial updates for an existing goal node.
+// ReviseRequest carries partial updates for an existing goal node.
 // Pointer fields: nil = leave unchanged, non-nil = update to this value.
-type ReviseGoalRequest struct {
+type ReviseRequest struct {
 	GoalID      string    `json:"goalId"`
 	Name        *string   `json:"name,omitempty"`
 	Color       *string   `json:"color,omitempty"`
@@ -1986,27 +1986,27 @@ func (m *PlanningManager) suggestThemeAbbreviation(name string) (string, error) 
 
 // --- Behavioral goal methods (expand phase) ---
 
-// GetGoalHierarchy returns the full OKR hierarchy.
-func (m *PlanningManager) GetGoalHierarchy() ([]LifeTheme, error) {
+// GetHierarchy returns the full OKR hierarchy.
+func (m *PlanningManager) GetHierarchy() ([]LifeTheme, error) {
 	return m.getThemes()
 }
 
-// EstablishGoal creates a new goal node of the specified type.
-func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoalResult, error) {
+// Establish creates a new goal node of the specified type.
+func (m *PlanningManager) Establish(req EstablishRequest) (*EstablishResult, error) {
 	switch req.GoalType {
 	case GoalTypeTheme:
 		theme, err := m.createTheme(req.Name, req.Color)
 		if err != nil {
 			return nil, err
 		}
-		return &EstablishGoalResult{Theme: theme}, nil
+		return &EstablishResult{Theme: theme}, nil
 
 	case GoalTypeObjective:
 		obj, err := m.createObjective(req.ParentID, req.Title)
 		if err != nil {
 			return nil, err
 		}
-		return &EstablishGoalResult{Objective: obj}, nil
+		return &EstablishResult{Objective: obj}, nil
 
 	case GoalTypeKeyResult:
 		startVal := 0
@@ -2021,7 +2021,7 @@ func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoa
 		if err != nil {
 			return nil, err
 		}
-		return &EstablishGoalResult{KeyResult: kr}, nil
+		return &EstablishResult{KeyResult: kr}, nil
 
 	case GoalTypeRoutine:
 		targetVal := 0
@@ -2032,15 +2032,15 @@ func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoa
 		if err != nil {
 			return nil, err
 		}
-		return &EstablishGoalResult{Routine: routine}, nil
+		return &EstablishResult{Routine: routine}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown goal type: %s", req.GoalType)
 	}
 }
 
-// ReviseGoal applies partial updates to an existing goal node.
-func (m *PlanningManager) ReviseGoal(req ReviseGoalRequest) error {
+// Revise applies partial updates to an existing goal node.
+func (m *PlanningManager) Revise(req ReviseRequest) error {
 	if req.GoalID == "" {
 		return fmt.Errorf("goalId cannot be empty")
 	}
@@ -2177,8 +2177,8 @@ func (m *PlanningManager) RecordProgress(goalId string, value int) error {
 	}
 }
 
-// DismissGoal removes a goal node by ID.
-func (m *PlanningManager) DismissGoal(goalId string) error {
+// Dismiss removes a goal node by ID.
+func (m *PlanningManager) Dismiss(goalId string) error {
 	if goalId == "" {
 		return fmt.Errorf("goalId cannot be empty")
 	}

@@ -102,7 +102,7 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Task
 // --- Integration test helper wrappers around behavioral API ---
 
 func intCreateTheme(m *managers.PlanningManager, name, color string) (*managers.LifeTheme, error) {
-	res, err := m.EstablishGoal(managers.EstablishGoalRequest{GoalType: "theme", Name: name, Color: color})
+	res, err := m.Establish(managers.EstablishRequest{GoalType: "theme", Name: name, Color: color})
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func intCreateTheme(m *managers.PlanningManager, name, color string) (*managers.
 }
 
 func intCreateObjective(m *managers.PlanningManager, parentId, title string) (*managers.Objective, error) {
-	res, err := m.EstablishGoal(managers.EstablishGoalRequest{GoalType: "objective", ParentID: parentId, Title: title})
+	res, err := m.Establish(managers.EstablishRequest{GoalType: "objective", ParentID: parentId, Title: title})
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func intCreateObjective(m *managers.PlanningManager, parentId, title string) (*m
 }
 
 func intCreateKeyResult(m *managers.PlanningManager, parentObjId, description string, startValue, targetValue int) (*managers.KeyResult, error) {
-	res, err := m.EstablishGoal(managers.EstablishGoalRequest{
+	res, err := m.Establish(managers.EstablishRequest{
 		GoalType:    "key-result",
 		ParentID:    parentObjId,
 		Description: description,
@@ -200,7 +200,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 		t.Errorf("Task theme ID mismatch: expected %s, got %s", theme.ID, task.ThemeID)
 	}
 	// Step 4: Verify color chain - all components can look up the theme color
-	themes, err := manager.GetGoalHierarchy()
+	themes, err := manager.GetHierarchy()
 	if err != nil {
 		t.Fatalf("Failed to get themes: %v", err)
 	}
@@ -301,7 +301,7 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 	verifyParentID(t, "KeyResult", kr2.ID, kr2.ParentID, obj1.ID)
 
 	// Verify parentId relationships through the full hierarchy via GetThemes
-	themes, _ := manager.GetGoalHierarchy()
+	themes, _ := manager.GetHierarchy()
 	for _, th := range themes {
 		if th.ID == theme.ID {
 			for _, obj := range th.Objectives {
@@ -535,7 +535,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	}
 
 	// Verify themes are restored
-	themes, _ := manager2.GetGoalHierarchy()
+	themes, _ := manager2.GetHierarchy()
 	if len(themes) != 2 {
 		t.Errorf("Expected 2 themes after reload, got %d", len(themes))
 	}
@@ -674,13 +674,13 @@ func TestIntegration_DeleteTheme(t *testing.T) {
 	_, _ = manager.CreateTask("Task 2", theme2.ID, "important-urgent", "", "", "")
 
 	// Delete the first theme
-	err := manager.DismissGoal(theme1.ID)
+	err := manager.Dismiss(theme1.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete theme: %v", err)
 	}
 
 	// Verify theme is deleted
-	themes, _ := manager.GetGoalHierarchy()
+	themes, _ := manager.GetHierarchy()
 	for _, th := range themes {
 		if th.ID == theme1.ID {
 			t.Error("Deleted theme should not be in themes list")
@@ -769,7 +769,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 
 	// Update theme
 	newColor := "#00ff00"
-	_ = manager.ReviseGoal(managers.ReviseGoalRequest{GoalID: theme.ID, Color: &newColor})
+	_ = manager.Revise(managers.ReviseRequest{GoalID: theme.ID, Color: &newColor})
 
 	// Get history
 	history, err := repo.GetHistory(0)

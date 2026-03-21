@@ -20,11 +20,11 @@ function makeMockBindings() {
     }),
     SaveNavigationContext: vi.fn().mockResolvedValue(undefined),
     // OKRView APIs (behavioral)
-    GetGoalHierarchy: vi.fn().mockResolvedValue([]),
-    EstablishGoal: vi.fn().mockResolvedValue({}),
-    ReviseGoal: vi.fn().mockResolvedValue(undefined),
+    GetHierarchy: vi.fn().mockResolvedValue([]),
+    Establish: vi.fn().mockResolvedValue({}),
+    Revise: vi.fn().mockResolvedValue(undefined),
     RecordProgress: vi.fn().mockResolvedValue(undefined),
-    DismissGoal: vi.fn().mockResolvedValue(undefined),
+    Dismiss: vi.fn().mockResolvedValue(undefined),
     SuggestAbbreviation: vi.fn().mockResolvedValue('T'),
     // CalendarView APIs
     GetYearFocus: vi.fn().mockResolvedValue([]),
@@ -311,7 +311,7 @@ describe('App', () => {
         { date: todayDateString(), themeIds: ['HF'], notes: '', text: '' },
       ]);
       // Provide themes so ThemeFilterBar renders in EisenKanView
-      mockBindings.GetGoalHierarchy.mockResolvedValue([
+      mockBindings.GetHierarchy.mockResolvedValue([
         { id: 'HF', name: 'Health & Fitness', color: '#22c55e', objectives: [] },
       ]);
     }

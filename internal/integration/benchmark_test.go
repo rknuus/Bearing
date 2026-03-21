@@ -144,7 +144,7 @@ func TestPerformance_ViewTransition_ThemesToTasks(t *testing.T) {
 
 	// Measure theme load time
 	start := time.Now()
-	themes, _ := manager.GetGoalHierarchy()
+	themes, _ := manager.GetHierarchy()
 	themeLoadTime := time.Since(start)
 
 	// Measure task load time
@@ -280,7 +280,7 @@ func BenchmarkViewTransition(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// Simulate view transition: load themes and tasks
-		_, _ = manager.GetGoalHierarchy()
+		_, _ = manager.GetHierarchy()
 		_, _ = manager.GetTasks()
 	}
 }
@@ -452,7 +452,7 @@ func TestPerformance_LargeDataset(t *testing.T) {
 	// Measure full data retrieval
 	start := time.Now()
 
-	loadedThemes, _ := manager.GetGoalHierarchy()
+	loadedThemes, _ := manager.GetHierarchy()
 	tasks, _ := manager.GetTasks()
 
 	elapsed := time.Since(start)

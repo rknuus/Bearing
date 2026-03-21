@@ -66,7 +66,7 @@
       const bindings = getBindings();
 
       const [themesResult, focusResult] = await Promise.all([
-        bindings.GetGoalHierarchy(),
+        bindings.GetHierarchy(),
         bindings.GetYearFocus(year),
       ]);
 
