@@ -3682,3 +3682,236 @@ func TestMigrateArchivedOrder_Idempotent(t *testing.T) {
 		}
 	}
 }
+
+// =============================================================================
+// Archived Order Integration Tests
+// =============================================================================
+
+func TestUnit_ArchiveTask_PrependsToArchivedOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Create 2 tasks and move them to done
+	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", nil)
+
+	// Archive them one at a time
+	if err := manager.ArchiveTask(t1.ID); err != nil {
+		t.Fatalf("failed to archive task 1: %v", err)
+	}
+	if err := manager.ArchiveTask(t2.ID); err != nil {
+		t.Fatalf("failed to archive task 2: %v", err)
+	}
+
+	// The second archived task should appear first (most recent first)
+	order, _ := mockAccess.LoadArchivedOrder()
+	if len(order) != 2 {
+		t.Fatalf("expected 2 entries in archived order, got %d", len(order))
+	}
+	if order[0] != t2.ID {
+		t.Errorf("expected most recently archived task %s at position 0, got %s", t2.ID, order[0])
+	}
+	if order[1] != t1.ID {
+		t.Errorf("expected first archived task %s at position 1, got %s", t1.ID, order[1])
+	}
+}
+
+func TestUnit_ArchiveAllDoneTasks_PreservesRelativeOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Create 3 tasks and move them all to done
+	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	t3, _ := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", nil)
+	_, _ = manager.MoveTask(t3.ID, "done", nil)
+
+	// Set up a known display order in the done zone via task_order
+	_ = mockAccess.SaveTaskOrder(map[string][]string{
+		"done": {t3.ID, t1.ID, t2.ID},
+	})
+
+	// Archive a task first to act as "previously archived"
+	priorTask, _ := manager.CreateTask("Prior", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(priorTask.ID, "done", nil)
+	_ = manager.ArchiveTask(priorTask.ID)
+
+	// Now archive all done tasks
+	if err := manager.ArchiveAllDoneTasks(); err != nil {
+		t.Fatalf("failed to archive all done tasks: %v", err)
+	}
+
+	order, _ := mockAccess.LoadArchivedOrder()
+	// The done tasks should come before the previously archived task
+	// Find positions of each in the order
+	posOf := func(id string) int {
+		for i, oid := range order {
+			if oid == id {
+				return i
+			}
+		}
+		return -1
+	}
+
+	priorPos := posOf(priorTask.ID)
+	t1Pos := posOf(t1.ID)
+	t2Pos := posOf(t2.ID)
+	t3Pos := posOf(t3.ID)
+
+	if priorPos == -1 || t1Pos == -1 || t2Pos == -1 || t3Pos == -1 {
+		t.Fatalf("expected all 4 tasks in archived order, got %v", order)
+	}
+
+	// All newly archived tasks should appear before the previously archived one
+	if t1Pos >= priorPos {
+		t.Errorf("task 1 (pos %d) should appear before prior task (pos %d)", t1Pos, priorPos)
+	}
+	if t2Pos >= priorPos {
+		t.Errorf("task 2 (pos %d) should appear before prior task (pos %d)", t2Pos, priorPos)
+	}
+	if t3Pos >= priorPos {
+		t.Errorf("task 3 (pos %d) should appear before prior task (pos %d)", t3Pos, priorPos)
+	}
+
+	// The relative order among the newly archived tasks should match
+	// the done zone display order we set: t3, t1, t2
+	if t3Pos >= t1Pos {
+		t.Errorf("task 3 (pos %d) should appear before task 1 (pos %d) in archived order", t3Pos, t1Pos)
+	}
+	if t1Pos >= t2Pos {
+		t.Errorf("task 1 (pos %d) should appear before task 2 (pos %d) in archived order", t1Pos, t2Pos)
+	}
+}
+
+func TestUnit_RestoreTask_RemovesFromArchivedOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Create 3 tasks, move to done, then archive all
+	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	t3, _ := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", nil)
+	_, _ = manager.MoveTask(t3.ID, "done", nil)
+
+	_ = manager.ArchiveTask(t1.ID)
+	_ = manager.ArchiveTask(t2.ID)
+	_ = manager.ArchiveTask(t3.ID)
+
+	// Archived order should be [t3, t2, t1] (most recent first)
+	orderBefore, _ := mockAccess.LoadArchivedOrder()
+	if len(orderBefore) != 3 {
+		t.Fatalf("expected 3 entries before restore, got %d", len(orderBefore))
+	}
+
+	// Restore the middle one (t2)
+	if err := manager.RestoreTask(t2.ID); err != nil {
+		t.Fatalf("failed to restore task: %v", err)
+	}
+
+	orderAfter, _ := mockAccess.LoadArchivedOrder()
+	if len(orderAfter) != 2 {
+		t.Fatalf("expected 2 entries after restore, got %d: %v", len(orderAfter), orderAfter)
+	}
+
+	// t2 should not be in the archived order
+	for _, id := range orderAfter {
+		if id == t2.ID {
+			t.Errorf("restored task %s should not be in archived order", t2.ID)
+		}
+	}
+
+	// t3 and t1 should maintain their relative positions (t3 before t1)
+	if orderAfter[0] != t3.ID {
+		t.Errorf("expected %s at position 0, got %s", t3.ID, orderAfter[0])
+	}
+	if orderAfter[1] != t1.ID {
+		t.Errorf("expected %s at position 1, got %s", t1.ID, orderAfter[1])
+	}
+}
+
+func TestUnit_GetTasks_SortsArchivedByArchivedOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Directly set up archived tasks with specific order
+	mockAccess.tasks["archived"] = []access.Task{
+		{ID: "A1", Title: "Alpha", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
+		{ID: "A2", Title: "Beta", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
+		{ID: "A3", Title: "Gamma", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-03T00:00:00Z"},
+	}
+	// Archived order: A3 first, then A1, then A2 (not matching CreatedAt order)
+	mockAccess.archivedOrder = []string{"A3", "A1", "A2"}
+
+	tasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Filter to just archived tasks
+	var archived []TaskWithStatus
+	for _, tw := range tasks {
+		if tw.Status == "archived" {
+			archived = append(archived, tw)
+		}
+	}
+
+	if len(archived) != 3 {
+		t.Fatalf("expected 3 archived tasks, got %d", len(archived))
+	}
+
+	// Verify they come back in archived order position: A3, A1, A2
+	expectedOrder := []string{"A3", "A1", "A2"}
+	for i, expected := range expectedOrder {
+		if archived[i].ID != expected {
+			t.Errorf("archived task at position %d: expected %s, got %s", i, expected, archived[i].ID)
+		}
+	}
+}
+
+func TestUnit_GetTasks_ArchivedFallbackCreatedAtDescending(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Set up archived tasks: some in archived order, some not
+	mockAccess.tasks["archived"] = []access.Task{
+		{ID: "A1", Title: "Ordered 1", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
+		{ID: "A2", Title: "Ordered 2", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
+		{ID: "U1", Title: "Unordered Old", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-10T00:00:00Z"},
+		{ID: "U2", Title: "Unordered New", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-20T00:00:00Z"},
+	}
+	// Only A2 and A1 are in archived order (in that order); U1 and U2 are not
+	mockAccess.archivedOrder = []string{"A2", "A1"}
+
+	tasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var archived []TaskWithStatus
+	for _, tw := range tasks {
+		if tw.Status == "archived" {
+			archived = append(archived, tw)
+		}
+	}
+
+	if len(archived) != 4 {
+		t.Fatalf("expected 4 archived tasks, got %d", len(archived))
+	}
+
+	// Ordered tasks come first (by position): A2, A1
+	if archived[0].ID != "A2" {
+		t.Errorf("position 0: expected A2 (ordered), got %s", archived[0].ID)
+	}
+	if archived[1].ID != "A1" {
+		t.Errorf("position 1: expected A1 (ordered), got %s", archived[1].ID)
+	}
+
+	// Unordered tasks come after, sorted by CreatedAt descending (newest first)
+	if archived[2].ID != "U2" {
+		t.Errorf("position 2: expected U2 (newest unordered), got %s", archived[2].ID)
+	}
+	if archived[3].ID != "U1" {
+		t.Errorf("position 3: expected U1 (oldest unordered), got %s", archived[3].ID)
+	}
+}
