@@ -118,11 +118,12 @@ func (m *mockThemeAccess) DeleteTheme(id string) error {
 
 // mockTaskAccess implements access.ITaskAccess for testing.
 type mockTaskAccess struct {
-	mu          sync.Mutex
-	tasks       map[string][]access.Task
-	taskOrder   map[string][]string
-	nextTaskNum int
-	boardConfig *access.BoardConfiguration
+	mu            sync.Mutex
+	tasks         map[string][]access.Task
+	taskOrder     map[string][]string
+	archivedOrder []string
+	nextTaskNum   int
+	boardConfig   *access.BoardConfiguration
 }
 
 func newMockTaskAccess() *mockTaskAccess {
@@ -318,6 +319,27 @@ func (m *mockTaskAccess) TaskOrderFilePath() string          { return "task_orde
 func (m *mockTaskAccess) TaskDirPath(status string) string   { return status }
 func (m *mockTaskAccess) CommitFiles(paths []string, message string) error { return nil }
 func (m *mockTaskAccess) CommitAll(message string) error     { return nil }
+func (m *mockTaskAccess) ArchivedOrderFilePath() string { return "archived_order.json" }
+func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.archivedOrder == nil {
+		return []string{}, nil
+	}
+	return append([]string{}, m.archivedOrder...), nil
+}
+func (m *mockTaskAccess) WriteArchivedOrder(order []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.archivedOrder = append([]string{}, order...)
+	return nil
+}
+func (m *mockTaskAccess) SaveArchivedOrder(order []string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.archivedOrder = append([]string{}, order...)
+	return nil
+}
 
 // mockCalendarAccess implements access.ICalendarAccess for testing.
 type mockCalendarAccess struct{}
@@ -3516,4 +3538,380 @@ func TestUnit_ProcessPriorityPromotions_MovesZone(t *testing.T) {
 	}
 
 	assertTaskOrderConsistency(t, manager)
+}
+
+func TestMigrateArchivedOrder_NoArchivedKey(t *testing.T) {
+	mockAccess := newMockTaskAccess()
+	mockAccess.taskOrder = map[string][]string{
+		"doing": {"T1", "T2"},
+	}
+	// Add tasks so validateTaskOrder doesn't remove them
+	mockAccess.tasks["doing"] = []access.Task{
+		{ID: "T1", Title: "t1", Priority: "normal"},
+		{ID: "T2", Title: "t2", Priority: "normal"},
+	}
+
+	_, err := NewPlanningManager(newMockThemeAccess(), mockAccess, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	if err != nil {
+		t.Fatalf("NewPlanningManager failed: %v", err)
+	}
+
+	// task_order.json should be unchanged (no "archived" key to begin with)
+	order, _ := mockAccess.LoadTaskOrder()
+	if _, exists := order["archived"]; exists {
+		t.Error("archived key should not exist in task order")
+	}
+	if len(order["doing"]) != 2 {
+		t.Errorf("doing zone should have 2 tasks, got %d", len(order["doing"]))
+	}
+
+	// archived_order.json should remain empty
+	archived, _ := mockAccess.LoadArchivedOrder()
+	if len(archived) != 0 {
+		t.Errorf("archived order should be empty, got %d entries", len(archived))
+	}
+}
+
+func TestMigrateArchivedOrder_MigratesAndReverses(t *testing.T) {
+	mockAccess := newMockTaskAccess()
+	// Simulate old format: "archived" key in task_order.json with oldest-first order
+	mockAccess.taskOrder = map[string][]string{
+		"doing":    {"T1"},
+		"archived": {"oldest", "middle", "newest"},
+	}
+	mockAccess.tasks["doing"] = []access.Task{
+		{ID: "T1", Title: "t1", Priority: "normal"},
+	}
+
+	_, err := NewPlanningManager(newMockThemeAccess(), mockAccess, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	if err != nil {
+		t.Fatalf("NewPlanningManager failed: %v", err)
+	}
+
+	// "archived" key should be removed from task_order.json
+	order, _ := mockAccess.LoadTaskOrder()
+	if _, exists := order["archived"]; exists {
+		t.Error("archived key should have been removed from task order")
+	}
+	if len(order["doing"]) != 1 {
+		t.Errorf("doing zone should still have 1 task, got %d", len(order["doing"]))
+	}
+
+	// archived_order.json should have reversed order (newest first)
+	archived, _ := mockAccess.LoadArchivedOrder()
+	expected := []string{"newest", "middle", "oldest"}
+	if len(archived) != len(expected) {
+		t.Fatalf("archived order should have %d entries, got %d", len(expected), len(archived))
+	}
+	for i, id := range expected {
+		if archived[i] != id {
+			t.Errorf("archived[%d] = %q, want %q", i, archived[i], id)
+		}
+	}
+}
+
+func TestMigrateArchivedOrder_ArchivedOrderAlreadyExists(t *testing.T) {
+	mockAccess := newMockTaskAccess()
+	// Both old "archived" key and new archived_order.json exist
+	mockAccess.taskOrder = map[string][]string{
+		"doing":    {"T1"},
+		"archived": {"old1", "old2"},
+	}
+	mockAccess.archivedOrder = []string{"new1", "new2", "new3"}
+	mockAccess.tasks["doing"] = []access.Task{
+		{ID: "T1", Title: "t1", Priority: "normal"},
+	}
+
+	_, err := NewPlanningManager(newMockThemeAccess(), mockAccess, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	if err != nil {
+		t.Fatalf("NewPlanningManager failed: %v", err)
+	}
+
+	// "archived" key should be removed
+	order, _ := mockAccess.LoadTaskOrder()
+	if _, exists := order["archived"]; exists {
+		t.Error("archived key should have been removed from task order")
+	}
+
+	// archived_order.json should keep its existing content (not be overwritten)
+	archived, _ := mockAccess.LoadArchivedOrder()
+	expected := []string{"new1", "new2", "new3"}
+	if len(archived) != len(expected) {
+		t.Fatalf("archived order should have %d entries, got %d", len(expected), len(archived))
+	}
+	for i, id := range expected {
+		if archived[i] != id {
+			t.Errorf("archived[%d] = %q, want %q", i, archived[i], id)
+		}
+	}
+}
+
+func TestMigrateArchivedOrder_Idempotent(t *testing.T) {
+	mockAccess := newMockTaskAccess()
+	mockAccess.taskOrder = map[string][]string{
+		"doing":    {"T1"},
+		"archived": {"a", "b", "c"},
+	}
+	mockAccess.tasks["doing"] = []access.Task{
+		{ID: "T1", Title: "t1", Priority: "normal"},
+	}
+
+	// First construction triggers migration
+	pm1, err := NewPlanningManager(newMockThemeAccess(), mockAccess, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	if err != nil {
+		t.Fatalf("first NewPlanningManager failed: %v", err)
+	}
+	_ = pm1
+
+	archived1, _ := mockAccess.LoadArchivedOrder()
+
+	// Second construction should be a no-op (no "archived" key left)
+	_, err = NewPlanningManager(newMockThemeAccess(), mockAccess, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	if err != nil {
+		t.Fatalf("second NewPlanningManager failed: %v", err)
+	}
+
+	archived2, _ := mockAccess.LoadArchivedOrder()
+
+	if len(archived1) != len(archived2) {
+		t.Fatalf("archived order changed between constructions: %d vs %d", len(archived1), len(archived2))
+	}
+	for i := range archived1 {
+		if archived1[i] != archived2[i] {
+			t.Errorf("archived order mismatch at %d: %q vs %q", i, archived1[i], archived2[i])
+		}
+	}
+}
+
+// =============================================================================
+// Archived Order Integration Tests
+// =============================================================================
+
+func TestUnit_ArchiveTask_PrependsToArchivedOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Create 2 tasks and move them to done
+	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", nil)
+
+	// Archive them one at a time
+	if err := manager.ArchiveTask(t1.ID); err != nil {
+		t.Fatalf("failed to archive task 1: %v", err)
+	}
+	if err := manager.ArchiveTask(t2.ID); err != nil {
+		t.Fatalf("failed to archive task 2: %v", err)
+	}
+
+	// The second archived task should appear first (most recent first)
+	order, _ := mockAccess.LoadArchivedOrder()
+	if len(order) != 2 {
+		t.Fatalf("expected 2 entries in archived order, got %d", len(order))
+	}
+	if order[0] != t2.ID {
+		t.Errorf("expected most recently archived task %s at position 0, got %s", t2.ID, order[0])
+	}
+	if order[1] != t1.ID {
+		t.Errorf("expected first archived task %s at position 1, got %s", t1.ID, order[1])
+	}
+}
+
+func TestUnit_ArchiveAllDoneTasks_PreservesRelativeOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Create 3 tasks and move them all to done
+	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	t3, _ := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", nil)
+	_, _ = manager.MoveTask(t3.ID, "done", nil)
+
+	// Set up a known display order in the done zone via task_order
+	_ = mockAccess.SaveTaskOrder(map[string][]string{
+		"done": {t3.ID, t1.ID, t2.ID},
+	})
+
+	// Archive a task first to act as "previously archived"
+	priorTask, _ := manager.CreateTask("Prior", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(priorTask.ID, "done", nil)
+	_ = manager.ArchiveTask(priorTask.ID)
+
+	// Now archive all done tasks
+	if err := manager.ArchiveAllDoneTasks(); err != nil {
+		t.Fatalf("failed to archive all done tasks: %v", err)
+	}
+
+	order, _ := mockAccess.LoadArchivedOrder()
+	// The done tasks should come before the previously archived task
+	// Find positions of each in the order
+	posOf := func(id string) int {
+		for i, oid := range order {
+			if oid == id {
+				return i
+			}
+		}
+		return -1
+	}
+
+	priorPos := posOf(priorTask.ID)
+	t1Pos := posOf(t1.ID)
+	t2Pos := posOf(t2.ID)
+	t3Pos := posOf(t3.ID)
+
+	if priorPos == -1 || t1Pos == -1 || t2Pos == -1 || t3Pos == -1 {
+		t.Fatalf("expected all 4 tasks in archived order, got %v", order)
+	}
+
+	// All newly archived tasks should appear before the previously archived one
+	if t1Pos >= priorPos {
+		t.Errorf("task 1 (pos %d) should appear before prior task (pos %d)", t1Pos, priorPos)
+	}
+	if t2Pos >= priorPos {
+		t.Errorf("task 2 (pos %d) should appear before prior task (pos %d)", t2Pos, priorPos)
+	}
+	if t3Pos >= priorPos {
+		t.Errorf("task 3 (pos %d) should appear before prior task (pos %d)", t3Pos, priorPos)
+	}
+
+	// The relative order among the newly archived tasks should match
+	// the done zone display order we set: t3, t1, t2
+	if t3Pos >= t1Pos {
+		t.Errorf("task 3 (pos %d) should appear before task 1 (pos %d) in archived order", t3Pos, t1Pos)
+	}
+	if t1Pos >= t2Pos {
+		t.Errorf("task 1 (pos %d) should appear before task 2 (pos %d) in archived order", t1Pos, t2Pos)
+	}
+}
+
+func TestUnit_RestoreTask_RemovesFromArchivedOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Create 3 tasks, move to done, then archive all
+	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
+	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
+	t3, _ := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
+	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", nil)
+	_, _ = manager.MoveTask(t3.ID, "done", nil)
+
+	_ = manager.ArchiveTask(t1.ID)
+	_ = manager.ArchiveTask(t2.ID)
+	_ = manager.ArchiveTask(t3.ID)
+
+	// Archived order should be [t3, t2, t1] (most recent first)
+	orderBefore, _ := mockAccess.LoadArchivedOrder()
+	if len(orderBefore) != 3 {
+		t.Fatalf("expected 3 entries before restore, got %d", len(orderBefore))
+	}
+
+	// Restore the middle one (t2)
+	if err := manager.RestoreTask(t2.ID); err != nil {
+		t.Fatalf("failed to restore task: %v", err)
+	}
+
+	orderAfter, _ := mockAccess.LoadArchivedOrder()
+	if len(orderAfter) != 2 {
+		t.Fatalf("expected 2 entries after restore, got %d: %v", len(orderAfter), orderAfter)
+	}
+
+	// t2 should not be in the archived order
+	for _, id := range orderAfter {
+		if id == t2.ID {
+			t.Errorf("restored task %s should not be in archived order", t2.ID)
+		}
+	}
+
+	// t3 and t1 should maintain their relative positions (t3 before t1)
+	if orderAfter[0] != t3.ID {
+		t.Errorf("expected %s at position 0, got %s", t3.ID, orderAfter[0])
+	}
+	if orderAfter[1] != t1.ID {
+		t.Errorf("expected %s at position 1, got %s", t1.ID, orderAfter[1])
+	}
+}
+
+func TestUnit_GetTasks_SortsArchivedByArchivedOrder(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Directly set up archived tasks with specific order
+	mockAccess.tasks["archived"] = []access.Task{
+		{ID: "A1", Title: "Alpha", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
+		{ID: "A2", Title: "Beta", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
+		{ID: "A3", Title: "Gamma", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-03T00:00:00Z"},
+	}
+	// Archived order: A3 first, then A1, then A2 (not matching CreatedAt order)
+	mockAccess.archivedOrder = []string{"A3", "A1", "A2"}
+
+	tasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	// Filter to just archived tasks
+	var archived []TaskWithStatus
+	for _, tw := range tasks {
+		if tw.Status == "archived" {
+			archived = append(archived, tw)
+		}
+	}
+
+	if len(archived) != 3 {
+		t.Fatalf("expected 3 archived tasks, got %d", len(archived))
+	}
+
+	// Verify they come back in archived order position: A3, A1, A2
+	expectedOrder := []string{"A3", "A1", "A2"}
+	for i, expected := range expectedOrder {
+		if archived[i].ID != expected {
+			t.Errorf("archived task at position %d: expected %s, got %s", i, expected, archived[i].ID)
+		}
+	}
+}
+
+func TestUnit_GetTasks_ArchivedFallbackCreatedAtDescending(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Set up archived tasks: some in archived order, some not
+	mockAccess.tasks["archived"] = []access.Task{
+		{ID: "A1", Title: "Ordered 1", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
+		{ID: "A2", Title: "Ordered 2", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
+		{ID: "U1", Title: "Unordered Old", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-10T00:00:00Z"},
+		{ID: "U2", Title: "Unordered New", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-20T00:00:00Z"},
+	}
+	// Only A2 and A1 are in archived order (in that order); U1 and U2 are not
+	mockAccess.archivedOrder = []string{"A2", "A1"}
+
+	tasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	var archived []TaskWithStatus
+	for _, tw := range tasks {
+		if tw.Status == "archived" {
+			archived = append(archived, tw)
+		}
+	}
+
+	if len(archived) != 4 {
+		t.Fatalf("expected 4 archived tasks, got %d", len(archived))
+	}
+
+	// Ordered tasks come first (by position): A2, A1
+	if archived[0].ID != "A2" {
+		t.Errorf("position 0: expected A2 (ordered), got %s", archived[0].ID)
+	}
+	if archived[1].ID != "A1" {
+		t.Errorf("position 1: expected A1 (ordered), got %s", archived[1].ID)
+	}
+
+	// Unordered tasks come after, sorted by CreatedAt descending (newest first)
+	if archived[2].ID != "U2" {
+		t.Errorf("position 2: expected U2 (newest unordered), got %s", archived[2].ID)
+	}
+	if archived[3].ID != "U1" {
+		t.Errorf("position 3: expected U1 (oldest unordered), got %s", archived[3].ID)
+	}
 }

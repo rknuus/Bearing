@@ -1222,8 +1222,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      // ArchiveTask = 2 commits (file move + task_order update)
-      expectedCommits += 2
+      // ArchiveTask = 3 commits (file move + task_order removal + archived_order save)
+      expectedCommits += 3
       assertCommitCount('after archive task 4u')
 
       // Restore task
@@ -1235,8 +1235,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/done/${task1Id}.json`)
 
-      // RestoreTask = 2 commits (file move + task_order update)
-      expectedCommits += 2
+      // RestoreTask = 3 commits (file move + task_order update + archived_order save)
+      expectedCommits += 3
       assertCommitCount('after restore task 4u')
 
       reporter.pass(`Task archived and restored: ${task1Id}`)
@@ -1259,8 +1259,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      // ArchiveTask = 2 commits (file move + task_order removal)
-      expectedCommits += 2
+      // ArchiveTask = 3 commits (file move + task_order removal + archived_order save)
+      expectedCommits += 3
       assertCommitCount('after archive task')
 
       reporter.pass(`Task 1 archived: ${task1Id}`)

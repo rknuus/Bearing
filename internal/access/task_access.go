@@ -33,6 +33,12 @@ type ITaskAccess interface {
 	SaveTaskOrder(order map[string][]string) error
 	WriteTaskOrder(order map[string][]string) error
 
+	// Archived Order
+	ArchivedOrderFilePath() string
+	LoadArchivedOrder() ([]string, error)
+	WriteArchivedOrder(order []string) error
+	SaveArchivedOrder(order []string) error
+
 	// Board Configuration
 	GetBoardConfiguration() (*BoardConfiguration, error)
 	SaveBoardConfiguration(config *BoardConfiguration) error
@@ -586,6 +592,60 @@ func (ta *TaskAccess) SaveTaskOrder(order map[string][]string) error {
 	}
 	if err := commitFiles(ta.repo, []string{ta.taskOrderFilePath()}, "Update task order"); err != nil {
 		return fmt.Errorf("TaskAccess.SaveTaskOrder: %w", err)
+	}
+	return nil
+}
+
+// archivedOrderFilePath returns the path to the archived_order.json file.
+func (ta *TaskAccess) archivedOrderFilePath() string {
+	return filepath.Join(ta.dataPath, "archived_order.json")
+}
+
+// ArchivedOrderFilePath returns the path to the archived_order.json file (public).
+func (ta *TaskAccess) ArchivedOrderFilePath() string {
+	return ta.archivedOrderFilePath()
+}
+
+// LoadArchivedOrder reads archived_order.json and returns the order slice.
+// Returns an empty slice if the file doesn't exist.
+func (ta *TaskAccess) LoadArchivedOrder() ([]string, error) {
+	filePath := ta.archivedOrderFilePath()
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, fmt.Errorf("TaskAccess.LoadArchivedOrder: failed to read file: %w", err)
+	}
+
+	var order []string
+	if err := json.Unmarshal(data, &order); err != nil {
+		return nil, fmt.Errorf("TaskAccess.LoadArchivedOrder: failed to parse file: %w", err)
+	}
+
+	if order == nil {
+		return []string{}, nil
+	}
+	return order, nil
+}
+
+// WriteArchivedOrder writes the order slice to archived_order.json without committing.
+func (ta *TaskAccess) WriteArchivedOrder(order []string) error {
+	filePath := ta.archivedOrderFilePath()
+	if err := writeJSON(filePath, order); err != nil {
+		return fmt.Errorf("TaskAccess.WriteArchivedOrder: %w", err)
+	}
+	return nil
+}
+
+// SaveArchivedOrder writes the order slice to archived_order.json and git-commits.
+func (ta *TaskAccess) SaveArchivedOrder(order []string) error {
+	if err := ta.WriteArchivedOrder(order); err != nil {
+		return fmt.Errorf("TaskAccess.SaveArchivedOrder: %w", err)
+	}
+	if err := commitFiles(ta.repo, []string{ta.archivedOrderFilePath()}, "Update archived order"); err != nil {
+		return fmt.Errorf("TaskAccess.SaveArchivedOrder: %w", err)
 	}
 	return nil
 }
