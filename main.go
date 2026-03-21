@@ -174,6 +174,32 @@ func (a *App) SuggestThemeAbbreviation(name string) (string, error) {
 	return a.planningManager.SuggestThemeAbbreviation(name)
 }
 
+// --- Behavioral goal operations ---
+
+func (a *App) GetGoalHierarchy() ([]managers.LifeTheme, error) {
+	return a.planningManager.GetGoalHierarchy()
+}
+
+func (a *App) EstablishGoal(req managers.EstablishGoalRequest) (*managers.EstablishGoalResult, error) {
+	return a.planningManager.EstablishGoal(req)
+}
+
+func (a *App) ReviseGoal(req managers.ReviseGoalRequest) error {
+	return a.planningManager.ReviseGoal(req)
+}
+
+func (a *App) RecordProgress(goalId string, value int) error {
+	return a.planningManager.RecordProgress(goalId, value)
+}
+
+func (a *App) DismissGoal(goalId string) error {
+	return a.planningManager.DismissGoal(goalId)
+}
+
+func (a *App) SuggestAbbreviation(name string) (string, error) {
+	return a.planningManager.SuggestAbbreviation(name)
+}
+
 // --- Calendar operations ---
 
 func (a *App) GetYearFocus(year int) ([]managers.DayFocus, error) {

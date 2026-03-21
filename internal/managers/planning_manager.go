@@ -62,6 +62,14 @@ type IGoalStructure interface {
 	UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error
 	DeleteRoutine(routineId string) error
 	SuggestThemeAbbreviation(name string) (string, error)
+
+	// Behavioral methods (expand phase — coexist with the above)
+	GetGoalHierarchy() ([]LifeTheme, error)
+	EstablishGoal(req EstablishGoalRequest) (*EstablishGoalResult, error)
+	ReviseGoal(req ReviseGoalRequest) error
+	RecordProgress(goalId string, value int) error
+	DismissGoal(goalId string) error
+	SuggestAbbreviation(name string) (string, error)
 }
 
 // IGoalLifecycle defines operations for OKR status transitions.
@@ -261,6 +269,69 @@ type PersonalVision struct {
 	Mission   string `json:"mission"`
 	Vision    string `json:"vision"`
 	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
+// GoalType identifies the kind of goal node in the OKR hierarchy.
+type GoalType string
+
+const (
+	GoalTypeTheme     GoalType = "theme"
+	GoalTypeObjective GoalType = "objective"
+	GoalTypeKeyResult GoalType = "key-result"
+	GoalTypeRoutine   GoalType = "routine"
+)
+
+// EstablishGoalRequest carries the fields needed to create any goal node.
+type EstablishGoalRequest struct {
+	ParentID    string   `json:"parentId"`
+	GoalType    GoalType `json:"goalType"`
+	Name        string   `json:"name,omitempty"`
+	Color       string   `json:"color,omitempty"`
+	Title       string   `json:"title,omitempty"`
+	Description string   `json:"description,omitempty"`
+	StartValue  *int     `json:"startValue,omitempty"`
+	TargetValue *int     `json:"targetValue,omitempty"`
+	TargetType  string   `json:"targetType,omitempty"`
+	Unit        string   `json:"unit,omitempty"`
+}
+
+// EstablishGoalResult contains the created goal node.
+type EstablishGoalResult struct {
+	Theme     *LifeTheme `json:"theme,omitempty"`
+	Objective *Objective `json:"objective,omitempty"`
+	KeyResult *KeyResult `json:"keyResult,omitempty"`
+	Routine   *Routine   `json:"routine,omitempty"`
+}
+
+// ReviseGoalRequest carries partial updates for an existing goal node.
+// Pointer fields: nil = leave unchanged, non-nil = update to this value.
+type ReviseGoalRequest struct {
+	GoalID      string    `json:"goalId"`
+	Name        *string   `json:"name,omitempty"`
+	Color       *string   `json:"color,omitempty"`
+	Title       *string   `json:"title,omitempty"`
+	Tags        *[]string `json:"tags,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	StartValue  *int      `json:"startValue,omitempty"`
+	TargetValue *int      `json:"targetValue,omitempty"`
+	TargetType  *string   `json:"targetType,omitempty"`
+	Unit        *string   `json:"unit,omitempty"`
+}
+
+// detectGoalType determines the goal type from its ID naming convention.
+// Theme IDs are uppercase abbreviations (no hyphens with O/KR/R suffix).
+// Objectives: {themeId}-O{n}, Key Results: {themeId}-KR{n}, Routines: {themeId}-R{n}
+func detectGoalType(id string) GoalType {
+	if strings.Contains(id, "-KR") {
+		return GoalTypeKeyResult
+	}
+	if strings.Contains(id, "-R") {
+		return GoalTypeRoutine
+	}
+	if strings.Contains(id, "-O") {
+		return GoalTypeObjective
+	}
+	return GoalTypeTheme
 }
 
 // defaultAccessBoardConfiguration returns the default board configuration
@@ -2044,6 +2115,226 @@ func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) 
 		return "", fmt.Errorf("%w", err)
 	}
 	return SuggestAbbreviation(name, themes), nil
+}
+
+// --- Behavioral goal methods (expand phase) ---
+
+// GetGoalHierarchy returns the full OKR hierarchy.
+func (m *PlanningManager) GetGoalHierarchy() ([]LifeTheme, error) {
+	return m.GetThemes()
+}
+
+// EstablishGoal creates a new goal node of the specified type.
+func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoalResult, error) {
+	switch req.GoalType {
+	case GoalTypeTheme:
+		theme, err := m.CreateTheme(req.Name, req.Color)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishGoalResult{Theme: theme}, nil
+
+	case GoalTypeObjective:
+		obj, err := m.CreateObjective(req.ParentID, req.Title)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishGoalResult{Objective: obj}, nil
+
+	case GoalTypeKeyResult:
+		startVal := 0
+		if req.StartValue != nil {
+			startVal = *req.StartValue
+		}
+		targetVal := 0
+		if req.TargetValue != nil {
+			targetVal = *req.TargetValue
+		}
+		kr, err := m.CreateKeyResult(req.ParentID, req.Description, startVal, targetVal)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishGoalResult{KeyResult: kr}, nil
+
+	case GoalTypeRoutine:
+		targetVal := 0
+		if req.TargetValue != nil {
+			targetVal = *req.TargetValue
+		}
+		routine, err := m.AddRoutine(req.ParentID, req.Description, targetVal, req.TargetType, req.Unit)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishGoalResult{Routine: routine}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown goal type: %s", req.GoalType)
+	}
+}
+
+// ReviseGoal applies partial updates to an existing goal node.
+func (m *PlanningManager) ReviseGoal(req ReviseGoalRequest) error {
+	if req.GoalID == "" {
+		return fmt.Errorf("goalId cannot be empty")
+	}
+
+	goalType := detectGoalType(req.GoalID)
+
+	switch goalType {
+	case GoalTypeTheme:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		for i := range themes {
+			if themes[i].ID == req.GoalID {
+				if req.Name != nil {
+					themes[i].Name = *req.Name
+				}
+				if req.Color != nil {
+					themes[i].Color = *req.Color
+				}
+				if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("theme with ID %s not found", req.GoalID)
+
+	case GoalTypeObjective:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		for i := range themes {
+			if obj := findObjectiveByID(themes[i].Objectives, req.GoalID); obj != nil {
+				if req.Title != nil {
+					obj.Title = *req.Title
+				}
+				if req.Tags != nil {
+					obj.Tags = validateTags(*req.Tags)
+				}
+				if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("objective with ID %s not found", req.GoalID)
+
+	case GoalTypeKeyResult:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		for i := range themes {
+			if obj, krIdx := findKeyResultParent(themes[i].Objectives, req.GoalID); obj != nil {
+				if req.Description != nil {
+					obj.KeyResults[krIdx].Description = *req.Description
+				}
+				if req.StartValue != nil {
+					obj.KeyResults[krIdx].StartValue = *req.StartValue
+				}
+				if req.TargetValue != nil {
+					obj.KeyResults[krIdx].TargetValue = *req.TargetValue
+				}
+				if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("key result with ID %s not found", req.GoalID)
+
+	case GoalTypeRoutine:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		theme, idx := findThemeForRoutine(themes, req.GoalID)
+		if theme == nil {
+			return fmt.Errorf("routine with ID %s not found", req.GoalID)
+		}
+		if req.Description != nil {
+			theme.Routines[idx].Description = strings.TrimSpace(*req.Description)
+		}
+		if req.TargetValue != nil {
+			theme.Routines[idx].TargetValue = *req.TargetValue
+		}
+		if req.TargetType != nil {
+			theme.Routines[idx].TargetType = *req.TargetType
+		}
+		if req.Unit != nil {
+			theme.Routines[idx].Unit = strings.TrimSpace(*req.Unit)
+		}
+		if err := m.themeAccess.SaveTheme(*theme); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unknown goal type for ID %s", req.GoalID)
+	}
+}
+
+// RecordProgress updates the current value of a measurable goal.
+func (m *PlanningManager) RecordProgress(goalId string, value int) error {
+	if goalId == "" {
+		return fmt.Errorf("goalId cannot be empty")
+	}
+
+	goalType := detectGoalType(goalId)
+
+	switch goalType {
+	case GoalTypeKeyResult:
+		return m.UpdateKeyResultProgress(goalId, value)
+
+	case GoalTypeRoutine:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		theme, idx := findThemeForRoutine(themes, goalId)
+		if theme == nil {
+			return fmt.Errorf("routine with ID %s not found", goalId)
+		}
+		theme.Routines[idx].CurrentValue = value
+		if err := m.themeAccess.SaveTheme(*theme); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("RecordProgress not supported for goal type %s", goalType)
+	}
+}
+
+// DismissGoal removes a goal node by ID.
+func (m *PlanningManager) DismissGoal(goalId string) error {
+	if goalId == "" {
+		return fmt.Errorf("goalId cannot be empty")
+	}
+
+	goalType := detectGoalType(goalId)
+
+	switch goalType {
+	case GoalTypeTheme:
+		return m.DeleteTheme(goalId)
+	case GoalTypeObjective:
+		return m.DeleteObjective(goalId)
+	case GoalTypeKeyResult:
+		return m.DeleteKeyResult(goalId)
+	case GoalTypeRoutine:
+		return m.DeleteRoutine(goalId)
+	default:
+		return fmt.Errorf("unknown goal type for ID %s", goalId)
+	}
+}
+
+// SuggestAbbreviation suggests a unique abbreviation for a goal name.
+func (m *PlanningManager) SuggestAbbreviation(name string) (string, error) {
+	return m.SuggestThemeAbbreviation(name)
 }
 
 // LoadNavigationContext retrieves the saved navigation context.
