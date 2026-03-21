@@ -355,7 +355,6 @@ func NewPlanningManager(
 		progressEngine: progressEng,
 	}
 
-	pm.migrateArchivedOrder()
 	pm.validateTaskOrder()
 
 	return pm, nil
@@ -1226,71 +1225,6 @@ func reconcileTaskOrder(existingOrder map[string][]string, actualZone map[string
 	}
 
 	return existingOrder, changed
-}
-
-// migrateArchivedOrder moves the "archived" key from task_order.json into
-// archived_order.json. This is an idempotent one-time migration.
-func (m *PlanningManager) migrateArchivedOrder() {
-	orderMap, err := m.taskAccess.LoadTaskOrder()
-	if err != nil {
-		slog.Error("migrateArchivedOrder: failed to load task order", "error", err)
-		return
-	}
-
-	archivedIDs, hasArchived := orderMap["archived"]
-	if !hasArchived {
-		return // nothing to migrate
-	}
-
-	existingArchived, err := m.taskAccess.LoadArchivedOrder()
-	if err != nil {
-		slog.Error("migrateArchivedOrder: failed to load archived order", "error", err)
-		return
-	}
-
-	if len(existingArchived) > 0 {
-		// archived_order.json already has content — just remove the key from task_order
-		delete(orderMap, "archived")
-		if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
-			slog.Error("migrateArchivedOrder: failed to write task order", "error", err)
-			return
-		}
-		if err := m.taskAccess.CommitFiles(
-			[]string{m.taskAccess.TaskOrderFilePath()},
-			"Migrate archived order: remove stale key from task_order.json",
-		); err != nil {
-			slog.Error("migrateArchivedOrder: failed to commit task order", "error", err)
-		}
-		slog.Info("migrateArchivedOrder: removed stale archived key from task_order.json")
-		return
-	}
-
-	// Reverse: existing order is oldest-first append; new order is newest-first prepend
-	reversed := make([]string, len(archivedIDs))
-	for i, id := range archivedIDs {
-		reversed[len(archivedIDs)-1-i] = id
-	}
-
-	if err := m.taskAccess.WriteArchivedOrder(reversed); err != nil {
-		slog.Error("migrateArchivedOrder: failed to write archived order", "error", err)
-		return
-	}
-
-	delete(orderMap, "archived")
-	if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
-		slog.Error("migrateArchivedOrder: failed to write task order", "error", err)
-		return
-	}
-
-	if err := m.taskAccess.CommitFiles(
-		[]string{m.taskAccess.ArchivedOrderFilePath(), m.taskAccess.TaskOrderFilePath()},
-		"Migrate archived order from task_order.json to archived_order.json",
-	); err != nil {
-		slog.Error("migrateArchivedOrder: failed to commit migration", "error", err)
-		return
-	}
-
-	slog.Info("migrateArchivedOrder: migrated archived order", "count", len(reversed))
 }
 
 // validateTaskOrder repairs task_order.json so that each task appears in exactly
