@@ -392,6 +392,83 @@ func newMockManager() (*PlanningManager, *mockThemeAccess, *mockTaskAccess) {
 	return pm, ta, ka
 }
 
+// --- Test helper wrappers around behavioral API ---
+
+// testCreateObjective calls EstablishGoal to create an objective.
+func testCreateObjective(m *PlanningManager, parentId, title string) (*Objective, error) {
+	res, err := m.EstablishGoal(EstablishGoalRequest{GoalType: GoalTypeObjective, ParentID: parentId, Title: title})
+	if err != nil {
+		return nil, err
+	}
+	return res.Objective, nil
+}
+
+// testCreateKeyResult calls EstablishGoal to create a key result.
+func testCreateKeyResult(m *PlanningManager, parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
+	res, err := m.EstablishGoal(EstablishGoalRequest{
+		GoalType:    GoalTypeKeyResult,
+		ParentID:    parentObjectiveId,
+		Description: description,
+		StartValue:  &startValue,
+		TargetValue: &targetValue,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.KeyResult, nil
+}
+
+// testAddRoutine calls EstablishGoal to create a routine.
+func testAddRoutine(m *PlanningManager, themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
+	res, err := m.EstablishGoal(EstablishGoalRequest{
+		GoalType:    GoalTypeRoutine,
+		ParentID:    themeId,
+		Description: description,
+		TargetValue: &targetValue,
+		TargetType:  targetType,
+		Unit:        unit,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.Routine, nil
+}
+
+// testUpdateTheme calls ReviseGoal to update a theme's name and/or color.
+func testUpdateTheme(m *PlanningManager, theme LifeTheme) error {
+	return m.ReviseGoal(ReviseGoalRequest{GoalID: theme.ID, Name: &theme.Name, Color: &theme.Color})
+}
+
+// testUpdateObjective calls ReviseGoal to update an objective's title and tags.
+func testUpdateObjective(m *PlanningManager, objectiveId, title string, tags []string) error {
+	req := ReviseGoalRequest{GoalID: objectiveId, Title: &title}
+	if tags != nil {
+		req.Tags = &tags
+	}
+	return m.ReviseGoal(req)
+}
+
+// testUpdateKeyResult calls ReviseGoal to update a key result's description.
+func testUpdateKeyResult(m *PlanningManager, keyResultId, description string) error {
+	return m.ReviseGoal(ReviseGoalRequest{GoalID: keyResultId, Description: &description})
+}
+
+// testUpdateRoutine calls ReviseGoal to update a routine's fields.
+func testUpdateRoutine(m *PlanningManager, routineId, description string, currentValue, targetValue int, targetType, unit string) error {
+	// For currentValue, use RecordProgress; for other fields, use ReviseGoal.
+	err := m.ReviseGoal(ReviseGoalRequest{
+		GoalID:      routineId,
+		Description: &description,
+		TargetValue: &targetValue,
+		TargetType:  &targetType,
+		Unit:        &unit,
+	})
+	if err != nil {
+		return err
+	}
+	return m.RecordProgress(routineId, currentValue)
+}
+
 // assertTaskOrderConsistency verifies that the task order map is fully consistent
 // with the active (non-archived) tasks on disk: every active task appears in
 // exactly one zone under the correct key, there are no stale/orphaned IDs, and
@@ -533,17 +610,17 @@ func TestUpdateTheme(t *testing.T) {
 	t.Run("updates theme name and color", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		theme := themes[0]
 		theme.Name = "Updated Name"
 		theme.Color = "#ef4444"
 
-		err := manager.UpdateTheme(theme)
+		err := testUpdateTheme(manager,theme)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ = manager.GetThemes()
+		themes, _ = manager.GetGoalHierarchy()
 		if themes[0].Name != "Updated Name" {
 			t.Errorf("expected name 'Updated Name', got '%s'", themes[0].Name)
 		}
@@ -552,33 +629,29 @@ func TestUpdateTheme(t *testing.T) {
 		}
 	})
 
-	t.Run("preserves KR progress fields through theme update", func(t *testing.T) {
+	t.Run("preserves KR progress fields through ReviseGoal", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
 		// Create objective with KR (start=0, target=12)
-		obj, _ := manager.CreateObjective("T", "Read More")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+		obj, _ := testCreateObjective(manager, "T", "Read More")
+		kr, _ := testCreateKeyResult(manager, obj.ID, "Read 12 books", 0, 12)
 
 		// Set progress to 5
-		err := manager.UpdateKeyResultProgress(kr.ID, 5)
+		err := manager.RecordProgress(kr.ID, 5)
 		if err != nil {
 			t.Fatalf("expected no error setting progress, got %v", err)
 		}
 
-		// Now do a theme-level update (modify start=2, target=20 on the KR)
-		themes, _ := manager.GetThemes()
-		theme := themes[0]
-		krObj := findManagerObjectiveByID(theme.Objectives, obj.ID)
-		krObj.KeyResults[0].StartValue = 2
-		krObj.KeyResults[0].TargetValue = 20
-
-		err = manager.UpdateTheme(theme)
+		// Now revise the KR (modify start=2, target=20)
+		startVal := 2
+		targetVal := 20
+		err = manager.ReviseGoal(ReviseGoalRequest{GoalID: kr.ID, StartValue: &startVal, TargetValue: &targetVal})
 		if err != nil {
-			t.Fatalf("expected no error updating theme, got %v", err)
+			t.Fatalf("expected no error revising KR, got %v", err)
 		}
 
 		// Verify all three fields survive
-		themes, _ = manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].StartValue != 2 {
 			t.Errorf("expected startValue 2, got %d", found.KeyResults[0].StartValue)
@@ -594,7 +667,7 @@ func TestUpdateTheme(t *testing.T) {
 	t.Run("returns error for empty theme ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateTheme(LifeTheme{ID: "", Name: "Test"})
+		err := testUpdateTheme(manager,LifeTheme{ID: "", Name: "Test"})
 		if err == nil {
 			t.Fatal("expected error for empty theme ID")
 		}
@@ -604,22 +677,22 @@ func TestUpdateTheme(t *testing.T) {
 		manager, _, _ := newMockManager()
 
 		// Build nested structure: theme -> obj1 -> obj2 -> kr
-		obj1, _ := manager.CreateObjective("T", "Level 1")
-		obj2, _ := manager.CreateObjective(obj1.ID, "Level 2")
-		kr, _ := manager.CreateKeyResult(obj2.ID, "Deep KR", 1, 10)
+		obj1, _ := testCreateObjective(manager,"T", "Level 1")
+		obj2, _ := testCreateObjective(manager,obj1.ID, "Level 2")
+		kr, _ := testCreateKeyResult(manager,obj2.ID, "Deep KR", 1, 10)
 
 		// Update theme name only
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		theme := themes[0]
 		theme.Name = "Renamed Theme"
 
-		err := manager.UpdateTheme(theme)
+		err := testUpdateTheme(manager,theme)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
 		// Verify entire hierarchy survived
-		themes, _ = manager.GetThemes()
+		themes, _ = manager.GetGoalHierarchy()
 		if themes[0].Name != "Renamed Theme" {
 			t.Errorf("expected 'Renamed Theme', got '%s'", themes[0].Name)
 		}
@@ -651,7 +724,7 @@ func TestCreateObjective(t *testing.T) {
 	t.Run("creates objective under theme", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, err := manager.CreateObjective("T", "My Objective")
+		obj, err := testCreateObjective(manager,"T", "My Objective")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -669,12 +742,12 @@ func TestCreateObjective(t *testing.T) {
 	t.Run("creates nested objective under objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, err := manager.CreateObjective("T", "Parent Objective")
+		parent, err := testCreateObjective(manager,"T", "Parent Objective")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		child, err := manager.CreateObjective(parent.ID, "Child Objective")
+		child, err := testCreateObjective(manager,parent.ID, "Child Objective")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -689,9 +762,9 @@ func TestCreateObjective(t *testing.T) {
 	t.Run("creates deeply nested objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		l1, _ := manager.CreateObjective("T", "Level 1")
-		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
-		l3, err := manager.CreateObjective(l2.ID, "Level 3")
+		l1, _ := testCreateObjective(manager,"T", "Level 1")
+		l2, _ := testCreateObjective(manager,l1.ID, "Level 2")
+		l3, err := testCreateObjective(manager,l2.ID, "Level 3")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -703,7 +776,7 @@ func TestCreateObjective(t *testing.T) {
 	t.Run("returns error for empty parentId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.CreateObjective("", "Title")
+		_, err := testCreateObjective(manager,"", "Title")
 		if err == nil {
 			t.Fatal("expected error for empty parentId")
 		}
@@ -712,7 +785,7 @@ func TestCreateObjective(t *testing.T) {
 	t.Run("returns error for empty title", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.CreateObjective("T", "")
+		_, err := testCreateObjective(manager,"T", "")
 		if err == nil {
 			t.Fatal("expected error for empty title")
 		}
@@ -721,7 +794,7 @@ func TestCreateObjective(t *testing.T) {
 	t.Run("returns error for non-existent parent", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.CreateObjective("NONEXISTENT", "Title")
+		_, err := testCreateObjective(manager,"NONEXISTENT", "Title")
 		if err == nil {
 			t.Fatal("expected error for non-existent parent")
 		}
@@ -732,14 +805,14 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("updates objective title", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Original")
-		err := manager.UpdateObjective(obj.ID, "Updated", nil)
+		obj, _ := testCreateObjective(manager,"T", "Original")
+		err := testUpdateObjective(manager,obj.ID, "Updated", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
 		// Verify the update
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
@@ -752,15 +825,15 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("updates nested objective title", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
 
-		err := manager.UpdateObjective(child.ID, "Updated Child", nil)
+		err := testUpdateObjective(manager,child.ID, "Updated Child", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if found == nil {
 			t.Fatal("nested objective not found after update")
@@ -773,7 +846,7 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("returns error for empty objectiveId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateObjective("", "Title", nil)
+		err := testUpdateObjective(manager,"", "Title", nil)
 		if err == nil {
 			t.Fatal("expected error for empty objectiveId")
 		}
@@ -782,7 +855,7 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateObjective("NONEXISTENT", "Title", nil)
+		err := testUpdateObjective(manager,"NONEXISTENT", "Title", nil)
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
 		}
@@ -791,13 +864,13 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("sets tags on objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Tagged")
-		err := manager.UpdateObjective(obj.ID, "Tagged", []string{"alpha", "beta"})
+		obj, _ := testCreateObjective(manager,"T", "Tagged")
+		err := testUpdateObjective(manager,obj.ID, "Tagged", []string{"alpha", "beta"})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
@@ -810,9 +883,9 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("tag round-trip persistence", func(t *testing.T) {
 		manager, mockThemes, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Persist Tags")
+		obj, _ := testCreateObjective(manager,"T", "Persist Tags")
 		tags := []string{"work", "health"}
-		err := manager.UpdateObjective(obj.ID, "Persist Tags", tags)
+		err := testUpdateObjective(manager,obj.ID, "Persist Tags", tags)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -831,13 +904,13 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("deduplicates tags case-insensitively", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Dedup Tags")
-		err := manager.UpdateObjective(obj.ID, "Dedup Tags", []string{"Work", "work", "WORK", "health"})
+		obj, _ := testCreateObjective(manager,"T", "Dedup Tags")
+		err := testUpdateObjective(manager,obj.ID, "Dedup Tags", []string{"Work", "work", "WORK", "health"})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
@@ -851,13 +924,13 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("rejects empty and whitespace-only tags", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Empty Tags")
-		err := manager.UpdateObjective(obj.ID, "Empty Tags", []string{"", "  ", "valid", "  ", ""})
+		obj, _ := testCreateObjective(manager,"T", "Empty Tags")
+		err := testUpdateObjective(manager,obj.ID, "Empty Tags", []string{"", "  ", "valid", "  ", ""})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
@@ -870,13 +943,13 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("trims whitespace from tags", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Trim Tags")
-		err := manager.UpdateObjective(obj.ID, "Trim Tags", []string{"  alpha  ", " beta "})
+		obj, _ := testCreateObjective(manager,"T", "Trim Tags")
+		err := testUpdateObjective(manager,obj.ID, "Trim Tags", []string{"  alpha  ", " beta "})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
@@ -889,13 +962,13 @@ func TestUpdateObjective(t *testing.T) {
 	t.Run("nil tags results in empty tags", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Nil Tags")
-		err := manager.UpdateObjective(obj.ID, "Nil Tags", nil)
+		obj, _ := testCreateObjective(manager,"T", "Nil Tags")
+		err := testUpdateObjective(manager,obj.ID, "Nil Tags", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found == nil {
 			t.Fatal("objective not found after update")
@@ -910,13 +983,13 @@ func TestDeleteObjective(t *testing.T) {
 	t.Run("deletes objective from theme", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "To Delete")
-		err := manager.DeleteObjective(obj.ID)
+		obj, _ := testCreateObjective(manager,"T", "To Delete")
+		err := manager.DismissGoal(obj.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		if len(themes[0].Objectives) != 0 {
 			t.Errorf("expected 0 objectives after delete, got %d", len(themes[0].Objectives))
 		}
@@ -925,16 +998,16 @@ func TestDeleteObjective(t *testing.T) {
 	t.Run("deletes nested objective and its children", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		_, _ = manager.CreateObjective(parent.ID, "Child")
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		_, _ = testCreateObjective(manager,parent.ID, "Child")
 
 		// Delete the parent -- child should be gone too
-		err := manager.DeleteObjective(parent.ID)
+		err := manager.DismissGoal(parent.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		if len(themes[0].Objectives) != 0 {
 			t.Errorf("expected 0 objectives after deleting parent, got %d", len(themes[0].Objectives))
 		}
@@ -943,18 +1016,18 @@ func TestDeleteObjective(t *testing.T) {
 	t.Run("deletes middle objective in 3-level hierarchy and cascades grandchildren", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		l1, _ := manager.CreateObjective("T", "Level 1")
-		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
-		l3, _ := manager.CreateObjective(l2.ID, "Level 3")
-		_, _ = manager.CreateKeyResult(l3.ID, "Deep KR", 0, 0)
+		l1, _ := testCreateObjective(manager,"T", "Level 1")
+		l2, _ := testCreateObjective(manager,l1.ID, "Level 2")
+		l3, _ := testCreateObjective(manager,l2.ID, "Level 3")
+		_, _ = testCreateKeyResult(manager,l3.ID, "Deep KR", 0, 0)
 
 		// Delete the middle objective (Level 2) -- Level 3 and its KR should be gone too
-		err := manager.DeleteObjective(l2.ID)
+		err := manager.DismissGoal(l2.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		l1After := findManagerObjectiveByID(themes[0].Objectives, l1.ID)
 		if l1After == nil {
 			t.Fatal("expected Level 1 to still exist")
@@ -973,15 +1046,15 @@ func TestDeleteObjective(t *testing.T) {
 	t.Run("deletes child without affecting parent", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
 
-		err := manager.DeleteObjective(child.ID)
+		err := manager.DismissGoal(child.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		if len(themes[0].Objectives) != 1 {
 			t.Fatalf("expected 1 objective (parent), got %d", len(themes[0].Objectives))
 		}
@@ -996,7 +1069,7 @@ func TestDeleteObjective(t *testing.T) {
 	t.Run("returns error for empty objectiveId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.DeleteObjective("")
+		err := manager.DismissGoal("")
 		if err == nil {
 			t.Fatal("expected error for empty objectiveId")
 		}
@@ -1005,7 +1078,7 @@ func TestDeleteObjective(t *testing.T) {
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.DeleteObjective("NONEXISTENT")
+		err := manager.DismissGoal("FAKE-O99")
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
 		}
@@ -1020,8 +1093,8 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("creates key result under objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, err := testCreateKeyResult(manager,obj.ID, "My KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1036,8 +1109,8 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("creates key result with start and target values", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, err := testCreateKeyResult(manager,obj.ID, "Read 12 books", 0, 12)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1052,9 +1125,9 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("creates key result under nested objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, err := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
+		kr, err := testCreateKeyResult(manager,child.ID, "Nested KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1066,11 +1139,11 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("creates key result on intermediate objective that has children", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		_, _ = manager.CreateObjective(parent.ID, "Child")
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		_, _ = testCreateObjective(manager,parent.ID, "Child")
 
 		// Add KR to the parent (intermediate node with children)
-		kr, err := manager.CreateKeyResult(parent.ID, "Intermediate KR", 0, 0)
+		kr, err := testCreateKeyResult(manager,parent.ID, "Intermediate KR", 0, 0)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1079,7 +1152,7 @@ func TestCreateKeyResult(t *testing.T) {
 		}
 
 		// Verify the parent still has both children and the key result
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		parentObj := findManagerObjectiveByID(themes[0].Objectives, parent.ID)
 		if len(parentObj.Objectives) != 1 {
 			t.Errorf("expected 1 child objective, got %d", len(parentObj.Objectives))
@@ -1095,7 +1168,7 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("returns error for empty parentObjectiveId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.CreateKeyResult("", "Description", 0, 0)
+		_, err := testCreateKeyResult(manager,"", "Description", 0, 0)
 		if err == nil {
 			t.Fatal("expected error for empty parentObjectiveId")
 		}
@@ -1104,7 +1177,7 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0)
+		_, err := testCreateKeyResult(manager,"NONEXISTENT", "Description", 0, 0)
 		if err == nil {
 			t.Fatal("expected error for non-existent objective")
 		}
@@ -1113,8 +1186,8 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("preserves custom start/target", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 2, 14)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, err := testCreateKeyResult(manager,obj.ID, "Read 12 books", 2, 14)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1129,8 +1202,8 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("default start/target values", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, err := testCreateKeyResult(manager,obj.ID, "Read 12 books", 0, 12)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1145,8 +1218,8 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("start greater than target returns error", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		_, err := manager.CreateKeyResult(obj.ID, "Invalid", 10, 5)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		_, err := testCreateKeyResult(manager,obj.ID, "Invalid", 10, 5)
 		if err == nil {
 			t.Fatal("expected error when start > target")
 		}
@@ -1158,8 +1231,8 @@ func TestCreateKeyResult(t *testing.T) {
 	t.Run("start equals target is allowed", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		_, err := manager.CreateKeyResult(obj.ID, "Valid", 5, 5)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		_, err := testCreateKeyResult(manager,obj.ID, "Valid", 5, 5)
 		if err != nil {
 			t.Fatalf("expected no error when start == target, got %v", err)
 		}
@@ -1170,15 +1243,15 @@ func TestUpdateKeyResult(t *testing.T) {
 	t.Run("updates key result description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "Original", 0, 0)
 
-		err := manager.UpdateKeyResult(kr.ID, "Updated")
+		err := testUpdateKeyResult(manager,kr.ID, "Updated")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Description != "Updated" {
 			t.Errorf("expected description 'Updated', got '%s'", found.KeyResults[0].Description)
@@ -1188,16 +1261,16 @@ func TestUpdateKeyResult(t *testing.T) {
 	t.Run("updates key result under nested objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Original", 0, 0)
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
+		kr, _ := testCreateKeyResult(manager,child.ID, "Original", 0, 0)
 
-		err := manager.UpdateKeyResult(kr.ID, "Updated Nested")
+		err := testUpdateKeyResult(manager,kr.ID, "Updated Nested")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		childObj := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if childObj.KeyResults[0].Description != "Updated Nested" {
 			t.Errorf("expected 'Updated Nested', got '%s'", childObj.KeyResults[0].Description)
@@ -1207,7 +1280,7 @@ func TestUpdateKeyResult(t *testing.T) {
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateKeyResult("", "Description")
+		err := testUpdateKeyResult(manager,"", "Description")
 		if err == nil {
 			t.Fatal("expected error for empty keyResultId")
 		}
@@ -1216,7 +1289,7 @@ func TestUpdateKeyResult(t *testing.T) {
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateKeyResult("NONEXISTENT", "Description")
+		err := testUpdateKeyResult(manager,"NONEXISTENT", "Description")
 		if err == nil {
 			t.Fatal("expected error for non-existent key result")
 		}
@@ -1227,15 +1300,15 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 	t.Run("updates key result currentValue", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "Read 12 books", 0, 0)
 
-		err := manager.UpdateKeyResultProgress(kr.ID, 5)
+		err := manager.RecordProgress(kr.ID, 5)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].CurrentValue != 5 {
 			t.Errorf("expected currentValue 5, got %d", found.KeyResults[0].CurrentValue)
@@ -1245,16 +1318,16 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 	t.Run("updates key result under nested objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
+		kr, _ := testCreateKeyResult(manager,child.ID, "Nested KR", 0, 0)
 
-		err := manager.UpdateKeyResultProgress(kr.ID, 10)
+		err := manager.RecordProgress(kr.ID, 10)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		childObj := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if childObj.KeyResults[0].CurrentValue != 10 {
 			t.Errorf("expected currentValue 10, got %d", childObj.KeyResults[0].CurrentValue)
@@ -1264,7 +1337,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateKeyResultProgress("", 5)
+		err := manager.RecordProgress("", 5)
 		if err == nil {
 			t.Fatal("expected error for empty keyResultId")
 		}
@@ -1273,7 +1346,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateKeyResultProgress("NONEXISTENT", 5)
+		err := manager.RecordProgress("NONEXISTENT", 5)
 		if err == nil {
 			t.Fatal("expected error for non-existent key result")
 		}
@@ -1284,15 +1357,15 @@ func TestDeleteKeyResult(t *testing.T) {
 	t.Run("deletes key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "To Delete", 0, 0)
 
-		err := manager.DeleteKeyResult(kr.ID)
+		err := manager.DismissGoal(kr.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if len(found.KeyResults) != 0 {
 			t.Errorf("expected 0 key results after delete, got %d", len(found.KeyResults))
@@ -1302,16 +1375,16 @@ func TestDeleteKeyResult(t *testing.T) {
 	t.Run("deletes key result under nested objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr, _ := manager.CreateKeyResult(child.ID, "Nested KR", 0, 0)
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
+		kr, _ := testCreateKeyResult(manager,child.ID, "Nested KR", 0, 0)
 
-		err := manager.DeleteKeyResult(kr.ID)
+		err := manager.DismissGoal(kr.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		childObj := findManagerObjectiveByID(themes[0].Objectives, child.ID)
 		if len(childObj.KeyResults) != 0 {
 			t.Errorf("expected 0 key results after delete, got %d", len(childObj.KeyResults))
@@ -1321,7 +1394,7 @@ func TestDeleteKeyResult(t *testing.T) {
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.DeleteKeyResult("")
+		err := manager.DismissGoal("")
 		if err == nil {
 			t.Fatal("expected error for empty keyResultId")
 		}
@@ -1330,7 +1403,7 @@ func TestDeleteKeyResult(t *testing.T) {
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.DeleteKeyResult("NONEXISTENT")
+		err := manager.DismissGoal("FAKE-KR99")
 		if err == nil {
 			t.Fatal("expected error for non-existent key result")
 		}
@@ -1345,15 +1418,15 @@ func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("completes a key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR", 0, 10)
 
 		err := manager.SetKeyResultStatus(kr.ID, "completed")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.KeyResults[0].Status)
@@ -1363,8 +1436,8 @@ func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("archives a completed key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR", 0, 10)
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
@@ -1372,7 +1445,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "archived" {
 			t.Errorf("expected status 'archived', got '%s'", found.KeyResults[0].Status)
@@ -1382,8 +1455,8 @@ func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("reopens a completed key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR", 0, 10)
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 
 		err := manager.SetKeyResultStatus(kr.ID, "active")
@@ -1391,7 +1464,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "active" {
 			t.Errorf("expected status 'active', got '%s'", found.KeyResults[0].Status)
@@ -1401,8 +1474,8 @@ func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("reopens an archived key result", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR", 0, 10)
 		_ = manager.SetKeyResultStatus(kr.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr.ID, "archived")
 
@@ -1411,7 +1484,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.KeyResults[0].Status != "active" {
 			t.Errorf("expected status 'active', got '%s'", found.KeyResults[0].Status)
@@ -1421,8 +1494,8 @@ func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("blocks active to archived", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR", 0, 10)
 
 		err := manager.SetKeyResultStatus(kr.ID, "archived")
 		if err == nil {
@@ -1433,8 +1506,8 @@ func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("returns error for invalid status", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR", 0, 10)
 
 		err := manager.SetKeyResultStatus(kr.ID, "invalid")
 		if err == nil {
@@ -1465,9 +1538,9 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("completes objective when all children are completed", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 1)
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR2", 0, 10)
 
 		// Complete both KRs
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
@@ -1479,7 +1552,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.Status)
@@ -1489,9 +1562,9 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("completes objective when children are mix of completed and archived", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 1)
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR2", 0, 10)
 
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
@@ -1506,8 +1579,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("blocks completing objective with active KRs", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		_, _ = testCreateKeyResult(manager,obj.ID, "Active KR", 0, 10)
 
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err == nil {
@@ -1518,8 +1591,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("blocks completing objective with active child objectives", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		_, _ = manager.CreateObjective(parent.ID, "Active Child")
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		_, _ = testCreateObjective(manager,parent.ID, "Active Child")
 
 		err := manager.SetObjectiveStatus(parent.ID, "completed")
 		if err == nil {
@@ -1530,8 +1603,8 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("completes objective with completed child objectives", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
 
 		_ = manager.SetObjectiveStatus(child.ID, "completed")
 
@@ -1544,7 +1617,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("archives a completed objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 		_ = manager.SetObjectiveStatus(obj.ID, "completed")
 
 		err := manager.SetObjectiveStatus(obj.ID, "archived")
@@ -1552,7 +1625,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "archived" {
 			t.Errorf("expected status 'archived', got '%s'", found.Status)
@@ -1562,7 +1635,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("reopens a completed objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 		_ = manager.SetObjectiveStatus(obj.ID, "completed")
 
 		err := manager.SetObjectiveStatus(obj.ID, "active")
@@ -1570,7 +1643,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "active" {
 			t.Errorf("expected status 'active', got '%s'", found.Status)
@@ -1580,7 +1653,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("blocks active to archived", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 
 		err := manager.SetObjectiveStatus(obj.ID, "archived")
 		if err == nil {
@@ -1609,7 +1682,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("completes objective with no children", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Empty Objective")
+		obj, _ := testCreateObjective(manager,"T", "Empty Objective")
 
 		err := manager.SetObjectiveStatus(obj.ID, "completed")
 		if err != nil {
@@ -1626,7 +1699,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("creates routine with correct ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, err := manager.AddRoutine("T", "Exercise sessions per week", 3, "at-or-above", "times/week")
+		routine, err := testAddRoutine(manager,"T", "Exercise sessions per week", 3, "at-or-above", "times/week")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1653,8 +1726,8 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("auto-increments routine ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		r1, _ := manager.AddRoutine("T", "Routine one", 1, "at-or-above", "")
-		r2, _ := manager.AddRoutine("T", "Routine two", 2, "at-or-below", "kg")
+		r1, _ := testAddRoutine(manager,"T", "Routine one", 1, "at-or-above", "")
+		r2, _ := testAddRoutine(manager,"T", "Routine two", 2, "at-or-below", "kg")
 		if r1.ID != "T-R1" {
 			t.Errorf("expected T-R1, got %s", r1.ID)
 		}
@@ -1666,7 +1739,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for empty description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("T", "", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager,"T", "", 3, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for empty description")
 		}
@@ -1675,7 +1748,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for whitespace-only description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("T", "   ", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager,"T", "   ", 3, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for whitespace-only description")
 		}
@@ -1684,7 +1757,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for invalid targetType", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("T", "Test", 3, "invalid-type", "")
+		_, err := testAddRoutine(manager,"T", "Test", 3, "invalid-type", "")
 		if err == nil {
 			t.Fatal("expected error for invalid targetType")
 		}
@@ -1693,7 +1766,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for zero targetValue", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("T", "Test", 0, "at-or-above", "")
+		_, err := testAddRoutine(manager,"T", "Test", 0, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for zero targetValue")
 		}
@@ -1702,7 +1775,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for negative targetValue", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("T", "Test", -1, "at-or-above", "")
+		_, err := testAddRoutine(manager,"T", "Test", -1, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for negative targetValue")
 		}
@@ -1711,7 +1784,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for non-existent theme", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("NONEXISTENT", "Test", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager,"NONEXISTENT", "Test", 3, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for non-existent theme")
 		}
@@ -1720,7 +1793,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for empty themeId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.AddRoutine("", "Test", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager,"", "Test", 3, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for empty themeId")
 		}
@@ -1731,13 +1804,13 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("updates all routine fields", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := manager.AddRoutine("T", "Original", 5, "at-or-above", "kg")
-		err := manager.UpdateRoutine(routine.ID, "Updated", 3, 10, "at-or-below", "lbs")
+		routine, _ := testAddRoutine(manager,"T", "Original", 5, "at-or-above", "kg")
+		err := testUpdateRoutine(manager,routine.ID, "Updated", 3, 10, "at-or-below", "lbs")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		updated := themes[0].Routines[0]
 		if updated.Description != "Updated" {
 			t.Errorf("expected description 'Updated', got '%s'", updated.Description)
@@ -1759,7 +1832,7 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("returns error for empty routineId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateRoutine("", "Desc", 1, 5, "at-or-above", "")
+		err := testUpdateRoutine(manager,"", "Desc", 1, 5, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for empty routineId")
 		}
@@ -1768,34 +1841,25 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.UpdateRoutine("T-R999", "Desc", 1, 5, "at-or-above", "")
+		err := testUpdateRoutine(manager,"T-R999", "Desc", 1, 5, "at-or-above", "")
 		if err == nil {
 			t.Fatal("expected error for non-existent routine")
 		}
 	})
 
-	t.Run("returns error for invalid targetType", func(t *testing.T) {
-		manager, _, _ := newMockManager()
-
-		routine, _ := manager.AddRoutine("T", "Test", 5, "at-or-above", "")
-		err := manager.UpdateRoutine(routine.ID, "Test", 1, 5, "invalid", "")
-		if err == nil {
-			t.Fatal("expected error for invalid targetType")
-		}
-	})
 }
 
 func TestDeleteRoutine(t *testing.T) {
 	t.Run("deletes routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := manager.AddRoutine("T", "To Delete", 5, "at-or-above", "")
-		err := manager.DeleteRoutine(routine.ID)
+		routine, _ := testAddRoutine(manager,"T", "To Delete", 5, "at-or-above", "")
+		err := manager.DismissGoal(routine.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		if len(themes[0].Routines) != 0 {
 			t.Errorf("expected 0 routines after delete, got %d", len(themes[0].Routines))
 		}
@@ -1804,7 +1868,7 @@ func TestDeleteRoutine(t *testing.T) {
 	t.Run("returns error for empty routineId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.DeleteRoutine("")
+		err := manager.DismissGoal("")
 		if err == nil {
 			t.Fatal("expected error for empty routineId")
 		}
@@ -1813,7 +1877,7 @@ func TestDeleteRoutine(t *testing.T) {
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.DeleteRoutine("T-R999")
+		err := manager.DismissGoal("T-R999")
 		if err == nil {
 			t.Fatal("expected error for non-existent routine")
 		}
@@ -2896,9 +2960,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("single KR progress", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr.ID, 50)
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 100)
+		_ = manager.RecordProgress(kr.ID, 50)
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -2919,11 +2983,11 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("multiple KRs average", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 100) // 100%
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR2", 0, 100)
+		_ = manager.RecordProgress(kr2.ID, 0) // 0%
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -2938,10 +3002,10 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("untracked KR excluded", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR tracked", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 80) // 80%
-		_, _ = manager.CreateKeyResult(obj.ID, "KR untracked", 0, 0) // targetValue=0, excluded
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR tracked", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 80) // 80%
+		_, _ = testCreateKeyResult(manager,obj.ID, "KR untracked", 0, 0) // targetValue=0, excluded
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -2956,11 +3020,11 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("completed KR excluded", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 60) // 60%
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR completed", 0, 1)
-		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR active", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 60) // 60%
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR completed", 0, 1)
+		_ = manager.RecordProgress(kr2.ID, 1)
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 
 		progress, err := manager.GetAllThemeProgress()
@@ -2976,11 +3040,11 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("archived KR excluded", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 40) // 40%
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR archived", 0, 1)
-		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR active", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 40) // 40%
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR archived", 0, 1)
+		_ = manager.RecordProgress(kr2.ID, 1)
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 		_ = manager.SetKeyResultStatus(kr2.ID, "archived")
 
@@ -2997,12 +3061,12 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("nested objective progress rollup", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		parent, _ := manager.CreateObjective("T", "Parent")
-		child, _ := manager.CreateObjective(parent.ID, "Child")
-		kr1, _ := manager.CreateKeyResult(parent.ID, "Parent KR", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
-		kr2, _ := manager.CreateKeyResult(child.ID, "Child KR", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
+		parent, _ := testCreateObjective(manager,"T", "Parent")
+		child, _ := testCreateObjective(manager,parent.ID, "Child")
+		kr1, _ := testCreateKeyResult(manager,parent.ID, "Parent KR", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 100) // 100%
+		kr2, _ := testCreateKeyResult(manager,child.ID, "Child KR", 0, 100)
+		_ = manager.RecordProgress(kr2.ID, 0) // 0%
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -3029,13 +3093,13 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("theme-level progress averages top-level objectives", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj1, _ := manager.CreateObjective("T", "Obj1")
-		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 100) // 100%
+		obj1, _ := testCreateObjective(manager,"T", "Obj1")
+		kr1, _ := testCreateKeyResult(manager,obj1.ID, "KR1", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 100) // 100%
 
-		obj2, _ := manager.CreateObjective("T", "Obj2")
-		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr2.ID, 0) // 0%
+		obj2, _ := testCreateObjective(manager,"T", "Obj2")
+		kr2, _ := testCreateKeyResult(manager,obj2.ID, "KR2", 0, 100)
+		_ = manager.RecordProgress(kr2.ID, 0) // 0%
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -3065,8 +3129,8 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("objective with no tracked KRs returns -1", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		_, _ = manager.CreateKeyResult(obj.ID, "Untracked KR", 0, 0)
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		_, _ = testCreateKeyResult(manager,obj.ID, "Untracked KR", 0, 0)
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -3091,13 +3155,13 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("completed objective excluded from theme progress", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj1, _ := manager.CreateObjective("T", "Active Obj")
-		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100)
-		_ = manager.UpdateKeyResultProgress(kr1.ID, 80) // 80%
+		obj1, _ := testCreateObjective(manager,"T", "Active Obj")
+		kr1, _ := testCreateKeyResult(manager,obj1.ID, "KR1", 0, 100)
+		_ = manager.RecordProgress(kr1.ID, 80) // 80%
 
-		obj2, _ := manager.CreateObjective("T", "Completed Obj")
-		kr2, _ := manager.CreateKeyResult(obj2.ID, "KR2", 0, 1)
-		_ = manager.UpdateKeyResultProgress(kr2.ID, 1)
+		obj2, _ := testCreateObjective(manager,"T", "Completed Obj")
+		kr2, _ := testCreateKeyResult(manager,obj2.ID, "KR2", 0, 1)
+		_ = manager.RecordProgress(kr2.ID, 1)
 		_ = manager.SetKeyResultStatus(kr2.ID, "completed")
 		_ = manager.SetObjectiveStatus(obj2.ID, "completed")
 
@@ -3114,8 +3178,8 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("binary KR progress", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Binary KR", 0, 1)
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "Binary KR", 0, 1)
 
 		// Not done
 		progress, _ := manager.GetAllThemeProgress()
@@ -3124,7 +3188,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 		}
 
 		// Done
-		_ = manager.UpdateKeyResultProgress(kr.ID, 1)
+		_ = manager.RecordProgress(kr.ID, 1)
 		progress, _ = manager.GetAllThemeProgress()
 		if progress[0].Progress != 100 {
 			t.Errorf("expected progress 100 for complete binary KR, got %f", progress[0].Progress)
@@ -3134,9 +3198,9 @@ func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("KR progress clamped to 0-100", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Obj1")
-		kr, _ := manager.CreateKeyResult(obj.ID, "Over-achieved KR", 0, 10)
-		_ = manager.UpdateKeyResultProgress(kr.ID, 20) // Over-achieved
+		obj, _ := testCreateObjective(manager,"T", "Obj1")
+		kr, _ := testCreateKeyResult(manager,obj.ID, "Over-achieved KR", 0, 10)
+		_ = manager.RecordProgress(kr.ID, 20) // Over-achieved
 
 		progress, _ := manager.GetAllThemeProgress()
 		if progress[0].Progress != 100 {
@@ -3193,16 +3257,16 @@ func TestCloseObjective(t *testing.T) {
 	t.Run("closes objective and sets all fields correctly", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 10)
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR2", 0, 5)
 
 		err := manager.CloseObjective(obj.ID, "achieved", "Great progress!")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.Status)
@@ -3231,9 +3295,9 @@ func TestCloseObjective(t *testing.T) {
 	t.Run("does not close already completed KRs again", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
-		_, _ = manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 10)
+		_, _ = testCreateKeyResult(manager,obj.ID, "KR2", 0, 5)
 
 		// Complete KR1 before closing
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
@@ -3247,7 +3311,7 @@ func TestCloseObjective(t *testing.T) {
 	t.Run("fails on non-active objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 		_ = manager.CloseObjective(obj.ID, "achieved", "")
 
 		err := manager.CloseObjective(obj.ID, "missed", "")
@@ -3259,7 +3323,7 @@ func TestCloseObjective(t *testing.T) {
 	t.Run("fails with invalid closing status", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 
 		err := manager.CloseObjective(obj.ID, "invalid-status", "")
 		if err == nil {
@@ -3288,14 +3352,14 @@ func TestCloseObjective(t *testing.T) {
 	t.Run("closes with empty notes", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 
 		err := manager.CloseObjective(obj.ID, "canceled", "")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.ClosingNotes != "" {
 			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
@@ -3307,9 +3371,9 @@ func TestReopenObjective(t *testing.T) {
 	t.Run("reopens objective and clears all closing fields", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 10)
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR2", 0, 5)
 
 		_ = manager.CloseObjective(obj.ID, "achieved", "Well done!")
 
@@ -3318,7 +3382,7 @@ func TestReopenObjective(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "" {
 			t.Errorf("expected empty status, got '%s'", found.Status)
@@ -3347,7 +3411,7 @@ func TestReopenObjective(t *testing.T) {
 	t.Run("fails on active objective", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 
 		err := manager.ReopenObjective(obj.ID)
 		if err == nil {
@@ -3358,9 +3422,9 @@ func TestReopenObjective(t *testing.T) {
 	t.Run("does not reopen archived KRs", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
-		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
-		kr2, _ := manager.CreateKeyResult(obj.ID, "KR2", 0, 5)
+		obj, _ := testCreateObjective(manager,"T", "Objective")
+		kr1, _ := testCreateKeyResult(manager,obj.ID, "KR1", 0, 10)
+		kr2, _ := testCreateKeyResult(manager,obj.ID, "KR2", 0, 5)
 
 		// Complete and archive KR1 before closing
 		_ = manager.SetKeyResultStatus(kr1.ID, "completed")
@@ -3373,7 +3437,7 @@ func TestReopenObjective(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		foundKR1 := findKeyResultByID(themes[0].Objectives, kr1.ID)
 		if foundKR1.Status != "archived" {
 			t.Errorf("expected KR1 status to remain 'archived', got '%s'", foundKR1.Status)
@@ -3407,7 +3471,7 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 	t.Run("existing completed status without closing fields works", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		obj, _ := manager.CreateObjective("T", "Objective")
+		obj, _ := testCreateObjective(manager,"T", "Objective")
 
 		// Use the old SetObjectiveStatus path (no closing fields set)
 		// First close all KRs to satisfy the check
@@ -3416,7 +3480,7 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetThemes()
+		themes, _ := manager.GetGoalHierarchy()
 		found := findManagerObjectiveByID(themes[0].Objectives, obj.ID)
 		if found.Status != "completed" {
 			t.Errorf("expected status 'completed', got '%s'", found.Status)

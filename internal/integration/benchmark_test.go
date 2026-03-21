@@ -95,7 +95,7 @@ func TestPerformance_CalendarYearLoad(t *testing.T) {
 	defer cleanup()
 
 	// Pre-populate with 365 days of data
-	theme, _ := manager.CreateTheme("Year Theme", "#22c55e")
+	theme, _ := intCreateTheme(manager,"Year Theme", "#22c55e")
 
 	year := 2026
 	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -136,7 +136,7 @@ func TestPerformance_ViewTransition_ThemesToTasks(t *testing.T) {
 
 	// Create themes with tasks
 	for i := 0; i < 5; i++ {
-		theme, _ := manager.CreateTheme("Theme", "#ff0000")
+		theme, _ := intCreateTheme(manager,"Theme", "#ff0000")
 		for j := 0; j < 10; j++ {
 			_, _ = manager.CreateTask("Task", theme.ID, "important-urgent", "", "", "")
 		}
@@ -144,7 +144,7 @@ func TestPerformance_ViewTransition_ThemesToTasks(t *testing.T) {
 
 	// Measure theme load time
 	start := time.Now()
-	themes, _ := manager.GetThemes()
+	themes, _ := manager.GetGoalHierarchy()
 	themeLoadTime := time.Since(start)
 
 	// Measure task load time
@@ -174,7 +174,7 @@ func TestPerformance_TaskMoveOperation(t *testing.T) {
 	manager, _, _, _, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
-	theme, _ := manager.CreateTheme("Move Test", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Move Test", "#ff0000")
 	task, _ := manager.CreateTask("Task to move", theme.ID, "important-urgent", "", "", "")
 
 	// Measure move time
@@ -241,7 +241,7 @@ func BenchmarkCalendarYearLoad(b *testing.B) {
 	defer cleanup()
 
 	// Pre-populate with 365 days
-	theme, _ := manager.CreateTheme("Year Theme", "#22c55e")
+	theme, _ := intCreateTheme(manager,"Year Theme", "#22c55e")
 	year := 2026
 	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < 365; i++ {
@@ -270,7 +270,7 @@ func BenchmarkViewTransition(b *testing.B) {
 
 	// Create test data
 	for i := 0; i < 5; i++ {
-		theme, _ := manager.CreateTheme("Theme", "#ff0000")
+		theme, _ := intCreateTheme(manager,"Theme", "#ff0000")
 		for j := 0; j < 10; j++ {
 			_, _ = manager.CreateTask("Task", theme.ID, "important-urgent", "", "", "")
 		}
@@ -280,7 +280,7 @@ func BenchmarkViewTransition(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// Simulate view transition: load themes and tasks
-		_, _ = manager.GetThemes()
+		_, _ = manager.GetGoalHierarchy()
 		_, _ = manager.GetTasks()
 	}
 }
@@ -293,7 +293,7 @@ func BenchmarkThemeCreation(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.CreateTheme("Theme", "#ff0000")
+		_, err := intCreateTheme(manager,"Theme", "#ff0000")
 		if err != nil {
 			b.Fatalf("CreateTheme failed: %v", err)
 		}
@@ -305,7 +305,7 @@ func BenchmarkTaskCreation(b *testing.B) {
 	manager, _, _, _, cleanup := setupBenchmarkEnvironment(b)
 	defer cleanup()
 
-	theme, _ := manager.CreateTheme("Benchmark Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Benchmark Theme", "#ff0000")
 
 	b.ResetTimer()
 
@@ -323,7 +323,7 @@ func BenchmarkTaskMove(b *testing.B) {
 	defer cleanup()
 
 	// Pre-create tasks for moving
-	theme, _ := manager.CreateTheme("Move Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Move Theme", "#ff0000")
 	var taskIDs []string
 	for i := 0; i < b.N; i++ {
 		task, _ := manager.CreateTask("Task", theme.ID, "important-urgent", "", "", "")
@@ -351,7 +351,7 @@ func BenchmarkGetAllTasks(b *testing.B) {
 
 	// Create varied task data
 	for i := 0; i < 10; i++ {
-		theme, _ := manager.CreateTheme("Theme", "#ff0000")
+		theme, _ := intCreateTheme(manager,"Theme", "#ff0000")
 		for j := 0; j < 20; j++ {
 			_, _ = manager.CreateTask("Task", theme.ID, "important-urgent", "", "", "")
 		}
@@ -396,7 +396,7 @@ func BenchmarkDayFocusSave(b *testing.B) {
 	manager, _, _, _, cleanup := setupBenchmarkEnvironment(b)
 	defer cleanup()
 
-	theme, _ := manager.CreateTheme("Focus Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Focus Theme", "#ff0000")
 	baseDate := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	b.ResetTimer()
@@ -430,15 +430,15 @@ func TestPerformance_LargeDataset(t *testing.T) {
 	// Create 10 themes with objectives and key results
 	themes := make([]string, 10)
 	for i := 0; i < 10; i++ {
-		theme, _ := manager.CreateTheme("Theme", "#ff0000")
+		theme, _ := intCreateTheme(manager,"Theme", "#ff0000")
 		themes[i] = theme.ID
 
 		// Add 3 objectives per theme
 		for j := 0; j < 3; j++ {
-			obj, _ := manager.CreateObjective(theme.ID, "Objective")
+			obj, _ := intCreateObjective(manager,theme.ID, "Objective")
 			// Add 3 key results per objective
 			for k := 0; k < 3; k++ {
-				_, _ = manager.CreateKeyResult(obj.ID, "Key Result", 0, 0)
+				_, _ = intCreateKeyResult(manager,obj.ID, "Key Result", 0, 0)
 			}
 		}
 	}
@@ -452,7 +452,7 @@ func TestPerformance_LargeDataset(t *testing.T) {
 	// Measure full data retrieval
 	start := time.Now()
 
-	loadedThemes, _ := manager.GetThemes()
+	loadedThemes, _ := manager.GetGoalHierarchy()
 	tasks, _ := manager.GetTasks()
 
 	elapsed := time.Since(start)

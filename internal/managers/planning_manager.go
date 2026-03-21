@@ -44,26 +44,8 @@ type NavigationContext struct {
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }
 
-// IGoalStructure defines operations for managing the OKR hierarchy structure.
+// IGoalStructure defines behavioral operations for managing the OKR hierarchy.
 type IGoalStructure interface {
-	GetThemes() ([]LifeTheme, error)
-	CreateTheme(name, color string) (*LifeTheme, error)
-	UpdateTheme(theme LifeTheme) error
-	SaveTheme(theme LifeTheme) error
-	DeleteTheme(id string) error
-	CreateObjective(parentId, title string) (*Objective, error)
-	UpdateObjective(objectiveId, title string, tags []string) error
-	DeleteObjective(objectiveId string) error
-	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error)
-	UpdateKeyResult(keyResultId, description string) error
-	UpdateKeyResultProgress(keyResultId string, currentValue int) error
-	DeleteKeyResult(keyResultId string) error
-	AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error)
-	UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error
-	DeleteRoutine(routineId string) error
-	SuggestThemeAbbreviation(name string) (string, error)
-
-	// Behavioral methods (expand phase — coexist with the above)
 	GetGoalHierarchy() ([]LifeTheme, error)
 	EstablishGoal(req EstablishGoalRequest) (*EstablishGoalResult, error)
 	ReviseGoal(req ReviseGoalRequest) error
@@ -431,8 +413,8 @@ func NewPlanningManager(
 	return pm, nil
 }
 
-// GetThemes returns all life themes.
-func (m *PlanningManager) GetThemes() ([]LifeTheme, error) {
+// getThemes returns all life themes.
+func (m *PlanningManager) getThemes() ([]LifeTheme, error) {
 	themes, err := m.themeAccess.GetThemes()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
@@ -444,16 +426,8 @@ func (m *PlanningManager) GetThemes() ([]LifeTheme, error) {
 	return result, nil
 }
 
-// SaveTheme saves or updates a life theme.
-func (m *PlanningManager) SaveTheme(theme LifeTheme) error {
-	if err := m.themeAccess.SaveTheme(toAccessLifeTheme(theme)); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	return nil
-}
-
-// DeleteTheme deletes a life theme by ID.
-func (m *PlanningManager) DeleteTheme(id string) error {
+// deleteTheme deletes a life theme by ID.
+func (m *PlanningManager) deleteTheme(id string) error {
 	if id == "" {
 		return fmt.Errorf("id cannot be empty")
 	}
@@ -463,9 +437,9 @@ func (m *PlanningManager) DeleteTheme(id string) error {
 	return nil
 }
 
-// CreateTheme creates a new life theme with the given name and color.
+// createTheme creates a new life theme with the given name and color.
 // Returns the created theme with its generated ID.
-func (m *PlanningManager) CreateTheme(name, color string) (*LifeTheme, error) {
+func (m *PlanningManager) createTheme(name, color string) (*LifeTheme, error) {
 	if name == "" {
 		return nil, fmt.Errorf("name cannot be empty")
 	}
@@ -505,19 +479,6 @@ func (m *PlanningManager) CreateTheme(name, color string) (*LifeTheme, error) {
 	}
 
 	return nil, fmt.Errorf("theme was created but could not be retrieved")
-}
-
-// UpdateTheme updates an existing life theme.
-func (m *PlanningManager) UpdateTheme(theme LifeTheme) error {
-	if theme.ID == "" {
-		return fmt.Errorf("theme ID cannot be empty")
-	}
-
-	if err := m.themeAccess.SaveTheme(toAccessLifeTheme(theme)); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	return nil
 }
 
 // findObjectiveByID walks the access.Objective tree and returns a pointer to the objective with the given ID.
@@ -565,10 +526,10 @@ func findKeyResultParent(objectives []access.Objective, krID string) (*access.Ob
 	return nil, -1
 }
 
-// CreateObjective creates a new objective under a parent (theme or objective).
+// createObjective creates a new objective under a parent (theme or objective).
 // parentId can be a theme ID or any objective ID at any depth.
 // Returns the created objective with its generated ID.
-func (m *PlanningManager) CreateObjective(parentId, title string) (*Objective, error) {
+func (m *PlanningManager) createObjective(parentId, title string) (*Objective, error) {
 	if parentId == "" {
 		return nil, fmt.Errorf("parentId cannot be empty")
 	}
@@ -664,39 +625,9 @@ func validateTags(tags []string) []string {
 	return result
 }
 
-// UpdateObjective finds an objective by ID anywhere in the tree and updates its title and tags.
-func (m *PlanningManager) UpdateObjective(objectiveId, title string, tags []string) error {
-	if objectiveId == "" {
-		return fmt.Errorf("objectiveId cannot be empty")
-	}
-	if title == "" {
-		return fmt.Errorf("title cannot be empty")
-	}
-
-	validatedTags := validateTags(tags)
-
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	for i := range themes {
-		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
-			obj.Title = title
-			obj.Tags = validatedTags
-			if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("%w", err)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("objective with ID %s not found", objectiveId)
-}
-
-// DeleteObjective finds an objective by ID anywhere in the tree and removes it.
+// deleteObjective finds an objective by ID anywhere in the tree and removes it.
 // Children are removed automatically since they are nested in the struct.
-func (m *PlanningManager) DeleteObjective(objectiveId string) error {
+func (m *PlanningManager) deleteObjective(objectiveId string) error {
 	if objectiveId == "" {
 		return fmt.Errorf("objectiveId cannot be empty")
 	}
@@ -719,9 +650,9 @@ func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 	return fmt.Errorf("objective with ID %s not found", objectiveId)
 }
 
-// CreateKeyResult creates a new key result under an objective found anywhere in the tree.
+// createKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
-func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
+func (m *PlanningManager) createKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
 	if parentObjectiveId == "" {
 		return nil, fmt.Errorf("parentObjectiveId cannot be empty")
 	}
@@ -774,35 +705,8 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 	return nil, fmt.Errorf("key result was created but could not be retrieved")
 }
 
-// UpdateKeyResult finds a key result by ID anywhere in the tree and updates its description.
-func (m *PlanningManager) UpdateKeyResult(keyResultId, description string) error {
-	if keyResultId == "" {
-		return fmt.Errorf("keyResultId cannot be empty")
-	}
-	if description == "" {
-		return fmt.Errorf("description cannot be empty")
-	}
-
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	for i := range themes {
-		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
-			obj.KeyResults[krIdx].Description = description
-			if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("%w", err)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("key result with ID %s not found", keyResultId)
-}
-
-// UpdateKeyResultProgress finds a key result by ID anywhere in the tree and updates its currentValue.
-func (m *PlanningManager) UpdateKeyResultProgress(keyResultId string, currentValue int) error {
+// updateKeyResultProgress finds a key result by ID anywhere in the tree and updates its currentValue.
+func (m *PlanningManager) updateKeyResultProgress(keyResultId string, currentValue int) error {
 	if keyResultId == "" {
 		return fmt.Errorf("keyResultId cannot be empty")
 	}
@@ -825,8 +729,8 @@ func (m *PlanningManager) UpdateKeyResultProgress(keyResultId string, currentVal
 	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
-// DeleteKeyResult finds a key result by ID anywhere in the tree and removes it.
-func (m *PlanningManager) DeleteKeyResult(keyResultId string) error {
+// deleteKeyResult finds a key result by ID anywhere in the tree and removes it.
+func (m *PlanningManager) deleteKeyResult(keyResultId string) error {
 	if keyResultId == "" {
 		return fmt.Errorf("keyResultId cannot be empty")
 	}
@@ -877,8 +781,8 @@ func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.L
 	return nil, -1
 }
 
-// AddRoutine creates a new routine under the specified theme.
-func (m *PlanningManager) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
+// addRoutine creates a new routine under the specified theme.
+func (m *PlanningManager) addRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
 	if themeId == "" {
 		return nil, fmt.Errorf("themeId cannot be empty")
 	}
@@ -926,45 +830,8 @@ func (m *PlanningManager) AddRoutine(themeId, description string, targetValue in
 	return &result, nil
 }
 
-// UpdateRoutine updates all fields of an existing routine.
-func (m *PlanningManager) UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error {
-	if routineId == "" {
-		return fmt.Errorf("routineId cannot be empty")
-	}
-	if strings.TrimSpace(description) == "" {
-		return fmt.Errorf("description cannot be empty")
-	}
-	if !IsValidRoutineTargetType(targetType) {
-		return fmt.Errorf("invalid target type: %s", targetType)
-	}
-	if targetValue <= 0 {
-		return fmt.Errorf("targetValue must be positive")
-	}
-
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	theme, idx := findThemeForRoutine(themes, routineId)
-	if theme == nil {
-		return fmt.Errorf("routine with ID %s not found", routineId)
-	}
-
-	theme.Routines[idx].Description = strings.TrimSpace(description)
-	theme.Routines[idx].CurrentValue = currentValue
-	theme.Routines[idx].TargetValue = targetValue
-	theme.Routines[idx].TargetType = targetType
-	theme.Routines[idx].Unit = strings.TrimSpace(unit)
-
-	if err := m.themeAccess.SaveTheme(*theme); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	return nil
-}
-
-// DeleteRoutine removes a routine by ID.
-func (m *PlanningManager) DeleteRoutine(routineId string) error {
+// deleteRoutine removes a routine by ID.
+func (m *PlanningManager) deleteRoutine(routineId string) error {
 	if routineId == "" {
 		return fmt.Errorf("routineId cannot be empty")
 	}
@@ -2109,7 +1976,7 @@ func SuggestAbbreviation(name string, existingThemes []access.LifeTheme) string 
 }
 
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name.
-func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) {
+func (m *PlanningManager) suggestThemeAbbreviation(name string) (string, error) {
 	themes, err := m.themeAccess.GetThemes()
 	if err != nil {
 		return "", fmt.Errorf("%w", err)
@@ -2121,21 +1988,21 @@ func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) 
 
 // GetGoalHierarchy returns the full OKR hierarchy.
 func (m *PlanningManager) GetGoalHierarchy() ([]LifeTheme, error) {
-	return m.GetThemes()
+	return m.getThemes()
 }
 
 // EstablishGoal creates a new goal node of the specified type.
 func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoalResult, error) {
 	switch req.GoalType {
 	case GoalTypeTheme:
-		theme, err := m.CreateTheme(req.Name, req.Color)
+		theme, err := m.createTheme(req.Name, req.Color)
 		if err != nil {
 			return nil, err
 		}
 		return &EstablishGoalResult{Theme: theme}, nil
 
 	case GoalTypeObjective:
-		obj, err := m.CreateObjective(req.ParentID, req.Title)
+		obj, err := m.createObjective(req.ParentID, req.Title)
 		if err != nil {
 			return nil, err
 		}
@@ -2150,7 +2017,7 @@ func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoa
 		if req.TargetValue != nil {
 			targetVal = *req.TargetValue
 		}
-		kr, err := m.CreateKeyResult(req.ParentID, req.Description, startVal, targetVal)
+		kr, err := m.createKeyResult(req.ParentID, req.Description, startVal, targetVal)
 		if err != nil {
 			return nil, err
 		}
@@ -2161,7 +2028,7 @@ func (m *PlanningManager) EstablishGoal(req EstablishGoalRequest) (*EstablishGoa
 		if req.TargetValue != nil {
 			targetVal = *req.TargetValue
 		}
-		routine, err := m.AddRoutine(req.ParentID, req.Description, targetVal, req.TargetType, req.Unit)
+		routine, err := m.addRoutine(req.ParentID, req.Description, targetVal, req.TargetType, req.Unit)
 		if err != nil {
 			return nil, err
 		}
@@ -2288,7 +2155,7 @@ func (m *PlanningManager) RecordProgress(goalId string, value int) error {
 
 	switch goalType {
 	case GoalTypeKeyResult:
-		return m.UpdateKeyResultProgress(goalId, value)
+		return m.updateKeyResultProgress(goalId, value)
 
 	case GoalTypeRoutine:
 		themes, err := m.themeAccess.GetThemes()
@@ -2320,13 +2187,13 @@ func (m *PlanningManager) DismissGoal(goalId string) error {
 
 	switch goalType {
 	case GoalTypeTheme:
-		return m.DeleteTheme(goalId)
+		return m.deleteTheme(goalId)
 	case GoalTypeObjective:
-		return m.DeleteObjective(goalId)
+		return m.deleteObjective(goalId)
 	case GoalTypeKeyResult:
-		return m.DeleteKeyResult(goalId)
+		return m.deleteKeyResult(goalId)
 	case GoalTypeRoutine:
-		return m.DeleteRoutine(goalId)
+		return m.deleteRoutine(goalId)
 	default:
 		return fmt.Errorf("unknown goal type for ID %s", goalId)
 	}
@@ -2334,7 +2201,7 @@ func (m *PlanningManager) DismissGoal(goalId string) error {
 
 // SuggestAbbreviation suggests a unique abbreviation for a goal name.
 func (m *PlanningManager) SuggestAbbreviation(name string) (string, error) {
-	return m.SuggestThemeAbbreviation(name)
+	return m.suggestThemeAbbreviation(name)
 }
 
 // LoadNavigationContext retrieves the saved navigation context.

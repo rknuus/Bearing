@@ -511,156 +511,6 @@ export const mockAppBindings = {
     return navigator.language;
   },
 
-  // Theme operations
-  GetThemes: async (): Promise<LifeTheme[]> => {
-    return JSON.parse(JSON.stringify(mockThemes)); // Deep copy
-  },
-
-  CreateTheme: async (name: string, color: string): Promise<LifeTheme> => {
-    const abbr = suggestAbbreviation(name, mockThemes);
-    const newTheme: LifeTheme = {
-      id: abbr,
-      name,
-      color,
-      objectives: [],
-    };
-    mockThemes.push(newTheme);
-    return newTheme;
-  },
-
-  UpdateTheme: async (theme: LifeTheme): Promise<void> => {
-    const index = mockThemes.findIndex(t => t.id === theme.id);
-    if (index >= 0) {
-      mockThemes[index] = theme;
-    }
-  },
-
-  SaveTheme: async (theme: LifeTheme): Promise<void> => {
-    const index = mockThemes.findIndex(t => t.id === theme.id);
-    if (index >= 0) {
-      mockThemes[index] = theme;
-    } else {
-      // Generate ID if not provided
-      if (!theme.id) {
-        theme.id = suggestAbbreviation(theme.name, mockThemes);
-      }
-      if (!theme.objectives) {
-        theme.objectives = [];
-      }
-      mockThemes.push(theme);
-    }
-  },
-
-  DeleteTheme: async (id: string): Promise<void> => {
-    mockThemes = mockThemes.filter(t => t.id !== id);
-  },
-
-  // Abbreviation suggestion
-  SuggestThemeAbbreviation: async (name: string): Promise<string> => {
-    return suggestAbbreviation(name, mockThemes);
-  },
-
-  // Objective operations
-  CreateObjective: async (parentId: string, title: string): Promise<Objective> => {
-    // parentId can be a theme ID or an objective ID
-    let parentObjectives: Objective[];
-    let theme: LifeTheme | undefined;
-
-    theme = mockThemes.find(t => t.id === parentId);
-    if (theme) {
-      parentObjectives = theme.objectives;
-    } else {
-      const parentObj = findObjectiveById(mockThemes, parentId);
-      if (!parentObj) {
-        throw new Error(`Parent ${parentId} not found`);
-      }
-      if (!parentObj.objectives) parentObj.objectives = [];
-      parentObjectives = parentObj.objectives;
-      theme = findThemeForObjective(mockThemes, parentId);
-    }
-
-    if (!theme) throw new Error(`Theme not found for parent ${parentId}`);
-
-    const maxNum = getMaxObjNumInTheme(theme);
-    const newObjective: Objective = {
-      id: `${theme.id}-O${maxNum + 1}`,
-      parentId,
-      title,
-      keyResults: [],
-      objectives: [],
-    };
-    parentObjectives.push(newObjective);
-    return newObjective;
-  },
-
-  UpdateObjective: async (objectiveId: string, title: string, tags: string[]): Promise<void> => {
-    const obj = findObjectiveById(mockThemes, objectiveId);
-    if (!obj) {
-      throw new Error(`Objective ${objectiveId} not found`);
-    }
-    obj.title = title;
-    obj.tags = tags;
-  },
-
-  DeleteObjective: async (objectiveId: string): Promise<void> => {
-    const result = findObjectiveParent(mockThemes, objectiveId);
-    if (!result) {
-      throw new Error(`Objective ${objectiveId} not found`);
-    }
-    result.list.splice(result.index, 1);
-  },
-
-  // Key Result operations
-  CreateKeyResult: async (parentObjectiveId: string, description: string, startValue: number = 0, targetValue: number = 1): Promise<KeyResult> => {
-    const objective = findObjectiveById(mockThemes, parentObjectiveId);
-    if (!objective) {
-      throw new Error(`Objective ${parentObjectiveId} not found`);
-    }
-
-    if (startValue > targetValue) {
-      throw new Error('startValue cannot exceed targetValue');
-    }
-
-    const theme = findThemeForObjective(mockThemes, parentObjectiveId);
-    if (!theme) throw new Error(`Theme not found for objective ${parentObjectiveId}`);
-
-    const maxNum = getMaxKRNumInTheme(theme);
-    const newKR: KeyResult = {
-      id: `${theme.id}-KR${maxNum + 1}`,
-      parentId: parentObjectiveId,
-      description,
-      startValue,
-      currentValue: 0,
-      targetValue,
-    };
-    objective.keyResults.push(newKR);
-    return newKR;
-  },
-
-  UpdateKeyResult: async (keyResultId: string, description: string): Promise<void> => {
-    const result = findKeyResultParent(mockThemes, keyResultId);
-    if (!result) {
-      throw new Error(`KeyResult ${keyResultId} not found`);
-    }
-    result.objective.keyResults[result.index].description = description;
-  },
-
-  UpdateKeyResultProgress: async (keyResultId: string, currentValue: number): Promise<void> => {
-    const result = findKeyResultParent(mockThemes, keyResultId);
-    if (!result) {
-      throw new Error(`KeyResult ${keyResultId} not found`);
-    }
-    result.objective.keyResults[result.index].currentValue = currentValue;
-  },
-
-  DeleteKeyResult: async (keyResultId: string): Promise<void> => {
-    const result = findKeyResultParent(mockThemes, keyResultId);
-    if (!result) {
-      throw new Error(`KeyResult ${keyResultId} not found`);
-    }
-    result.objective.keyResults.splice(result.index, 1);
-  },
-
   SetObjectiveStatus: async (objectiveId: string, status: string): Promise<void> => {
     const obj = findObjectiveById(mockThemes, objectiveId);
     if (!obj) {
@@ -1108,62 +958,6 @@ export const mockAppBindings = {
     return result;
   },
 
-  // Routine operations
-  AddRoutine: async (themeId: string, description: string, targetValue: number, targetType: string, unit: string): Promise<Routine> => {
-    const theme = mockThemes.find(t => t.id === themeId);
-    if (!theme) throw new Error(`Theme ${themeId} not found`);
-    if (!description.trim()) throw new Error('description cannot be empty');
-    if (targetType !== 'at-or-above' && targetType !== 'at-or-below') throw new Error(`invalid target type: ${targetType}`);
-    if (targetValue <= 0) throw new Error('targetValue must be positive');
-
-    if (!theme.routines) theme.routines = [];
-    let maxNum = 0;
-    const re = new RegExp(`^${themeId}-R(\\d+)$`);
-    for (const routine of theme.routines) {
-      const match = routine.id.match(re);
-      if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
-    }
-    const newRoutine: Routine = {
-      id: `${themeId}-R${maxNum + 1}`,
-      description: description.trim(),
-      currentValue: 0,
-      targetValue,
-      targetType,
-      unit: unit?.trim() || undefined,
-    };
-    theme.routines.push(newRoutine);
-    return newRoutine;
-  },
-
-  UpdateRoutine: async (routineId: string, description: string, currentValue: number, targetValue: number, targetType: string, unit: string): Promise<void> => {
-    for (const theme of mockThemes) {
-      const idx = (theme.routines ?? []).findIndex(k => k.id === routineId);
-      if (idx >= 0) {
-        theme.routines![idx] = {
-          ...theme.routines![idx],
-          description: description.trim(),
-          currentValue,
-          targetValue,
-          targetType,
-          unit: unit?.trim() || undefined,
-        };
-        return;
-      }
-    }
-    throw new Error(`Routine ${routineId} not found`);
-  },
-
-  DeleteRoutine: async (routineId: string): Promise<void> => {
-    for (const theme of mockThemes) {
-      const idx = (theme.routines ?? []).findIndex(k => k.id === routineId);
-      if (idx >= 0) {
-        theme.routines!.splice(idx, 1);
-        return;
-      }
-    }
-    throw new Error(`Routine ${routineId} not found`);
-  },
-
   // --- Behavioral goal operations ---
 
   GetGoalHierarchy: async (): Promise<LifeTheme[]> => {
@@ -1173,19 +967,91 @@ export const mockAppBindings = {
   EstablishGoal: async (req: EstablishGoalRequest): Promise<EstablishGoalResult> => {
     switch (req.goalType) {
       case 'theme': {
-        const theme = await mockAppBindings.CreateTheme(req.name ?? '', req.color ?? '');
+        const name = req.name ?? '';
+        const color = req.color ?? '';
+        const abbr = suggestAbbreviation(name, mockThemes);
+        const theme: LifeTheme = { id: abbr, name, color, objectives: [] };
+        mockThemes.push(theme);
         return { theme };
       }
       case 'objective': {
-        const objective = await mockAppBindings.CreateObjective(req.parentId, req.title ?? '');
+        const parentId = req.parentId;
+        const title = req.title ?? '';
+        let parentObjectives: Objective[];
+        let theme: LifeTheme | undefined;
+
+        theme = mockThemes.find(t => t.id === parentId);
+        if (theme) {
+          parentObjectives = theme.objectives;
+        } else {
+          const parentObj = findObjectiveById(mockThemes, parentId);
+          if (!parentObj) throw new Error(`Parent ${parentId} not found`);
+          if (!parentObj.objectives) parentObj.objectives = [];
+          parentObjectives = parentObj.objectives;
+          theme = findThemeForObjective(mockThemes, parentId);
+        }
+        if (!theme) throw new Error(`Theme not found for parent ${parentId}`);
+
+        const maxObjNum = getMaxObjNumInTheme(theme);
+        const objective: Objective = {
+          id: `${theme.id}-O${maxObjNum + 1}`,
+          parentId,
+          title,
+          keyResults: [],
+          objectives: [],
+        };
+        parentObjectives.push(objective);
         return { objective };
       }
       case 'key-result': {
-        const keyResult = await mockAppBindings.CreateKeyResult(req.parentId, req.description ?? '', req.startValue ?? 0, req.targetValue ?? 1);
+        const parentObjId = req.parentId;
+        const description = req.description ?? '';
+        const startValue = req.startValue ?? 0;
+        const targetValue = req.targetValue ?? 1;
+        const parentObj = findObjectiveById(mockThemes, parentObjId);
+        if (!parentObj) throw new Error(`Objective ${parentObjId} not found`);
+        if (startValue > targetValue) throw new Error('startValue cannot exceed targetValue');
+        const theme = findThemeForObjective(mockThemes, parentObjId);
+        if (!theme) throw new Error(`Theme not found for objective ${parentObjId}`);
+        const maxKRNum = getMaxKRNumInTheme(theme);
+        const keyResult: KeyResult = {
+          id: `${theme.id}-KR${maxKRNum + 1}`,
+          parentId: parentObjId,
+          description,
+          startValue,
+          currentValue: 0,
+          targetValue,
+        };
+        parentObj.keyResults.push(keyResult);
         return { keyResult };
       }
       case 'routine': {
-        const routine = await mockAppBindings.AddRoutine(req.parentId, req.description ?? '', req.targetValue ?? 0, req.targetType ?? 'at-or-above', req.unit ?? '');
+        const themeId = req.parentId;
+        const description = req.description ?? '';
+        const targetValue = req.targetValue ?? 0;
+        const targetType = req.targetType ?? 'at-or-above';
+        const unit = req.unit ?? '';
+        const theme = mockThemes.find(t => t.id === themeId);
+        if (!theme) throw new Error(`Theme ${themeId} not found`);
+        if (!description.trim()) throw new Error('description cannot be empty');
+        if (targetType !== 'at-or-above' && targetType !== 'at-or-below') throw new Error(`invalid target type: ${targetType}`);
+        if (targetValue <= 0) throw new Error('targetValue must be positive');
+        if (!theme.routines) theme.routines = [];
+        let maxRNum = 0;
+        const re = new RegExp(`^${themeId}-R(\\d+)$`);
+        for (const routine of theme.routines) {
+          const match = routine.id.match(re);
+          if (match) maxRNum = Math.max(maxRNum, parseInt(match[1]));
+        }
+        const routine: Routine = {
+          id: `${themeId}-R${maxRNum + 1}`,
+          description: description.trim(),
+          currentValue: 0,
+          targetValue,
+          targetType,
+          unit: unit?.trim() || undefined,
+        };
+        theme.routines.push(routine);
         return { routine };
       }
       default:
@@ -1250,13 +1116,24 @@ export const mockAppBindings = {
 
   DismissGoal: async (goalId: string): Promise<void> => {
     if (goalId.includes('-KR')) {
-      await mockAppBindings.DeleteKeyResult(goalId);
+      const result = findKeyResultParent(mockThemes, goalId);
+      if (!result) throw new Error(`KeyResult ${goalId} not found`);
+      result.objective.keyResults.splice(result.index, 1);
     } else if (goalId.includes('-O')) {
-      await mockAppBindings.DeleteObjective(goalId);
+      const result = findObjectiveParent(mockThemes, goalId);
+      if (!result) throw new Error(`Objective ${goalId} not found`);
+      result.list.splice(result.index, 1);
     } else if (goalId.includes('-R')) {
-      await mockAppBindings.DeleteRoutine(goalId);
+      for (const theme of mockThemes) {
+        const idx = (theme.routines ?? []).findIndex(r => r.id === goalId);
+        if (idx >= 0) {
+          theme.routines!.splice(idx, 1);
+          return;
+        }
+      }
+      throw new Error(`Routine ${goalId} not found`);
     } else {
-      await mockAppBindings.DeleteTheme(goalId);
+      mockThemes = mockThemes.filter(t => t.id !== goalId);
     }
   },
 
