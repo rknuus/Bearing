@@ -1,5 +1,8 @@
 # 02 — DTOs Shared Across Layers
 
+> **Status: RESOLVED** — Commit `942fef8` (2026-03-20)
+> Manager layer now defines its own types (`Task`, `LifeTheme`, `Objective`, `KeyResult`, `DayFocus`, `BoardConfiguration`, `PersonalVision`, `Routine`) in `internal/managers/planning_manager.go`. The `IPlanningManager` interface no longer exposes `access.*` types. Gateway converts against Manager types.
+
 ## Finding
 
 Access-layer types (`access.Task`, `access.LifeTheme`, `access.Objective`, `access.KeyResult`, `access.DayFocus`, `access.PersonalVision`, `access.BoardConfiguration`) flow through the Manager layer unchanged and are exposed in the Manager's public interface. The Manager's `TaskWithStatus` struct directly embeds `access.Task`. The RuleEngine receives `*access.Task` directly (addressed in Finding 01).

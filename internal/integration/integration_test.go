@@ -61,8 +61,9 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Plan
 		t.Fatalf("Failed to create PlanAccess: %v", err)
 	}
 
-	// Create PlanningManager
-	manager, err := managers.NewPlanningManager(planAccess)
+	// Create UIStateAccess and PlanningManager
+	uiStateAccess := access.NewUIStateAccess(dataDir)
+	manager, err := managers.NewPlanningManager(planAccess, uiStateAccess)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
@@ -456,7 +457,8 @@ func TestIntegration_DataPersistence(t *testing.T) {
 		t.Fatalf("Failed to reopen PlanAccess: %v", err)
 	}
 
-	manager2, err := managers.NewPlanningManager(planAccess2)
+	uiStateAccess2 := access.NewUIStateAccess(dataDir)
+	manager2, err := managers.NewPlanningManager(planAccess2, uiStateAccess2)
 	if err != nil {
 		t.Fatalf("Failed to reopen PlanningManager: %v", err)
 	}
@@ -549,8 +551,10 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	repo2, _ := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
 	defer repo2.Close()
 
-	planAccess2, _ := access.NewPlanAccess(filepath.Join(tmpDir, "data"), repo2)
-	manager2, _ := managers.NewPlanningManager(planAccess2)
+	dataDir2 := filepath.Join(tmpDir, "data")
+	planAccess2, _ := access.NewPlanAccess(dataDir2, repo2)
+	uiStateAccess2 := access.NewUIStateAccess(dataDir2)
+	manager2, _ := managers.NewPlanningManager(planAccess2, uiStateAccess2)
 
 	// Load and verify
 	loadedCtx, err := manager2.LoadNavigationContext()

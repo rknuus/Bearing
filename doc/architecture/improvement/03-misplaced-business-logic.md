@@ -1,5 +1,10 @@
 # 03 — Business Logic in the Wrong Layers
 
+> **Status: MOSTLY RESOLVED** — Commit `a03a2a6` (2026-03-20)
+> Phase 1: `Slugify` → `utilities/strings.go`, `SuggestAbbreviation` → managers, validators → `managers/validators.go`, `DefaultBoardConfiguration` → managers.
+> Phase 2: Progress computation → new `ProgressEngine` at `internal/engines/progress_engine/`.
+> **Remaining:** `validateTaskOrder()` data repair logic still in Manager — address during Finding 04 decomposition.
+
 ## Finding
 
 Six pieces of business logic are in the wrong architectural layer. The access layer contains business rules and utility functions. The Manager contains computation logic that belongs in an Engine.

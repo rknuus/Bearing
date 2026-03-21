@@ -26,16 +26,23 @@ type TaskWithStatus struct {
 
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
-	CurrentView       string   `json:"currentView"`
-	CurrentItem       string   `json:"currentItem"`
-	FilterThemeID     string   `json:"filterThemeId"`
-	LastAccessed      string   `json:"lastAccessed"`
-	ShowCompleted     bool     `json:"showCompleted,omitempty"`
-	ShowArchived      bool     `json:"showArchived,omitempty"`
-	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
-	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
-	FilterTagIDs      []string `json:"filterTagIds,omitempty"`
-	VisionCollapsed   *bool    `json:"visionCollapsed,omitempty"`
+	CurrentView                  string   `json:"currentView"`
+	CurrentItem                  string   `json:"currentItem"`
+	FilterThemeID                string   `json:"filterThemeId"`
+	FilterThemeIDs               []string `json:"filterThemeIds,omitempty"`
+	LastAccessed                 string   `json:"lastAccessed"`
+	ShowCompleted                bool     `json:"showCompleted,omitempty"`
+	ShowArchived                 bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks            bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds               []string `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs                 []string `json:"filterTagIds,omitempty"`
+	TodayFocusActive             *bool    `json:"todayFocusActive,omitempty"`
+	TagFocusActive               *bool    `json:"tagFocusActive,omitempty"`
+	CollapsedSections            []string `json:"collapsedSections,omitempty"`
+	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
+	CalendarDayEditorDate        string   `json:"calendarDayEditorDate,omitempty"`
+	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
+	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }
 
 // IPlanningManager defines the interface for planning business logic.
@@ -275,11 +282,11 @@ func defaultAccessBoardConfiguration() *access.BoardConfiguration {
 
 // PlanningManager implements IPlanningManager with business logic.
 type PlanningManager struct {
-	planAccess        access.IPlanAccess
-	ruleEngine        rule_engine.IRuleEngine
-	progressEngine    progress_engine.IProgressEngine
-	navigationContext *NavigationContext
-	taskOrderMu       sync.Mutex
+	planAccess     access.IPlanAccess
+	uiStateAccess  access.IUIStateAccess
+	ruleEngine     rule_engine.IRuleEngine
+	progressEngine progress_engine.IProgressEngine
+	taskOrderMu    sync.Mutex
 }
 
 // getAccessBoardConfig returns the access-layer board configuration,
@@ -302,13 +309,17 @@ func NewPlanningManagerFromPath(dataPath string, repo utilities.IRepository) (*P
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize PlanAccess: %w", err)
 	}
-	return NewPlanningManager(planAccess)
+	uiStateAccess := access.NewUIStateAccess(dataPath)
+	return NewPlanningManager(planAccess, uiStateAccess)
 }
 
 // NewPlanningManager creates a new PlanningManager instance.
-func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error) {
+func NewPlanningManager(planAccess access.IPlanAccess, uiStateAccess access.IUIStateAccess) (*PlanningManager, error) {
 	if planAccess == nil {
 		return nil, fmt.Errorf("planAccess cannot be nil")
+	}
+	if uiStateAccess == nil {
+		return nil, fmt.Errorf("uiStateAccess cannot be nil")
 	}
 
 	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
@@ -316,6 +327,7 @@ func NewPlanningManager(planAccess access.IPlanAccess) (*PlanningManager, error)
 
 	pm := &PlanningManager{
 		planAccess:     planAccess,
+		uiStateAccess:  uiStateAccess,
 		ruleEngine:     engine,
 		progressEngine: progressEng,
 	}
@@ -2199,7 +2211,7 @@ func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) 
 // LoadNavigationContext retrieves the saved navigation context.
 // Returns a default context if none is saved.
 func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
-	ctx, err := m.planAccess.LoadNavigationContext()
+	ctx, err := m.uiStateAccess.LoadNavigationContext()
 	if err != nil {
 		// Return default context on error
 		return &NavigationContext{
@@ -2213,50 +2225,63 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 	}
 
 	return &NavigationContext{
-		CurrentView:       ctx.CurrentView,
-		CurrentItem:       ctx.CurrentItem,
-		FilterThemeID:     ctx.FilterThemeID,
-		LastAccessed:      ctx.LastAccessed,
-		ShowCompleted:     ctx.ShowCompleted,
-		ShowArchived:      ctx.ShowArchived,
-		ShowArchivedTasks: ctx.ShowArchivedTasks,
-		ExpandedOkrIds:    ctx.ExpandedOkrIds,
-		FilterTagIDs:      ctx.FilterTagIDs,
-		VisionCollapsed:   ctx.VisionCollapsed,
+		CurrentView:                  ctx.CurrentView,
+		CurrentItem:                  ctx.CurrentItem,
+		FilterThemeID:                ctx.FilterThemeID,
+		FilterThemeIDs:               ctx.FilterThemeIDs,
+		LastAccessed:                 ctx.LastAccessed,
+		ShowCompleted:                ctx.ShowCompleted,
+		ShowArchived:                 ctx.ShowArchived,
+		ShowArchivedTasks:            ctx.ShowArchivedTasks,
+		ExpandedOkrIds:               ctx.ExpandedOkrIds,
+		FilterTagIDs:                 ctx.FilterTagIDs,
+		TodayFocusActive:             ctx.TodayFocusActive,
+		TagFocusActive:               ctx.TagFocusActive,
+		CollapsedSections:            ctx.CollapsedSections,
+		CollapsedColumns:             ctx.CollapsedColumns,
+		CalendarDayEditorDate:        ctx.CalendarDayEditorDate,
+		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
+		VisionCollapsed:              ctx.VisionCollapsed,
 	}, nil
 }
 
 // SaveNavigationContext persists the current navigation context.
 func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 	accessCtx := access.NavigationContext{
-		CurrentView:       ctx.CurrentView,
-		CurrentItem:       ctx.CurrentItem,
-		FilterThemeID:     ctx.FilterThemeID,
-		LastAccessed:      ctx.LastAccessed,
-		ShowCompleted:     ctx.ShowCompleted,
-		ShowArchived:      ctx.ShowArchived,
-		ShowArchivedTasks: ctx.ShowArchivedTasks,
-		ExpandedOkrIds:    ctx.ExpandedOkrIds,
-		FilterTagIDs:      ctx.FilterTagIDs,
-		VisionCollapsed:   ctx.VisionCollapsed,
+		CurrentView:                  ctx.CurrentView,
+		CurrentItem:                  ctx.CurrentItem,
+		FilterThemeID:                ctx.FilterThemeID,
+		FilterThemeIDs:               ctx.FilterThemeIDs,
+		LastAccessed:                 ctx.LastAccessed,
+		ShowCompleted:                ctx.ShowCompleted,
+		ShowArchived:                 ctx.ShowArchived,
+		ShowArchivedTasks:            ctx.ShowArchivedTasks,
+		ExpandedOkrIds:               ctx.ExpandedOkrIds,
+		FilterTagIDs:                 ctx.FilterTagIDs,
+		TodayFocusActive:             ctx.TodayFocusActive,
+		TagFocusActive:               ctx.TagFocusActive,
+		CollapsedSections:            ctx.CollapsedSections,
+		CollapsedColumns:             ctx.CollapsedColumns,
+		CalendarDayEditorDate:        ctx.CalendarDayEditorDate,
+		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
+		VisionCollapsed:              ctx.VisionCollapsed,
 	}
 
-	if err := m.planAccess.SaveNavigationContext(accessCtx); err != nil {
+	if err := m.uiStateAccess.SaveNavigationContext(accessCtx); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 
-	m.navigationContext = &ctx
 	return nil
 }
 
 // LoadTaskDrafts retrieves saved task drafts.
 func (m *PlanningManager) LoadTaskDrafts() (json.RawMessage, error) {
-	return m.planAccess.LoadTaskDrafts()
+	return m.uiStateAccess.LoadTaskDrafts()
 }
 
 // SaveTaskDrafts persists task drafts.
 func (m *PlanningManager) SaveTaskDrafts(data json.RawMessage) error {
-	return m.planAccess.SaveTaskDrafts(data)
+	return m.uiStateAccess.SaveTaskDrafts(data)
 }
 
 // GetPersonalVision retrieves the saved personal vision.

@@ -59,17 +59,9 @@ type IPlanAccess interface {
 	CommitFiles(paths []string, message string) error
 	CommitAll(message string) error
 
-	// Navigation
-	LoadNavigationContext() (*NavigationContext, error)
-	SaveNavigationContext(ctx NavigationContext) error
-
 	// Vision
 	LoadVision() (*PersonalVision, error)
 	SaveVision(vision *PersonalVision) error
-
-	// Task Drafts
-	LoadTaskDrafts() (json.RawMessage, error)
-	SaveTaskDrafts(data json.RawMessage) error
 }
 
 // PlanAccess implements IPlanAccess with file-based storage and git versioning.
@@ -1148,66 +1140,6 @@ func (pa *PlanAccess) SaveTaskOrder(order map[string][]string) error {
 	}
 	if err := pa.commitFiles([]string{pa.taskOrderFilePath()}, "Update task order"); err != nil {
 		return fmt.Errorf("PlanAccess.SaveTaskOrder: %w", err)
-	}
-	return nil
-}
-
-// navigationContextFilePath returns the path to the navigation context file.
-func (pa *PlanAccess) navigationContextFilePath() string {
-	return filepath.Join(pa.dataPath, "navigation_context.json")
-}
-
-// LoadNavigationContext retrieves the saved navigation context.
-func (pa *PlanAccess) LoadNavigationContext() (*NavigationContext, error) {
-	filePath := pa.navigationContextFilePath()
-
-	data, err := os.ReadFile(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("PlanAccess.LoadNavigationContext: failed to read file: %w", err)
-	}
-
-	var ctx NavigationContext
-	if err := json.Unmarshal(data, &ctx); err != nil {
-		return nil, fmt.Errorf("PlanAccess.LoadNavigationContext: failed to parse file: %w", err)
-	}
-
-	return &ctx, nil
-}
-
-// SaveNavigationContext persists the navigation context.
-// Note: This is user preference data, not versioned with git.
-func (pa *PlanAccess) SaveNavigationContext(ctx NavigationContext) error {
-	filePath := pa.navigationContextFilePath()
-	if err := writeJSON(filePath, ctx); err != nil {
-		return fmt.Errorf("PlanAccess.SaveNavigationContext: %w", err)
-	}
-
-	return nil
-}
-
-// taskDraftsFilePath returns the path to the task drafts file.
-func (pa *PlanAccess) taskDraftsFilePath() string {
-	return filepath.Join(pa.dataPath, "tasks", "drafts.json")
-}
-
-// LoadTaskDrafts retrieves saved task drafts.
-// Returns nil if no drafts file exists or if it cannot be read (graceful degradation).
-func (pa *PlanAccess) LoadTaskDrafts() (json.RawMessage, error) {
-	data, err := os.ReadFile(pa.taskDraftsFilePath())
-	if err != nil {
-		return nil, nil
-	}
-	return json.RawMessage(data), nil
-}
-
-// SaveTaskDrafts persists task drafts.
-// Note: This is ephemeral planning data, not versioned with git.
-func (pa *PlanAccess) SaveTaskDrafts(data json.RawMessage) error {
-	if err := os.WriteFile(pa.taskDraftsFilePath(), data, 0644); err != nil {
-		return fmt.Errorf("PlanAccess.SaveTaskDrafts: %w", err)
 	}
 	return nil
 }

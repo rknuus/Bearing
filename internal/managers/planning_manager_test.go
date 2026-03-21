@@ -316,14 +316,6 @@ func (m *mockPlanAccess) GetBoardConfiguration() (*access.BoardConfiguration, er
 	return nil, nil
 }
 
-func (m *mockPlanAccess) LoadNavigationContext() (*access.NavigationContext, error) {
-	return nil, nil
-}
-
-func (m *mockPlanAccess) SaveNavigationContext(ctx access.NavigationContext) error {
-	return nil
-}
-
 func (m *mockPlanAccess) LoadVision() (*access.PersonalVision, error) {
 	if m.vision == nil {
 		return &access.PersonalVision{}, nil
@@ -333,14 +325,6 @@ func (m *mockPlanAccess) LoadVision() (*access.PersonalVision, error) {
 
 func (m *mockPlanAccess) SaveVision(vision *access.PersonalVision) error {
 	m.vision = vision
-	return nil
-}
-
-func (m *mockPlanAccess) LoadTaskDrafts() (json.RawMessage, error) {
-	return nil, nil
-}
-
-func (m *mockPlanAccess) SaveTaskDrafts(data json.RawMessage) error {
 	return nil
 }
 
@@ -389,6 +373,25 @@ func (m *mockPlanAccess) CommitFiles(paths []string, message string) error {
 }
 
 func (m *mockPlanAccess) CommitAll(message string) error {
+	return nil
+}
+
+// mockUIStateAccess implements access.IUIStateAccess for testing.
+type mockUIStateAccess struct{}
+
+func (m *mockUIStateAccess) LoadNavigationContext() (*access.NavigationContext, error) {
+	return nil, nil
+}
+
+func (m *mockUIStateAccess) SaveNavigationContext(ctx access.NavigationContext) error {
+	return nil
+}
+
+func (m *mockUIStateAccess) LoadTaskDrafts() (json.RawMessage, error) {
+	return nil, nil
+}
+
+func (m *mockUIStateAccess) SaveTaskDrafts(data json.RawMessage) error {
 	return nil
 }
 
@@ -502,7 +505,7 @@ func findKeyResultByID(objectives []Objective, id string) *KeyResult {
 func TestNewPlanningManager(t *testing.T) {
 	t.Run("creates manager with valid access", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, err := NewPlanningManager(mockAccess)
+		manager, err := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -512,9 +515,17 @@ func TestNewPlanningManager(t *testing.T) {
 	})
 
 	t.Run("returns error with nil access", func(t *testing.T) {
-		_, err := NewPlanningManager(nil)
+		_, err := NewPlanningManager(nil, &mockUIStateAccess{})
 		if err == nil {
 			t.Fatal("expected error for nil access")
+		}
+	})
+
+	t.Run("returns error with nil ui state access", func(t *testing.T) {
+		mockAccess := newMockPlanAccess()
+		_, err := NewPlanningManager(mockAccess, nil)
+		if err == nil {
+			t.Fatal("expected error for nil ui state access")
 		}
 	})
 }
@@ -526,7 +537,7 @@ func TestNewPlanningManager(t *testing.T) {
 func TestUpdateTheme(t *testing.T) {
 	t.Run("updates theme name and color", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		themes, _ := manager.GetThemes()
 		theme := themes[0]
@@ -549,7 +560,7 @@ func TestUpdateTheme(t *testing.T) {
 
 	t.Run("preserves KR progress fields through theme update", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Create objective with KR (start=0, target=12)
 		obj, _ := manager.CreateObjective("T", "Read More")
@@ -589,7 +600,7 @@ func TestUpdateTheme(t *testing.T) {
 
 	t.Run("returns error for empty theme ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateTheme(LifeTheme{ID: "", Name: "Test"})
 		if err == nil {
@@ -599,7 +610,7 @@ func TestUpdateTheme(t *testing.T) {
 
 	t.Run("preserves objective hierarchy through update", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Build nested structure: theme -> obj1 -> obj2 -> kr
 		obj1, _ := manager.CreateObjective("T", "Level 1")
@@ -648,7 +659,7 @@ func TestUpdateTheme(t *testing.T) {
 func TestCreateObjective(t *testing.T) {
 	t.Run("creates objective under theme", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, err := manager.CreateObjective("T", "My Objective")
 		if err != nil {
@@ -667,7 +678,7 @@ func TestCreateObjective(t *testing.T) {
 
 	t.Run("creates nested objective under objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, err := manager.CreateObjective("T", "Parent Objective")
 		if err != nil {
@@ -688,7 +699,7 @@ func TestCreateObjective(t *testing.T) {
 
 	t.Run("creates deeply nested objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
@@ -703,7 +714,7 @@ func TestCreateObjective(t *testing.T) {
 
 	t.Run("returns error for empty parentId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateObjective("", "Title")
 		if err == nil {
@@ -713,7 +724,7 @@ func TestCreateObjective(t *testing.T) {
 
 	t.Run("returns error for empty title", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateObjective("T", "")
 		if err == nil {
@@ -723,7 +734,7 @@ func TestCreateObjective(t *testing.T) {
 
 	t.Run("returns error for non-existent parent", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateObjective("NONEXISTENT", "Title")
 		if err == nil {
@@ -735,7 +746,7 @@ func TestCreateObjective(t *testing.T) {
 func TestUpdateObjective(t *testing.T) {
 	t.Run("updates objective title", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Original")
 		err := manager.UpdateObjective(obj.ID, "Updated", nil)
@@ -756,7 +767,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("updates nested objective title", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -778,7 +789,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("returns error for empty objectiveId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateObjective("", "Title", nil)
 		if err == nil {
@@ -788,7 +799,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateObjective("NONEXISTENT", "Title", nil)
 		if err == nil {
@@ -798,7 +809,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("sets tags on objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Tagged")
 		err := manager.UpdateObjective(obj.ID, "Tagged", []string{"alpha", "beta"})
@@ -818,7 +829,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("tag round-trip persistence", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Persist Tags")
 		tags := []string{"work", "health"}
@@ -840,7 +851,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("deduplicates tags case-insensitively", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Dedup Tags")
 		err := manager.UpdateObjective(obj.ID, "Dedup Tags", []string{"Work", "work", "WORK", "health"})
@@ -861,7 +872,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("rejects empty and whitespace-only tags", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Empty Tags")
 		err := manager.UpdateObjective(obj.ID, "Empty Tags", []string{"", "  ", "valid", "  ", ""})
@@ -881,7 +892,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("trims whitespace from tags", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Trim Tags")
 		err := manager.UpdateObjective(obj.ID, "Trim Tags", []string{"  alpha  ", " beta "})
@@ -901,7 +912,7 @@ func TestUpdateObjective(t *testing.T) {
 
 	t.Run("nil tags results in empty tags", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Nil Tags")
 		err := manager.UpdateObjective(obj.ID, "Nil Tags", nil)
@@ -923,7 +934,7 @@ func TestUpdateObjective(t *testing.T) {
 func TestDeleteObjective(t *testing.T) {
 	t.Run("deletes objective from theme", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "To Delete")
 		err := manager.DeleteObjective(obj.ID)
@@ -939,7 +950,7 @@ func TestDeleteObjective(t *testing.T) {
 
 	t.Run("deletes nested objective and its children", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		_, _ = manager.CreateObjective(parent.ID, "Child")
@@ -958,7 +969,7 @@ func TestDeleteObjective(t *testing.T) {
 
 	t.Run("deletes middle objective in 3-level hierarchy and cascades grandchildren", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		l1, _ := manager.CreateObjective("T", "Level 1")
 		l2, _ := manager.CreateObjective(l1.ID, "Level 2")
@@ -989,7 +1000,7 @@ func TestDeleteObjective(t *testing.T) {
 
 	t.Run("deletes child without affecting parent", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -1013,7 +1024,7 @@ func TestDeleteObjective(t *testing.T) {
 
 	t.Run("returns error for empty objectiveId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteObjective("")
 		if err == nil {
@@ -1023,7 +1034,7 @@ func TestDeleteObjective(t *testing.T) {
 
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteObjective("NONEXISTENT")
 		if err == nil {
@@ -1039,7 +1050,7 @@ func TestDeleteObjective(t *testing.T) {
 func TestCreateKeyResult(t *testing.T) {
 	t.Run("creates key result under objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, err := manager.CreateKeyResult(obj.ID, "My KR", 0, 0)
@@ -1056,7 +1067,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("creates key result with start and target values", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
@@ -1073,7 +1084,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("creates key result under nested objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -1088,7 +1099,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("creates key result on intermediate objective that has children", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		_, _ = manager.CreateObjective(parent.ID, "Child")
@@ -1118,7 +1129,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("returns error for empty parentObjectiveId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateKeyResult("", "Description", 0, 0)
 		if err == nil {
@@ -1128,7 +1139,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateKeyResult("NONEXISTENT", "Description", 0, 0)
 		if err == nil {
@@ -1138,7 +1149,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("preserves custom start/target", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 2, 14)
@@ -1155,7 +1166,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("default start/target values", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, err := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 12)
@@ -1172,7 +1183,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("start greater than target returns error", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		_, err := manager.CreateKeyResult(obj.ID, "Invalid", 10, 5)
@@ -1186,7 +1197,7 @@ func TestCreateKeyResult(t *testing.T) {
 
 	t.Run("start equals target is allowed", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		_, err := manager.CreateKeyResult(obj.ID, "Valid", 5, 5)
@@ -1199,7 +1210,7 @@ func TestCreateKeyResult(t *testing.T) {
 func TestUpdateKeyResult(t *testing.T) {
 	t.Run("updates key result description", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "Original", 0, 0)
@@ -1218,7 +1229,7 @@ func TestUpdateKeyResult(t *testing.T) {
 
 	t.Run("updates key result under nested objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -1238,7 +1249,7 @@ func TestUpdateKeyResult(t *testing.T) {
 
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateKeyResult("", "Description")
 		if err == nil {
@@ -1248,7 +1259,7 @@ func TestUpdateKeyResult(t *testing.T) {
 
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateKeyResult("NONEXISTENT", "Description")
 		if err == nil {
@@ -1260,7 +1271,7 @@ func TestUpdateKeyResult(t *testing.T) {
 func TestUpdateKeyResultProgress(t *testing.T) {
 	t.Run("updates key result currentValue", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "Read 12 books", 0, 0)
@@ -1279,7 +1290,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 
 	t.Run("updates key result under nested objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -1299,7 +1310,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateKeyResultProgress("", 5)
 		if err == nil {
@@ -1309,7 +1320,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateKeyResultProgress("NONEXISTENT", 5)
 		if err == nil {
@@ -1321,7 +1332,7 @@ func TestUpdateKeyResultProgress(t *testing.T) {
 func TestDeleteKeyResult(t *testing.T) {
 	t.Run("deletes key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "To Delete", 0, 0)
@@ -1340,7 +1351,7 @@ func TestDeleteKeyResult(t *testing.T) {
 
 	t.Run("deletes key result under nested objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -1360,7 +1371,7 @@ func TestDeleteKeyResult(t *testing.T) {
 
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteKeyResult("")
 		if err == nil {
@@ -1370,7 +1381,7 @@ func TestDeleteKeyResult(t *testing.T) {
 
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteKeyResult("NONEXISTENT")
 		if err == nil {
@@ -1386,7 +1397,7 @@ func TestDeleteKeyResult(t *testing.T) {
 func TestSetKeyResultStatus(t *testing.T) {
 	t.Run("completes a key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
@@ -1405,7 +1416,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("archives a completed key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
@@ -1425,7 +1436,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("reopens a completed key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
@@ -1445,7 +1456,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("reopens an archived key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
@@ -1466,7 +1477,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("blocks active to archived", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
@@ -1479,7 +1490,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("returns error for invalid status", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR", 0, 10)
@@ -1492,7 +1503,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("returns error for empty keyResultId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.SetKeyResultStatus("", "completed")
 		if err == nil {
@@ -1502,7 +1513,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 
 	t.Run("returns error for non-existent key result", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.SetKeyResultStatus("NONEXISTENT", "completed")
 		if err == nil {
@@ -1514,7 +1525,7 @@ func TestSetKeyResultStatus(t *testing.T) {
 func TestSetObjectiveStatus(t *testing.T) {
 	t.Run("completes objective when all children are completed", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
@@ -1539,7 +1550,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("completes objective when children are mix of completed and archived", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 1)
@@ -1557,7 +1568,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("blocks completing objective with active KRs", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		_, _ = manager.CreateKeyResult(obj.ID, "Active KR", 0, 10)
@@ -1570,7 +1581,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("blocks completing objective with active child objectives", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		_, _ = manager.CreateObjective(parent.ID, "Active Child")
@@ -1583,7 +1594,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("completes objective with completed child objectives", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -1598,7 +1609,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("archives a completed objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		_ = manager.SetObjectiveStatus(obj.ID, "completed")
@@ -1617,7 +1628,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("reopens a completed objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		_ = manager.SetObjectiveStatus(obj.ID, "completed")
@@ -1636,7 +1647,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("blocks active to archived", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 
@@ -1648,7 +1659,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("returns error for empty objectiveId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.SetObjectiveStatus("", "completed")
 		if err == nil {
@@ -1658,7 +1669,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("returns error for non-existent objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.SetObjectiveStatus("NONEXISTENT", "completed")
 		if err == nil {
@@ -1668,7 +1679,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 
 	t.Run("completes objective with no children", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Empty Objective")
 
@@ -1686,7 +1697,7 @@ func TestSetObjectiveStatus(t *testing.T) {
 func TestAddRoutine(t *testing.T) {
 	t.Run("creates routine with correct ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		routine, err := manager.AddRoutine("T", "Exercise sessions per week", 3, "at-or-above", "times/week")
 		if err != nil {
@@ -1714,7 +1725,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("auto-increments routine ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		r1, _ := manager.AddRoutine("T", "Routine one", 1, "at-or-above", "")
 		r2, _ := manager.AddRoutine("T", "Routine two", 2, "at-or-below", "kg")
@@ -1728,7 +1739,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for empty description", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("T", "", 3, "at-or-above", "")
 		if err == nil {
@@ -1738,7 +1749,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for whitespace-only description", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("T", "   ", 3, "at-or-above", "")
 		if err == nil {
@@ -1748,7 +1759,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for invalid targetType", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("T", "Test", 3, "invalid-type", "")
 		if err == nil {
@@ -1758,7 +1769,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for zero targetValue", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("T", "Test", 0, "at-or-above", "")
 		if err == nil {
@@ -1768,7 +1779,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for negative targetValue", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("T", "Test", -1, "at-or-above", "")
 		if err == nil {
@@ -1778,7 +1789,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for non-existent theme", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("NONEXISTENT", "Test", 3, "at-or-above", "")
 		if err == nil {
@@ -1788,7 +1799,7 @@ func TestAddRoutine(t *testing.T) {
 
 	t.Run("returns error for empty themeId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.AddRoutine("", "Test", 3, "at-or-above", "")
 		if err == nil {
@@ -1800,7 +1811,7 @@ func TestAddRoutine(t *testing.T) {
 func TestUpdateRoutine(t *testing.T) {
 	t.Run("updates all routine fields", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		routine, _ := manager.AddRoutine("T", "Original", 5, "at-or-above", "kg")
 		err := manager.UpdateRoutine(routine.ID, "Updated", 3, 10, "at-or-below", "lbs")
@@ -1829,7 +1840,7 @@ func TestUpdateRoutine(t *testing.T) {
 
 	t.Run("returns error for empty routineId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateRoutine("", "Desc", 1, 5, "at-or-above", "")
 		if err == nil {
@@ -1839,7 +1850,7 @@ func TestUpdateRoutine(t *testing.T) {
 
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.UpdateRoutine("T-R999", "Desc", 1, 5, "at-or-above", "")
 		if err == nil {
@@ -1849,7 +1860,7 @@ func TestUpdateRoutine(t *testing.T) {
 
 	t.Run("returns error for invalid targetType", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		routine, _ := manager.AddRoutine("T", "Test", 5, "at-or-above", "")
 		err := manager.UpdateRoutine(routine.ID, "Test", 1, 5, "invalid", "")
@@ -1862,7 +1873,7 @@ func TestUpdateRoutine(t *testing.T) {
 func TestDeleteRoutine(t *testing.T) {
 	t.Run("deletes routine", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		routine, _ := manager.AddRoutine("T", "To Delete", 5, "at-or-above", "")
 		err := manager.DeleteRoutine(routine.ID)
@@ -1878,7 +1889,7 @@ func TestDeleteRoutine(t *testing.T) {
 
 	t.Run("returns error for empty routineId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteRoutine("")
 		if err == nil {
@@ -1888,7 +1899,7 @@ func TestDeleteRoutine(t *testing.T) {
 
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteRoutine("T-R999")
 		if err == nil {
@@ -1948,7 +1959,7 @@ func TestRoutineIsOnTrack(t *testing.T) {
 func TestCreateTask(t *testing.T) {
 	t.Run("creates task with valid priority Q1", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 		if err != nil {
@@ -1967,7 +1978,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("creates task with valid priority Q2", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Test Task", "T", "important-not-urgent", "", "", "")
 		if err != nil {
@@ -1980,7 +1991,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("creates task with valid priority Q3", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Test Task", "T", "not-important-urgent", "", "", "")
 		if err != nil {
@@ -1993,7 +2004,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("rejects Q4 priority", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateTask("Test Task", "T", "not-important-not-urgent", "", "", "")
 		if err == nil {
@@ -2003,7 +2014,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("rejects invalid priority", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateTask("Test Task", "T", "invalid-priority", "", "", "")
 		if err == nil {
@@ -2013,7 +2024,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("creates task with description", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Task With Desc", "T", "important-urgent", "A detailed description", "", "")
 		if err != nil {
@@ -2026,7 +2037,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("creates task with tags", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Task With Tags", "T", "important-urgent", "", "frontend, backend , api", "")
 		if err != nil {
@@ -2045,7 +2056,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("ignores trailing comma and whitespace in tags", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Task Trailing", "T", "important-urgent", "", "frontend, backend, ", "")
 		if err != nil {
@@ -2064,7 +2075,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("creates task with promotionDate", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, err := manager.CreateTask("Task With Promo", "T", "important-not-urgent", "", "", "2026-02-28")
 		if err != nil {
@@ -2077,7 +2088,7 @@ func TestCreateTask(t *testing.T) {
 
 	t.Run("rejects invalid promotionDate format", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.CreateTask("Task", "T", "important-urgent", "", "", "31/01/2026")
 		if err == nil {
@@ -2089,7 +2100,7 @@ func TestCreateTask(t *testing.T) {
 func TestMoveTask(t *testing.T) {
 	t.Run("moves task to valid status", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Create a task first
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
@@ -2108,7 +2119,7 @@ func TestMoveTask(t *testing.T) {
 
 	t.Run("rejects invalid status", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, err := manager.MoveTask("task-001", "invalid-status", nil)
 		if err == nil {
@@ -2120,7 +2131,7 @@ func TestMoveTask(t *testing.T) {
 func TestGetTasks(t *testing.T) {
 	t.Run("returns all tasks with status", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Create tasks
 		_, _ = manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
@@ -2146,7 +2157,7 @@ func TestGetTasks(t *testing.T) {
 func TestDeleteTask(t *testing.T) {
 	t.Run("deletes existing task", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Create a task
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
@@ -2168,7 +2179,7 @@ func TestDeleteTask(t *testing.T) {
 
 	t.Run("returns error for empty ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.DeleteTask("")
 		if err == nil {
@@ -2184,7 +2195,7 @@ func TestDeleteTask(t *testing.T) {
 func TestReorderTasks(t *testing.T) {
 	t.Run("persists and returns positions", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		result, err := manager.ReorderTasks(map[string][]string{
 			"doing": {"T-T2", "T-T1"},
@@ -2211,7 +2222,7 @@ func TestReorderTasks(t *testing.T) {
 
 	t.Run("merges with existing zones", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Set up initial order
 		_, _ = manager.ReorderTasks(map[string][]string{
@@ -2234,7 +2245,7 @@ func TestReorderTasks(t *testing.T) {
 func TestGetTasks_OrderedByPersistedOrder(t *testing.T) {
 	t.Run("sorts tasks by persisted order", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Create tasks — they end up in todo with same priority
 		_, _ = manager.CreateTask("First", "T", "important-urgent", "", "", "")
@@ -2254,7 +2265,7 @@ func TestGetTasks_OrderedByPersistedOrder(t *testing.T) {
 
 	t.Run("falls back to CreatedAt for tasks not in order map", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// No task order set — should still return tasks
 		_, _ = manager.CreateTask("Task", "T", "important-urgent", "", "", "")
@@ -2272,7 +2283,7 @@ func TestGetTasks_OrderedByPersistedOrder(t *testing.T) {
 func TestGetTasks_OrderWithInterleavedZones(t *testing.T) {
 	t.Run("correctly sorts within zone when tasks from different zones are interleaved", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		// Interleave two important-urgent tasks with two important-not-urgent tasks
 		// within the same "todo" status. The merge sort will split [A,B,C,D] into
@@ -2314,7 +2325,7 @@ func TestGetTasks_OrderWithInterleavedZones(t *testing.T) {
 func TestMoveTask_UpdatesOrder(t *testing.T) {
 	t.Run("moves task in order map on cross-column move", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test", "T", "important-urgent", "", "", "")
 
@@ -2348,7 +2359,7 @@ func TestMoveTask_UpdatesOrder(t *testing.T) {
 func TestDeleteTask_CleansUpOrder(t *testing.T) {
 	t.Run("removes task from order on delete", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test", "T", "important-urgent", "", "", "")
 
@@ -2373,7 +2384,7 @@ func TestDeleteTask_CleansUpOrder(t *testing.T) {
 func TestCreateTask_AppendsToOrder(t *testing.T) {
 	t.Run("new task is appended to its drop zone", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test", "T", "important-urgent", "", "", "")
 
@@ -2400,7 +2411,7 @@ func TestCreateTask_AppendsToOrder(t *testing.T) {
 func TestGetBoardConfiguration(t *testing.T) {
 	t.Run("returns default board configuration", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		config, err := manager.GetBoardConfiguration()
 		if err != nil {
@@ -2437,7 +2448,7 @@ func TestGetBoardConfiguration(t *testing.T) {
 func TestUnit_CreateTask_BatchSequential(t *testing.T) {
 	t.Run("creates 5 tasks sequentially with mixed priorities", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, err := NewPlanningManager(mockAccess)
+		manager, err := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 		if err != nil {
 			t.Fatalf("expected no error creating manager, got %v", err)
 		}
@@ -2515,7 +2526,7 @@ func TestUnit_CreateTask_BatchSequential(t *testing.T) {
 func TestArchiveTask(t *testing.T) {
 	t.Run("archives a done task", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 		_, _ = manager.MoveTask(task.ID, "done", nil)
@@ -2541,7 +2552,7 @@ func TestArchiveTask(t *testing.T) {
 
 	t.Run("rejects non-done task", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 
@@ -2553,7 +2564,7 @@ func TestArchiveTask(t *testing.T) {
 
 	t.Run("returns error for empty ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.ArchiveTask("")
 		if err == nil {
@@ -2565,7 +2576,7 @@ func TestArchiveTask(t *testing.T) {
 func TestArchiveAllDoneTasks(t *testing.T) {
 	t.Run("archives all done tasks", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 		t2, _ := manager.CreateTask("Task 2", "T", "important-not-urgent", "", "", "")
@@ -2603,7 +2614,7 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 
 	t.Run("no-op when no done tasks", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		_, _ = manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 
@@ -2622,7 +2633,7 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 func TestRestoreTask(t *testing.T) {
 	t.Run("restores archived task to done", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 		_, _ = manager.MoveTask(task.ID, "done", nil)
@@ -2647,7 +2658,7 @@ func TestRestoreTask(t *testing.T) {
 
 	t.Run("restores task into task_order", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 		_, _ = manager.MoveTask(task.ID, "done", nil)
@@ -2686,7 +2697,7 @@ func TestRestoreTask(t *testing.T) {
 
 	t.Run("rejects non-archived task", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 
@@ -2698,7 +2709,7 @@ func TestRestoreTask(t *testing.T) {
 
 	t.Run("returns error for empty ID", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.RestoreTask("")
 		if err == nil {
@@ -2709,7 +2720,7 @@ func TestRestoreTask(t *testing.T) {
 
 func TestGetTasks_IncludesArchived(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 	_, _ = manager.CreateTask("Task 2", "T", "important-not-urgent", "", "", "")
@@ -2740,7 +2751,7 @@ func TestGetTasks_IncludesArchived(t *testing.T) {
 
 func TestMoveTask_AfterArchiving(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Create a task, move to done, then archive it
 	task1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
@@ -2772,7 +2783,7 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 
 func TestUnit_AddColumn(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	config, err := manager.AddColumn("In Review", "doing")
 	if err != nil {
@@ -2794,7 +2805,7 @@ func TestUnit_AddColumn(t *testing.T) {
 
 func TestUnit_AddColumn_DuplicateSlug(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.AddColumn("Doing", "todo")
 	if err == nil {
@@ -2804,7 +2815,7 @@ func TestUnit_AddColumn_DuplicateSlug(t *testing.T) {
 
 func TestUnit_AddColumn_ReservedSlug(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.AddColumn("Archived", "doing")
 	if err == nil {
@@ -2814,7 +2825,7 @@ func TestUnit_AddColumn_ReservedSlug(t *testing.T) {
 
 func TestUnit_AddColumn_AfterDone(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.AddColumn("After Done", "done")
 	if err == nil {
@@ -2824,7 +2835,7 @@ func TestUnit_AddColumn_AfterDone(t *testing.T) {
 
 func TestUnit_RemoveColumn(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// First add a column
 	_, err := manager.AddColumn("Review", "doing")
@@ -2844,7 +2855,7 @@ func TestUnit_RemoveColumn(t *testing.T) {
 
 func TestUnit_RemoveColumn_NonEmpty(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Add a column and put a task in it
 	_, err := manager.AddColumn("Review", "doing")
@@ -2861,7 +2872,7 @@ func TestUnit_RemoveColumn_NonEmpty(t *testing.T) {
 
 func TestUnit_RemoveColumn_TodoType(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.RemoveColumn("todo")
 	if err == nil {
@@ -2871,7 +2882,7 @@ func TestUnit_RemoveColumn_TodoType(t *testing.T) {
 
 func TestUnit_RemoveColumn_DoneType(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.RemoveColumn("done")
 	if err == nil {
@@ -2881,7 +2892,7 @@ func TestUnit_RemoveColumn_DoneType(t *testing.T) {
 
 func TestUnit_RenameColumn(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	config, err := manager.RenameColumn("doing", "In Progress")
 	if err != nil {
@@ -2902,7 +2913,7 @@ func TestUnit_RenameColumn(t *testing.T) {
 
 func TestUnit_RenameColumn_TitleOnlyChange(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Rename "DOING" to "Doing" (same slug, different title)
 	config, err := manager.RenameColumn("doing", "Doing")
@@ -2923,7 +2934,7 @@ func TestUnit_RenameColumn_TitleOnlyChange(t *testing.T) {
 
 func TestUnit_RenameColumn_DuplicateSlug(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.RenameColumn("doing", "Todo")
 	if err == nil {
@@ -2933,7 +2944,7 @@ func TestUnit_RenameColumn_DuplicateSlug(t *testing.T) {
 
 func TestUnit_ReorderColumns(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Add two doing columns
 	_, _ = manager.AddColumn("Review", "doing")
@@ -2955,7 +2966,7 @@ func TestUnit_ReorderColumns(t *testing.T) {
 
 func TestUnit_ReorderColumns_TodoNotFirst(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.ReorderColumns([]string{"doing", "todo", "done"})
 	if err == nil {
@@ -2965,7 +2976,7 @@ func TestUnit_ReorderColumns_TodoNotFirst(t *testing.T) {
 
 func TestUnit_ReorderColumns_DoneNotLast(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.ReorderColumns([]string{"todo", "done", "doing"})
 	if err == nil {
@@ -2975,7 +2986,7 @@ func TestUnit_ReorderColumns_DoneNotLast(t *testing.T) {
 
 func TestUnit_MoveTask_CustomColumn(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Add custom column
 	_, _ = manager.AddColumn("Review", "doing")
@@ -2998,7 +3009,7 @@ func TestUnit_MoveTask_CustomColumn(t *testing.T) {
 
 func TestUnit_MoveTask_InvalidColumn(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	_, err := manager.MoveTask("T-T1", "nonexistent", nil)
 	if err == nil {
@@ -3008,7 +3019,7 @@ func TestUnit_MoveTask_InvalidColumn(t *testing.T) {
 
 func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Create 3 tasks in todo with priority "important-urgent" (they'll be in I&U zone)
 	task1, err := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
@@ -3095,7 +3106,7 @@ func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
 
 func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Create tasks in I&U zone (todo column, important-urgent priority)
 	task1, err := manager.CreateTask("IU Task 1", "T", "important-urgent", "", "", "")
@@ -3185,7 +3196,7 @@ func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
 	}
 
 	// NewPlanningManager calls validateTaskOrder
-	manager, err := NewPlanningManager(mockAccess)
+	manager, err := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 	if err != nil {
 		t.Fatalf("NewPlanningManager failed: %v", err)
 	}
@@ -3219,7 +3230,7 @@ func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
 func TestGetAllThemeProgress(t *testing.T) {
 	t.Run("single KR progress", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100)
@@ -3243,7 +3254,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("multiple KRs average", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 100)
@@ -3263,7 +3274,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("untracked KR excluded", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR tracked", 0, 100)
@@ -3282,7 +3293,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("completed KR excluded", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100)
@@ -3303,7 +3314,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("archived KR excluded", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR active", 0, 100)
@@ -3325,7 +3336,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("nested objective progress rollup", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		parent, _ := manager.CreateObjective("T", "Parent")
 		child, _ := manager.CreateObjective(parent.ID, "Child")
@@ -3358,7 +3369,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("theme-level progress averages top-level objectives", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj1, _ := manager.CreateObjective("T", "Obj1")
 		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100)
@@ -3380,7 +3391,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("empty theme returns -1 progress", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		progress, err := manager.GetAllThemeProgress()
 		if err != nil {
@@ -3396,7 +3407,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("objective with no tracked KRs returns -1", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		_, _ = manager.CreateKeyResult(obj.ID, "Untracked KR", 0, 0)
@@ -3423,7 +3434,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("completed objective excluded from theme progress", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj1, _ := manager.CreateObjective("T", "Active Obj")
 		kr1, _ := manager.CreateKeyResult(obj1.ID, "KR1", 0, 100)
@@ -3447,7 +3458,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("binary KR progress", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr, _ := manager.CreateKeyResult(obj.ID, "Binary KR", 0, 1)
@@ -3468,7 +3479,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 
 	t.Run("KR progress clamped to 0-100", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Obj1")
 		kr, _ := manager.CreateKeyResult(obj.ID, "Over-achieved KR", 0, 10)
@@ -3488,7 +3499,7 @@ func TestGetAllThemeProgress(t *testing.T) {
 func TestPersonalVision(t *testing.T) {
 	t.Run("returns empty vision when file does not exist", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		vision, err := manager.GetPersonalVision()
 		if err != nil {
@@ -3504,7 +3515,7 @@ func TestPersonalVision(t *testing.T) {
 
 	t.Run("save and load round-trip", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.SavePersonalVision("To live well", "Be the best version of myself")
 		if err != nil {
@@ -3530,7 +3541,7 @@ func TestPersonalVision(t *testing.T) {
 func TestCloseObjective(t *testing.T) {
 	t.Run("closes objective and sets all fields correctly", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
@@ -3569,7 +3580,7 @@ func TestCloseObjective(t *testing.T) {
 
 	t.Run("does not close already completed KRs again", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
@@ -3586,7 +3597,7 @@ func TestCloseObjective(t *testing.T) {
 
 	t.Run("fails on non-active objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		_ = manager.CloseObjective(obj.ID, "achieved", "")
@@ -3599,7 +3610,7 @@ func TestCloseObjective(t *testing.T) {
 
 	t.Run("fails with invalid closing status", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 
@@ -3611,7 +3622,7 @@ func TestCloseObjective(t *testing.T) {
 
 	t.Run("fails with empty objectiveId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.CloseObjective("", "achieved", "")
 		if err == nil {
@@ -3621,7 +3632,7 @@ func TestCloseObjective(t *testing.T) {
 
 	t.Run("fails for non-existent objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.CloseObjective("NONEXISTENT", "achieved", "")
 		if err == nil {
@@ -3631,7 +3642,7 @@ func TestCloseObjective(t *testing.T) {
 
 	t.Run("closes with empty notes", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 
@@ -3651,7 +3662,7 @@ func TestCloseObjective(t *testing.T) {
 func TestReopenObjective(t *testing.T) {
 	t.Run("reopens objective and clears all closing fields", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
@@ -3692,7 +3703,7 @@ func TestReopenObjective(t *testing.T) {
 
 	t.Run("fails on active objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 
@@ -3704,7 +3715,7 @@ func TestReopenObjective(t *testing.T) {
 
 	t.Run("does not reopen archived KRs", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 		kr1, _ := manager.CreateKeyResult(obj.ID, "KR1", 0, 10)
@@ -3734,7 +3745,7 @@ func TestReopenObjective(t *testing.T) {
 
 	t.Run("fails with empty objectiveId", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.ReopenObjective("")
 		if err == nil {
@@ -3744,7 +3755,7 @@ func TestReopenObjective(t *testing.T) {
 
 	t.Run("fails for non-existent objective", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		err := manager.ReopenObjective("NONEXISTENT")
 		if err == nil {
@@ -3756,7 +3767,7 @@ func TestReopenObjective(t *testing.T) {
 func TestBackwardCompatClosingStatus(t *testing.T) {
 	t.Run("existing completed status without closing fields works", func(t *testing.T) {
 		mockAccess := newMockPlanAccess()
-		manager, _ := NewPlanningManager(mockAccess)
+		manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 		obj, _ := manager.CreateObjective("T", "Objective")
 
@@ -3787,7 +3798,7 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 
 func TestUnit_UpdateTaskPriority_MovesZone(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, err := NewPlanningManager(mockAccess)
+	manager, err := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 	if err != nil {
 		t.Fatalf("expected no error creating manager, got %v", err)
 	}
@@ -3824,7 +3835,7 @@ func TestUnit_UpdateTaskPriority_MovesZone(t *testing.T) {
 
 func TestUnit_UpdateTaskPriority_NoZoneChangeForNonTodo(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Create task, move to doing
 	task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
@@ -3842,7 +3853,7 @@ func TestUnit_UpdateTaskPriority_NoZoneChangeForNonTodo(t *testing.T) {
 
 func TestUnit_UpdateTaskNoPriorityChange_NoOrderUpdate(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 
@@ -3863,7 +3874,7 @@ func TestUnit_UpdateTaskNoPriorityChange_NoOrderUpdate(t *testing.T) {
 
 func TestUnit_ProcessPriorityPromotions_MovesZone(t *testing.T) {
 	mockAccess := newMockPlanAccess()
-	manager, _ := NewPlanningManager(mockAccess)
+	manager, _ := NewPlanningManager(mockAccess, &mockUIStateAccess{})
 
 	// Create task with promotion date in the past
 	task, err := manager.CreateTask("Promotable Task", "T", "important-not-urgent", "", "", "2020-01-01")

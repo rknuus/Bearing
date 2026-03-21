@@ -1,5 +1,10 @@
 # 09 — NavigationContext and TaskDrafts Are Pass-Through Toll Booths
 
+> **Status: RESOLVED** — 2026-03-21
+> New `UIStateAccess` RA component at `internal/access/ui_state_access.go` owns NavigationContext and TaskDrafts persistence.
+> Manager stays in the call path (closed architecture — gateway calls only the layer immediately underneath).
+> Fixed lossy DTO conversion: 7 fields (`FilterThemeIDs`, `TodayFocusActive`, `TagFocusActive`, `CollapsedSections`, `CollapsedColumns`, `CalendarDayEditorDate`, `CalendarDayEditorExpandedIds`) were silently dropped; now all 17 fields are mapped through both Manager and gateway layers.
+
 ## Finding
 
 `LoadNavigationContext`, `SaveNavigationContext`, `LoadTaskDrafts`, `SaveTaskDrafts` are pass-through operations in the Manager — no orchestration, no validation, no rule evaluation. The Manager acts as a proxy adding zero value.

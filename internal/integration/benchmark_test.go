@@ -48,7 +48,8 @@ func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access
 		b.Fatalf("Failed to create PlanAccess: %v", err)
 	}
 
-	manager, err := managers.NewPlanningManager(planAccess)
+	uiStateAccess := access.NewUIStateAccess(dataDir)
+	manager, err := managers.NewPlanningManager(planAccess, uiStateAccess)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)

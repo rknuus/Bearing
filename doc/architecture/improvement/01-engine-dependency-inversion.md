@@ -1,5 +1,8 @@
 # 01 — RuleEngine Dependency Inversion Violation
 
+> **Status: RESOLVED** — Commit `91382a4` (2026-03-20)
+> RuleEngine now defines its own `TaskData` DTO in `internal/engines/rule_engine/models.go`. The `access` import has been removed from the engines package entirely. The Manager converts `access.Task` → `rule_engine.TaskData` before calling the Engine.
+
 ## Finding
 
 The RuleEngine (Engine layer) directly imports and depends on `access.Task` (Resource Access layer). Engines sit above Resource Access but below Managers. An Engine must never reference RA types — it should define its own input contract.

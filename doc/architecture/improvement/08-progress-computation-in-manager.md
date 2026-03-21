@@ -1,5 +1,8 @@
 # 08 — Progress Computation Belongs in an Engine
 
+> **Status: RESOLVED** — Commit `a03a2a6` (2026-03-20)
+> New `ProgressEngine` at `internal/engines/progress_engine/` with own DTOs (`ThemeData`, `ObjectiveData`, `KeyResultData` → `ThemeProgress`, `ObjectiveProgress`). Manager delegates via `IProgressEngine.ComputeAllThemeProgress()`. Engine is stateless and independently testable.
+
 ## Finding
 
 `computeKRProgress()`, `computeObjectiveProgress()`, and `GetAllThemeProgress()` implement recursive progress rollup calculations directly in the Manager. Progress computation is a stateless calculation over a dataset — exactly what Engines are for.

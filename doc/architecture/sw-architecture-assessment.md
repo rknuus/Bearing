@@ -116,10 +116,45 @@ Every single save operation creates a git commit. Updating a key result's `curre
 
 ---
 
+## Resolution Progress
+
+> Last updated: 2026-03-21
+
+### Resolved
+
+| # | Finding | Commit | What changed |
+|---|---------|--------|-------------|
+| 01 | RuleEngine dependency inversion | `91382a4` | Engine defines own `TaskData` DTO; no `access` import in engines |
+| 02 | Shared DTOs across layers | `942fef8` | Manager defines own types; `IPlanningManager` no longer exposes `access.*` |
+| 03 | Misplaced business logic (Phase 1+2) | `a03a2a6` | Validators, `Slugify`, `SuggestAbbreviation`, `DefaultBoardConfiguration` moved to correct layers; `ProgressEngine` created |
+| 08 | Progress computation in Manager | `a03a2a6` | New `ProgressEngine` at `internal/engines/progress_engine/` |
+| 09 | Pass-through toll booths | 2026-03-21 | New `UIStateAccess` RA; Manager stays in path (closed architecture); fixed lossy DTO conversion (7 fields were silently dropped) |
+
+### Remaining — Prioritized
+
+| Priority | # | Finding | Severity | Urgency | Next action |
+|----------|---|---------|----------|---------|-------------|
+| 1 | 04 | God Manager | High | Soon | Split `PlanningManager` into OKRManager, TaskBoardManager, CalendarManager |
+| 2 | 05 | God Resource Access | High | Soon | Split `PlanAccess` into ThemeAccess, TaskAccess, CalendarAccess (in tandem with 04) |
+| 3 | 06 | God Gateway | High | Soon | Extract startup orchestration and `GetLocale`; full resolution depends on 04 |
+| 4 | 07 | No subsystem boundaries | Medium | Soon | Emerges naturally from 04+05; formalize in topology |
+| 5 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
+| 6 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
+| — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager during 04 decomposition |
+
+### Recommended execution order
+
+1. **Findings 04 + 05** together — the central refactoring; split Manager and RA in tandem
+2. **Finding 06** (gateway) — simplifies naturally after Manager decomposition
+3. **Finding 07** (subsystems) — formalize the boundaries that now exist
+4. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
+
+---
+
 ## Summary
 
-The codebase has sound instincts — interface-driven design, downward-only dependencies (with the Engine-imports-Access exception), atomic transactions, and state verification. These reflect genuine architectural thinking.
+The codebase has sound instincts — interface-driven design, downward-only dependencies, atomic transactions, and state verification. These reflect genuine architectural thinking.
 
-But the formal architecture model is entirely absent. The code has grown organically around a single Manager and a single RA that each do everything. The result is a system that looks layered but has no decomposition by volatility. One Manager knows about OKRs, kanban boards, calendars, visions, routines, progress, and UI state. One RA reads and writes seven different file types. The Engine layer exists but violates its own contract by importing access-layer types.
+The most critical layering violations have been resolved: the Engine no longer imports access-layer types (Finding 01), the Manager defines its own DTOs instead of leaking access types (Finding 02), business logic has been moved to the correct layers (Finding 03), and progress computation now lives in a dedicated `ProgressEngine` (Finding 08).
 
-The gap between the code's quality and the architecture's formality is the central finding. The code is better than most, but it is not Method architecture — it is well-organized feature code masquerading as architecture because it has layers and interfaces. Filling in `bearing.method`, decomposing the God Manager and God RA into proper subsystems, and fixing the Engine dependency inversion would transform this from "code with good structure" into "architecture with good code."
+The remaining work is structural decomposition. The God Manager (38 methods, 13+ concerns) and God Resource Access (30+ methods, 8 resources) are the central problems. Splitting them into concern-aligned components — OKRManager, TaskBoardManager, CalendarManager with corresponding RAs — will establish proper subsystem boundaries and complete the transition from "well-organized feature code" to "architecture with good code."

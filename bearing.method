@@ -217,6 +217,12 @@ components:
         generation), ensureThemeIDs() (ID assignment), DefaultBoardConfiguration() (business defaults),
         IsValidPriority/IsValidOKRStatus (validation), Slugify() (utility function), and ensureDirectoryStructure()
         (infrastructure concern)."
+    - id: "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
+      name: "UIStateAccess"
+      description: "Resource Access component (IUIStateAccess) for persisting transient UI state across sessions. Handles
+        navigation context (current view, filter state, collapsed sections, today focus flag) and task drafts (staged
+        tasks not yet committed). Writes plain JSON files without git versioning. Extracted from PlanAccess to separate
+        UI state persistence from business data persistence."
   resources: []
   utilities:
     - id: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
@@ -441,7 +447,7 @@ use_cases:
               to: "PlanningManager"
               note: "SaveNavigationContext(ctx)"
             - from: "PlanningManager"
-              to: "PlanAccess"
+              to: "UIStateAccess"
               note: "SaveNavigationContext(ctx) — write without git commit"
         - name: "Calendar Copy-Paste (Multi-Cell)"
           steps:
@@ -546,7 +552,7 @@ use_cases:
               to: "PlanningManager"
               note: "LoadTaskDrafts()"
             - from: "PlanningManager"
-              to: "PlanAccess"
+              to: "UIStateAccess"
               note: "LoadTaskDrafts() — reads tasks/drafts.json"
             - from: "BearingClient"
               to: "App"
@@ -570,7 +576,7 @@ use_cases:
               to: "PlanningManager"
               note: "SaveTaskDrafts(json.RawMessage)"
             - from: "PlanningManager"
-              to: "PlanAccess"
+              to: "UIStateAccess"
               note: "SaveTaskDrafts() — write without git commit"
     - id: "uc-6"
       name: "Compute Progress"
@@ -604,6 +610,9 @@ use_cases:
             - from: "App"
               to: "PlanAccess"
               note: "NewPlanAccess(repoPath, repo) — ensures directory structure (themes/, calendar/, tasks/...)"
+            - from: "App"
+              to: "UIStateAccess"
+              note: "NewUIStateAccess(repoPath) — constructs UI state persistence"
             - from: "App"
               to: "PlanningManager"
               note: "NewPlanningManager(planAccess) — creates RuleEngine, validates task order"
@@ -670,34 +679,6 @@ use_cases:
             - from: "PlanAccess"
               to: "Repository"
               note: "Begin() -> Stage(vision.json) -> Commit('Update personal vision')"
-    - id: "uc-10"
-      name: "Persist UI State"
-      description: "System persists transient UI state across sessions: navigation context (current view, filter state, today
-        focus flag) and task drafts (staged tasks). Not git-versioned. Manager is a pass-through with no business logic.
-        Assessment notes these are toll-booth operations. Derived from diagram 09."
-      sequences:
-        - name: "Save Navigation Context"
-          steps:
-            - from: "BearingClient"
-              to: "App"
-              note: "SaveNavigationContext(ctx)"
-            - from: "App"
-              to: "PlanningManager"
-              note: "SaveNavigationContext(ctx) — pass-through, no logic"
-            - from: "PlanningManager"
-              to: "PlanAccess"
-              note: "SaveNavigationContext(ctx) — writes JSON, no git commit"
-        - name: "Save Task Drafts"
-          steps:
-            - from: "BearingClient"
-              to: "App"
-              note: "SaveTaskDrafts(data)"
-            - from: "App"
-              to: "PlanningManager"
-              note: "SaveTaskDrafts(json.RawMessage) — pass-through, no logic"
-            - from: "PlanningManager"
-              to: "PlanAccess"
-              note: "SaveTaskDrafts(json.RawMessage) — writes file, no git commit"
     - id: "uc-11"
       name: "Reorder Tasks"
       description: "User reorders tasks within drop zones via drag-and-drop. Client sends position updates which the Manager
@@ -720,3 +701,54 @@ use_cases:
             - from: "PlanAccess"
               to: "Repository"
               note: "Begin() -> Stage() -> Commit()"
+    - id: "uc-10"
+      name: "Persist UI State"
+      description: "System persists transient UI state across sessions: navigation context (current view, filter state,
+        collapsed sections, today focus flag, calendar editor state) and task drafts (staged tasks). Not git-versioned.
+        Manager routes to UIStateAccess with non-lossy DTO conversion, preserving closed architecture layering. Derived
+        from diagram 09."
+      sequences:
+        - name: "Save Navigation Context"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveNavigationContext(ctx)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveNavigationContext(ctx) — DTO conversion, pass-through to RA"
+            - from: "PlanningManager"
+              to: "UIStateAccess"
+              note: "SaveNavigationContext(ctx) — writes JSON, no git commit"
+        - name: "Load Navigation Context"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "LoadNavigationContext()"
+            - from: "App"
+              to: "PlanningManager"
+              note: "LoadNavigationContext() — returns default on error/nil"
+            - from: "PlanningManager"
+              to: "UIStateAccess"
+              note: "LoadNavigationContext() — reads navigation_context.json"
+        - name: "Save Task Drafts"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "SaveTaskDrafts(data)"
+            - from: "App"
+              to: "PlanningManager"
+              note: "SaveTaskDrafts(json.RawMessage) — pass-through to RA"
+            - from: "PlanningManager"
+              to: "UIStateAccess"
+              note: "SaveTaskDrafts(json.RawMessage) — writes file, no git commit"
+        - name: "Load Task Drafts"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "LoadTaskDrafts()"
+            - from: "App"
+              to: "PlanningManager"
+              note: "LoadTaskDrafts() — pass-through to RA"
+            - from: "PlanningManager"
+              to: "UIStateAccess"
+              note: "LoadTaskDrafts() — reads tasks/drafts.json"

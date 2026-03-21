@@ -275,15 +275,23 @@ type PersonalVision struct {
 
 // NavigationContext represents the user's navigation state (for Wails binding)
 type NavigationContext struct {
-	CurrentView       string   `json:"currentView"`
-	CurrentItem       string   `json:"currentItem"`
-	FilterThemeID     string   `json:"filterThemeId"`
-	LastAccessed      string   `json:"lastAccessed"`
-	ShowCompleted     bool     `json:"showCompleted,omitempty"`
-	ShowArchived      bool     `json:"showArchived,omitempty"`
-	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
-	ExpandedOkrIds    []string `json:"expandedOkrIds,omitempty"`
-	VisionCollapsed   *bool    `json:"visionCollapsed,omitempty"`
+	CurrentView                  string   `json:"currentView"`
+	CurrentItem                  string   `json:"currentItem"`
+	FilterThemeID                string   `json:"filterThemeId"`
+	FilterThemeIDs               []string `json:"filterThemeIds,omitempty"`
+	LastAccessed                 string   `json:"lastAccessed"`
+	ShowCompleted                bool     `json:"showCompleted,omitempty"`
+	ShowArchived                 bool     `json:"showArchived,omitempty"`
+	ShowArchivedTasks            bool     `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds               []string `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs                 []string `json:"filterTagIds,omitempty"`
+	TodayFocusActive             *bool    `json:"todayFocusActive,omitempty"`
+	TagFocusActive               *bool    `json:"tagFocusActive,omitempty"`
+	CollapsedSections            []string `json:"collapsedSections,omitempty"`
+	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
+	CalendarDayEditorDate        string   `json:"calendarDayEditorDate,omitempty"`
+	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
+	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }
 
 // convertObjective recursively converts a managers.Objective to a Wails Objective
@@ -1156,15 +1164,23 @@ func (a *App) LoadNavigationContext() (*NavigationContext, error) {
 	}
 
 	return &NavigationContext{
-		CurrentView:       ctx.CurrentView,
-		CurrentItem:       ctx.CurrentItem,
-		FilterThemeID:     ctx.FilterThemeID,
-		LastAccessed:      ctx.LastAccessed,
-		ShowCompleted:     ctx.ShowCompleted,
-		ShowArchived:      ctx.ShowArchived,
-		ShowArchivedTasks: ctx.ShowArchivedTasks,
-		ExpandedOkrIds:    ctx.ExpandedOkrIds,
-		VisionCollapsed:   ctx.VisionCollapsed,
+		CurrentView:                  ctx.CurrentView,
+		CurrentItem:                  ctx.CurrentItem,
+		FilterThemeID:                ctx.FilterThemeID,
+		FilterThemeIDs:               ctx.FilterThemeIDs,
+		LastAccessed:                 ctx.LastAccessed,
+		ShowCompleted:                ctx.ShowCompleted,
+		ShowArchived:                 ctx.ShowArchived,
+		ShowArchivedTasks:            ctx.ShowArchivedTasks,
+		ExpandedOkrIds:               ctx.ExpandedOkrIds,
+		FilterTagIDs:                 ctx.FilterTagIDs,
+		TodayFocusActive:             ctx.TodayFocusActive,
+		TagFocusActive:               ctx.TagFocusActive,
+		CollapsedSections:            ctx.CollapsedSections,
+		CollapsedColumns:             ctx.CollapsedColumns,
+		CalendarDayEditorDate:        ctx.CalendarDayEditorDate,
+		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
+		VisionCollapsed:              ctx.VisionCollapsed,
 	}, nil
 }
 
@@ -1176,15 +1192,23 @@ func (a *App) SaveNavigationContext(ctx NavigationContext) error {
 	}
 
 	err := a.planningManager.SaveNavigationContext(managers.NavigationContext{
-		CurrentView:       ctx.CurrentView,
-		CurrentItem:       ctx.CurrentItem,
-		FilterThemeID:     ctx.FilterThemeID,
-		LastAccessed:      ctx.LastAccessed,
-		ShowCompleted:     ctx.ShowCompleted,
-		ShowArchived:      ctx.ShowArchived,
-		ShowArchivedTasks: ctx.ShowArchivedTasks,
-		ExpandedOkrIds:    ctx.ExpandedOkrIds,
-		VisionCollapsed:   ctx.VisionCollapsed,
+		CurrentView:                  ctx.CurrentView,
+		CurrentItem:                  ctx.CurrentItem,
+		FilterThemeID:                ctx.FilterThemeID,
+		FilterThemeIDs:               ctx.FilterThemeIDs,
+		LastAccessed:                 ctx.LastAccessed,
+		ShowCompleted:                ctx.ShowCompleted,
+		ShowArchived:                 ctx.ShowArchived,
+		ShowArchivedTasks:            ctx.ShowArchivedTasks,
+		ExpandedOkrIds:               ctx.ExpandedOkrIds,
+		FilterTagIDs:                 ctx.FilterTagIDs,
+		TodayFocusActive:             ctx.TodayFocusActive,
+		TagFocusActive:               ctx.TagFocusActive,
+		CollapsedSections:            ctx.CollapsedSections,
+		CollapsedColumns:             ctx.CollapsedColumns,
+		CalendarDayEditorDate:        ctx.CalendarDayEditorDate,
+		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
+		VisionCollapsed:              ctx.VisionCollapsed,
 	})
 	if err != nil {
 		slog.Error("SaveNavigationContext failed", "error", err)
