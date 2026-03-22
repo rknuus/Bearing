@@ -133,6 +133,7 @@ Every single save operation creates a git commit. Updating a key result's `curre
 | 09 | Pass-through toll booths | 2026-03-21 | New `UIStateAccess` RA; Manager stays in path (closed architecture); fixed lossy DTO conversion (7 fields were silently dropped) |
 | 06 | God Gateway | 2026-03-21 | Gateway reduced to thin pass-through; `GetLocale()` → utilities; startup → bootstrap; DTOs eliminated; nil-checks removed |
 | 07 | No subsystem boundaries | 2026-03-21 | Topology formalized in `.method`: OKR, TaskBoard, Calendar, CrossCutting subsystems; `ProgressEngine` added to model; `vol-progress-computation` updated |
+| — | IGoalStructure CRUD consolidation | 2026-03-21 | 16 CRUD methods consolidated to 6 behavioral verbs: `GetHierarchy`, `Establish`, `Revise`, `RecordProgress`, `Dismiss`, `SuggestAbbreviation`; `UpdateTheme` backdoor eliminated |
 
 ### Remaining — Prioritized
 
@@ -141,12 +142,10 @@ Every single save operation creates a git commit. Updating a key result's `curre
 | 1 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
 | 2 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
 | — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager to Engine |
-| — | — | IGoalStructure CRUD consolidation | Medium | When convenient | Consolidate 16 CRUD methods into fewer behavioral verbs |
 
 ### Recommended execution order
 
-1. **IGoalStructure consolidation** — reduce CRUD interface to behavioral verbs
-2. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
+1. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
 
 ---
 
@@ -154,6 +153,6 @@ Every single save operation creates a git commit. Updating a key result's `curre
 
 The codebase has sound instincts — interface-driven design, downward-only dependencies, atomic transactions, and state verification. These reflect genuine architectural thinking.
 
-The critical layering violations have been resolved (Findings 01–09). The structural decomposition is complete: `PlanningManager` exposes 7 volatility-driven facet interfaces (`IGoalStructure`, `IGoalLifecycle`, `ITaskExecution`, `IFocusPlanning`, `IVision`, `IProgress`, `IUIState`), workspace configuration is encapsulated by `WorkspaceManager`, and `PlanAccess` has been split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess`, and `UIStateAccess`. The topology formalizes four subsystems (OKR, TaskBoard, Calendar, CrossCutting) in `bearing.method`.
+All critical findings have been resolved (01–09 plus IGoalStructure consolidation). The structural decomposition is complete: `PlanningManager` exposes 7 volatility-driven facet interfaces (`IGoalStructure`, `IGoalLifecycle`, `ITaskExecution`, `IFocusPlanning`, `IVision`, `IProgress`, `IUIState`) with `IGoalStructure` consolidated to 6 behavioral verbs. Workspace configuration is encapsulated by `WorkspaceManager`, and `PlanAccess` has been split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess`, and `UIStateAccess`. The topology formalizes four subsystems (OKR, TaskBoard, Calendar, CrossCutting) in `bearing.method`.
 
-The remaining work is consolidating the `IGoalStructure` facet from 16 CRUD-style methods into fewer behavioral verbs, and ongoing `.method` file maintenance.
+The remaining work is ongoing `.method` file maintenance and opportunistic improvements (excessive git commits, validateTaskOrder remainder).
