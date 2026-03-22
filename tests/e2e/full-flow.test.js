@@ -461,13 +461,13 @@ export async function runTests() {
       const movedTask = readJSON(DATA_DIR, `tasks/doing/${task1Id}.json`)
       if (movedTask.title !== 'E2E Task A') throw new Error('Moved task has wrong title')
 
-      // MoveTask produces 2 commits: one for file move, one for task_order update
-      expectedCommits += 2
+      // MoveTask produces 1 batched commit (file move + task_order update)
+      expectedCommits += 1
       assertCommitCount('after move task to doing')
 
       const log = getGitLog(DATA_DIR)
-      const hasMoveCommit = log.some(m => m.includes('Move task') && m.includes('todo -> doing'))
-      if (!hasMoveCommit) throw new Error('No "Move task ... todo -> doing" commit found')
+      const hasMoveCommit = log.some(m => m.includes('Move task') && m.includes('doing'))
+      if (!hasMoveCommit) throw new Error('No "Move task ... doing" commit found')
 
       reporter.pass(`Task 1 moved to doing: ${task1Id}`)
     } catch (err) {
@@ -485,7 +485,7 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/doing/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/done/${task1Id}.json`)
 
-      expectedCommits += 2
+      expectedCommits += 1
       assertCommitCount('after move task to done')
 
       reporter.pass(`Task 1 moved to done: ${task1Id}`)
@@ -1219,8 +1219,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      // ArchiveTask = 3 commits (file move + task_order removal + archived_order save)
-      expectedCommits += 3
+      // ArchiveTask = 1 batched commit (file move + task_order removal + archived_order save)
+      expectedCommits += 1
       assertCommitCount('after archive task 4u')
 
       // Restore task
@@ -1232,8 +1232,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/done/${task1Id}.json`)
 
-      // RestoreTask = 3 commits (file move + task_order update + archived_order save)
-      expectedCommits += 3
+      // RestoreTask = 1 batched commit (file move + task_order update + archived_order save)
+      expectedCommits += 1
       assertCommitCount('after restore task 4u')
 
       reporter.pass(`Task archived and restored: ${task1Id}`)
@@ -1256,8 +1256,8 @@ export async function runTests() {
       assertFileNotExists(DATA_DIR, `tasks/done/${task1Id}.json`)
       assertFileExists(DATA_DIR, `tasks/archived/${task1Id}.json`)
 
-      // ArchiveTask = 3 commits (file move + task_order removal + archived_order save)
-      expectedCommits += 3
+      // ArchiveTask = 1 batched commit (file move + task_order removal + archived_order save)
+      expectedCommits += 1
       assertCommitCount('after archive task')
 
       reporter.pass(`Task 1 archived: ${task1Id}`)
@@ -1480,7 +1480,7 @@ export async function runTests() {
         await app.MoveTask(taskId, 'e2e-review', null)
       }, colTaskId)
 
-      expectedCommits += 2
+      expectedCommits += 1
       assertFileExists(DATA_DIR, `tasks/e2e-review/${colTaskId}.json`)
 
       // Rename column via UI
@@ -1538,7 +1538,7 @@ export async function runTests() {
           const app = window.go.main.App
           await app.MoveTask(taskId, 'doing', null)
         }, taskToMove.id)
-        expectedCommits += 2
+        expectedCommits += 1
       }
 
       // Delete the now-empty column via UI

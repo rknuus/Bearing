@@ -20,11 +20,15 @@ type ITaskAccess interface {
 	GetTasksByTheme(themeID string) ([]Task, error)
 	GetTasksByStatus(status string) ([]Task, error)
 	SaveTask(task Task) error
+	WriteTask(task Task) error
 	SaveTaskWithOrder(task Task, dropZone string) (*Task, error)
 	UpdateTaskWithOrderMove(task Task, oldZone, newZone string) error
 	MoveTask(taskID, newStatus string) error
+	WriteMoveTask(taskID, newStatus string) ([]string, error)
 	ArchiveTask(taskID string) error
+	WriteArchiveTask(taskID string) ([]string, error)
 	RestoreTask(taskID string) error
+	WriteRestoreTask(taskID string) ([]string, error)
 	DeleteTask(taskID string) error
 	DeleteTaskWithOrder(taskID string) error
 
@@ -281,6 +285,15 @@ func (ta *TaskAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 	return affectedPaths, isNew, nil
 }
 
+// WriteTask writes a task to disk without committing.
+func (ta *TaskAccess) WriteTask(task Task) error {
+	_, _, err := ta.saveTaskFile(&task)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.WriteTask: %w", err)
+	}
+	return nil
+}
+
 // SaveTask saves or updates a task.
 // If the task ID is empty, a new ID will be generated and CreatedAt is set.
 // UpdatedAt is always set to the current time on every save.
@@ -376,87 +389,129 @@ func (ta *TaskAccess) UpdateTaskWithOrderMove(task Task, oldZone, newZone string
 	return nil
 }
 
-// MoveTask moves a task to a new status using git mv.
-// The caller (manager layer) is responsible for validating the target status.
-func (ta *TaskAccess) MoveTask(taskID, newStatus string) error {
-	// Find the task and its current status
+// WriteMoveTask moves a task file to a new status directory without committing.
+// Returns the affected file paths (old + new) for the caller to include in a batch commit.
+func (ta *TaskAccess) WriteMoveTask(taskID, newStatus string) ([]string, error) {
 	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
 	if err != nil {
-		return fmt.Errorf("TaskAccess.MoveTask: %w", err)
+		return nil, fmt.Errorf("TaskAccess.WriteMoveTask: %w", err)
 	}
 	if foundTask == nil {
-		return fmt.Errorf("TaskAccess.MoveTask: task with ID %s not found", taskID)
+		return nil, fmt.Errorf("TaskAccess.WriteMoveTask: task with ID %s not found", taskID)
 	}
-
 	if currentStatus == newStatus {
-		return nil // Already in the desired status
+		return nil, nil
 	}
 
-	// Calculate paths
 	oldPath := ta.taskFilePath(currentStatus, taskID)
 	newPath := ta.taskFilePath(newStatus, taskID)
 
-	// Perform git mv by renaming and staging both old and new paths
 	if err := os.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("TaskAccess.MoveTask: failed to move task file: %w", err)
+		return nil, fmt.Errorf("TaskAccess.WriteMoveTask: failed to move task file: %w", err)
 	}
 
-	// Commit with git - stage both the removal of old and addition of new
-	if err := commitFiles(ta.repo, []string{newPath, oldPath}, fmt.Sprintf("Move task %s: %s -> %s", foundTask.Title, currentStatus, newStatus)); err != nil {
+	return []string{oldPath, newPath}, nil
+}
+
+// MoveTask moves a task to a new status using git mv.
+// The caller (manager layer) is responsible for validating the target status.
+func (ta *TaskAccess) MoveTask(taskID, newStatus string) error {
+	foundTask, currentStatus, _, findErr := ta.findTaskInPlan(taskID)
+	if findErr != nil {
+		return fmt.Errorf("TaskAccess.MoveTask: %w", findErr)
+	}
+	title := taskID
+	oldStatus := ""
+	if foundTask != nil {
+		title = foundTask.Title
+		oldStatus = currentStatus
+	}
+
+	paths, err := ta.WriteMoveTask(taskID, newStatus)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.MoveTask: %w", err)
+	}
+	if paths == nil {
+		return nil
+	}
+
+	if err := commitFiles(ta.repo, paths, fmt.Sprintf("Move task %s: %s -> %s", title, oldStatus, newStatus)); err != nil {
 		return fmt.Errorf("TaskAccess.MoveTask: %w", err)
 	}
 
 	return nil
 }
 
-// ArchiveTask moves a task to the archived directory.
-func (ta *TaskAccess) ArchiveTask(taskID string) error {
-	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
+// WriteArchiveTask moves a task file to the archived directory without committing.
+// Returns the affected file paths (old + new) for the caller to include in a batch commit.
+func (ta *TaskAccess) WriteArchiveTask(taskID string) ([]string, error) {
+	_, currentStatus, _, err := ta.findTaskInPlan(taskID)
 	if err != nil {
-		return fmt.Errorf("TaskAccess.ArchiveTask: %w", err)
-	}
-	if foundTask == nil {
-		return fmt.Errorf("TaskAccess.ArchiveTask: task with ID %s not found", taskID)
+		return nil, fmt.Errorf("TaskAccess.WriteArchiveTask: %w", err)
 	}
 	if currentStatus == string(TaskStatusArchived) {
-		return nil // Already archived
+		return nil, nil
 	}
 
 	oldPath := ta.taskFilePath(currentStatus, taskID)
 	newPath := ta.taskFilePath(string(TaskStatusArchived), taskID)
 
 	if err := os.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("TaskAccess.ArchiveTask: failed to move task file: %w", err)
+		return nil, fmt.Errorf("TaskAccess.WriteArchiveTask: failed to move task file: %w", err)
 	}
 
-	if err := commitFiles(ta.repo, []string{newPath, oldPath}, fmt.Sprintf("Archive task: %s", foundTask.Title)); err != nil {
+	return []string{oldPath, newPath}, nil
+}
+
+// ArchiveTask moves a task to the archived directory.
+func (ta *TaskAccess) ArchiveTask(taskID string) error {
+	paths, err := ta.WriteArchiveTask(taskID)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.ArchiveTask: %w", err)
+	}
+	if paths == nil {
+		return nil
+	}
+
+	if err := commitFiles(ta.repo, paths, fmt.Sprintf("Archive task: %s", taskID)); err != nil {
 		return fmt.Errorf("TaskAccess.ArchiveTask: %w", err)
 	}
 
 	return nil
 }
 
-// RestoreTask moves a task from the archived directory to done.
-func (ta *TaskAccess) RestoreTask(taskID string) error {
-	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
+// WriteRestoreTask moves a task file from the archived directory to done without committing.
+// Returns the affected file paths (old + new) for the caller to include in a batch commit.
+func (ta *TaskAccess) WriteRestoreTask(taskID string) ([]string, error) {
+	_, currentStatus, _, err := ta.findTaskInPlan(taskID)
 	if err != nil {
-		return fmt.Errorf("TaskAccess.RestoreTask: %w", err)
-	}
-	if foundTask == nil {
-		return fmt.Errorf("TaskAccess.RestoreTask: task with ID %s not found", taskID)
+		return nil, fmt.Errorf("TaskAccess.WriteRestoreTask: %w", err)
 	}
 	if currentStatus != string(TaskStatusArchived) {
-		return fmt.Errorf("TaskAccess.RestoreTask: task %s is not archived (status: %s)", taskID, currentStatus)
+		return nil, fmt.Errorf("TaskAccess.WriteRestoreTask: task %s is not archived (status: %s)", taskID, currentStatus)
 	}
 
 	oldPath := ta.taskFilePath(string(TaskStatusArchived), taskID)
 	newPath := ta.taskFilePath(string(TaskStatusDone), taskID)
 
 	if err := os.Rename(oldPath, newPath); err != nil {
-		return fmt.Errorf("TaskAccess.RestoreTask: failed to move task file: %w", err)
+		return nil, fmt.Errorf("TaskAccess.WriteRestoreTask: failed to move task file: %w", err)
 	}
 
-	if err := commitFiles(ta.repo, []string{newPath, oldPath}, fmt.Sprintf("Restore task: %s", foundTask.Title)); err != nil {
+	return []string{oldPath, newPath}, nil
+}
+
+// RestoreTask moves a task from the archived directory to done.
+func (ta *TaskAccess) RestoreTask(taskID string) error {
+	paths, err := ta.WriteRestoreTask(taskID)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.RestoreTask: %w", err)
+	}
+	if paths == nil {
+		return nil
+	}
+
+	if err := commitFiles(ta.repo, paths, fmt.Sprintf("Restore task: %s", taskID)); err != nil {
 		return fmt.Errorf("TaskAccess.RestoreTask: %w", err)
 	}
 

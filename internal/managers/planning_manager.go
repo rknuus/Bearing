@@ -1494,8 +1494,8 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		}, nil
 	}
 
-	// Perform the move
-	if err := m.taskAccess.MoveTask(taskId, newStatus); err != nil {
+	// Perform the move (write-only, no commit yet)
+	if _, err := m.taskAccess.WriteMoveTask(taskId, newStatus); err != nil {
 		return nil, fmt.Errorf("failed to move task: %w", err)
 	}
 
@@ -1518,11 +1518,15 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		targetZone := dropZoneForTask(newStatus, movingTask.Priority, moveTodoSlug)
 		orderMap[targetZone] = append(orderMap[targetZone], taskId)
 	}
-	if err := m.taskAccess.SaveTaskOrder(orderMap); err != nil {
+	if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
 		m.taskOrderMu.Unlock()
-		return nil, fmt.Errorf("failed to save task order: %w", err)
+		return nil, fmt.Errorf("failed to write task order: %w", err)
 	}
 	m.taskOrderMu.Unlock()
+
+	if err := m.taskAccess.CommitAll(fmt.Sprintf("Move task '%s' to %s", movingTask.Title, newStatus)); err != nil {
+		return nil, fmt.Errorf("failed to commit move: %w", err)
+	}
 
 	return &MoveTaskResult{Success: true, Positions: orderMap}, nil
 }
@@ -1602,6 +1606,14 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	config, _ := m.getAccessBoardConfig()
 	todoSlug := todoSlugFromConfig(config)
 
+	m.taskOrderMu.Lock()
+	orderMap, orderErr := m.taskAccess.LoadTaskOrder()
+	if orderErr != nil {
+		m.taskOrderMu.Unlock()
+		return nil, fmt.Errorf("failed to load task order: %w", orderErr)
+	}
+	orderChanged := false
+
 	for _, t := range allTasks {
 		if t.PromotionDate == "" {
 			continue
@@ -1620,20 +1632,25 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		updatedTask.PromotionDate = "" // Clear after promotion
 
 		accessTask := toAccessTask(updatedTask)
+		if err := m.taskAccess.WriteTask(accessTask); err != nil {
+			m.taskOrderMu.Unlock()
+			return nil, fmt.Errorf("failed to write promoted task %s: %w", t.ID, err)
+		}
+
 		oldZone := dropZoneForTask(t.Status, oldPriority, todoSlug)
 		newZone := dropZoneForTask(t.Status, string(access.PriorityImportantUrgent), todoSlug)
-
 		if oldZone != newZone {
-			m.taskOrderMu.Lock()
-			err := m.taskAccess.UpdateTaskWithOrderMove(accessTask, oldZone, newZone)
-			m.taskOrderMu.Unlock()
-			if err != nil {
-				return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
+			if ids, ok := orderMap[oldZone]; ok {
+				filtered := make([]string, 0, len(ids))
+				for _, id := range ids {
+					if id != t.ID {
+						filtered = append(filtered, id)
+					}
+				}
+				orderMap[oldZone] = filtered
 			}
-		} else {
-			if err := m.taskAccess.SaveTask(accessTask); err != nil {
-				return nil, fmt.Errorf("failed to promote task %s: %w", t.ID, err)
-			}
+			orderMap[newZone] = append(orderMap[newZone], t.ID)
+			orderChanged = true
 		}
 
 		promoted = append(promoted, PromotedTask{
@@ -1642,6 +1659,20 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 			OldPriority: oldPriority,
 			NewPriority: string(access.PriorityImportantUrgent),
 		})
+	}
+
+	if orderChanged {
+		if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
+			m.taskOrderMu.Unlock()
+			return nil, fmt.Errorf("failed to write task order: %w", err)
+		}
+	}
+	m.taskOrderMu.Unlock()
+
+	if len(promoted) > 0 {
+		if err := m.taskAccess.CommitAll(fmt.Sprintf("Promote %d tasks by priority date", len(promoted))); err != nil {
+			return nil, fmt.Errorf("failed to commit promotions: %w", err)
+		}
 	}
 
 	return promoted, nil
@@ -1687,7 +1718,7 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("task can only be archived when done")
 	}
 
-	if err := m.taskAccess.ArchiveTask(taskId); err != nil {
+	if _, err := m.taskAccess.WriteArchiveTask(taskId); err != nil {
 		return fmt.Errorf("failed to archive task %s: %w", taskId, err)
 	}
 
@@ -1701,8 +1732,12 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("failed to load archived order: %w", err)
 	}
 	archivedOrder = append([]string{taskId}, archivedOrder...)
-	if err := m.taskAccess.SaveArchivedOrder(archivedOrder); err != nil {
-		return fmt.Errorf("failed to save archived order: %w", err)
+	if err := m.taskAccess.WriteArchivedOrder(archivedOrder); err != nil {
+		return fmt.Errorf("failed to write archived order: %w", err)
+	}
+
+	if err := m.taskAccess.CommitAll(fmt.Sprintf("Archive task: %s", targetTask.Title)); err != nil {
+		return fmt.Errorf("failed to commit archive: %w", err)
 	}
 
 	return nil
@@ -1727,9 +1762,9 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 		return nil
 	}
 
-	// Archive each task file and remove from task order
+	// Archive each task file (write-only, no commit per file)
 	for _, id := range doneIDs {
-		if err := m.taskAccess.ArchiveTask(id); err != nil {
+		if _, err := m.taskAccess.WriteArchiveTask(id); err != nil {
 			return fmt.Errorf("failed to archive task %s: %w", id, err)
 		}
 	}
@@ -1743,8 +1778,12 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 		return fmt.Errorf("failed to load archived order: %w", err)
 	}
 	archivedOrder = append(doneIDs, archivedOrder...)
-	if err := m.taskAccess.SaveArchivedOrder(archivedOrder); err != nil {
-		return fmt.Errorf("failed to save archived order: %w", err)
+	if err := m.taskAccess.WriteArchivedOrder(archivedOrder); err != nil {
+		return fmt.Errorf("failed to write archived order: %w", err)
+	}
+
+	if err := m.taskAccess.CommitAll(fmt.Sprintf("Archive all done tasks (%d tasks)", len(doneIDs))); err != nil {
+		return fmt.Errorf("failed to commit archive: %w", err)
 	}
 
 	return nil
@@ -1776,7 +1815,7 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("task can only be restored from archive")
 	}
 
-	if err := m.taskAccess.RestoreTask(taskId); err != nil {
+	if _, err := m.taskAccess.WriteRestoreTask(taskId); err != nil {
 		return fmt.Errorf("failed to restore task %s: %w", taskId, err)
 	}
 
@@ -1793,9 +1832,9 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("failed to load task order: %w", err)
 	}
 	orderMap[targetZone] = append(orderMap[targetZone], taskId)
-	if err := m.taskAccess.SaveTaskOrder(orderMap); err != nil {
+	if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
 		m.taskOrderMu.Unlock()
-		return fmt.Errorf("failed to save task order: %w", err)
+		return fmt.Errorf("failed to write task order: %w", err)
 	}
 	m.taskOrderMu.Unlock()
 
@@ -1811,20 +1850,26 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		}
 	}
 	if len(filtered) != len(archivedOrder) {
-		if err := m.taskAccess.SaveArchivedOrder(filtered); err != nil {
-			return fmt.Errorf("failed to save archived order: %w", err)
+		if err := m.taskAccess.WriteArchivedOrder(filtered); err != nil {
+			return fmt.Errorf("failed to write archived order: %w", err)
 		}
+	}
+
+	if err := m.taskAccess.CommitAll(fmt.Sprintf("Restore task: %s", targetTask.Title)); err != nil {
+		return fmt.Errorf("failed to commit restore: %w", err)
 	}
 
 	return nil
 }
 
 // removeFromTaskOrder removes the given task IDs from all drop zones in the task order.
+// Uses write-only method; caller is responsible for committing.
 func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
 	m.taskOrderMu.Lock()
+	defer m.taskOrderMu.Unlock()
+
 	orderMap, err := m.taskAccess.LoadTaskOrder()
 	if err != nil {
-		m.taskOrderMu.Unlock()
 		return fmt.Errorf("failed to load task order: %w", err)
 	}
 
@@ -1848,12 +1893,10 @@ func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
 	}
 
 	if changed {
-		if err := m.taskAccess.SaveTaskOrder(orderMap); err != nil {
-			m.taskOrderMu.Unlock()
-			return fmt.Errorf("failed to save task order: %w", err)
+		if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
+			return fmt.Errorf("failed to write task order: %w", err)
 		}
 	}
-	m.taskOrderMu.Unlock()
 
 	return nil
 }

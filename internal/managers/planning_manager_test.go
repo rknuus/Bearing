@@ -155,6 +155,10 @@ func (m *mockTaskAccess) GetTasksByStatus(status string) ([]access.Task, error) 
 	return []access.Task{}, nil
 }
 
+func (m *mockTaskAccess) WriteTask(task access.Task) error {
+	return m.SaveTask(task)
+}
+
 func (m *mockTaskAccess) SaveTask(task access.Task) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -227,12 +231,24 @@ func (m *mockTaskAccess) MoveTask(taskID, newStatus string) error {
 	return nil
 }
 
+func (m *mockTaskAccess) WriteMoveTask(taskID, newStatus string) ([]string, error) {
+	return nil, m.MoveTask(taskID, newStatus)
+}
+
 func (m *mockTaskAccess) ArchiveTask(taskID string) error {
 	return m.MoveTask(taskID, string(access.TaskStatusArchived))
 }
 
+func (m *mockTaskAccess) WriteArchiveTask(taskID string) ([]string, error) {
+	return nil, m.ArchiveTask(taskID)
+}
+
 func (m *mockTaskAccess) RestoreTask(taskID string) error {
 	return m.MoveTask(taskID, string(access.TaskStatusDone))
+}
+
+func (m *mockTaskAccess) WriteRestoreTask(taskID string) ([]string, error) {
+	return nil, m.RestoreTask(taskID)
 }
 
 func (m *mockTaskAccess) DeleteTask(taskID string) error {

@@ -400,13 +400,16 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	// Find the move commit and verify message
 	moveCommitFound := false
 	for _, commit := range historyAfter {
-		if strings.Contains(commit.Message, "Move task") && strings.Contains(commit.Message, "todo -> doing") {
+		if strings.Contains(commit.Message, "Move task") && strings.Contains(commit.Message, "doing") {
 			moveCommitFound = true
 			break
 		}
 	}
 	if !moveCommitFound {
 		t.Error("Move commit message not found in git history")
+		for _, c := range historyAfter {
+			t.Logf("  commit: %s", c.Message)
+		}
 	}
 }
 
@@ -1177,13 +1180,13 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 
 	// Step 6: Verify total git commit count
 	// Operations: CreateTheme(1) + AddColumn(1) + CreateTask*2(2) +
-	//             MoveTask*2(move+order each=4) + RenameColumn(1) + ReorderColumns(1) +
-	//             MoveTask*2(move+order each=4) + RemoveColumn(1) = 15
+	//             MoveTask*2(batched=2) + RenameColumn(1) + ReorderColumns(1) +
+	//             MoveTask*2(batched=2) + RemoveColumn(1) = 11
 	history, err := repo.GetHistory(0)
 	if err != nil {
 		t.Fatalf("Failed to get git history: %v", err)
 	}
-	expectedCommits := 15
+	expectedCommits := 11
 	if len(history) != expectedCommits {
 		t.Errorf("Expected %d commits, got %d", expectedCommits, len(history))
 		for i, c := range history {
