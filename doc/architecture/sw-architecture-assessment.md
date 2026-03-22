@@ -135,12 +135,17 @@ Every single save operation creates a git commit. Updating a key result's `curre
 | 07 | No subsystem boundaries | 2026-03-21 | Topology formalized in `.method`: OKR, TaskBoard, Calendar, CrossCutting subsystems; `ProgressEngine` added to model; `vol-progress-computation` updated |
 | — | IGoalStructure CRUD consolidation | 2026-03-21 | 16 CRUD methods consolidated to 6 behavioral verbs: `GetHierarchy`, `Establish`, `Revise`, `RecordProgress`, `Dismiss`, `SuggestAbbreviation`; `UpdateTheme` backdoor eliminated |
 
+### Skipped
+
+| # | Finding | Rationale for skipping |
+|---|---------|------------------------|
+| 10 | Method file tracking | Naturally part of the development process, which is monitored by TheAgent's architect |
+
 ### Remaining — Prioritized
 
 | Priority | # | Finding | Severity | Urgency | Next action |
 |----------|---|---------|----------|---------|-------------|
-| 1 | 10 | Method file tracking | Medium | When convenient | Ongoing — update `.method` as code evolves |
-| 2 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
+| 1 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
 | — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager to Engine |
 
 ### Recommended execution order
