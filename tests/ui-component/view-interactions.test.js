@@ -835,21 +835,21 @@ export async function runTests() {
       // Revert the edited theme name
       await page.evaluate(async () => {
         const app = window.go.main.App
-        const themes = await app.GetThemes()
+        const themes = await app.GetHierarchy()
         const pf = themes.find(t => t.id === 'PF')
         if (pf && pf.name === 'Personal Finance Edited') {
-          await app.UpdateTheme({ ...pf, name: 'Personal Finance' })
+          await app.Revise({ goalId: 'PF', name: 'Personal Finance' })
         }
       })
 
       // Revert the edited objective title
       await page.evaluate(async () => {
         const app = window.go.main.App
-        const themes = await app.GetThemes()
+        const themes = await app.GetHierarchy()
         for (const theme of themes) {
           for (const obj of theme.objectives) {
             if (obj.title === 'Improve cardiovascular health v2') {
-              await app.UpdateObjective(obj.id, 'Improve cardiovascular health', obj.tags || [])
+              await app.Revise({ goalId: obj.id, title: 'Improve cardiovascular health' })
             }
           }
         }

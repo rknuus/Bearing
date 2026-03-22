@@ -306,7 +306,7 @@
     loading = true;
     error = null;
     try {
-      themes = await getBindings().GetThemes();
+      themes = await getBindings().GetHierarchy();
       try {
         themeProgress = await getBindings().GetAllThemeProgress();
       } catch {
@@ -436,7 +436,7 @@
   }
 
   async function verifyThemeState() {
-    const backendThemes = await getBindings().GetThemes();
+    const backendThemes = await getBindings().GetHierarchy();
     const mismatches = [
       ...checkStateFromData('theme', themes, backendThemes, 'id', THEME_FIELDS),
       ...checkStateFromData('objective', flattenObjectives(themes), flattenObjectives(backendThemes), 'id', OBJECTIVE_FIELDS),
@@ -452,7 +452,8 @@
     if (!newThemeName.trim()) return;
 
     try {
-      const created = await getBindings().CreateTheme(newThemeName.trim(), newThemeColor);
+      const result = await getBindings().Establish({ parentId: '', goalType: 'theme', name: newThemeName.trim(), color: newThemeColor });
+      const created = result.theme!;
       created.objectives = created.objectives ?? [];
       created.routines = created.routines ?? [];
       themes = [...themes, created];
@@ -468,11 +469,11 @@
     }
   }
 
-  async function updateTheme(theme: LifeTheme) {
+  async function reviseTheme(themeId: string, name: string, color: string) {
     try {
-      await getBindings().UpdateTheme(theme);
-      const idx = themes.findIndex(t => t.id === theme.id);
-      if (idx >= 0) themes[idx] = theme;
+      await getBindings().Revise({ goalId: themeId, name, color });
+      const idx = themes.findIndex(t => t.id === themeId);
+      if (idx >= 0) { themes[idx].name = name; themes[idx].color = color; }
       themes = themes;
       await verifyThemeState();
       editingThemeId = null;
@@ -487,7 +488,7 @@
     if (!confirm('Are you sure you want to delete this theme and all its objectives?')) return;
 
     try {
-      await getBindings().DeleteTheme(id);
+      await getBindings().Dismiss(id);
       themes = themes.filter(t => t.id !== id);
       await refreshProgress();
       await verifyThemeState();
@@ -498,12 +499,13 @@
     }
   }
 
-  // CreateObjective — parentId can be a theme ID or an objective ID
+  // Establish for objective — parentId can be a theme ID or an objective ID
   async function createObjective(parentId: string) {
     if (!newObjectiveTitle.trim()) return;
 
     try {
-      const created = await getBindings().CreateObjective(parentId, newObjectiveTitle.trim());
+      const result = await getBindings().Establish({ parentId, goalType: 'objective', title: newObjectiveTitle.trim() });
+      const created = result.objective!;
       created.keyResults = created.keyResults ?? [];
       created.objectives = created.objectives ?? [];
       insertObjectiveUnderParent(themes, parentId, created);
@@ -520,10 +522,10 @@
     }
   }
 
-  // UpdateObjective — new API: (objectiveId, title, tags)
+  // Revise for objective: (goalId, title, tags)
   async function updateObjective(objectiveId: string, newTitle: string, tags: string[]) {
     try {
-      await getBindings().UpdateObjective(objectiveId, newTitle, tags);
+      await getBindings().Revise({ goalId: objectiveId, title: newTitle, tags });
       for (const t of themes) {
         if (updateObjectiveInTree(t.objectives, objectiveId, (obj) => { obj.title = newTitle; obj.tags = tags; })) break;
       }
@@ -537,12 +539,12 @@
     }
   }
 
-  // DeleteObjective — new API: (objectiveId)
+  // Dismiss for objective
   async function deleteObjective(objectiveId: string) {
     if (!confirm('Are you sure you want to delete this objective and all its children?')) return;
 
     try {
-      await getBindings().DeleteObjective(objectiveId);
+      await getBindings().Dismiss(objectiveId);
       for (const t of themes) {
         if (removeObjectiveFromTree(t.objectives, objectiveId)) break;
       }
@@ -556,12 +558,13 @@
     }
   }
 
-  // CreateKeyResult — (parentObjectiveId, description, startValue, targetValue)
+  // Establish for key result
   async function createKeyResult(objectiveId: string) {
     if (!newKeyResultDescription.trim()) return;
 
     try {
-      const created = await getBindings().CreateKeyResult(objectiveId, newKeyResultDescription.trim(), newKeyResultStartValue, newKeyResultTargetValue);
+      const result = await getBindings().Establish({ parentId: objectiveId, goalType: 'key-result', description: newKeyResultDescription.trim(), startValue: newKeyResultStartValue, targetValue: newKeyResultTargetValue });
+      const created = result.keyResult!;
       for (const t of themes) {
         if (updateObjectiveInTree(t.objectives, objectiveId, (obj) => { obj.keyResults.push(created); })) break;
       }
@@ -581,27 +584,10 @@
     }
   }
 
-  // UpdateKeyResult — new API: (keyResultId, description)
-  async function updateKeyResult(keyResultId: string, newDescription: string) {
-    try {
-      await getBindings().UpdateKeyResult(keyResultId, newDescription);
-      for (const t of themes) {
-        if (updateKeyResultInTree(t.objectives, keyResultId, (kr) => { kr.description = newDescription; })) break;
-      }
-      themes = themes;
-      await verifyThemeState();
-      editingKeyResultId = null;
-    } catch (e) {
-      console.error('Failed to update key result:', e);
-      error = extractError(e);
-      await loadThemes();
-    }
-  }
-
-  // UpdateKeyResultProgress — quick update of currentValue only
+  // RecordProgress — quick update of currentValue only
   async function updateKeyResultProgress(keyResultId: string, currentValue: number) {
     try {
-      await getBindings().UpdateKeyResultProgress(keyResultId, currentValue);
+      await getBindings().RecordProgress(keyResultId, currentValue);
       for (const t of themes) {
         if (updateKeyResultInTree(t.objectives, keyResultId, (kr) => { kr.currentValue = currentValue; })) break;
       }
@@ -615,12 +601,12 @@
     }
   }
 
-  // DeleteKeyResult — new API: (keyResultId)
+  // Dismiss for key result
   async function deleteKeyResult(keyResultId: string) {
     if (!confirm('Are you sure you want to delete this key result?')) return;
 
     try {
-      await getBindings().DeleteKeyResult(keyResultId);
+      await getBindings().Dismiss(keyResultId);
       for (const t of themes) {
         if (removeKeyResultFromTree(t.objectives, keyResultId)) break;
       }
@@ -639,7 +625,8 @@
     if (!newRoutineDescription.trim()) return;
 
     try {
-      const created = await getBindings().AddRoutine(themeId, newRoutineDescription.trim(), newRoutineTargetValue, newRoutineTargetType, newRoutineUnit);
+      const result = await getBindings().Establish({ parentId: themeId, goalType: 'routine', description: newRoutineDescription.trim(), targetValue: newRoutineTargetValue, targetType: newRoutineTargetType, unit: newRoutineUnit });
+      const created = result.routine!;
       const theme = themes.find(t => t.id === themeId);
       if (theme) {
         if (!theme.routines) theme.routines = [];
@@ -661,7 +648,10 @@
 
   async function updateRoutine(routineId: string) {
     try {
-      await getBindings().UpdateRoutine(routineId, editRoutineDescription, editRoutineCurrentValue, editRoutineTargetValue, editRoutineTargetType, editRoutineUnit);
+      // Revise for metadata changes
+      await getBindings().Revise({ goalId: routineId, description: editRoutineDescription, targetValue: editRoutineTargetValue, targetType: editRoutineTargetType, unit: editRoutineUnit });
+      // RecordProgress for currentValue change
+      await getBindings().RecordProgress(routineId, editRoutineCurrentValue);
       for (const t of themes) {
         const r = (t.routines ?? []).find(r => r.id === routineId);
         if (r) { r.description = editRoutineDescription; r.currentValue = editRoutineCurrentValue; r.targetValue = editRoutineTargetValue; r.targetType = editRoutineTargetType; r.unit = editRoutineUnit; break; }
@@ -676,9 +666,9 @@
     }
   }
 
-  async function updateRoutineCurrentValue(routineId: string, currentValue: number, routine: Routine) {
+  async function updateRoutineCurrentValue(routineId: string, currentValue: number, _routine: Routine) {
     try {
-      await getBindings().UpdateRoutine(routineId, routine.description, currentValue, routine.targetValue, routine.targetType, routine.unit ?? '');
+      await getBindings().RecordProgress(routineId, currentValue);
       for (const t of themes) {
         const r = (t.routines ?? []).find(r => r.id === routineId);
         if (r) { r.currentValue = currentValue; break; }
@@ -696,7 +686,7 @@
     if (!confirm('Are you sure you want to delete this routine?')) return;
 
     try {
-      await getBindings().DeleteRoutine(routineId);
+      await getBindings().Dismiss(routineId);
       for (const t of themes) {
         if (t.routines) {
           const idx = t.routines.findIndex(r => r.id === routineId);
@@ -892,56 +882,45 @@
 
   // Submit edits
   function submitEditTheme(theme: LifeTheme) {
-    updateTheme({
-      ...theme,
-      name: editThemeName,
-      color: editThemeColor,
-    });
+    reviseTheme(theme.id, editThemeName, editThemeColor);
   }
 
   function submitEditObjective(objective: Objective) {
     updateObjective(objective.id, editObjectiveTitle, editObjectiveTags);
   }
 
-  function submitEditKeyResult(kr: KeyResult) {
-    // If start/target values changed, update through full theme save
+  async function submitEditKeyResult(kr: KeyResult) {
+    const descChanged = editKeyResultDescription !== kr.description;
     const startChanged = editKeyResultStartValue !== (kr.startValue ?? 0);
     const targetChanged = editKeyResultTargetValue !== (kr.targetValue ?? 0);
-    if (startChanged || targetChanged) {
-      // Find the theme containing this KR and update it
-      const theme = themes.find(t => {
-        function searchKR(objectives: Objective[]): boolean {
-          for (const obj of objectives) {
-            if (obj.keyResults.some(k => k.id === kr.id)) return true;
-            if (searchKR(obj.objectives ?? [])) return true;
-          }
-          return false;
-        }
-        return searchKR(t.objectives);
-      });
-      if (theme) {
-        // Deep copy and update the KR fields
-        const updatedTheme = JSON.parse(JSON.stringify(theme)) as LifeTheme;
-        function updateKR(objectives: Objective[]): boolean {
-          for (const obj of objectives) {
-            const idx = obj.keyResults.findIndex(k => k.id === kr.id);
-            if (idx >= 0) {
-              obj.keyResults[idx].description = editKeyResultDescription;
-              if (startChanged) obj.keyResults[idx].startValue = editKeyResultStartValue;
-              if (targetChanged) obj.keyResults[idx].targetValue = editKeyResultTargetValue;
-              return true;
-            }
-            if (updateKR(obj.objectives ?? [])) return true;
-          }
-          return false;
-        }
-        updateKR(updatedTheme.objectives);
-        editingKeyResultId = null;
-        updateTheme(updatedTheme);
-        return;
-      }
+
+    if (!descChanged && !startChanged && !targetChanged) {
+      editingKeyResultId = null;
+      return;
     }
-    updateKeyResult(kr.id, editKeyResultDescription);
+
+    try {
+      const req: Record<string, unknown> = { goalId: kr.id };
+      if (descChanged) req.description = editKeyResultDescription;
+      if (startChanged) req.startValue = editKeyResultStartValue;
+      if (targetChanged) req.targetValue = editKeyResultTargetValue;
+      await getBindings().Revise(req as { goalId: string; description?: string; startValue?: number; targetValue?: number });
+      for (const t of themes) {
+        if (updateKeyResultInTree(t.objectives, kr.id, (k) => {
+          if (descChanged) k.description = editKeyResultDescription;
+          if (startChanged) k.startValue = editKeyResultStartValue;
+          if (targetChanged) k.targetValue = editKeyResultTargetValue;
+        })) break;
+      }
+      themes = themes;
+      if (startChanged || targetChanged) await refreshProgress();
+      await verifyThemeState();
+      editingKeyResultId = null;
+    } catch (e) {
+      console.error('Failed to update key result:', e);
+      error = extractError(e);
+      await loadThemes();
+    }
   }
 
   // Cancel editing

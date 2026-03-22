@@ -99,6 +99,38 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Task
 	return manager, taskAccess, repo, tmpDir, cleanup
 }
 
+// --- Integration test helper wrappers around behavioral API ---
+
+func intCreateTheme(m *managers.PlanningManager, name, color string) (*managers.LifeTheme, error) {
+	res, err := m.Establish(managers.EstablishRequest{GoalType: "theme", Name: name, Color: color})
+	if err != nil {
+		return nil, err
+	}
+	return res.Theme, nil
+}
+
+func intCreateObjective(m *managers.PlanningManager, parentId, title string) (*managers.Objective, error) {
+	res, err := m.Establish(managers.EstablishRequest{GoalType: "objective", ParentID: parentId, Title: title})
+	if err != nil {
+		return nil, err
+	}
+	return res.Objective, nil
+}
+
+func intCreateKeyResult(m *managers.PlanningManager, parentObjId, description string, startValue, targetValue int) (*managers.KeyResult, error) {
+	res, err := m.Establish(managers.EstablishRequest{
+		GoalType:    "key-result",
+		ParentID:    parentObjId,
+		Description: description,
+		StartValue:  &startValue,
+		TargetValue: &targetValue,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.KeyResult, nil
+}
+
 // =============================================================================
 // Scenario 1: Full Linking Chain
 // =============================================================================
@@ -110,7 +142,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	defer cleanup()
 
 	// Step 1: Create a Life Theme "Health" with color #22c55e
-	theme, err := manager.CreateTheme("Health", "#22c55e")
+	theme, err := intCreateTheme(manager,"Health", "#22c55e")
 	if err != nil {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
@@ -168,7 +200,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 		t.Errorf("Task theme ID mismatch: expected %s, got %s", theme.ID, task.ThemeID)
 	}
 	// Step 4: Verify color chain - all components can look up the theme color
-	themes, err := manager.GetThemes()
+	themes, err := manager.GetHierarchy()
 	if err != nil {
 		t.Fatalf("Failed to get themes: %v", err)
 	}
@@ -215,7 +247,7 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 	defer cleanup()
 
 	// Create theme with objectives and key results
-	theme, err := manager.CreateTheme("Career", "#3b82f6")
+	theme, err := intCreateTheme(manager,"Career", "#3b82f6")
 	if err != nil {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
@@ -225,11 +257,11 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 	}
 
 	// Create objectives
-	obj1, err := manager.CreateObjective(theme.ID, "Get promoted")
+	obj1, err := intCreateObjective(manager,theme.ID, "Get promoted")
 	if err != nil {
 		t.Fatalf("Failed to create objective 1: %v", err)
 	}
-	obj2, err := manager.CreateObjective(theme.ID, "Learn new skills")
+	obj2, err := intCreateObjective(manager,theme.ID, "Learn new skills")
 	if err != nil {
 		t.Fatalf("Failed to create objective 2: %v", err)
 	}
@@ -247,11 +279,11 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 	verifyParentID(t, "Objective", obj2.ID, obj2.ParentID, theme.ID)
 
 	// Create key results
-	kr1, err := manager.CreateKeyResult(obj1.ID, "Complete 3 major projects", 0, 0)
+	kr1, err := intCreateKeyResult(manager,obj1.ID, "Complete 3 major projects", 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create key result 1: %v", err)
 	}
-	kr2, err := manager.CreateKeyResult(obj1.ID, "Get positive performance review", 0, 0)
+	kr2, err := intCreateKeyResult(manager,obj1.ID, "Get positive performance review", 0, 0)
 	if err != nil {
 		t.Fatalf("Failed to create key result 2: %v", err)
 	}
@@ -269,7 +301,7 @@ func TestIntegration_FlatIDConsistency(t *testing.T) {
 	verifyParentID(t, "KeyResult", kr2.ID, kr2.ParentID, obj1.ID)
 
 	// Verify parentId relationships through the full hierarchy via GetThemes
-	themes, _ := manager.GetThemes()
+	themes, _ := manager.GetHierarchy()
 	for _, th := range themes {
 		if th.ID == theme.ID {
 			for _, obj := range th.Objectives {
@@ -296,7 +328,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	defer cleanup()
 
 	// Create theme and task
-	theme, err := manager.CreateTheme("Health", "#22c55e")
+	theme, err := intCreateTheme(manager,"Health", "#22c55e")
 	if err != nil {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
@@ -384,7 +416,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 	defer cleanup()
 
 	// Create theme and task with all fields populated
-	theme, _ := manager.CreateTheme("Health", "#22c55e")
+	theme, _ := intCreateTheme(manager,"Health", "#22c55e")
 	task, _ := manager.CreateTask("Complex task", theme.ID, "important-not-urgent", "", "", "")
 
 	// Get original task details
@@ -440,11 +472,11 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	defer cleanup()
 
 	// Create comprehensive test data
-	theme1, _ := manager1.CreateTheme("Health", "#22c55e")
-	theme2, _ := manager1.CreateTheme("Career", "#3b82f6")
+	theme1, _ := intCreateTheme(manager1,"Health", "#22c55e")
+	theme2, _ := intCreateTheme(manager1,"Career", "#3b82f6")
 
-	_, _ = manager1.CreateObjective(theme1.ID, "Fitness Goals")
-	_, _ = manager1.CreateObjective(theme2.ID, "Career Growth")
+	_, _ = intCreateObjective(manager1,theme1.ID, "Fitness Goals")
+	_, _ = intCreateObjective(manager1,theme2.ID, "Career Growth")
 
 	_ = manager1.SaveDayFocus(managers.DayFocus{Date: "2026-01-15", ThemeIDs: []string{theme1.ID}, Notes: "Health day"})
 	_ = manager1.SaveDayFocus(managers.DayFocus{Date: "2026-01-16", ThemeIDs: []string{theme2.ID}, Notes: "Career day"})
@@ -503,7 +535,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	}
 
 	// Verify themes are restored
-	themes, _ := manager2.GetThemes()
+	themes, _ := manager2.GetHierarchy()
 	if len(themes) != 2 {
 		t.Errorf("Expected 2 themes after reload, got %d", len(themes))
 	}
@@ -569,7 +601,7 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	defer cleanup()
 
 	// Create a theme for context
-	theme, _ := manager1.CreateTheme("Test Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager1,"Test Theme", "#ff0000")
 
 	// Save navigation context
 	ctx := managers.NavigationContext{
@@ -634,21 +666,21 @@ func TestIntegration_DeleteTheme(t *testing.T) {
 	defer cleanup()
 
 	// Create themes
-	theme1, _ := manager.CreateTheme("Theme to Delete", "#ff0000")
-	theme2, _ := manager.CreateTheme("Theme to Keep", "#00ff00")
+	theme1, _ := intCreateTheme(manager,"Theme to Delete", "#ff0000")
+	theme2, _ := intCreateTheme(manager,"Theme to Keep", "#00ff00")
 
 	// Create tasks under both themes
 	_, _ = manager.CreateTask("Task 1", theme1.ID, "important-urgent", "", "", "")
 	_, _ = manager.CreateTask("Task 2", theme2.ID, "important-urgent", "", "", "")
 
 	// Delete the first theme
-	err := manager.DeleteTheme(theme1.ID)
+	err := manager.Dismiss(theme1.ID)
 	if err != nil {
 		t.Fatalf("Failed to delete theme: %v", err)
 	}
 
 	// Verify theme is deleted
-	themes, _ := manager.GetThemes()
+	themes, _ := manager.GetHierarchy()
 	for _, th := range themes {
 		if th.ID == theme1.ID {
 			t.Error("Deleted theme should not be in themes list")
@@ -675,9 +707,9 @@ func TestIntegration_MultipleThemesAndTasks(t *testing.T) {
 	defer cleanup()
 
 	// Create multiple themes
-	healthTheme, _ := manager.CreateTheme("Health", "#22c55e")
-	careerTheme, _ := manager.CreateTheme("Career", "#3b82f6")
-	familyTheme, _ := manager.CreateTheme("Family", "#f97316")
+	healthTheme, _ := intCreateTheme(manager,"Health", "#22c55e")
+	careerTheme, _ := intCreateTheme(manager,"Career", "#3b82f6")
+	familyTheme, _ := intCreateTheme(manager,"Family", "#f97316")
 
 	// Create tasks across themes
 	for i := 0; i < 5; i++ {
@@ -727,7 +759,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	}
 
 	// Create theme
-	theme, _ := manager.CreateTheme("Test Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Test Theme", "#ff0000")
 
 	// Create task
 	task, _ := manager.CreateTask("Test task", theme.ID, "important-urgent", "", "", "")
@@ -736,8 +768,8 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	_, _ = manager.MoveTask(task.ID, "doing", nil)
 
 	// Update theme
-	theme.Color = "#00ff00"
-	_ = manager.UpdateTheme(*theme)
+	newColor := "#00ff00"
+	_ = manager.Revise(managers.ReviseRequest{GoalID: theme.ID, Color: &newColor})
 
 	// Get history
 	history, err := repo.GetHistory(0)
@@ -773,7 +805,7 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 	defer cleanup()
 
 	// Create a theme for the year
-	theme, _ := manager.CreateTheme("Year Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Year Theme", "#ff0000")
 
 	// Create day focuses for several months
 	months := []struct {
@@ -821,7 +853,7 @@ func TestIntegration_TaskIDGenerationMismatchedArchive(t *testing.T) {
 	manager, _, _, tmpDir, cleanup := setupIntegrationTest(t)
 	defer cleanup()
 
-	theme, err := manager.CreateTheme("Health", "#22c55e")
+	theme, err := intCreateTheme(manager,"Health", "#22c55e")
 	if err != nil {
 		t.Fatalf("Failed to create theme: %v", err)
 	}
@@ -885,7 +917,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	defer cleanup()
 
 	// Create theme
-	theme, _ := manager.CreateTheme("Workflow Theme", "#ff0000")
+	theme, _ := intCreateTheme(manager,"Workflow Theme", "#ff0000")
 
 	// Create task
 	task, err := manager.CreateTask("Workflow task", theme.ID, "important-urgent", "", "", "")
@@ -964,7 +996,7 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 		t.Fatalf("Failed to create WorkspaceManager: %v", err)
 	}
 
-	theme, err := manager.CreateTheme("Work", "#3b82f6")
+	theme, err := intCreateTheme(manager,"Work", "#3b82f6")
 	if err != nil {
 		t.Fatalf("Failed to create theme: %v", err)
 	}

@@ -44,24 +44,14 @@ type NavigationContext struct {
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }
 
-// IGoalStructure defines operations for managing the OKR hierarchy structure.
+// IGoalStructure defines behavioral operations for managing the OKR hierarchy.
 type IGoalStructure interface {
-	GetThemes() ([]LifeTheme, error)
-	CreateTheme(name, color string) (*LifeTheme, error)
-	UpdateTheme(theme LifeTheme) error
-	SaveTheme(theme LifeTheme) error
-	DeleteTheme(id string) error
-	CreateObjective(parentId, title string) (*Objective, error)
-	UpdateObjective(objectiveId, title string, tags []string) error
-	DeleteObjective(objectiveId string) error
-	CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error)
-	UpdateKeyResult(keyResultId, description string) error
-	UpdateKeyResultProgress(keyResultId string, currentValue int) error
-	DeleteKeyResult(keyResultId string) error
-	AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error)
-	UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error
-	DeleteRoutine(routineId string) error
-	SuggestThemeAbbreviation(name string) (string, error)
+	GetHierarchy() ([]LifeTheme, error)
+	Establish(req EstablishRequest) (*EstablishResult, error)
+	Revise(req ReviseRequest) error
+	RecordProgress(goalId string, value int) error
+	Dismiss(goalId string) error
+	SuggestAbbreviation(name string) (string, error)
 }
 
 // IGoalLifecycle defines operations for OKR status transitions.
@@ -263,6 +253,69 @@ type PersonalVision struct {
 	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
+// GoalType identifies the kind of goal node in the OKR hierarchy.
+type GoalType string
+
+const (
+	GoalTypeTheme     GoalType = "theme"
+	GoalTypeObjective GoalType = "objective"
+	GoalTypeKeyResult GoalType = "key-result"
+	GoalTypeRoutine   GoalType = "routine"
+)
+
+// EstablishRequest carries the fields needed to create any goal node.
+type EstablishRequest struct {
+	ParentID    string   `json:"parentId"`
+	GoalType    GoalType `json:"goalType"`
+	Name        string   `json:"name,omitempty"`
+	Color       string   `json:"color,omitempty"`
+	Title       string   `json:"title,omitempty"`
+	Description string   `json:"description,omitempty"`
+	StartValue  *int     `json:"startValue,omitempty"`
+	TargetValue *int     `json:"targetValue,omitempty"`
+	TargetType  string   `json:"targetType,omitempty"`
+	Unit        string   `json:"unit,omitempty"`
+}
+
+// EstablishResult contains the created goal node.
+type EstablishResult struct {
+	Theme     *LifeTheme `json:"theme,omitempty"`
+	Objective *Objective `json:"objective,omitempty"`
+	KeyResult *KeyResult `json:"keyResult,omitempty"`
+	Routine   *Routine   `json:"routine,omitempty"`
+}
+
+// ReviseRequest carries partial updates for an existing goal node.
+// Pointer fields: nil = leave unchanged, non-nil = update to this value.
+type ReviseRequest struct {
+	GoalID      string    `json:"goalId"`
+	Name        *string   `json:"name,omitempty"`
+	Color       *string   `json:"color,omitempty"`
+	Title       *string   `json:"title,omitempty"`
+	Tags        *[]string `json:"tags,omitempty"`
+	Description *string   `json:"description,omitempty"`
+	StartValue  *int      `json:"startValue,omitempty"`
+	TargetValue *int      `json:"targetValue,omitempty"`
+	TargetType  *string   `json:"targetType,omitempty"`
+	Unit        *string   `json:"unit,omitempty"`
+}
+
+// detectGoalType determines the goal type from its ID naming convention.
+// Theme IDs are uppercase abbreviations (no hyphens with O/KR/R suffix).
+// Objectives: {themeId}-O{n}, Key Results: {themeId}-KR{n}, Routines: {themeId}-R{n}
+func detectGoalType(id string) GoalType {
+	if strings.Contains(id, "-KR") {
+		return GoalTypeKeyResult
+	}
+	if strings.Contains(id, "-R") {
+		return GoalTypeRoutine
+	}
+	if strings.Contains(id, "-O") {
+		return GoalTypeObjective
+	}
+	return GoalTypeTheme
+}
+
 // defaultAccessBoardConfiguration returns the default board configuration
 // using access-layer types for internal use within the Manager.
 func defaultAccessBoardConfiguration() *access.BoardConfiguration {
@@ -360,8 +413,8 @@ func NewPlanningManager(
 	return pm, nil
 }
 
-// GetThemes returns all life themes.
-func (m *PlanningManager) GetThemes() ([]LifeTheme, error) {
+// getThemes returns all life themes.
+func (m *PlanningManager) getThemes() ([]LifeTheme, error) {
 	themes, err := m.themeAccess.GetThemes()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
@@ -373,16 +426,8 @@ func (m *PlanningManager) GetThemes() ([]LifeTheme, error) {
 	return result, nil
 }
 
-// SaveTheme saves or updates a life theme.
-func (m *PlanningManager) SaveTheme(theme LifeTheme) error {
-	if err := m.themeAccess.SaveTheme(toAccessLifeTheme(theme)); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	return nil
-}
-
-// DeleteTheme deletes a life theme by ID.
-func (m *PlanningManager) DeleteTheme(id string) error {
+// deleteTheme deletes a life theme by ID.
+func (m *PlanningManager) deleteTheme(id string) error {
 	if id == "" {
 		return fmt.Errorf("id cannot be empty")
 	}
@@ -392,9 +437,9 @@ func (m *PlanningManager) DeleteTheme(id string) error {
 	return nil
 }
 
-// CreateTheme creates a new life theme with the given name and color.
+// createTheme creates a new life theme with the given name and color.
 // Returns the created theme with its generated ID.
-func (m *PlanningManager) CreateTheme(name, color string) (*LifeTheme, error) {
+func (m *PlanningManager) createTheme(name, color string) (*LifeTheme, error) {
 	if name == "" {
 		return nil, fmt.Errorf("name cannot be empty")
 	}
@@ -434,19 +479,6 @@ func (m *PlanningManager) CreateTheme(name, color string) (*LifeTheme, error) {
 	}
 
 	return nil, fmt.Errorf("theme was created but could not be retrieved")
-}
-
-// UpdateTheme updates an existing life theme.
-func (m *PlanningManager) UpdateTheme(theme LifeTheme) error {
-	if theme.ID == "" {
-		return fmt.Errorf("theme ID cannot be empty")
-	}
-
-	if err := m.themeAccess.SaveTheme(toAccessLifeTheme(theme)); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	return nil
 }
 
 // findObjectiveByID walks the access.Objective tree and returns a pointer to the objective with the given ID.
@@ -494,10 +526,10 @@ func findKeyResultParent(objectives []access.Objective, krID string) (*access.Ob
 	return nil, -1
 }
 
-// CreateObjective creates a new objective under a parent (theme or objective).
+// createObjective creates a new objective under a parent (theme or objective).
 // parentId can be a theme ID or any objective ID at any depth.
 // Returns the created objective with its generated ID.
-func (m *PlanningManager) CreateObjective(parentId, title string) (*Objective, error) {
+func (m *PlanningManager) createObjective(parentId, title string) (*Objective, error) {
 	if parentId == "" {
 		return nil, fmt.Errorf("parentId cannot be empty")
 	}
@@ -593,39 +625,9 @@ func validateTags(tags []string) []string {
 	return result
 }
 
-// UpdateObjective finds an objective by ID anywhere in the tree and updates its title and tags.
-func (m *PlanningManager) UpdateObjective(objectiveId, title string, tags []string) error {
-	if objectiveId == "" {
-		return fmt.Errorf("objectiveId cannot be empty")
-	}
-	if title == "" {
-		return fmt.Errorf("title cannot be empty")
-	}
-
-	validatedTags := validateTags(tags)
-
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	for i := range themes {
-		if obj := findObjectiveByID(themes[i].Objectives, objectiveId); obj != nil {
-			obj.Title = title
-			obj.Tags = validatedTags
-			if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("%w", err)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("objective with ID %s not found", objectiveId)
-}
-
-// DeleteObjective finds an objective by ID anywhere in the tree and removes it.
+// deleteObjective finds an objective by ID anywhere in the tree and removes it.
 // Children are removed automatically since they are nested in the struct.
-func (m *PlanningManager) DeleteObjective(objectiveId string) error {
+func (m *PlanningManager) deleteObjective(objectiveId string) error {
 	if objectiveId == "" {
 		return fmt.Errorf("objectiveId cannot be empty")
 	}
@@ -648,9 +650,9 @@ func (m *PlanningManager) DeleteObjective(objectiveId string) error {
 	return fmt.Errorf("objective with ID %s not found", objectiveId)
 }
 
-// CreateKeyResult creates a new key result under an objective found anywhere in the tree.
+// createKeyResult creates a new key result under an objective found anywhere in the tree.
 // parentObjectiveId is the objective ID at any depth.
-func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
+func (m *PlanningManager) createKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*KeyResult, error) {
 	if parentObjectiveId == "" {
 		return nil, fmt.Errorf("parentObjectiveId cannot be empty")
 	}
@@ -703,35 +705,8 @@ func (m *PlanningManager) CreateKeyResult(parentObjectiveId, description string,
 	return nil, fmt.Errorf("key result was created but could not be retrieved")
 }
 
-// UpdateKeyResult finds a key result by ID anywhere in the tree and updates its description.
-func (m *PlanningManager) UpdateKeyResult(keyResultId, description string) error {
-	if keyResultId == "" {
-		return fmt.Errorf("keyResultId cannot be empty")
-	}
-	if description == "" {
-		return fmt.Errorf("description cannot be empty")
-	}
-
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	for i := range themes {
-		if obj, krIdx := findKeyResultParent(themes[i].Objectives, keyResultId); obj != nil {
-			obj.KeyResults[krIdx].Description = description
-			if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
-				return fmt.Errorf("%w", err)
-			}
-			return nil
-		}
-	}
-
-	return fmt.Errorf("key result with ID %s not found", keyResultId)
-}
-
-// UpdateKeyResultProgress finds a key result by ID anywhere in the tree and updates its currentValue.
-func (m *PlanningManager) UpdateKeyResultProgress(keyResultId string, currentValue int) error {
+// updateKeyResultProgress finds a key result by ID anywhere in the tree and updates its currentValue.
+func (m *PlanningManager) updateKeyResultProgress(keyResultId string, currentValue int) error {
 	if keyResultId == "" {
 		return fmt.Errorf("keyResultId cannot be empty")
 	}
@@ -754,8 +729,8 @@ func (m *PlanningManager) UpdateKeyResultProgress(keyResultId string, currentVal
 	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
-// DeleteKeyResult finds a key result by ID anywhere in the tree and removes it.
-func (m *PlanningManager) DeleteKeyResult(keyResultId string) error {
+// deleteKeyResult finds a key result by ID anywhere in the tree and removes it.
+func (m *PlanningManager) deleteKeyResult(keyResultId string) error {
 	if keyResultId == "" {
 		return fmt.Errorf("keyResultId cannot be empty")
 	}
@@ -806,8 +781,8 @@ func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.L
 	return nil, -1
 }
 
-// AddRoutine creates a new routine under the specified theme.
-func (m *PlanningManager) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
+// addRoutine creates a new routine under the specified theme.
+func (m *PlanningManager) addRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
 	if themeId == "" {
 		return nil, fmt.Errorf("themeId cannot be empty")
 	}
@@ -855,45 +830,8 @@ func (m *PlanningManager) AddRoutine(themeId, description string, targetValue in
 	return &result, nil
 }
 
-// UpdateRoutine updates all fields of an existing routine.
-func (m *PlanningManager) UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error {
-	if routineId == "" {
-		return fmt.Errorf("routineId cannot be empty")
-	}
-	if strings.TrimSpace(description) == "" {
-		return fmt.Errorf("description cannot be empty")
-	}
-	if !IsValidRoutineTargetType(targetType) {
-		return fmt.Errorf("invalid target type: %s", targetType)
-	}
-	if targetValue <= 0 {
-		return fmt.Errorf("targetValue must be positive")
-	}
-
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	theme, idx := findThemeForRoutine(themes, routineId)
-	if theme == nil {
-		return fmt.Errorf("routine with ID %s not found", routineId)
-	}
-
-	theme.Routines[idx].Description = strings.TrimSpace(description)
-	theme.Routines[idx].CurrentValue = currentValue
-	theme.Routines[idx].TargetValue = targetValue
-	theme.Routines[idx].TargetType = targetType
-	theme.Routines[idx].Unit = strings.TrimSpace(unit)
-
-	if err := m.themeAccess.SaveTheme(*theme); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-	return nil
-}
-
-// DeleteRoutine removes a routine by ID.
-func (m *PlanningManager) DeleteRoutine(routineId string) error {
+// deleteRoutine removes a routine by ID.
+func (m *PlanningManager) deleteRoutine(routineId string) error {
 	if routineId == "" {
 		return fmt.Errorf("routineId cannot be empty")
 	}
@@ -1306,38 +1244,66 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 
-	if len(orderMap) > 0 {
-		// Build position index: taskID -> position within its drop zone
-		posIndex := make(map[string]int)
-		for _, ids := range orderMap {
-			for i, id := range ids {
-				posIndex[id] = i
-			}
+	// Load archived order for archived task sorting
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load archived order: %w", err)
+	}
+	archivePosIndex := make(map[string]int, len(archivedOrder))
+	for i, id := range archivedOrder {
+		archivePosIndex[id] = i
+	}
+
+	// Build position index for active tasks: taskID -> position within its drop zone
+	posIndex := make(map[string]int)
+	for _, ids := range orderMap {
+		for i, id := range ids {
+			posIndex[id] = i
+		}
+	}
+
+	archivedStatus := string(access.TaskStatusArchived)
+	tSlug := todoSlugFromConfig(config)
+	sort.SliceStable(allTasks, func(i, j int) bool {
+		a, b := allTasks[i], allTasks[j]
+		zoneA := dropZoneForTask(a.Status, a.Priority, tSlug)
+		zoneB := dropZoneForTask(b.Status, b.Priority, tSlug)
+		if zoneA != zoneB {
+			return zoneA < zoneB // Total order across zones for sort correctness
 		}
 
-		tSlug := todoSlugFromConfig(config)
-		sort.SliceStable(allTasks, func(i, j int) bool {
-			a, b := allTasks[i], allTasks[j]
-			zoneA := dropZoneForTask(a.Status, a.Priority, tSlug)
-			zoneB := dropZoneForTask(b.Status, b.Priority, tSlug)
-			if zoneA != zoneB {
-				return zoneA < zoneB // Total order across zones for sort correctness
-			}
-			posA, okA := posIndex[a.ID]
-			posB, okB := posIndex[b.ID]
+		// Archived tasks: sort by archived order position
+		if a.Status == archivedStatus {
+			posA, okA := archivePosIndex[a.ID]
+			posB, okB := archivePosIndex[b.ID]
 			if okA && okB {
 				return posA < posB
 			}
 			if okA {
-				return true // Known tasks before unknown
+				return true // Known position before unknown
 			}
 			if okB {
 				return false
 			}
-			// Both unknown: sort by CreatedAt
-			return a.CreatedAt < b.CreatedAt
-		})
-	}
+			// Both unknown: sort by CreatedAt descending (newest first)
+			return a.CreatedAt > b.CreatedAt
+		}
+
+		// Active tasks: sort by task_order.json position
+		posA, okA := posIndex[a.ID]
+		posB, okB := posIndex[b.ID]
+		if okA && okB {
+			return posA < posB
+		}
+		if okA {
+			return true // Known tasks before unknown
+		}
+		if okB {
+			return false
+		}
+		// Both unknown: sort by CreatedAt
+		return a.CreatedAt < b.CreatedAt
+	})
 
 	return allTasks, nil
 }
@@ -1729,6 +1695,16 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("%w", err)
 	}
 
+	// Prepend to archived order (newest archived first)
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load archived order: %w", err)
+	}
+	archivedOrder = append([]string{taskId}, archivedOrder...)
+	if err := m.taskAccess.SaveArchivedOrder(archivedOrder); err != nil {
+		return fmt.Errorf("failed to save archived order: %w", err)
+	}
+
 	return nil
 }
 
@@ -1739,13 +1715,36 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
+	// Collect done task IDs in their current display order
+	var doneIDs []string
 	for _, t := range allTasks {
 		if t.Status != string(access.TaskStatusDone) {
 			continue
 		}
-		if err := m.ArchiveTask(t.ID); err != nil {
-			return fmt.Errorf("%w", err)
+		doneIDs = append(doneIDs, t.ID)
+	}
+	if len(doneIDs) == 0 {
+		return nil
+	}
+
+	// Archive each task file and remove from task order
+	for _, id := range doneIDs {
+		if err := m.taskAccess.ArchiveTask(id); err != nil {
+			return fmt.Errorf("failed to archive task %s: %w", id, err)
 		}
+	}
+	if err := m.removeFromTaskOrder(doneIDs); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	// Batch-prepend to archived order preserving their relative display order
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load archived order: %w", err)
+	}
+	archivedOrder = append(doneIDs, archivedOrder...)
+	if err := m.taskAccess.SaveArchivedOrder(archivedOrder); err != nil {
+		return fmt.Errorf("failed to save archived order: %w", err)
 	}
 
 	return nil
@@ -1799,6 +1798,23 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("failed to save task order: %w", err)
 	}
 	m.taskOrderMu.Unlock()
+
+	// Remove from archived order
+	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("failed to load archived order: %w", err)
+	}
+	filtered := make([]string, 0, len(archivedOrder))
+	for _, id := range archivedOrder {
+		if id != taskId {
+			filtered = append(filtered, id)
+		}
+	}
+	if len(filtered) != len(archivedOrder) {
+		if err := m.taskAccess.SaveArchivedOrder(filtered); err != nil {
+			return fmt.Errorf("failed to save archived order: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -1960,12 +1976,232 @@ func SuggestAbbreviation(name string, existingThemes []access.LifeTheme) string 
 }
 
 // SuggestThemeAbbreviation suggests a unique abbreviation for a theme name.
-func (m *PlanningManager) SuggestThemeAbbreviation(name string) (string, error) {
+func (m *PlanningManager) suggestThemeAbbreviation(name string) (string, error) {
 	themes, err := m.themeAccess.GetThemes()
 	if err != nil {
 		return "", fmt.Errorf("%w", err)
 	}
 	return SuggestAbbreviation(name, themes), nil
+}
+
+// --- Behavioral goal methods (expand phase) ---
+
+// GetHierarchy returns the full OKR hierarchy.
+func (m *PlanningManager) GetHierarchy() ([]LifeTheme, error) {
+	return m.getThemes()
+}
+
+// Establish creates a new goal node of the specified type.
+func (m *PlanningManager) Establish(req EstablishRequest) (*EstablishResult, error) {
+	switch req.GoalType {
+	case GoalTypeTheme:
+		theme, err := m.createTheme(req.Name, req.Color)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishResult{Theme: theme}, nil
+
+	case GoalTypeObjective:
+		obj, err := m.createObjective(req.ParentID, req.Title)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishResult{Objective: obj}, nil
+
+	case GoalTypeKeyResult:
+		startVal := 0
+		if req.StartValue != nil {
+			startVal = *req.StartValue
+		}
+		targetVal := 0
+		if req.TargetValue != nil {
+			targetVal = *req.TargetValue
+		}
+		kr, err := m.createKeyResult(req.ParentID, req.Description, startVal, targetVal)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishResult{KeyResult: kr}, nil
+
+	case GoalTypeRoutine:
+		targetVal := 0
+		if req.TargetValue != nil {
+			targetVal = *req.TargetValue
+		}
+		routine, err := m.addRoutine(req.ParentID, req.Description, targetVal, req.TargetType, req.Unit)
+		if err != nil {
+			return nil, err
+		}
+		return &EstablishResult{Routine: routine}, nil
+
+	default:
+		return nil, fmt.Errorf("unknown goal type: %s", req.GoalType)
+	}
+}
+
+// Revise applies partial updates to an existing goal node.
+func (m *PlanningManager) Revise(req ReviseRequest) error {
+	if req.GoalID == "" {
+		return fmt.Errorf("goalId cannot be empty")
+	}
+
+	goalType := detectGoalType(req.GoalID)
+
+	switch goalType {
+	case GoalTypeTheme:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		for i := range themes {
+			if themes[i].ID == req.GoalID {
+				if req.Name != nil {
+					themes[i].Name = *req.Name
+				}
+				if req.Color != nil {
+					themes[i].Color = *req.Color
+				}
+				if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("theme with ID %s not found", req.GoalID)
+
+	case GoalTypeObjective:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		for i := range themes {
+			if obj := findObjectiveByID(themes[i].Objectives, req.GoalID); obj != nil {
+				if req.Title != nil {
+					obj.Title = *req.Title
+				}
+				if req.Tags != nil {
+					obj.Tags = validateTags(*req.Tags)
+				}
+				if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("objective with ID %s not found", req.GoalID)
+
+	case GoalTypeKeyResult:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		for i := range themes {
+			if obj, krIdx := findKeyResultParent(themes[i].Objectives, req.GoalID); obj != nil {
+				if req.Description != nil {
+					obj.KeyResults[krIdx].Description = *req.Description
+				}
+				if req.StartValue != nil {
+					obj.KeyResults[krIdx].StartValue = *req.StartValue
+				}
+				if req.TargetValue != nil {
+					obj.KeyResults[krIdx].TargetValue = *req.TargetValue
+				}
+				if err := m.themeAccess.SaveTheme(themes[i]); err != nil {
+					return fmt.Errorf("%w", err)
+				}
+				return nil
+			}
+		}
+		return fmt.Errorf("key result with ID %s not found", req.GoalID)
+
+	case GoalTypeRoutine:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		theme, idx := findThemeForRoutine(themes, req.GoalID)
+		if theme == nil {
+			return fmt.Errorf("routine with ID %s not found", req.GoalID)
+		}
+		if req.Description != nil {
+			theme.Routines[idx].Description = strings.TrimSpace(*req.Description)
+		}
+		if req.TargetValue != nil {
+			theme.Routines[idx].TargetValue = *req.TargetValue
+		}
+		if req.TargetType != nil {
+			theme.Routines[idx].TargetType = *req.TargetType
+		}
+		if req.Unit != nil {
+			theme.Routines[idx].Unit = strings.TrimSpace(*req.Unit)
+		}
+		if err := m.themeAccess.SaveTheme(*theme); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("unknown goal type for ID %s", req.GoalID)
+	}
+}
+
+// RecordProgress updates the current value of a measurable goal.
+func (m *PlanningManager) RecordProgress(goalId string, value int) error {
+	if goalId == "" {
+		return fmt.Errorf("goalId cannot be empty")
+	}
+
+	goalType := detectGoalType(goalId)
+
+	switch goalType {
+	case GoalTypeKeyResult:
+		return m.updateKeyResultProgress(goalId, value)
+
+	case GoalTypeRoutine:
+		themes, err := m.themeAccess.GetThemes()
+		if err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		theme, idx := findThemeForRoutine(themes, goalId)
+		if theme == nil {
+			return fmt.Errorf("routine with ID %s not found", goalId)
+		}
+		theme.Routines[idx].CurrentValue = value
+		if err := m.themeAccess.SaveTheme(*theme); err != nil {
+			return fmt.Errorf("%w", err)
+		}
+		return nil
+
+	default:
+		return fmt.Errorf("RecordProgress not supported for goal type %s", goalType)
+	}
+}
+
+// Dismiss removes a goal node by ID.
+func (m *PlanningManager) Dismiss(goalId string) error {
+	if goalId == "" {
+		return fmt.Errorf("goalId cannot be empty")
+	}
+
+	goalType := detectGoalType(goalId)
+
+	switch goalType {
+	case GoalTypeTheme:
+		return m.deleteTheme(goalId)
+	case GoalTypeObjective:
+		return m.deleteObjective(goalId)
+	case GoalTypeKeyResult:
+		return m.deleteKeyResult(goalId)
+	case GoalTypeRoutine:
+		return m.deleteRoutine(goalId)
+	default:
+		return fmt.Errorf("unknown goal type for ID %s", goalId)
+	}
+}
+
+// SuggestAbbreviation suggests a unique abbreviation for a goal name.
+func (m *PlanningManager) SuggestAbbreviation(name string) (string, error) {
+	return m.suggestThemeAbbreviation(name)
 }
 
 // LoadNavigationContext retrieves the saved navigation context.

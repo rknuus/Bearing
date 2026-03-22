@@ -84,60 +84,6 @@ func (a *App) GetLocale() string {
 	return utilities.DetectLocale()
 }
 
-// --- Theme operations ---
-
-func (a *App) GetThemes() ([]managers.LifeTheme, error) {
-	return a.planningManager.GetThemes()
-}
-
-func (a *App) CreateTheme(name, color string) (*managers.LifeTheme, error) {
-	return a.planningManager.CreateTheme(name, color)
-}
-
-func (a *App) UpdateTheme(theme managers.LifeTheme) error {
-	return a.planningManager.UpdateTheme(theme)
-}
-
-func (a *App) SaveTheme(theme managers.LifeTheme) error {
-	return a.planningManager.SaveTheme(theme)
-}
-
-func (a *App) DeleteTheme(id string) error {
-	return a.planningManager.DeleteTheme(id)
-}
-
-// --- Objective operations ---
-
-func (a *App) CreateObjective(parentId, title string) (*managers.Objective, error) {
-	return a.planningManager.CreateObjective(parentId, title)
-}
-
-func (a *App) UpdateObjective(objectiveId, title string, tags []string) error {
-	return a.planningManager.UpdateObjective(objectiveId, title, tags)
-}
-
-func (a *App) DeleteObjective(objectiveId string) error {
-	return a.planningManager.DeleteObjective(objectiveId)
-}
-
-// --- Key Result operations ---
-
-func (a *App) CreateKeyResult(parentObjectiveId, description string, startValue, targetValue int) (*managers.KeyResult, error) {
-	return a.planningManager.CreateKeyResult(parentObjectiveId, description, startValue, targetValue)
-}
-
-func (a *App) UpdateKeyResult(keyResultId, description string) error {
-	return a.planningManager.UpdateKeyResult(keyResultId, description)
-}
-
-func (a *App) UpdateKeyResultProgress(keyResultId string, currentValue int) error {
-	return a.planningManager.UpdateKeyResultProgress(keyResultId, currentValue)
-}
-
-func (a *App) DeleteKeyResult(keyResultId string) error {
-	return a.planningManager.DeleteKeyResult(keyResultId)
-}
-
 // --- OKR lifecycle operations ---
 
 func (a *App) SetObjectiveStatus(objectiveId, status string) error {
@@ -156,22 +102,30 @@ func (a *App) ReopenObjective(objectiveId string) error {
 	return a.planningManager.ReopenObjective(objectiveId)
 }
 
-// --- Routine operations ---
+// --- Behavioral goal operations ---
 
-func (a *App) AddRoutine(themeId, description string, targetValue int, targetType, unit string) (*managers.Routine, error) {
-	return a.planningManager.AddRoutine(themeId, description, targetValue, targetType, unit)
+func (a *App) GetHierarchy() ([]managers.LifeTheme, error) {
+	return a.planningManager.GetHierarchy()
 }
 
-func (a *App) UpdateRoutine(routineId string, description string, currentValue, targetValue int, targetType, unit string) error {
-	return a.planningManager.UpdateRoutine(routineId, description, currentValue, targetValue, targetType, unit)
+func (a *App) Establish(req managers.EstablishRequest) (*managers.EstablishResult, error) {
+	return a.planningManager.Establish(req)
 }
 
-func (a *App) DeleteRoutine(routineId string) error {
-	return a.planningManager.DeleteRoutine(routineId)
+func (a *App) Revise(req managers.ReviseRequest) error {
+	return a.planningManager.Revise(req)
 }
 
-func (a *App) SuggestThemeAbbreviation(name string) (string, error) {
-	return a.planningManager.SuggestThemeAbbreviation(name)
+func (a *App) RecordProgress(goalId string, value int) error {
+	return a.planningManager.RecordProgress(goalId, value)
+}
+
+func (a *App) Dismiss(goalId string) error {
+	return a.planningManager.Dismiss(goalId)
+}
+
+func (a *App) SuggestAbbreviation(name string) (string, error) {
+	return a.planningManager.SuggestAbbreviation(name)
 }
 
 // --- Calendar operations ---
