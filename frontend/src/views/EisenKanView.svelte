@@ -50,9 +50,10 @@
     todayFocusTags?: string[];
     tagFocusActive?: boolean;
     onTagFocusToggle?: () => void;
+    currentDate?: string;
   }
 
-  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle, todayFocusTags, tagFocusActive, onTagFocusToggle }: Props = $props();
+  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle, todayFocusTags, tagFocusActive, onTagFocusToggle, currentDate }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -123,25 +124,8 @@
   // Per-section items for sectioned columns (keyed by section name)
   let sectionItems = $state<Record<string, TaskWithStatus[]>>({});
 
-  // Current day display (updates at midnight)
-  function formatToday(): string {
-    const iso = new Date().toISOString().split('T')[0];
-    return formatDateLong(iso);
-  }
-  let today = $state(formatToday());
-  let midnightTimer: ReturnType<typeof setTimeout> | undefined;
-
-  function scheduleMidnightUpdate() {
-    const now = new Date();
-    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    const msUntilMidnight = tomorrow.getTime() - now.getTime();
-    midnightTimer = setTimeout(() => {
-      today = formatToday();
-      scheduleMidnightUpdate();
-    }, msUntilMidnight);
-  }
-  scheduleMidnightUpdate();
-  onDestroy(() => clearTimeout(midnightTimer));
+  // Current day display (derived from centralized currentDate prop)
+  let today = $derived(formatDateLong(currentDate ?? new Date().toISOString().split('T')[0]));
 
   // Context menu state for cross-view navigation
   let contextMenuTask = $state<TaskWithStatus | null>(null);

@@ -20,9 +20,10 @@
     onNavigateToTheme?: (themeId: string) => void;
     onNavigateToTasks?: (options?: { themeId?: string; date?: string }) => void;
     filterThemeIds?: string[];
+    currentDate?: string;
   }
 
-  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [] }: Props = $props();
+  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [], currentDate }: Props = $props();
 
   // State
   let themes = $state<LifeTheme[]>([]);
@@ -100,7 +101,7 @@
   }
 
   function isToday(month: number, day: number): boolean {
-    const today = new Date();
+    const today = currentDate ? new Date(currentDate + 'T00:00:00') : new Date();
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 

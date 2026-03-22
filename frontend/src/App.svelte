@@ -11,6 +11,8 @@
   import { initLocale } from './lib/utils/date-format';
   import { handleWindowShortcut } from './lib/utils/window-commands';
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
+  import { formatDateLong } from './lib/utils/date-format';
+  import Toast from './lib/components/Toast.svelte';
 
   // View types
   type ViewType = 'calendar' | 'eisenkan' | 'okr';
@@ -24,6 +26,51 @@
   let todayFocusThemeIds = $state<string[]>([]);
   let tagFocusActive = $state(true);
   let todayFocusTags = $state<string[]>([]);
+
+  // Centralized current date (updates at midnight)
+  let currentDate = $state(new Date().toISOString().split('T')[0]);
+  let toastMessage = $state<string | null>(null);
+  let midnightTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function scheduleMidnightUpdate() {
+    const now = new Date();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const msUntilMidnight = tomorrow.getTime() - now.getTime();
+    midnightTimer = setTimeout(() => {
+      handleDayChange();
+      scheduleMidnightUpdate();
+    }, msUntilMidnight);
+  }
+
+  async function handleDayChange() {
+    currentDate = new Date().toISOString().split('T')[0];
+
+    // Re-resolve Today's Focus for the new day
+    const focus = await resolveTodayFocus(getBindings());
+    todayFocusThemeIds = focus.themeIds;
+    todayFocusTags = focus.tags;
+
+    if (todayFocusThemeIds.length > 0) {
+      todayFocusActive = true;
+      filterThemeIds = [...todayFocusThemeIds];
+    } else {
+      todayFocusActive = false;
+      filterThemeIds = [];
+    }
+
+    if (todayFocusTags.length > 0) {
+      tagFocusActive = true;
+      filterTagIds = [...todayFocusTags];
+    } else {
+      tagFocusActive = false;
+      filterTagIds = [];
+    }
+
+    // Show notification
+    toastMessage = `Good morning — it's ${formatDateLong(currentDate)}`;
+
+    saveNavigationContext();
+  }
 
   // Derived single-theme ID for backward compat with child components (ThemeFilterBar, EisenKanView)
   let todayFocusThemeId = $derived(todayFocusThemeIds.length > 0 ? todayFocusThemeIds[0] : null);
@@ -351,10 +398,14 @@
 
     // Add keyboard shortcut listener
     window.addEventListener('keydown', handleKeyDown);
+
+    // Start midnight day-change timer
+    scheduleMidnightUpdate();
   });
 
   onDestroy(() => {
     window.removeEventListener('keydown', handleKeyDown);
+    clearTimeout(midnightTimer);
   });
 </script>
 
@@ -410,6 +461,7 @@
         onNavigateToTheme={handleNavigateToTheme}
         onNavigateToTasks={handleNavigateToTasks}
         {filterThemeIds}
+        {currentDate}
       />
     {:else if currentView === 'okr'}
       <div class="scrollable-view">
@@ -434,10 +486,15 @@
         {todayFocusTags}
         {tagFocusActive}
         onTagFocusToggle={handleTagFocusToggle}
+        {currentDate}
       />
     {/if}
   </main>
 </div>
+
+{#if toastMessage}
+  <Toast message={toastMessage} onDismiss={() => { toastMessage = null; }} />
+{/if}
 
 <style>
   .app-container {
