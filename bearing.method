@@ -138,13 +138,15 @@ volatilities:
       name: "Task Ordering"
       description: "How tasks are ordered within drop zones on the board. Tasks are organized by priority-based zones within
         columns. Order is persisted separately from tasks in task_order.json. Includes reorder operations, zone
-        migration on priority change, and startup repair of stale entries."
+        migration on priority change, and startup repair of stale entries. Zone computation and order reconciliation
+        algorithms are encapsulated by RuleEngine; orchestration and persistence by PlanningManager."
       evidence: "Same customer over time: ordering schemes may change (manual drag-drop, auto-sort by date, priority-based
-        grouping). Different customers at same time: some users manually order, others rely on defaults. Currently
-        managed jointly by PlanningManager (zone computation, merge logic) and PlanAccess (persistence of
-        task_order.json)."
+        grouping). Different customers at same time: some users manually order, others rely on defaults. Zone
+        computation (DropZoneForTask, TodoSlugFromColumns) and order reconciliation (ReconcileTaskOrder) are stateless
+        algorithms in RuleEngine. Orchestration and persistence managed by PlanningManager via TaskAccess."
       encapsulated_by:
         - "PlanningManager"
+        - "RuleEngine"
       confidence: "high"
   rejected:
     - name: "Eisenhower Priority Matrix"
@@ -197,12 +199,15 @@ components:
   engines:
     - id: "59843c4a-d1d8-4663-abdf-6b4aa93e7099"
       name: "RuleEngine"
-      description: "Stateless engine (IRuleEngine) that evaluates board rules against task events. Receives TaskEvent with
-        event type and all tasks context. Filters applicable rules by event type, then evaluates: checkRequiredFields
-        (task creation), checkWIPLimit (doing column max 20), checkAllowedTransition (column moves), checkMaxAge (30
-        days). Returns RuleEvaluationResult with Allowed flag and Violations list. Genuinely stateless — receives all
-        context through parameters. Assessment notes: has a dependency inversion violation — imports access.Task types
-        directly instead of defining its own input contract."
+      description: "Stateless engine (IRuleEngine) that evaluates board rules against task events and computes task ordering
+        zones. Rule evaluation: receives TaskEvent with event type and all tasks context, filters applicable rules by
+        event type, evaluates checkRequiredFields (task creation), checkWIPLimit (doing column max 20),
+        checkAllowedTransition (column moves), checkMaxAge (30 days), returns RuleEvaluationResult with Allowed flag and
+        Violations list. Zone computation: DropZoneForTask computes the drop zone for a task based on status, priority,
+        and todo column slug. TodoSlugFromColumns extracts the todo column slug from column definitions.
+        ReconcileTaskOrder repairs stored task order against actual zone assignments. Genuinely stateless — receives all
+        context through parameters. Uses engine-owned DTOs (TaskData, TaskInfo, ColumnInfo) with no access-layer
+        imports."
     - id: "beed2b93-c608-4e01-a939-03483ae204a2"
       name: "ProgressEngine"
       description: "Stateless engine (IProgressEngine) that computes progress metrics for the OKR hierarchy. Calculates KR
@@ -367,7 +372,8 @@ use_cases:
               note: "CreateTask(...) — validates priority, parses tags, builds task info"
             - from: "PlanningManager"
               to: "RuleEngine"
-              note: "EvaluateTaskChange(EventTaskCreate) — checks required fields"
+              note: "EvaluateTaskChange(EventTaskCreate) — checks required fields. DropZoneForTask(status, priority, todoSlug) —
+                computes drop zone for task order"
             - from: "PlanningManager"
               to: "TaskAccess"
               note: "SaveTaskWithOrder(task, dropZone) — generates ID, sets timestamps, updates task_order.json"
@@ -384,7 +390,8 @@ use_cases:
               note: "MoveTask(taskId, newStatus, positions)"
             - from: "PlanningManager"
               to: "RuleEngine"
-              note: "EvaluateTaskChange(EventTaskMove) — checkWIPLimit, checkAllowedTransition, checkMaxAge"
+              note: "EvaluateTaskChange(EventTaskMove) — checkWIPLimit, checkAllowedTransition, checkMaxAge. DropZoneForTask() —
+                computes source/target zones"
             - from: "PlanningManager"
               to: "TaskAccess"
               note: "GetBoardConfiguration(), MoveTask(taskId, newStatus), SaveTaskOrder(orderMap)"
@@ -413,6 +420,9 @@ use_cases:
             - from: "App"
               to: "PlanningManager"
               note: "ProcessPriorityPromotions() — finds tasks with promotionDate <= today"
+            - from: "PlanningManager"
+              to: "RuleEngine"
+              note: "DropZoneForTask() — computes old/new zones for priority promotion"
             - from: "PlanningManager"
               to: "TaskAccess"
               note: "UpdateTaskWithOrderMove(task, oldZone, newZone) — for each promoted task"
@@ -730,5 +740,11 @@ use_cases:
               to: "RuleEngine"
               note: "NewRuleEngine(DefaultRules())"
             - from: "PlanningManager"
+              to: "RuleEngine"
+              note: "TodoSlugFromColumns(columns), DropZoneForTask(status, priority, todoSlug) per task,
+                ReconcileTaskOrder(existingOrder, actualZone) — stateless zone computation and order reconciliation"
+            - from: "PlanningManager"
               to: "TaskAccess"
-              note: "GetBoardConfiguration(), GetTasksByStatus() for each column, LoadTaskOrder(), SaveTaskOrder() — if repair needed"
+              note: "GetBoardConfiguration(), GetTasksByStatus() for each column, LoadTaskOrder() — gathers data for reconciliation.
+                Calls RuleEngine.TodoSlugFromColumns(), DropZoneForTask(), ReconcileTaskOrder() to compute correct zones
+                and repair order. SaveTaskOrder() if repair needed."

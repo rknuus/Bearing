@@ -67,3 +67,9 @@ type Rule struct {
 	Enabled     bool                   `json:"enabled"`
 	Priority    int                    `json:"priority"` // Higher = evaluated first
 }
+
+// ColumnInfo provides column metadata needed for zone computation.
+type ColumnInfo struct {
+	Name string
+	Type string // "todo", "doing", "done"
+}

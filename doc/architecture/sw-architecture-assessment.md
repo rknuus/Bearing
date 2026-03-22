@@ -118,7 +118,7 @@ Every single save operation creates a git commit. Updating a key result's `curre
 
 ## Resolution Progress
 
-> Last updated: 2026-03-21
+> Last updated: 2026-03-22
 
 ### Resolved
 
@@ -133,7 +133,9 @@ Every single save operation creates a git commit. Updating a key result's `curre
 | 09 | Pass-through toll booths | 2026-03-21 | New `UIStateAccess` RA; Manager stays in path (closed architecture); fixed lossy DTO conversion (7 fields were silently dropped) |
 | 06 | God Gateway | 2026-03-21 | Gateway reduced to thin pass-through; `GetLocale()` → utilities; startup → bootstrap; DTOs eliminated; nil-checks removed |
 | 07 | No subsystem boundaries | 2026-03-21 | Topology formalized in `.method`: OKR, TaskBoard, Calendar, CrossCutting subsystems; `ProgressEngine` added to model; `vol-progress-computation` updated |
+| 11 | Excessive git commits | `ac36625` | Git commits batched per use case in Manager operations; infrastructure concern no longer leaks into architecture |
 | — | IGoalStructure CRUD consolidation | 2026-03-21 | 16 CRUD methods consolidated to 6 behavioral verbs: `GetHierarchy`, `Establish`, `Revise`, `RecordProgress`, `Dismiss`, `SuggestAbbreviation`; `UpdateTheme` backdoor eliminated |
+| 03 | validateTaskOrder() remainder | 2026-03-22 | `reconcileTaskOrder`, `dropZoneForTask`, `todoSlugFromConfig` moved from `PlanningManager` to `RuleEngine`; Manager is pure orchestration; `vol-task-ordering` updated with `RuleEngine` as co-encapsulator |
 
 ### Skipped
 
@@ -143,14 +145,7 @@ Every single save operation creates a git commit. Updating a key result's `curre
 
 ### Remaining — Prioritized
 
-| Priority | # | Finding | Severity | Urgency | Next action |
-|----------|---|---------|----------|---------|-------------|
-| 1 | 11 | Excessive git commits | Low | When convenient | Batch commits per use case; infrastructure concern |
-| — | 03 | validateTaskOrder() remainder | Low | When convenient | Move data repair logic from Manager to Engine |
-
-### Recommended execution order
-
-1. **Findings 10, 11, 03-remainder** — ongoing and opportunistic
+All findings resolved.
 
 ---
 
@@ -160,4 +155,4 @@ The codebase has sound instincts — interface-driven design, downward-only depe
 
 All critical findings have been resolved (01–09 plus IGoalStructure consolidation). The structural decomposition is complete: `PlanningManager` exposes 7 volatility-driven facet interfaces (`IGoalStructure`, `IGoalLifecycle`, `ITaskExecution`, `IFocusPlanning`, `IVision`, `IProgress`, `IUIState`) with `IGoalStructure` consolidated to 6 behavioral verbs. Workspace configuration is encapsulated by `WorkspaceManager`, and `PlanAccess` has been split into `ThemeAccess`, `TaskAccess`, `CalendarAccess`, `VisionAccess`, and `UIStateAccess`. The topology formalizes four subsystems (OKR, TaskBoard, Calendar, CrossCutting) in `bearing.method`.
 
-The remaining work is ongoing `.method` file maintenance and opportunistic improvements (excessive git commits, validateTaskOrder remainder).
+The only remaining item is ongoing `.method` file maintenance (Finding 10, skipped — naturally part of development).

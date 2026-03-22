@@ -1107,90 +1107,39 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 	return nil
 }
 
-// dropZoneForTask returns the drop zone ID for a task based on its status and priority.
-// Todo tasks use their priority section name; doing/done tasks use the column name.
-// dropZoneForTask returns the drop zone ID for a task. For todo-type columns,
-// the drop zone is the priority (for section-based rendering). For other columns,
-// the drop zone is the status itself. todoSlug is the slug of the todo-type column.
-func dropZoneForTask(status, priority, todoSlug string) string {
-	if status == todoSlug && priority != "" {
-		return priority
+// toColumnInfos converts access-layer column definitions to engine-layer ColumnInfo DTOs.
+func toColumnInfos(defs []access.ColumnDefinition) []rule_engine.ColumnInfo {
+	cols := make([]rule_engine.ColumnInfo, len(defs))
+	for i, d := range defs {
+		cols[i] = rule_engine.ColumnInfo{Name: d.Name, Type: string(d.Type)}
 	}
-	return status
-}
-
-// todoSlugFromConfig returns the slug of the todo-type column from the board config.
-func todoSlugFromConfig(config *access.BoardConfiguration) string {
-	for _, col := range config.ColumnDefinitions {
-		if col.Type == access.ColumnTypeTodo {
-			return col.Name
-		}
-	}
-	return string(access.TaskStatusTodo) // fallback
-}
-
-// reconcileTaskOrder takes the existing order map and a map of actual task zones
-// (taskID → correct zone) and returns the corrected order map.
-// It removes stale entries, deduplicates, and adds missing tasks to their correct zones.
-func reconcileTaskOrder(existingOrder map[string][]string, actualZone map[string]string) (map[string][]string, bool) {
-	changed := false
-
-	// Remove stale entries: keep only IDs whose actual zone matches the zone key
-	for zone, ids := range existingOrder {
-		filtered := make([]string, 0, len(ids))
-		for _, id := range ids {
-			if actualZone[id] == zone {
-				filtered = append(filtered, id)
-			} else {
-				changed = true
-			}
-		}
-		existingOrder[zone] = filtered
-	}
-
-	// Add missing tasks to their correct zone
-	present := make(map[string]bool)
-	for _, ids := range existingOrder {
-		for _, id := range ids {
-			present[id] = true
-		}
-	}
-	for id, zone := range actualZone {
-		if !present[id] {
-			existingOrder[zone] = append(existingOrder[zone], id)
-			changed = true
-		}
-	}
-
-	return existingOrder, changed
+	return cols
 }
 
 // validateTaskOrder repairs task_order.json so that each task appears in exactly
-// the zone that dropZoneForTask derives from its current (status, priority).
-// Removes duplicates and stale entries left by prior race conditions.
+// the zone that its current (status, priority) dictates.
 func (m *PlanningManager) validateTaskOrder() {
 	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return
 	}
 
-	tSlug := todoSlugFromConfig(config)
+	tSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
 
-	// Collect actual zone for every task from disk
 	statuses := make([]string, 0, len(config.ColumnDefinitions)+1)
 	for _, col := range config.ColumnDefinitions {
 		statuses = append(statuses, col.Name)
 	}
 	statuses = append(statuses, string(access.TaskStatusArchived))
 
-	actualZone := make(map[string]string) // taskID → correct zone
+	actualZone := make(map[string]string)
 	for _, status := range statuses {
 		tasks, err := m.taskAccess.GetTasksByStatus(status)
 		if err != nil {
 			continue
 		}
 		for _, t := range tasks {
-			actualZone[t.ID] = dropZoneForTask(status, t.Priority, tSlug)
+			actualZone[t.ID] = m.ruleEngine.DropZoneForTask(status, t.Priority, tSlug)
 		}
 	}
 
@@ -1199,8 +1148,7 @@ func (m *PlanningManager) validateTaskOrder() {
 		return
 	}
 
-	orderMap, changed := reconcileTaskOrder(orderMap, actualZone)
-
+	orderMap, changed := m.ruleEngine.ReconcileTaskOrder(orderMap, actualZone)
 	if changed {
 		slog.Info("validateTaskOrder: repaired task_order.json")
 		_ = m.taskAccess.SaveTaskOrder(orderMap)
@@ -1263,11 +1211,11 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 	}
 
 	archivedStatus := string(access.TaskStatusArchived)
-	tSlug := todoSlugFromConfig(config)
+	tSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
 	sort.SliceStable(allTasks, func(i, j int) bool {
 		a, b := allTasks[i], allTasks[j]
-		zoneA := dropZoneForTask(a.Status, a.Priority, tSlug)
-		zoneB := dropZoneForTask(b.Status, b.Priority, tSlug)
+		zoneA := m.ruleEngine.DropZoneForTask(a.Status, a.Priority, tSlug)
+		zoneB := m.ruleEngine.DropZoneForTask(b.Status, b.Priority, tSlug)
 		if zoneA != zoneB {
 			return zoneA < zoneB // Total order across zones for sort correctness
 		}
@@ -1392,7 +1340,7 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 	// Save task and update task order atomically in a single git commit
 	createConfig, _ := m.getAccessBoardConfig()
 	accessTask := toAccessTask(task)
-	zone := dropZoneForTask(string(access.TaskStatusTodo), task.Priority, todoSlugFromConfig(createConfig))
+	zone := m.ruleEngine.DropZoneForTask(string(access.TaskStatusTodo), task.Priority, m.ruleEngine.TodoSlugFromColumns(toColumnInfos(createConfig.ColumnDefinitions)))
 	createdTask, err := m.taskAccess.SaveTaskWithOrder(accessTask, zone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save task: %w", err)
@@ -1500,8 +1448,8 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	}
 
 	// Update task order: remove from source drop zone, then apply positions or append to target
-	moveTodoSlug := todoSlugFromConfig(config)
-	sourceZone := dropZoneForTask(oldStatus, movingTask.Priority, moveTodoSlug)
+	moveTodoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
+	sourceZone := m.ruleEngine.DropZoneForTask(oldStatus, movingTask.Priority, moveTodoSlug)
 
 	m.taskOrderMu.Lock()
 	orderMap, err := m.taskAccess.LoadTaskOrder()
@@ -1515,7 +1463,7 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 			orderMap[zone] = ids
 		}
 	} else {
-		targetZone := dropZoneForTask(newStatus, movingTask.Priority, moveTodoSlug)
+		targetZone := m.ruleEngine.DropZoneForTask(newStatus, movingTask.Priority, moveTodoSlug)
 		orderMap[targetZone] = append(orderMap[targetZone], taskId)
 	}
 	if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
@@ -1569,9 +1517,9 @@ func (m *PlanningManager) UpdateTask(task Task) error {
 	// Check if priority change causes a zone change (only for todo tasks)
 	if oldPriority != "" && oldPriority != task.Priority {
 		config, _ := m.getAccessBoardConfig()
-		todoSlug := todoSlugFromConfig(config)
-		oldZone := dropZoneForTask(oldStatus, oldPriority, todoSlug)
-		newZone := dropZoneForTask(oldStatus, task.Priority, todoSlug)
+		todoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
+		oldZone := m.ruleEngine.DropZoneForTask(oldStatus, oldPriority, todoSlug)
+		newZone := m.ruleEngine.DropZoneForTask(oldStatus, task.Priority, todoSlug)
 		if oldZone != newZone {
 			m.taskOrderMu.Lock()
 			err := m.taskAccess.UpdateTaskWithOrderMove(accessTask, oldZone, newZone)
@@ -1604,7 +1552,7 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	today := now.Format("2006-01-02")
 	var promoted []PromotedTask
 	config, _ := m.getAccessBoardConfig()
-	todoSlug := todoSlugFromConfig(config)
+	todoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
 
 	m.taskOrderMu.Lock()
 	orderMap, orderErr := m.taskAccess.LoadTaskOrder()
@@ -1637,8 +1585,8 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 			return nil, fmt.Errorf("failed to write promoted task %s: %w", t.ID, err)
 		}
 
-		oldZone := dropZoneForTask(t.Status, oldPriority, todoSlug)
-		newZone := dropZoneForTask(t.Status, string(access.PriorityImportantUrgent), todoSlug)
+		oldZone := m.ruleEngine.DropZoneForTask(t.Status, oldPriority, todoSlug)
+		newZone := m.ruleEngine.DropZoneForTask(t.Status, string(access.PriorityImportantUrgent), todoSlug)
 		if oldZone != newZone {
 			if ids, ok := orderMap[oldZone]; ok {
 				filtered := make([]string, 0, len(ids))
@@ -1824,7 +1772,7 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 	if boardConfig == nil {
 		boardConfig = defaultAccessBoardConfiguration()
 	}
-	targetZone := dropZoneForTask(string(access.TaskStatusDone), targetTask.Priority, todoSlugFromConfig(boardConfig))
+	targetZone := m.ruleEngine.DropZoneForTask(string(access.TaskStatusDone), targetTask.Priority, m.ruleEngine.TodoSlugFromColumns(toColumnInfos(boardConfig.ColumnDefinitions)))
 	m.taskOrderMu.Lock()
 	orderMap, err := m.taskAccess.LoadTaskOrder()
 	if err != nil {

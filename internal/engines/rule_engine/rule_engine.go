@@ -11,6 +11,16 @@ import (
 type IRuleEngine interface {
 	// EvaluateTaskChange evaluates whether a task change is allowed by all active rules.
 	EvaluateTaskChange(event TaskEvent) (*RuleEvaluationResult, error)
+	// DropZoneForTask returns the drop zone ID for a task. For todo-type columns,
+	// the drop zone is the priority (for section-based rendering). For other columns,
+	// the drop zone is the status itself.
+	DropZoneForTask(status, priority, todoSlug string) string
+	// TodoSlugFromColumns returns the slug of the todo-type column from a column list.
+	TodoSlugFromColumns(columns []ColumnInfo) string
+	// ReconcileTaskOrder corrects an order map so each task appears in exactly
+	// the zone that its actual zone dictates. Removes stale entries, deduplicates,
+	// and adds missing tasks.
+	ReconcileTaskOrder(existingOrder map[string][]string, actualZone map[string]string) (map[string][]string, bool)
 }
 
 // RuleEngine implements IRuleEngine. It is stateless and evaluates rules
@@ -341,4 +351,61 @@ func toInt(v interface{}) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// DropZoneForTask returns the drop zone ID for a task based on its status and priority.
+// For todo-type columns the drop zone is the priority section name (when set);
+// for other columns the drop zone is the status itself.
+func (re *RuleEngine) DropZoneForTask(status, priority, todoSlug string) string {
+	if status == todoSlug && priority != "" {
+		return priority
+	}
+	return status
+}
+
+// TodoSlugFromColumns returns the slug of the todo-type column from the given
+// column list. Falls back to "todo" when no todo-type column is found.
+func (re *RuleEngine) TodoSlugFromColumns(columns []ColumnInfo) string {
+	for _, col := range columns {
+		if col.Type == "todo" {
+			return col.Name
+		}
+	}
+	return "todo"
+}
+
+// ReconcileTaskOrder takes the existing order map and a map of actual task zones
+// (taskID -> correct zone) and returns the corrected order map.
+// It removes stale entries, deduplicates, and adds missing tasks to their correct zones.
+func (re *RuleEngine) ReconcileTaskOrder(existingOrder map[string][]string, actualZone map[string]string) (map[string][]string, bool) {
+	changed := false
+
+	// Remove stale entries: keep only IDs whose actual zone matches the zone key
+	for zone, ids := range existingOrder {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if actualZone[id] == zone {
+				filtered = append(filtered, id)
+			} else {
+				changed = true
+			}
+		}
+		existingOrder[zone] = filtered
+	}
+
+	// Add missing tasks to their correct zone
+	present := make(map[string]bool)
+	for _, ids := range existingOrder {
+		for _, id := range ids {
+			present[id] = true
+		}
+	}
+	for id, zone := range actualZone {
+		if !present[id] {
+			existingOrder[zone] = append(existingOrder[zone], id)
+			changed = true
+		}
+	}
+
+	return existingOrder, changed
 }

@@ -563,3 +563,195 @@ func TestUnit_MultipleViolations(t *testing.T) {
 		}
 	})
 }
+
+// =============================================================================
+// DropZoneForTask Tests
+// =============================================================================
+
+func TestUnit_DropZoneForTask(t *testing.T) {
+	engine := NewRuleEngine(nil)
+
+	t.Run("todo column with priority returns priority", func(t *testing.T) {
+		got := engine.DropZoneForTask("todo", "important-urgent", "todo")
+		if got != "important-urgent" {
+			t.Errorf("expected 'important-urgent', got %q", got)
+		}
+	})
+
+	t.Run("non-todo column returns status", func(t *testing.T) {
+		got := engine.DropZoneForTask("doing", "important-urgent", "todo")
+		if got != "doing" {
+			t.Errorf("expected 'doing', got %q", got)
+		}
+	})
+
+	t.Run("todo column with empty priority returns status", func(t *testing.T) {
+		got := engine.DropZoneForTask("todo", "", "todo")
+		if got != "todo" {
+			t.Errorf("expected 'todo', got %q", got)
+		}
+	})
+
+	t.Run("custom todo slug with priority returns priority", func(t *testing.T) {
+		got := engine.DropZoneForTask("backlog", "important-not-urgent", "backlog")
+		if got != "important-not-urgent" {
+			t.Errorf("expected 'important-not-urgent', got %q", got)
+		}
+	})
+
+	t.Run("done column returns status", func(t *testing.T) {
+		got := engine.DropZoneForTask("done", "", "todo")
+		if got != "done" {
+			t.Errorf("expected 'done', got %q", got)
+		}
+	})
+}
+
+// =============================================================================
+// TodoSlugFromColumns Tests
+// =============================================================================
+
+func TestUnit_TodoSlugFromColumns(t *testing.T) {
+	engine := NewRuleEngine(nil)
+
+	t.Run("returns todo-type column name", func(t *testing.T) {
+		columns := []ColumnInfo{
+			{Name: "backlog", Type: "todo"},
+			{Name: "in-progress", Type: "doing"},
+			{Name: "completed", Type: "done"},
+		}
+		got := engine.TodoSlugFromColumns(columns)
+		if got != "backlog" {
+			t.Errorf("expected 'backlog', got %q", got)
+		}
+	})
+
+	t.Run("falls back to todo when no todo-type column", func(t *testing.T) {
+		columns := []ColumnInfo{
+			{Name: "in-progress", Type: "doing"},
+			{Name: "completed", Type: "done"},
+		}
+		got := engine.TodoSlugFromColumns(columns)
+		if got != "todo" {
+			t.Errorf("expected 'todo', got %q", got)
+		}
+	})
+
+	t.Run("handles empty list", func(t *testing.T) {
+		got := engine.TodoSlugFromColumns(nil)
+		if got != "todo" {
+			t.Errorf("expected 'todo', got %q", got)
+		}
+	})
+
+	t.Run("returns first todo-type column when multiple exist", func(t *testing.T) {
+		columns := []ColumnInfo{
+			{Name: "first-todo", Type: "todo"},
+			{Name: "second-todo", Type: "todo"},
+		}
+		got := engine.TodoSlugFromColumns(columns)
+		if got != "first-todo" {
+			t.Errorf("expected 'first-todo', got %q", got)
+		}
+	})
+}
+
+// =============================================================================
+// ReconcileTaskOrder Tests
+// =============================================================================
+
+func TestUnit_ReconcileTaskOrder(t *testing.T) {
+	engine := NewRuleEngine(nil)
+
+	t.Run("removes stale entries", func(t *testing.T) {
+		existingOrder := map[string][]string{
+			"todo":  {"t1", "t2"},
+			"doing": {"t3"},
+		}
+		actualZone := map[string]string{
+			"t1": "todo",
+			"t2": "doing",
+			"t3": "doing",
+		}
+		result, changed := engine.ReconcileTaskOrder(existingOrder, actualZone)
+		if !changed {
+			t.Error("expected changed=true")
+		}
+		if len(result["todo"]) != 1 || result["todo"][0] != "t1" {
+			t.Errorf("expected todo=['t1'], got %v", result["todo"])
+		}
+		foundT2 := false
+		for _, id := range result["doing"] {
+			if id == "t2" {
+				foundT2 = true
+			}
+		}
+		if !foundT2 {
+			t.Errorf("expected t2 in doing zone, got %v", result["doing"])
+		}
+	})
+
+	t.Run("adds missing tasks", func(t *testing.T) {
+		existingOrder := map[string][]string{
+			"todo": {"t1"},
+		}
+		actualZone := map[string]string{
+			"t1": "todo",
+			"t2": "doing",
+		}
+		result, changed := engine.ReconcileTaskOrder(existingOrder, actualZone)
+		if !changed {
+			t.Error("expected changed=true")
+		}
+		if len(result["doing"]) != 1 || result["doing"][0] != "t2" {
+			t.Errorf("expected doing=['t2'], got %v", result["doing"])
+		}
+	})
+
+	t.Run("handles empty order map", func(t *testing.T) {
+		existingOrder := map[string][]string{}
+		actualZone := map[string]string{
+			"t1": "todo",
+			"t2": "doing",
+		}
+		result, changed := engine.ReconcileTaskOrder(existingOrder, actualZone)
+		if !changed {
+			t.Error("expected changed=true")
+		}
+		if len(result["todo"]) != 1 || result["todo"][0] != "t1" {
+			t.Errorf("expected todo=['t1'], got %v", result["todo"])
+		}
+		if len(result["doing"]) != 1 || result["doing"][0] != "t2" {
+			t.Errorf("expected doing=['t2'], got %v", result["doing"])
+		}
+	})
+
+	t.Run("handles no actual zones", func(t *testing.T) {
+		existingOrder := map[string][]string{
+			"todo": {"t1"},
+		}
+		actualZone := map[string]string{}
+		result, changed := engine.ReconcileTaskOrder(existingOrder, actualZone)
+		if !changed {
+			t.Error("expected changed=true when stale entries exist")
+		}
+		if len(result["todo"]) != 0 {
+			t.Errorf("expected empty todo, got %v", result["todo"])
+		}
+	})
+
+	t.Run("returns changed=false when no changes needed", func(t *testing.T) {
+		existingOrder := map[string][]string{
+			"todo":  {"t1"},
+			"doing": {"t2"},
+		}
+		actualZone := map[string]string{
+			"t1": "todo",
+			"t2": "doing",
+		}
+		_, changed := engine.ReconcileTaskOrder(existingOrder, actualZone)
+		if changed {
+			t.Error("expected changed=false when order matches actual zones")
+		}
+	})
+}

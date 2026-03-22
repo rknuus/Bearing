@@ -498,7 +498,7 @@ func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
 	if err != nil || boardConfig == nil {
 		boardConfig = defaultAccessBoardConfiguration()
 	}
-	tSlug := todoSlugFromConfig(boardConfig)
+	tSlug := manager.ruleEngine.TodoSlugFromColumns(toColumnInfos(boardConfig.ColumnDefinitions))
 
 	// 2. Load task order map
 	orderMap, err := manager.taskAccess.LoadTaskOrder()
@@ -515,7 +515,7 @@ func assertTaskOrderConsistency(t *testing.T, manager *PlanningManager) {
 			continue
 		}
 		for _, task := range tasks {
-			zone := dropZoneForTask(col.Name, task.Priority, tSlug)
+			zone := manager.ruleEngine.DropZoneForTask(col.Name, task.Priority, tSlug)
 			expectedZone[task.ID] = zone
 		}
 	}

@@ -1,9 +1,9 @@
 # 03 — Business Logic in the Wrong Layers
 
-> **Status: MOSTLY RESOLVED** — Commit `a03a2a6` (2026-03-20)
+> **Status: RESOLVED** — Phase 1+2: Commit `a03a2a6` (2026-03-20). Phase 3: 2026-03-22.
 > Phase 1: `Slugify` → `utilities/strings.go`, `SuggestAbbreviation` → managers, validators → `managers/validators.go`, `DefaultBoardConfiguration` → managers.
 > Phase 2: Progress computation → new `ProgressEngine` at `internal/engines/progress_engine/`.
-> **Remaining:** `validateTaskOrder()` data repair logic still in Manager — address during Finding 04 decomposition.
+> Phase 3: `reconcileTaskOrder`, `dropZoneForTask`, `todoSlugFromConfig` → `RuleEngine` methods `ReconcileTaskOrder`, `DropZoneForTask`, `TodoSlugFromColumns`. New `ColumnInfo` DTO. All 15 Manager call sites updated. `vol-task-ordering` updated with `RuleEngine` as co-encapsulator.
 
 ## Finding
 
