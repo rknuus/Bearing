@@ -161,4 +161,3 @@ Follow existing patterns in the codebase.
 - No business logic in client code
 - Avoid code duplication
 - Do not pollute production code with test code, e.g. no testid in frontend code
-- avoid `$()` in common operations like `git commit` (OK for rare, specific exceptions)
