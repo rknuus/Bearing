@@ -320,29 +320,119 @@ func (am *AdviceManager) acceptEdit(suggestion chat_engine.Suggestion) error {
 }
 
 // convertThemesToOKRContext converts access layer themes to engine layer OKR
-// contexts. If selectedOKRIds is non-empty, only themes whose ID appears in
-// the selection are included.
+// contexts. If selectedOKRIds is non-empty, a theme is included when the theme
+// itself or any of its descendants (objectives, key results, routines) appears
+// in the selection. Only the selected descendants are kept, giving the model
+// focused context.
 func convertThemesToOKRContext(themes []access.LifeTheme, selectedOKRIds []string) []chat_engine.OKRContext {
 	filter := buildIDSet(selectedOKRIds)
-
-	contexts := make([]chat_engine.OKRContext, 0, len(themes))
-	for _, theme := range themes {
-		if len(filter) > 0 {
-			if _, ok := filter[theme.ID]; !ok {
-				continue
-			}
+	if len(filter) == 0 {
+		// No filter — include everything.
+		contexts := make([]chat_engine.OKRContext, 0, len(themes))
+		for _, theme := range themes {
+			contexts = append(contexts, chat_engine.OKRContext{
+				ThemeID:    theme.ID,
+				ThemeName:  theme.Name,
+				Objectives: convertObjectivesToOKR(theme.Objectives),
+				Routines:   convertRoutinesToOKR(theme.Routines),
+			})
 		}
-
-		ctx := chat_engine.OKRContext{
-			ThemeID:    theme.ID,
-			ThemeName:  theme.Name,
-			Objectives: convertObjectivesToOKR(theme.Objectives),
-			Routines:   convertRoutinesToOKR(theme.Routines),
-		}
-		contexts = append(contexts, ctx)
+		return contexts
 	}
 
+	// With a filter: include a theme when any of its IDs match.
+	contexts := make([]chat_engine.OKRContext, 0, len(themes))
+	for _, theme := range themes {
+		_, themeSelected := filter[theme.ID]
+
+		objs := filterObjectivesToOKR(theme.Objectives, filter)
+		routines := filterRoutinesToOKR(theme.Routines, filter)
+
+		if !themeSelected && len(objs) == 0 && len(routines) == 0 {
+			continue
+		}
+
+		// If the theme itself was selected, include all its descendants.
+		if themeSelected {
+			objs = convertObjectivesToOKR(theme.Objectives)
+			routines = convertRoutinesToOKR(theme.Routines)
+		}
+
+		contexts = append(contexts, chat_engine.OKRContext{
+			ThemeID:    theme.ID,
+			ThemeName:  theme.Name,
+			Objectives: objs,
+			Routines:   routines,
+		})
+	}
 	return contexts
+}
+
+// filterObjectivesToOKR converts objectives keeping only those (or whose
+// descendants) appear in the filter set. Selected objectives include all
+// their children; unselected objectives are included only if a child matches.
+func filterObjectivesToOKR(objectives []access.Objective, filter map[string]struct{}) []chat_engine.OKRObjective {
+	var result []chat_engine.OKRObjective
+	for _, obj := range objectives {
+		_, objSelected := filter[obj.ID]
+
+		krs := filterKeyResultsToOKR(obj.KeyResults, filter)
+		children := filterObjectivesToOKR(obj.Objectives, filter)
+
+		if !objSelected && len(krs) == 0 && len(children) == 0 {
+			continue
+		}
+
+		// If the objective itself was selected, include all its KRs and children.
+		if objSelected {
+			krs = convertKeyResultsToOKR(obj.KeyResults)
+			children = convertObjectivesToOKR(obj.Objectives)
+		}
+
+		result = append(result, chat_engine.OKRObjective{
+			ID:         obj.ID,
+			Title:      obj.Title,
+			Status:     obj.Status,
+			KeyResults: krs,
+			Children:   children,
+		})
+	}
+	return result
+}
+
+// filterKeyResultsToOKR keeps only key results whose ID is in the filter set.
+func filterKeyResultsToOKR(keyResults []access.KeyResult, filter map[string]struct{}) []chat_engine.OKRKeyResult {
+	var result []chat_engine.OKRKeyResult
+	for _, kr := range keyResults {
+		if _, ok := filter[kr.ID]; ok {
+			result = append(result, chat_engine.OKRKeyResult{
+				ID:           kr.ID,
+				Description:  kr.Description,
+				StartValue:   kr.StartValue,
+				CurrentValue: kr.CurrentValue,
+				TargetValue:  kr.TargetValue,
+			})
+		}
+	}
+	return result
+}
+
+// filterRoutinesToOKR keeps only routines whose ID is in the filter set.
+func filterRoutinesToOKR(routines []access.Routine, filter map[string]struct{}) []chat_engine.OKRRoutine {
+	var result []chat_engine.OKRRoutine
+	for _, r := range routines {
+		if _, ok := filter[r.ID]; ok {
+			result = append(result, chat_engine.OKRRoutine{
+				ID:           r.ID,
+				Description:  r.Description,
+				CurrentValue: r.CurrentValue,
+				TargetValue:  r.TargetValue,
+				TargetType:   r.TargetType,
+				Unit:         r.Unit,
+			})
+		}
+	}
+	return result
 }
 
 // convertObjectivesToOKR recursively converts access objectives to engine

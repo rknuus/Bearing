@@ -777,7 +777,7 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 		t.Errorf("expected unit 'hours', got %q", routine.Unit)
 	}
 
-	// Test with filter
+	// Test with theme ID filter
 	filteredContexts := convertThemesToOKRContext(themes, []string{"CF"})
 	if len(filteredContexts) != 1 {
 		t.Fatalf("expected 1 filtered context, got %d", len(filteredContexts))
@@ -790,6 +790,64 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	allContexts := convertThemesToOKRContext(themes, []string{})
 	if len(allContexts) != 2 {
 		t.Fatalf("expected 2 contexts with empty filter, got %d", len(allContexts))
+	}
+
+	// Test with objective ID — should include parent theme, only the selected objective
+	objContexts := convertThemesToOKRContext(themes, []string{"H-O1"})
+	if len(objContexts) != 1 {
+		t.Fatalf("expected 1 context for objective filter, got %d", len(objContexts))
+	}
+	if objContexts[0].ThemeID != "H" {
+		t.Errorf("expected parent theme 'H', got %q", objContexts[0].ThemeID)
+	}
+	if len(objContexts[0].Objectives) != 1 {
+		t.Fatalf("expected 1 objective, got %d", len(objContexts[0].Objectives))
+	}
+	if objContexts[0].Objectives[0].ID != "H-O1" {
+		t.Errorf("expected objective 'H-O1', got %q", objContexts[0].Objectives[0].ID)
+	}
+	// Selected objective should include all its KRs and children
+	if len(objContexts[0].Objectives[0].KeyResults) != 1 {
+		t.Errorf("expected 1 KR under selected objective, got %d", len(objContexts[0].Objectives[0].KeyResults))
+	}
+	if len(objContexts[0].Objectives[0].Children) != 1 {
+		t.Errorf("expected 1 child under selected objective, got %d", len(objContexts[0].Objectives[0].Children))
+	}
+
+	// Test with KR ID — should include parent theme and parent objective
+	krContexts := convertThemesToOKRContext(themes, []string{"H-KR1"})
+	if len(krContexts) != 1 {
+		t.Fatalf("expected 1 context for KR filter, got %d", len(krContexts))
+	}
+	if len(krContexts[0].Objectives) != 1 {
+		t.Fatalf("expected 1 objective for KR filter, got %d", len(krContexts[0].Objectives))
+	}
+	if len(krContexts[0].Objectives[0].KeyResults) != 1 {
+		t.Fatalf("expected 1 KR, got %d", len(krContexts[0].Objectives[0].KeyResults))
+	}
+	if krContexts[0].Objectives[0].KeyResults[0].ID != "H-KR1" {
+		t.Errorf("expected KR 'H-KR1', got %q", krContexts[0].Objectives[0].KeyResults[0].ID)
+	}
+
+	// Test with objective + its KRs — objective selected means all descendants included
+	mixedContexts := convertThemesToOKRContext(themes, []string{"H-O1", "H-KR1"})
+	if len(mixedContexts) != 1 {
+		t.Fatalf("expected 1 context, got %d", len(mixedContexts))
+	}
+	if len(mixedContexts[0].Objectives) != 1 {
+		t.Fatalf("expected 1 objective, got %d", len(mixedContexts[0].Objectives))
+	}
+
+	// Test with routine ID
+	routineContexts := convertThemesToOKRContext(themes, []string{"H-R1"})
+	if len(routineContexts) != 1 {
+		t.Fatalf("expected 1 context for routine filter, got %d", len(routineContexts))
+	}
+	if len(routineContexts[0].Routines) != 1 {
+		t.Fatalf("expected 1 routine, got %d", len(routineContexts[0].Routines))
+	}
+	if routineContexts[0].Routines[0].ID != "H-R1" {
+		t.Errorf("expected routine 'H-R1', got %q", routineContexts[0].Routines[0].ID)
 	}
 }
 
