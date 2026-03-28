@@ -26,9 +26,10 @@
     highlightItemId?: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- opaque to this view, typed inside AdvisorChat
     advisorMessages?: any[];
+    advisorPanelOpen?: boolean;
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]) }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false) }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -184,7 +185,6 @@
   let advisorEnabled = $state(false);
   let advisorAvailable = $state(false);
   let advisorModels = $state<{name: string, provider: string, type: string, available: boolean, reason: string}[]>([]);
-  let advisorPanelOpen = $state(false);
   let selectedOKRIds = $state<string[]>([]);
   let lastSelectedId: string | null = null;
 

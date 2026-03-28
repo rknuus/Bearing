@@ -30,6 +30,7 @@
   // Advisor session state — lives here so it survives view switches
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed inside AdvisorChat
   let advisorMessages = $state<any[]>([]);
+  let advisorPanelOpen = $state(false);
 
   // Centralized current date (updates at midnight)
   let currentDate = $state(new Date().toISOString().split('T')[0]);
@@ -474,6 +475,7 @@
           onNavigateToTasks={handleNavigateToTasks}
           highlightItemId={currentItemId}
           bind:advisorMessages
+          bind:advisorPanelOpen
         />
       </div>
     {:else if currentView === 'eisenkan'}
