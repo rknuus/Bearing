@@ -14,6 +14,8 @@ type IUIStateAccess interface {
 	SaveNavigationContext(ctx NavigationContext) error
 	LoadTaskDrafts() (json.RawMessage, error)
 	SaveTaskDrafts(data json.RawMessage) error
+	LoadAdvisorEnabled() (bool, error)
+	SaveAdvisorEnabled(enabled bool) error
 }
 
 // UIStateAccess implements IUIStateAccess with file-based storage.
@@ -83,6 +85,47 @@ func (ua *UIStateAccess) LoadTaskDrafts() (json.RawMessage, error) {
 func (ua *UIStateAccess) SaveTaskDrafts(data json.RawMessage) error {
 	if err := os.WriteFile(ua.taskDraftsFilePath(), data, 0644); err != nil {
 		return fmt.Errorf("UIStateAccess.SaveTaskDrafts: %w", err)
+	}
+	return nil
+}
+
+// advisorSettingsFilePath returns the path to the advisor settings file.
+func (ua *UIStateAccess) advisorSettingsFilePath() string {
+	return filepath.Join(ua.dataPath, "advisor_settings.json")
+}
+
+// advisorSettings is the JSON structure for advisor settings.
+type advisorSettings struct {
+	Enabled bool `json:"enabled"`
+}
+
+// LoadAdvisorEnabled retrieves the advisor enabled setting.
+// Returns false if the file does not exist (advisor disabled by default).
+func (ua *UIStateAccess) LoadAdvisorEnabled() (bool, error) {
+	filePath := ua.advisorSettingsFilePath()
+
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, fmt.Errorf("UIStateAccess.LoadAdvisorEnabled: failed to read file: %w", err)
+	}
+
+	var settings advisorSettings
+	if err := json.Unmarshal(data, &settings); err != nil {
+		return false, fmt.Errorf("UIStateAccess.LoadAdvisorEnabled: failed to parse file: %w", err)
+	}
+
+	return settings.Enabled, nil
+}
+
+// SaveAdvisorEnabled persists the advisor enabled setting.
+// Note: This is user preference data, not versioned with git.
+func (ua *UIStateAccess) SaveAdvisorEnabled(enabled bool) error {
+	filePath := ua.advisorSettingsFilePath()
+	if err := writeJSON(filePath, advisorSettings{Enabled: enabled}); err != nil {
+		return fmt.Errorf("UIStateAccess.SaveAdvisorEnabled: %w", err)
 	}
 	return nil
 }

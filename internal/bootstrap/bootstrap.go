@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/rkn/bearing/internal/access"
+	"github.com/rkn/bearing/internal/engines/chat_engine"
 	"github.com/rkn/bearing/internal/managers"
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -18,6 +19,7 @@ import (
 type Result struct {
 	PlanningManager  *managers.PlanningManager
 	WorkspaceManager *managers.WorkspaceManager
+	AdviceManager    *managers.AdviceManager
 	LogFile          *os.File
 }
 
@@ -91,11 +93,24 @@ func Initialize() (*Result, error) {
 		return nil, fmt.Errorf("failed to initialize WorkspaceManager: %w", err)
 	}
 
+	// Initialize ChatEngine
+	chatEngine := chat_engine.NewChatEngine()
+
+	// Initialize ModelAccess
+	modelAccess := access.NewClaudeCLIModelAccess(0)
+
+	// Initialize AdviceManager
+	adviceManager, err := managers.NewAdviceManager(themeAccess, chatEngine, modelAccess, uiStateAccess, planningManager)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize AdviceManager: %w", err)
+	}
+
 	slog.Info("Bearing initialized", "dataDir", bearingDir)
 
 	return &Result{
 		PlanningManager:  planningManager,
 		WorkspaceManager: workspaceManager,
+		AdviceManager:    adviceManager,
 		LogFile:          logFile,
 	}, nil
 }
