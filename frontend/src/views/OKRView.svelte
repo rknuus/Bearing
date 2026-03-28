@@ -27,9 +27,11 @@
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- opaque to this view, typed inside AdvisorChat
     advisorMessages?: any[];
     advisorPanelOpen?: boolean;
+    advisorBusy?: boolean;
+    onAdvisorSend?: (message: string, selectedIds?: string[]) => void;
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false) }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), onAdvisorSend }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -1702,12 +1704,14 @@
       {/if}
       <AdvisorChat
         onRequestAdvice={handleRequestAdvice}
+        onSendMessage={onAdvisorSend}
         onAcceptSuggestion={handleAcceptSuggestion}
         available={advisorAvailable}
         models={advisorModels}
         {selectedOKRIds}
         onRecheck={handleRecheckModels}
         bind:messages={advisorMessages}
+        bind:busy={advisorBusy}
       />
     </div>
   {/if}

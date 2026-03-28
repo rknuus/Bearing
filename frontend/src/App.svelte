@@ -31,6 +31,40 @@
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed inside AdvisorChat
   let advisorMessages = $state<any[]>([]);
   let advisorPanelOpen = $state(false);
+  let advisorBusy = $state(false);
+
+  import { extractError } from './lib/utils/bindings';
+
+  /** Owns the full async advisor request lifecycle so it survives view switches. */
+  async function handleAdvisorSend(message: string, selectedIds?: string[]) {
+    advisorBusy = true;
+    try {
+      const bindings = getBindings();
+      const history = advisorMessages
+        .filter((m: { role: string }) => m.role === 'user' || m.role === 'advisor')
+        .map((m: { role: string; content: string }) => ({
+          role: m.role === 'advisor' ? 'assistant' : m.role,
+          content: m.content,
+        }));
+      const historyJSON = JSON.stringify(history);
+      const result = await bindings.RequestAdvice(message, historyJSON, selectedIds ?? []);
+      advisorMessages = [...advisorMessages, {
+        role: 'advisor' as const,
+        content: result.text,
+        timestamp: Date.now(),
+        suggestions: result.suggestions,
+      }];
+    } catch (e: unknown) {
+      advisorMessages = [...advisorMessages, {
+        role: 'advisor' as const,
+        content: '',
+        timestamp: Date.now(),
+        error: extractError(e),
+      }];
+    } finally {
+      advisorBusy = false;
+    }
+  }
 
   // Centralized current date (updates at midnight)
   let currentDate = $state(new Date().toISOString().split('T')[0]);
@@ -476,6 +510,8 @@
           highlightItemId={currentItemId}
           bind:advisorMessages
           bind:advisorPanelOpen
+          bind:advisorBusy
+          onAdvisorSend={handleAdvisorSend}
         />
       </div>
     {:else if currentView === 'eisenkan'}

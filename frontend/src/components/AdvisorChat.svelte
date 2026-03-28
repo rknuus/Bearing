@@ -37,17 +37,19 @@
 
   interface Props {
     onRequestAdvice: (message: string, history: ChatMessage[], selectedIds?: string[]) => Promise<AdviceResponse>;
+    /** Fire-and-forget send — parent owns the async lifecycle. When set, onRequestAdvice is unused. */
+    onSendMessage?: (message: string, selectedIds?: string[]) => void;
     onAcceptSuggestion?: (suggestion: Suggestion) => Promise<void>;
     available: boolean;
     models: ModelInfo[];
     selectedOKRIds?: string[];
     onRecheck?: () => void;
     messages?: ChatMessage[];
+    busy?: boolean;
   }
 
-  let { onRequestAdvice, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck, messages = $bindable([]) }: Props = $props();
+  let { onRequestAdvice, onSendMessage, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck, messages = $bindable([]), busy = $bindable(false) }: Props = $props();
   let inputText = $state('');
-  let busy = $state(false);
   let messagesEndEl: HTMLDivElement | undefined = $state(undefined);
 
   function scrollToBottom() {
@@ -73,6 +75,14 @@
     busy = true;
     scrollToBottom();
 
+    if (onSendMessage) {
+      // Fire-and-forget — parent manages async lifecycle, so the request
+      // survives this component being unmounted on view switch.
+      onSendMessage(text, selectedOKRIds);
+      return;
+    }
+
+    // Fallback: manage async locally (used by tests without onSendMessage)
     try {
       const currentHistory = untrack(() => [...messages]);
       const response = await onRequestAdvice(text, currentHistory, selectedOKRIds);
