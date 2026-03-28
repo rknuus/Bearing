@@ -1,7 +1,9 @@
 package chat_engine
 
 import (
+	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 )
 
@@ -22,9 +24,8 @@ type IChatEngine interface {
 	AssembleConversation(okrData []OKRContext, history []ChatMessage, userMessage string) []ChatMessage
 
 	// ParseSuggestions extracts bearing-suggestion JSON blocks from raw
-	// assistant response text. Returns the cleaned text and any parsed
-	// suggestions. The current implementation is a stub that returns
-	// the input text unchanged and nil suggestions.
+	// assistant response text. Returns the cleaned text (with suggestion
+	// blocks replaced by short placeholders) and any parsed suggestions.
 	ParseSuggestions(responseText string) (string, []Suggestion)
 }
 
@@ -51,10 +52,159 @@ func (ce *ChatEngine) AssembleConversation(okrData []OKRContext, history []ChatM
 	return messages
 }
 
-// ParseSuggestions is a stub that returns the input text and nil suggestions.
-// Full parsing of bearing-suggestion blocks will be implemented in task 322.
+// suggestionOpenMarker is the fenced code block opening for suggestion blocks.
+const suggestionOpenMarker = "```bearing-suggestion"
+
+// suggestionCloseMarker is the fenced code block closing for suggestion blocks.
+const suggestionCloseMarker = "```"
+
+// rawSuggestion is an intermediate struct for unmarshalling flat JSON from
+// suggestion blocks before converting to the typed Suggestion DTOs.
+type rawSuggestion struct {
+	Type   string `json:"type"`
+	Action string `json:"action"`
+	// Theme fields
+	ID    string `json:"id,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Color string `json:"color,omitempty"`
+	// Objective fields
+	Title    string `json:"title,omitempty"`
+	ParentID string `json:"parentId,omitempty"`
+	// Key result fields
+	Description       string `json:"description,omitempty"`
+	StartValue        int    `json:"startValue,omitempty"`
+	CurrentValue      int    `json:"currentValue,omitempty"`
+	TargetValue       int    `json:"targetValue,omitempty"`
+	ParentObjectiveID string `json:"parentObjectiveId,omitempty"`
+	// Routine fields
+	TargetType string `json:"targetType,omitempty"`
+	Unit       string `json:"unit,omitempty"`
+	ThemeID    string `json:"themeId,omitempty"`
+}
+
+// ParseSuggestions extracts bearing-suggestion JSON blocks from raw assistant
+// response text. It returns the cleaned text (with suggestion blocks replaced
+// by short placeholders) and the parsed suggestions. Malformed blocks are
+// logged and skipped without affecting the rest of the parsing.
 func (ce *ChatEngine) ParseSuggestions(responseText string) (string, []Suggestion) {
-	return responseText, nil
+	var suggestions []Suggestion
+	var cleaned strings.Builder
+
+	remaining := responseText
+	for {
+		openIdx := strings.Index(remaining, suggestionOpenMarker)
+		if openIdx == -1 {
+			cleaned.WriteString(remaining)
+			break
+		}
+
+		// Write text before the suggestion block.
+		cleaned.WriteString(remaining[:openIdx])
+
+		// Move past the opening marker.
+		afterOpen := remaining[openIdx+len(suggestionOpenMarker):]
+
+		// Find the closing fence.
+		closeIdx := strings.Index(afterOpen, suggestionCloseMarker)
+		if closeIdx == -1 {
+			// No closing fence found; treat the rest as plain text.
+			cleaned.WriteString(remaining[openIdx:])
+			break
+		}
+
+		jsonContent := strings.TrimSpace(afterOpen[:closeIdx])
+		remaining = afterOpen[closeIdx+len(suggestionCloseMarker):]
+
+		// Parse the JSON block.
+		var raw rawSuggestion
+		if err := json.Unmarshal([]byte(jsonContent), &raw); err != nil {
+			slog.Warn("ParseSuggestions: skipping malformed suggestion block",
+				"error", err,
+				"content", jsonContent)
+			continue
+		}
+
+		suggestion, placeholder, ok := convertRawSuggestion(raw)
+		if !ok {
+			continue
+		}
+
+		suggestions = append(suggestions, suggestion)
+		cleaned.WriteString(placeholder)
+	}
+
+	if len(suggestions) == 0 {
+		return cleaned.String(), nil
+	}
+	return cleaned.String(), suggestions
+}
+
+// convertRawSuggestion converts a rawSuggestion to a typed Suggestion and
+// generates a placeholder string. Returns false if the type is unknown.
+func convertRawSuggestion(raw rawSuggestion) (Suggestion, string, bool) {
+	s := Suggestion{
+		Type:   raw.Type,
+		Action: raw.Action,
+	}
+
+	isEdit := raw.Action == "edit"
+
+	switch raw.Type {
+	case "theme":
+		s.ThemeData = &ThemeSuggestion{
+			ID:    raw.ID,
+			Name:  raw.Name,
+			Color: raw.Color,
+		}
+		if isEdit {
+			return s, "[Suggestion: Edit theme]", true
+		}
+		return s, fmt.Sprintf("[Suggestion: New theme %q]", raw.Name), true
+
+	case "objective":
+		s.ObjectiveData = &ObjectiveSuggestion{
+			ID:       raw.ID,
+			Title:    raw.Title,
+			ParentID: raw.ParentID,
+		}
+		if isEdit {
+			return s, "[Suggestion: Edit objective]", true
+		}
+		return s, fmt.Sprintf("[Suggestion: New objective %q]", raw.Title), true
+
+	case "key_result":
+		s.KeyResultData = &KeyResultSuggestion{
+			ID:                raw.ID,
+			Description:       raw.Description,
+			StartValue:        raw.StartValue,
+			CurrentValue:      raw.CurrentValue,
+			TargetValue:       raw.TargetValue,
+			ParentObjectiveID: raw.ParentObjectiveID,
+		}
+		if isEdit {
+			return s, "[Suggestion: Edit key result]", true
+		}
+		return s, fmt.Sprintf("[Suggestion: New key result %q]", raw.Description), true
+
+	case "routine":
+		s.RoutineData = &RoutineSuggestion{
+			ID:          raw.ID,
+			Description: raw.Description,
+			TargetValue: raw.TargetValue,
+			TargetType:  raw.TargetType,
+			Unit:        raw.Unit,
+			ThemeID:     raw.ThemeID,
+		}
+		if isEdit {
+			return s, "[Suggestion: Edit routine]", true
+		}
+		return s, fmt.Sprintf("[Suggestion: New routine %q]", raw.Description), true
+
+	default:
+		slog.Warn("ParseSuggestions: skipping suggestion with unknown type",
+			"type", raw.Type)
+		return Suggestion{}, "", false
+	}
 }
 
 // buildSystemPrompt constructs the system prompt from OKR context data.
@@ -65,16 +215,23 @@ func (ce *ChatEngine) buildSystemPrompt(okrData []OKRContext) string {
 	b.WriteString("Help the user define, refine, and track their Objectives and Key Results.\n\n")
 
 	// Suggestion format instructions.
-	b.WriteString("When you have concrete suggestions for creating or editing OKR items, ")
-	b.WriteString("include them as fenced code blocks with the language tag `bearing-suggestion` ")
-	b.WriteString("containing valid JSON. Each suggestion must have a \"type\" ")
-	b.WriteString("(\"theme\", \"objective\", \"key_result\", or \"routine\"), ")
-	b.WriteString("an \"action\" (\"create\" or \"edit\"), and the corresponding data field ")
-	b.WriteString("(\"themeData\", \"objectiveData\", \"keyResultData\", or \"routineData\").\n\n")
+	b.WriteString("When suggesting a concrete new goal or change to an existing goal, include a structured suggestion block:\n\n")
+	b.WriteString("```bearing-suggestion\n")
+	b.WriteString("{\"type\": \"objective\", \"action\": \"create\", \"title\": \"Exercise 4x per week\", \"parentId\": \"H\"}\n")
+	b.WriteString("```\n\n")
+	b.WriteString("Supported types: \"theme\", \"objective\", \"key_result\", \"routine\".\n")
+	b.WriteString("Supported actions: \"create\" (new item), \"edit\" (modify existing item — must include \"id\" of existing item).\n\n")
+	b.WriteString("Fields by type:\n")
+	b.WriteString("- theme: name, color (optional), id (required for edit)\n")
+	b.WriteString("- objective: title, parentId (theme or parent objective ID), id (required for edit)\n")
+	b.WriteString("- key_result: description, startValue, currentValue, targetValue, parentObjectiveId, id (required for edit)\n")
+	b.WriteString("- routine: description, targetValue, targetType (\"at_least\" or \"at_most\"), unit, themeId, id (required for edit)\n\n")
+	b.WriteString("Reference existing items by their actual IDs shown in the OKR context above.\n\n")
 
 	// Auto-extraction instructions.
 	b.WriteString("When the user describes goals in natural language, automatically extract ")
-	b.WriteString("start and target values for key results. For example, ")
+	b.WriteString("start and target values for key results and routines. For example, ")
+	b.WriteString("\"run 3 times per week\" implies targetValue=3 and unit=\"times/week\"; ")
 	b.WriteString("\"I want to read 12 books this year\" implies startValue=0 and targetValue=12.\n\n")
 
 	if len(okrData) == 0 {
