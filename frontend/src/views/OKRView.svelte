@@ -30,10 +30,10 @@
     advisorBusy?: boolean;
     advisorSelectedOKRIds?: string[];
     onAdvisorSend?: (message: string, selectedIds?: string[]) => void;
-    advisorPanelWidth?: number;
+    advisorPanelRatio?: number;
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), advisorSelectedOKRIds: selectedOKRIds = $bindable([]), onAdvisorSend, advisorPanelWidth = $bindable(380) }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), advisorSelectedOKRIds: selectedOKRIds = $bindable([]), onAdvisorSend, advisorPanelRatio = $bindable(0.35) }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -191,10 +191,17 @@
   let advisorModels = $state<{name: string, provider: string, type: string, available: boolean, reason: string}[]>([]);
   let lastSelectedId: string | null = null;
 
-  // Resize handle state for advisor panel
-  const MIN_PANEL_WIDTH = 280;
-  const MIN_OKR_CONTENT_WIDTH = 400;
+  // Resize: ratio-based — both sides scale proportionally on window resize
+  const MIN_PANEL_PX = 560;
+  const MIN_OKR_CONTENT_PX = 900;
+  const MIN_WINDOW_HEIGHT = 600;
   let resizing = $state(false);
+
+  // Update OS-level minimum window size when advisor panel opens/closes
+  function updateMinWindowSize(panelOpen: boolean) {
+    const minWidth = panelOpen ? MIN_OKR_CONTENT_PX + MIN_PANEL_PX : MIN_OKR_CONTENT_PX;
+    getBindings().SetMinWindowSize?.(minWidth, MIN_WINDOW_HEIGHT);
+  }
 
   function onResizeStart(e: PointerEvent) {
     e.preventDefault();
@@ -206,10 +213,13 @@
     if (!resizing) return;
     const okrView = (e.currentTarget as HTMLElement).closest('.okr-view');
     if (!okrView) return;
-    const rect = okrView.getBoundingClientRect();
-    const newWidth = rect.right - e.clientX;
-    const maxWidth = rect.width - MIN_OKR_CONTENT_WIDTH;
-    advisorPanelWidth = Math.max(MIN_PANEL_WIDTH, Math.min(newWidth, maxWidth));
+    const containerWidth = okrView.getBoundingClientRect().width;
+    if (containerWidth <= 0) return;
+    const newPx = okrView.getBoundingClientRect().right - e.clientX;
+    const minRatio = MIN_PANEL_PX / containerWidth;
+    const maxRatio = 1 - MIN_OKR_CONTENT_PX / containerWidth;
+    if (minRatio > maxRatio) return; // container too small for both minimums
+    advisorPanelRatio = Math.max(minRatio, Math.min(newPx / containerWidth, maxRatio));
   }
 
   function onResizeEnd() {
@@ -1020,12 +1030,14 @@
         advisorModels = await getBindings().GetAvailableModels();
         advisorAvailable = advisorModels.some(m => m.available);
         advisorPanelOpen = true;
+        updateMinWindowSize(true);
       } catch {
         // Silently fail — button remains, user can retry
       }
       return;
     }
     advisorPanelOpen = !advisorPanelOpen;
+    updateMinWindowSize(advisorPanelOpen);
   }
 
   function toggleOKRSelection(itemId: string, event: MouseEvent) {
@@ -1110,6 +1122,7 @@
         advisorModels = await getBindings().GetAvailableModels();
         advisorAvailable = advisorModels.some(m => m.available);
       }
+      updateMinWindowSize(advisorPanelOpen);
     } catch {
       // Advisor not available — graceful degradation
     }
@@ -1160,7 +1173,7 @@
 
 <svelte:window onkeydown={handleOKRKeyDown} />
 
-<div class="okr-view">
+<div class="okr-view" style="min-width: {advisorPanelOpen ? (MIN_OKR_CONTENT_PX + MIN_PANEL_PX) : MIN_OKR_CONTENT_PX}px">
   <div class="okr-content">
   <header class="okr-header">
     <h1>Life Themes & OKRs</h1>
@@ -1714,7 +1727,7 @@
 
   {#if advisorEnabled}
     <div class="advisor-panel" class:open={advisorPanelOpen} class:resizing
-         style="width: {advisorPanelOpen ? advisorPanelWidth + 'px' : '0px'}">
+         style="width: {advisorPanelOpen ? (advisorPanelRatio * 100) + '%' : '0'}">
       {#if advisorPanelOpen}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div class="resize-handle"

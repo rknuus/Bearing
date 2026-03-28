@@ -15,6 +15,7 @@ import (
 	"github.com/rkn/bearing/internal/managers"
 	"github.com/rkn/bearing/internal/utilities"
 	"github.com/wailsapp/wails/v2"
+	wailsRuntime "github.com/wailsapp/wails/v2/pkg/runtime"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
@@ -298,6 +299,11 @@ func (a *App) AcceptSuggestion(suggestionJSON string, parentContext string) erro
 	return a.adviceManager.AcceptSuggestion(suggestion, parentContext)
 }
 
+// SetMinWindowSize updates the OS-level minimum window size at runtime.
+func (a *App) SetMinWindowSize(width, height int) {
+	wailsRuntime.WindowSetMinSize(a.ctx, width, height)
+}
+
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
@@ -313,7 +319,7 @@ func main() {
 		Title:     "Bearing",
 		Width:     1200,
 		Height:    800,
-		MinWidth:  800,
+		MinWidth:  900,
 		MinHeight: 600,
 		AssetServer: &assetserver.Options{
 			Assets: assetsFS,

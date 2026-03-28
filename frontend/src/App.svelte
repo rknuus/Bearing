@@ -33,7 +33,7 @@
   let advisorPanelOpen = $state(false);
   let advisorBusy = $state(false);
   let advisorSelectedOKRIds = $state<string[]>([]);
-  let advisorPanelWidth = $state(380);
+  let advisorPanelRatio = $state(0.35);
 
   import { extractError } from './lib/utils/bindings';
 
@@ -514,7 +514,7 @@
           bind:advisorPanelOpen
           bind:advisorBusy
           bind:advisorSelectedOKRIds
-          bind:advisorPanelWidth
+          bind:advisorPanelRatio
           onAdvisorSend={handleAdvisorSend}
         />
       </div>
@@ -609,6 +609,7 @@
   .scrollable-view {
     flex: 1;
     overflow-y: auto;
+    overflow-x: auto;
   }
 
   /* Breadcrumb bar */

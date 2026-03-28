@@ -1227,24 +1227,39 @@ describe('OKRView', () => {
       expect(handle).toBeNull();
     });
 
-    it('clamps panel width to minimum constraint', () => {
-      // Test the constraint logic: width should not go below MIN_PANEL_WIDTH (280)
-      const minWidth = 280;
-      const requestedWidth = 100;
-      const maxWidth = 600;
-      const result = Math.max(minWidth, Math.min(requestedWidth, maxWidth));
-      expect(result).toBe(280);
+    it('clamps panel ratio to minimum during drag', () => {
+      // On a 1600px container, min panel 560px = 0.35 ratio
+      const containerWidth = 1600;
+      const minPanel = 560;
+      const minContent = 900;
+      const minRatio = minPanel / containerWidth; // 0.35
+      const maxRatio = 1 - minContent / containerWidth; // 0.4375
+      const dragPx = 200; // user drags too narrow
+      const dragRatio = dragPx / containerWidth; // 0.125
+      const result = Math.max(minRatio, Math.min(dragRatio, maxRatio));
+      expect(result).toBeCloseTo(0.35);
     });
 
-    it('clamps panel width to maximum constraint', () => {
-      // Test the constraint logic: width should not exceed available space
-      const minWidth = 280;
-      const containerWidth = 800;
-      const minContentWidth = 400;
-      const maxWidth = containerWidth - minContentWidth; // 400
-      const requestedWidth = 600;
-      const result = Math.max(minWidth, Math.min(requestedWidth, maxWidth));
-      expect(result).toBe(400);
+    it('clamps panel ratio to maximum during drag', () => {
+      // On a 1800px container, max panel = 1800-900 = 900px = 0.5 ratio
+      const containerWidth = 1800;
+      const minPanel = 560;
+      const minContent = 900;
+      const minRatio = minPanel / containerWidth;
+      const maxRatio = 1 - minContent / containerWidth; // 0.5
+      const dragPx = 1200; // user drags too wide
+      const dragRatio = dragPx / containerWidth;
+      const result = Math.max(minRatio, Math.min(dragRatio, maxRatio));
+      expect(result).toBeCloseTo(0.5);
+    });
+
+    it('both sides scale proportionally on window resize (ratio stays fixed)', () => {
+      // User sets 35% ratio on a 1600px window = 560px panel, 1040px content
+      const ratio = 0.35;
+      // Window shrinks to 1200px — both scale: 420px panel, 780px content
+      const smallContainer = 1200;
+      expect(ratio * smallContainer).toBeCloseTo(420);
+      expect((1 - ratio) * smallContainer).toBeCloseTo(780);
     });
   });
 });

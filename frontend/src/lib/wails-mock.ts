@@ -1188,6 +1188,8 @@ export const mockAppBindings = {
   AcceptSuggestion: async (_suggestionJSON: string, _parentContext: string): Promise<void> => {
     await new Promise(r => setTimeout(r, 300));
   },
+
+  SetMinWindowSize: async (_width: number, _height: number): Promise<void> => {},
 };
 
 // Mock runtime bindings
