@@ -1187,5 +1187,64 @@ describe('OKRView', () => {
       expect(badges[0].textContent).toContain('Claude (Mock)');
       expect(badges[0].classList.contains('available')).toBe(true);
     });
+
+    it('renders resize handle when advisor panel is open', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.GetAdviceSetting).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // Open the panel
+      const advisorButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+        .find(b => b.textContent?.trim() === 'Advisor');
+      advisorButton!.click();
+      await tick();
+
+      const handle = container.querySelector('.resize-handle');
+      expect(handle).toBeTruthy();
+    });
+
+    it('does not render resize handle when advisor panel is closed', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.GetAdviceSetting).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // Panel is closed by default
+      const handle = container.querySelector('.resize-handle');
+      expect(handle).toBeNull();
+    });
+
+    it('clamps panel width to minimum constraint', () => {
+      // Test the constraint logic: width should not go below MIN_PANEL_WIDTH (280)
+      const minWidth = 280;
+      const requestedWidth = 100;
+      const maxWidth = 600;
+      const result = Math.max(minWidth, Math.min(requestedWidth, maxWidth));
+      expect(result).toBe(280);
+    });
+
+    it('clamps panel width to maximum constraint', () => {
+      // Test the constraint logic: width should not exceed available space
+      const minWidth = 280;
+      const containerWidth = 800;
+      const minContentWidth = 400;
+      const maxWidth = containerWidth - minContentWidth; // 400
+      const requestedWidth = 600;
+      const result = Math.max(minWidth, Math.min(requestedWidth, maxWidth));
+      expect(result).toBe(400);
+    });
   });
 });

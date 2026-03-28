@@ -30,9 +30,10 @@
     advisorBusy?: boolean;
     advisorSelectedOKRIds?: string[];
     onAdvisorSend?: (message: string, selectedIds?: string[]) => void;
+    advisorPanelWidth?: number;
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), advisorSelectedOKRIds: selectedOKRIds = $bindable([]), onAdvisorSend }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), advisorSelectedOKRIds: selectedOKRIds = $bindable([]), onAdvisorSend, advisorPanelWidth = $bindable(380) }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -189,6 +190,31 @@
   let advisorAvailable = $state(false);
   let advisorModels = $state<{name: string, provider: string, type: string, available: boolean, reason: string}[]>([]);
   let lastSelectedId: string | null = null;
+
+  // Resize handle state for advisor panel
+  const MIN_PANEL_WIDTH = 280;
+  const MIN_OKR_CONTENT_WIDTH = 400;
+  let resizing = $state(false);
+
+  function onResizeStart(e: PointerEvent) {
+    e.preventDefault();
+    resizing = true;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onResizeMove(e: PointerEvent) {
+    if (!resizing) return;
+    const okrView = (e.currentTarget as HTMLElement).closest('.okr-view');
+    if (!okrView) return;
+    const rect = okrView.getBoundingClientRect();
+    const newWidth = rect.right - e.clientX;
+    const maxWidth = rect.width - MIN_OKR_CONTENT_WIDTH;
+    advisorPanelWidth = Math.max(MIN_PANEL_WIDTH, Math.min(newWidth, maxWidth));
+  }
+
+  function onResizeEnd() {
+    resizing = false;
+  }
 
   function getObjectiveProgress(objectiveId: string): number {
     for (const tp of themeProgress) {
@@ -1687,7 +1713,17 @@
   </div><!-- .okr-content -->
 
   {#if advisorEnabled}
-    <div class="advisor-panel" class:open={advisorPanelOpen}>
+    <div class="advisor-panel" class:open={advisorPanelOpen} class:resizing
+         style="width: {advisorPanelOpen ? advisorPanelWidth + 'px' : '0px'}">
+      {#if advisorPanelOpen}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div class="resize-handle"
+             onpointerdown={onResizeStart}
+             onpointermove={onResizeMove}
+             onpointerup={onResizeEnd}
+             onpointercancel={onResizeEnd}
+        ></div>
+      {/if}
       <div class="advisor-panel-header">
         <h3>Goal Advisor</h3>
         <button class="advisor-close-btn" onclick={toggleAdvisorPanel} aria-label="Close advisor panel">&times;</button>
@@ -2697,10 +2733,42 @@
     flex-direction: column;
     background: white;
     flex-shrink: 0;
+    position: relative;
   }
 
-  .advisor-panel.open {
-    width: 380px;
+  .advisor-panel.resizing {
+    transition: none;
+  }
+
+  .resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    cursor: col-resize;
+    z-index: 10;
+    user-select: none;
+    touch-action: none;
+  }
+
+  .resize-handle::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: transparent;
+    transition: background-color 0.15s;
+  }
+
+  .resize-handle:hover::after {
+    background-color: var(--color-primary-300);
+  }
+
+  .advisor-panel.resizing .resize-handle::after {
+    background-color: var(--color-primary-500);
   }
 
   .advisor-panel-header {
