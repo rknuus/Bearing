@@ -438,6 +438,9 @@ let mockTaskDrafts = '{}';
 // Mock personal vision storage
 let mockPersonalVision: PersonalVision = { mission: '', vision: '' };
 
+// Mock advisor enabled state
+let mockAdvisorEnabled = true;
+
 // Mock navigation context storage
 let mockNavigationContext: NavigationContext = {
   currentView: 'okr',
@@ -1139,6 +1142,40 @@ export const mockAppBindings = {
 
   SuggestAbbreviation: async (name: string): Promise<string> => {
     return suggestAbbreviation(name, mockThemes);
+  },
+
+  // --- Advisor operations ---
+
+  RequestAdvice: async (_message: string, _historyJSON: string, _selectedOKRIds?: string[]): Promise<{text: string, suggestions: unknown[]}> => {
+    await new Promise(r => setTimeout(r, 500 + Math.random() * 1000));
+
+    const responses = [
+      {
+        text: "## Goal Review\n\nLooking at your current objectives, here are some observations:\n\n- **Strong progress** on your key results for the Health theme\n- Consider breaking down your Career objective into **smaller milestones**\n- Your Learning theme could benefit from adding measurable key results\n\n> Focus on making each key result specific and time-bound.",
+        suggestions: []
+      },
+      {
+        text: "Based on your OKR structure, I'd suggest:\n\n1. **Add a routine** for tracking weekly exercise consistency\n2. Your `Career Growth` objective has 5 key results — consider splitting into two objectives\n3. The key result *Read 12 books* is on track at 4/12\n\nWould you like me to suggest specific key results for any theme?",
+        suggestions: []
+      },
+      {
+        text: "### Balance Assessment\n\nYour OKR portfolio is **heavily weighted** toward career goals. Consider:\n\n- Adding a **well-being** or **relationships** theme\n- Setting a routine for `sleep >= 7 hours`\n- Your current completion rate across all KRs: **42%**\n\nThis is healthy progress for Q1. Keep going!",
+        suggestions: []
+      }
+    ];
+    return responses[Math.floor(Math.random() * responses.length)];
+  },
+
+  GetAvailableModels: async (): Promise<{name: string, provider: string, type: string, available: boolean, reason: string}[]> => {
+    return [{name: "Claude (Mock)", provider: "Anthropic", type: "remote", available: true, reason: "Mock mode"}];
+  },
+
+  GetAdviceSetting: async (): Promise<boolean> => mockAdvisorEnabled,
+
+  SetAdviceSetting: async (enabled: boolean): Promise<void> => { mockAdvisorEnabled = enabled; },
+
+  AcceptSuggestion: async (_suggestionJSON: string, _parentContext: string): Promise<void> => {
+    await new Promise(r => setTimeout(r, 300));
   },
 };
 
