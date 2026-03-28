@@ -1077,16 +1077,16 @@ describe('OKRView', () => {
   });
 
   describe('advisor panel', () => {
-    it('does not show advisor button when advisor is disabled', async () => {
+    it('shows advisor button even when disabled (enables on first click)', async () => {
       // Default makeMockBindings has advisorEnabled=false
       await renderView();
 
       const advisorButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.header-controls button, .header-controls .btn-primary, .header-controls .btn-secondary'))
         .find(b => b.textContent?.trim() === 'Advisor');
-      expect(advisorButton).toBeUndefined();
+      expect(advisorButton).toBeDefined();
 
-      // No advisor panel should exist
-      expect(container.querySelector('.advisor-panel')).toBeNull();
+      // Panel should not be open yet (advisor not yet enabled)
+      expect(container.querySelector('.advisor-panel.open')).toBeNull();
     });
 
     it('shows advisor toggle button when advisor is enabled', async () => {

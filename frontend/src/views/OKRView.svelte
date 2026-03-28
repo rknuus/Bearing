@@ -981,7 +981,20 @@
     }
   }
 
-  function toggleAdvisorPanel() {
+  async function toggleAdvisorPanel() {
+    if (!advisorEnabled) {
+      // First click: enable the advisor
+      try {
+        await getBindings().SetAdviceSetting(true);
+        advisorEnabled = true;
+        advisorModels = await getBindings().GetAvailableModels();
+        advisorAvailable = advisorModels.some(m => m.available);
+        advisorPanelOpen = true;
+      } catch {
+        // Silently fail — button remains, user can retry
+      }
+      return;
+    }
     advisorPanelOpen = !advisorPanelOpen;
   }
 
@@ -1036,7 +1049,7 @@
     const modKey = event.ctrlKey || event.metaKey;
     if (modKey && event.shiftKey && (event.key === 'a' || event.key === 'A')) {
       event.preventDefault();
-      if (advisorEnabled) toggleAdvisorPanel();
+      toggleAdvisorPanel();
     }
   }
 
@@ -1134,11 +1147,9 @@
       >
         + Add Theme
       </Button>
-      {#if advisorEnabled}
-        <Button variant={advisorPanelOpen ? "primary" : "secondary"} onclick={toggleAdvisorPanel}>
-          {advisorPanelOpen ? 'Close Advisor' : 'Advisor'}
-        </Button>
-      {/if}
+      <Button variant={advisorPanelOpen ? "primary" : "secondary"} onclick={toggleAdvisorPanel}>
+        {advisorPanelOpen ? 'Close Advisor' : 'Advisor'}
+      </Button>
     </div>
   </header>
 
