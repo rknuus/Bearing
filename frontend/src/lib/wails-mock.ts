@@ -1155,8 +1155,19 @@ export const mockAppBindings = {
         suggestions: []
       },
       {
-        text: "Based on your OKR structure, I'd suggest:\n\n1. **Add a routine** for tracking weekly exercise consistency\n2. Your `Career Growth` objective has 5 key results — consider splitting into two objectives\n3. The key result *Read 12 books* is on track at 4/12\n\nWould you like me to suggest specific key results for any theme?",
-        suggestions: []
+        text: "Based on your OKR structure, I'd suggest adding these items to strengthen your goals:",
+        suggestions: [
+          {
+            type: "objective",
+            action: "create",
+            objectiveData: { title: "Exercise consistently", parentId: "H" }
+          },
+          {
+            type: "routine",
+            action: "create",
+            routineData: { description: "Track sleep quality", targetValue: 7, targetType: "at-or-above", unit: "hours/night", themeId: "H" }
+          }
+        ]
       },
       {
         text: "### Balance Assessment\n\nYour OKR portfolio is **heavily weighted** toward career goals. Consider:\n\n- Adding a **well-being** or **relationships** theme\n- Setting a routine for `sleep >= 7 hours`\n- Your current completion rate across all KRs: **42%**\n\nThis is healthy progress for Q1. Keep going!",

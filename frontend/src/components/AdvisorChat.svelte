@@ -10,12 +10,16 @@
    */
 
   import { tick, untrack } from 'svelte';
+  import MarkdownContent from '../lib/components/MarkdownContent.svelte';
+  import SuggestionCard from './SuggestionCard.svelte';
+  import type { Suggestion } from './SuggestionCard.svelte';
 
   interface ChatMessage {
     role: 'user' | 'advisor';
     content: string;
     timestamp: number;
     error?: string;
+    suggestions?: Suggestion[];
   }
 
   interface ModelInfo {
@@ -28,18 +32,19 @@
 
   interface AdviceResponse {
     text: string;
-    suggestions?: unknown[];
+    suggestions?: Suggestion[];
   }
 
   interface Props {
     onRequestAdvice: (message: string, history: ChatMessage[], selectedIds?: string[]) => Promise<AdviceResponse>;
+    onAcceptSuggestion?: (suggestion: Suggestion) => Promise<void>;
     available: boolean;
     models: ModelInfo[];
     selectedOKRIds?: string[];
     onRecheck?: () => void;
   }
 
-  let { onRequestAdvice, available, models: _models, selectedOKRIds, onRecheck }: Props = $props();
+  let { onRequestAdvice, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck }: Props = $props();
 
   let messages: ChatMessage[] = $state([]);
   let inputText = $state('');
@@ -77,6 +82,7 @@
         role: 'advisor',
         content: response.text,
         timestamp: Date.now(),
+        suggestions: response.suggestions,
       };
       messages = [...untrack(() => messages), advisorMessage];
     } catch (e) {
@@ -110,6 +116,18 @@
     const date = new Date(timestamp);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
+
+  async function handleAcceptSuggestion(suggestion: Suggestion): Promise<void> {
+    if (onAcceptSuggestion) {
+      await onAcceptSuggestion(suggestion);
+    }
+  }
+
+  function handleDeclineSuggestion(_suggestion: Suggestion): void {
+    // Decline is handled locally by SuggestionCard state; no backend call needed.
+  }
+
+
 </script>
 
 <div class="advisor-chat">
@@ -162,12 +180,26 @@
           <span class="message-content">
             {#if message.error}
               {message.error}
+            {:else if message.role === 'advisor'}
+              <MarkdownContent content={message.content} restricted={true} />
             {:else}
               {message.content}
             {/if}
           </span>
           <span class="message-time">{formatTime(message.timestamp)}</span>
         </div>
+        {#if message.suggestions && message.suggestions.length > 0}
+          <div class="suggestions-container">
+            {#each message.suggestions as suggestion, si (si)}
+              <SuggestionCard
+                {suggestion}
+                onAccept={handleAcceptSuggestion}
+                onDecline={handleDeclineSuggestion}
+                {selectedOKRIds}
+              />
+            {/each}
+          </div>
+        {/if}
       </div>
     {/each}
 
@@ -387,6 +419,9 @@
   .message-content {
     font-size: 0.8125rem;
     line-height: 1.5;
+  }
+
+  .bubble-user .message-content {
     white-space: pre-wrap;
   }
 
@@ -429,6 +464,11 @@
       opacity: 1;
       transform: scale(1);
     }
+  }
+
+  .suggestions-container {
+    max-width: 80%;
+    margin-top: var(--space-1);
   }
 
   .input-area {
