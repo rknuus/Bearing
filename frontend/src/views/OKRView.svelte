@@ -28,10 +28,11 @@
     advisorMessages?: any[];
     advisorPanelOpen?: boolean;
     advisorBusy?: boolean;
+    advisorSelectedOKRIds?: string[];
     onAdvisorSend?: (message: string, selectedIds?: string[]) => void;
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), onAdvisorSend }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), advisorSelectedOKRIds: selectedOKRIds = $bindable([]), onAdvisorSend }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -187,7 +188,6 @@
   let advisorEnabled = $state(false);
   let advisorAvailable = $state(false);
   let advisorModels = $state<{name: string, provider: string, type: string, available: boolean, reason: string}[]>([]);
-  let selectedOKRIds = $state<string[]>([]);
   let lastSelectedId: string | null = null;
 
   function getObjectiveProgress(objectiveId: string): number {

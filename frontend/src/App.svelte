@@ -32,6 +32,7 @@
   let advisorMessages = $state<any[]>([]);
   let advisorPanelOpen = $state(false);
   let advisorBusy = $state(false);
+  let advisorSelectedOKRIds = $state<string[]>([]);
 
   import { extractError } from './lib/utils/bindings';
 
@@ -511,6 +512,7 @@
           bind:advisorMessages
           bind:advisorPanelOpen
           bind:advisorBusy
+          bind:advisorSelectedOKRIds
           onAdvisorSend={handleAdvisorSend}
         />
       </div>
