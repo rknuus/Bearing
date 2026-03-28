@@ -1823,7 +1823,7 @@
   .okr-view {
     display: flex;
     flex-direction: row;
-    min-height: 100%;
+    height: 100%;
   }
 
   .okr-content {
@@ -1832,6 +1832,7 @@
     padding: 1.5rem;
     max-width: 900px;
     margin: 0 auto;
+    overflow-y: auto;
   }
 
   .okr-header {
@@ -2747,6 +2748,7 @@
     background: white;
     flex-shrink: 0;
     position: relative;
+    height: 100%;
   }
 
   .advisor-panel.resizing {

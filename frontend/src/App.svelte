@@ -608,8 +608,7 @@
 
   .scrollable-view {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: auto;
+    overflow: hidden;
   }
 
   /* Breadcrumb bar */
