@@ -24,9 +24,11 @@
     onNavigateToCalendar?: (date?: string, themeId?: string) => void;
     onNavigateToTasks?: (options?: { themeId?: string; date?: string }) => void;
     highlightItemId?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- opaque to this view, typed inside AdvisorChat
+    advisorMessages?: any[];
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]) }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -1705,6 +1707,7 @@
         models={advisorModels}
         {selectedOKRIds}
         onRecheck={handleRecheckModels}
+        bind:messages={advisorMessages}
       />
     </div>
   {/if}

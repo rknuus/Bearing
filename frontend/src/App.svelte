@@ -27,6 +27,10 @@
   let tagFocusActive = $state(true);
   let todayFocusTags = $state<string[]>([]);
 
+  // Advisor session state — lives here so it survives view switches
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed inside AdvisorChat
+  let advisorMessages = $state<any[]>([]);
+
   // Centralized current date (updates at midnight)
   let currentDate = $state(new Date().toISOString().split('T')[0]);
   let toastMessage = $state<string | null>(null);
@@ -469,6 +473,7 @@
           onNavigateToCalendar={handleNavigateToDay}
           onNavigateToTasks={handleNavigateToTasks}
           highlightItemId={currentItemId}
+          bind:advisorMessages
         />
       </div>
     {:else if currentView === 'eisenkan'}

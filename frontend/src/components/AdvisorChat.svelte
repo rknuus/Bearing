@@ -42,11 +42,10 @@
     models: ModelInfo[];
     selectedOKRIds?: string[];
     onRecheck?: () => void;
+    messages?: ChatMessage[];
   }
 
-  let { onRequestAdvice, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck }: Props = $props();
-
-  let messages: ChatMessage[] = $state([]);
+  let { onRequestAdvice, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck, messages = $bindable([]) }: Props = $props();
   let inputText = $state('');
   let busy = $state(false);
   let messagesEndEl: HTMLDivElement | undefined = $state(undefined);
