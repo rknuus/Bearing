@@ -3,6 +3,7 @@ package managers
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/rkn/bearing/internal/access"
@@ -404,8 +405,9 @@ func TestUnit_AdviceManager_MultiTurn(t *testing.T) {
 	}
 }
 
-func TestUnit_AdviceManager_AcceptSuggestion_NotImplemented(t *testing.T) {
-	ta := &mockAdviceThemeAccess{themes: []access.LifeTheme{}}
+func TestUnit_AdviceManager_AcceptSuggestion_CreateObjective(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
 	ce := &mockAdviceChatEngine{}
 	ma := &mockAdviceModelAccess{}
 	ua := &mockAdviceUIStateAccess{}
@@ -418,13 +420,297 @@ func TestUnit_AdviceManager_AcceptSuggestion_NotImplemented(t *testing.T) {
 	suggestion := chat_engine.Suggestion{
 		Type:   "objective",
 		Action: "create",
+		ObjectiveData: &chat_engine.ObjectiveSuggestion{
+			Title:    "Improve diet",
+			ParentID: "H",
+		},
+	}
+	err = am.AcceptSuggestion(suggestion, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the objective was created under the Health theme
+	savedThemes, _ := ta.GetThemes()
+	healthTheme := savedThemes[0]
+	found := false
+	for _, obj := range healthTheme.Objectives {
+		if obj.Title == "Improve diet" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'Improve diet' objective to be created under Health theme")
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_CreateRoutine(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	suggestion := chat_engine.Suggestion{
+		Type:   "routine",
+		Action: "create",
+		RoutineData: &chat_engine.RoutineSuggestion{
+			Description: "Track water intake",
+			TargetValue: 8,
+			TargetType:  "at-or-above",
+			Unit:        "glasses",
+			ThemeID:     "H",
+		},
+	}
+	err = am.AcceptSuggestion(suggestion, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the routine was created under the Health theme
+	savedThemes, _ := ta.GetThemes()
+	healthTheme := savedThemes[0]
+	found := false
+	for _, r := range healthTheme.Routines {
+		if r.Description == "Track water intake" {
+			found = true
+			if r.TargetValue != 8 {
+				t.Errorf("expected target value 8, got %d", r.TargetValue)
+			}
+			if r.Unit != "glasses" {
+				t.Errorf("expected unit 'glasses', got %q", r.Unit)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'Track water intake' routine to be created under Health theme")
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_EditObjective(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	suggestion := chat_engine.Suggestion{
+		Type:   "objective",
+		Action: "edit",
+		ObjectiveData: &chat_engine.ObjectiveSuggestion{
+			ID:    "H-O1",
+			Title: "Run a half marathon",
+		},
+	}
+	err = am.AcceptSuggestion(suggestion, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the objective title was updated
+	savedThemes, _ := ta.GetThemes()
+	healthTheme := savedThemes[0]
+	if len(healthTheme.Objectives) == 0 {
+		t.Fatal("expected objectives to exist")
+	}
+	if healthTheme.Objectives[0].Title != "Run a half marathon" {
+		t.Errorf("expected title 'Run a half marathon', got %q", healthTheme.Objectives[0].Title)
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_UnknownType(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	suggestion := chat_engine.Suggestion{
+		Type:   "unknown_type",
+		Action: "create",
 	}
 	err = am.AcceptSuggestion(suggestion, "H")
 	if err == nil {
-		t.Fatal("expected error for unimplemented AcceptSuggestion")
+		t.Fatal("expected error for unknown suggestion type")
 	}
-	if err.Error() != "suggestion acceptance not yet implemented" {
+	if !strings.Contains(err.Error(), "unknown suggestion type") {
 		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_ParentContextFallback(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	// Objective with no parentId in suggestion — should fall back to parentContext
+	suggestion := chat_engine.Suggestion{
+		Type:   "objective",
+		Action: "create",
+		ObjectiveData: &chat_engine.ObjectiveSuggestion{
+			Title: "Meditate daily",
+		},
+	}
+	err = am.AcceptSuggestion(suggestion, "H")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the objective was created under the Health theme via parentContext
+	savedThemes, _ := ta.GetThemes()
+	healthTheme := savedThemes[0]
+	found := false
+	for _, obj := range healthTheme.Objectives {
+		if obj.Title == "Meditate daily" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'Meditate daily' objective to be created under Health theme via parentContext fallback")
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_CreateKeyResult(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	suggestion := chat_engine.Suggestion{
+		Type:   "key_result",
+		Action: "create",
+		KeyResultData: &chat_engine.KeyResultSuggestion{
+			Description:       "Run 50km per week",
+			StartValue:        0,
+			TargetValue:       50,
+			ParentObjectiveID: "H-O1",
+		},
+	}
+	err = am.AcceptSuggestion(suggestion, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify the key result was created
+	savedThemes, _ := ta.GetThemes()
+	healthTheme := savedThemes[0]
+	found := false
+	for _, kr := range healthTheme.Objectives[0].KeyResults {
+		if kr.Description == "Run 50km per week" {
+			found = true
+			if kr.StartValue != 0 {
+				t.Errorf("expected start value 0, got %d", kr.StartValue)
+			}
+			if kr.TargetValue != 50 {
+				t.Errorf("expected target value 50, got %d", kr.TargetValue)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Error("expected 'Run 50km per week' key result to be created")
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_UnknownAction(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	suggestion := chat_engine.Suggestion{
+		Type:   "objective",
+		Action: "delete",
+	}
+	err = am.AcceptSuggestion(suggestion, "H")
+	if err == nil {
+		t.Fatal("expected error for unknown action")
+	}
+	if !strings.Contains(err.Error(), "unknown suggestion action") {
+		t.Errorf("unexpected error message: %v", err)
+	}
+}
+
+func TestUnit_AdviceManager_AcceptSuggestion_MissingParentErrors(t *testing.T) {
+	themes := sampleThemes()
+	ta := &mockAdviceThemeAccess{themes: themes}
+	ce := &mockAdviceChatEngine{}
+	ma := &mockAdviceModelAccess{}
+	ua := &mockAdviceUIStateAccess{}
+
+	am, err := newTestAdviceManager(ta, ce, ma, ua)
+	if err != nil {
+		t.Fatalf("failed to create AdviceManager: %v", err)
+	}
+
+	// Objective without parent context or parentId
+	err = am.AcceptSuggestion(chat_engine.Suggestion{
+		Type:          "objective",
+		Action:        "create",
+		ObjectiveData: &chat_engine.ObjectiveSuggestion{Title: "No parent"},
+	}, "")
+	if err == nil {
+		t.Fatal("expected error for missing parent")
+	}
+	if !strings.Contains(err.Error(), "requires a parent") {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	// Key result without parent
+	err = am.AcceptSuggestion(chat_engine.Suggestion{
+		Type:          "key_result",
+		Action:        "create",
+		KeyResultData: &chat_engine.KeyResultSuggestion{Description: "No parent KR"},
+	}, "")
+	if err == nil {
+		t.Fatal("expected error for missing parent on key result")
+	}
+
+	// Routine without theme
+	err = am.AcceptSuggestion(chat_engine.Suggestion{
+		Type:        "routine",
+		Action:      "create",
+		RoutineData: &chat_engine.RoutineSuggestion{Description: "No theme routine"},
+	}, "")
+	if err == nil {
+		t.Fatal("expected error for missing theme on routine")
 	}
 }
 

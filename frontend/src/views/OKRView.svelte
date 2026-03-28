@@ -955,13 +955,21 @@
   }
 
   // Advisor methods
-  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string, suggestions?: unknown[]}> {
+  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}[]}> {
     const bindings = getBindings();
     const historyJSON = JSON.stringify(history.map(m => ({role: m.role === 'advisor' ? 'assistant' : m.role, content: m.content})));
     const result = await bindings.RequestAdvice(message, historyJSON, selectedIds ?? selectedOKRIds);
     // After getting advice, refresh themes to pick up any state changes
     await loadThemes();
-    return result;
+    return result as {text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}[]};
+  }
+
+  async function handleAcceptSuggestion(suggestion: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}): Promise<void> {
+    const bindings = getBindings();
+    const suggestionJSON = JSON.stringify(suggestion);
+    const parentContext = selectedOKRIds.length > 0 ? selectedOKRIds[0] : '';
+    await bindings.AcceptSuggestion(suggestionJSON, parentContext);
+    await loadThemes();
   }
 
   async function handleRecheckModels() {
@@ -1681,6 +1689,7 @@
       {/if}
       <AdvisorChat
         onRequestAdvice={handleRequestAdvice}
+        onAcceptSuggestion={handleAcceptSuggestion}
         available={advisorAvailable}
         models={advisorModels}
         {selectedOKRIds}

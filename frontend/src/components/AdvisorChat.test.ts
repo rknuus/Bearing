@@ -3,8 +3,26 @@ import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import AdvisorChat from './AdvisorChat.svelte';
 
+interface Suggestion {
+  type: string;
+  action: string;
+  themeData?: { id?: string; name: string; color?: string };
+  objectiveData?: { id?: string; title: string; parentId?: string };
+  keyResultData?: { id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string };
+  routineData?: { id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string };
+}
+
+interface ChatMessage {
+  role: 'user' | 'advisor';
+  content: string;
+  timestamp: number;
+  error?: string;
+  suggestions?: Suggestion[];
+}
+
 function makeDefaultProps(overrides: Partial<{
-  onRequestAdvice: (message: string, history: unknown[], selectedIds?: string[]) => Promise<{ text: string; suggestions?: unknown[] }>;
+  onRequestAdvice: (message: string, history: ChatMessage[], selectedIds?: string[]) => Promise<{ text: string; suggestions?: Suggestion[] }>;
+  onAcceptSuggestion: (suggestion: Suggestion) => Promise<void>;
   available: boolean;
   models: { name: string; provider: string; type: string; available: boolean; reason: string }[];
   selectedOKRIds: string[];
@@ -12,6 +30,7 @@ function makeDefaultProps(overrides: Partial<{
 }> = {}) {
   return {
     onRequestAdvice: overrides.onRequestAdvice ?? vi.fn(async () => ({ text: 'Advisor response' })),
+    onAcceptSuggestion: overrides.onAcceptSuggestion,
     available: overrides.available ?? true,
     models: overrides.models ?? [{ name: 'claude', provider: 'anthropic', type: 'local', available: true, reason: '' }],
     selectedOKRIds: overrides.selectedOKRIds,
@@ -32,7 +51,8 @@ describe('AdvisorChat', () => {
   });
 
   async function renderChat(overrides: Partial<{
-    onRequestAdvice: (message: string, history: unknown[], selectedIds?: string[]) => Promise<{ text: string; suggestions?: unknown[] }>;
+    onRequestAdvice: (message: string, history: ChatMessage[], selectedIds?: string[]) => Promise<{ text: string; suggestions?: Suggestion[] }>;
+    onAcceptSuggestion: (suggestion: Suggestion) => Promise<void>;
     available: boolean;
     models: { name: string; provider: string; type: string; available: boolean; reason: string }[];
     selectedOKRIds: string[];
