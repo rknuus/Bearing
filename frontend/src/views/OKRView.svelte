@@ -142,6 +142,26 @@
   let editRoutineTargetType = $state('at-or-above');
   let editRoutineUnit = $state('');
 
+  // Confirm-delete dialog state (replaces window.confirm which is suppressed in WebView)
+  let confirmDeleteMessage = $state<string | null>(null);
+  let confirmDeleteAction = $state<(() => void) | null>(null);
+
+  function requestConfirmDelete(message: string, action: () => void) {
+    confirmDeleteMessage = message;
+    confirmDeleteAction = action;
+  }
+
+  function executeConfirmDelete() {
+    confirmDeleteAction?.();
+    confirmDeleteMessage = null;
+    confirmDeleteAction = null;
+  }
+
+  function cancelConfirmDelete() {
+    confirmDeleteMessage = null;
+    confirmDeleteAction = null;
+  }
+
   // Close objective dialog state
   let closingObjectiveId = $state<string | null>(null);
   let closingStatus = $state('achieved');
@@ -541,19 +561,19 @@
     }
   }
 
-  async function deleteTheme(id: string) {
-    if (!confirm('Are you sure you want to delete this theme and all its objectives?')) return;
-
-    try {
-      await getBindings().Dismiss(id);
-      themes = themes.filter(t => t.id !== id);
-      await refreshProgress();
-      await verifyThemeState();
-    } catch (e) {
-      console.error('Failed to delete theme:', e);
-      error = extractError(e);
-      await loadThemes();
-    }
+  function deleteTheme(id: string) {
+    requestConfirmDelete('Are you sure you want to delete this theme and all its objectives?', async () => {
+      try {
+        await getBindings().Dismiss(id);
+        themes = themes.filter(t => t.id !== id);
+        await refreshProgress();
+        await verifyThemeState();
+      } catch (e) {
+        console.error('Failed to delete theme:', e);
+        error = extractError(e);
+        await loadThemes();
+      }
+    });
   }
 
   // Establish for objective — parentId can be a theme ID or an objective ID
@@ -597,22 +617,22 @@
   }
 
   // Dismiss for objective
-  async function deleteObjective(objectiveId: string) {
-    if (!confirm('Are you sure you want to delete this objective and all its children?')) return;
-
-    try {
-      await getBindings().Dismiss(objectiveId);
-      for (const t of themes) {
-        if (removeObjectiveFromTree(t.objectives, objectiveId)) break;
+  function deleteObjective(objectiveId: string) {
+    requestConfirmDelete('Are you sure you want to delete this objective and all its children?', async () => {
+      try {
+        await getBindings().Dismiss(objectiveId);
+        for (const t of themes) {
+          if (removeObjectiveFromTree(t.objectives, objectiveId)) break;
+        }
+        themes = themes;
+        await refreshProgress();
+        await verifyThemeState();
+      } catch (e) {
+        console.error('Failed to delete objective:', e);
+        error = extractError(e);
+        await loadThemes();
       }
-      themes = themes;
-      await refreshProgress();
-      await verifyThemeState();
-    } catch (e) {
-      console.error('Failed to delete objective:', e);
-      error = extractError(e);
-      await loadThemes();
-    }
+    });
   }
 
   // Establish for key result
@@ -659,22 +679,22 @@
   }
 
   // Dismiss for key result
-  async function deleteKeyResult(keyResultId: string) {
-    if (!confirm('Are you sure you want to delete this key result?')) return;
-
-    try {
-      await getBindings().Dismiss(keyResultId);
-      for (const t of themes) {
-        if (removeKeyResultFromTree(t.objectives, keyResultId)) break;
+  function deleteKeyResult(keyResultId: string) {
+    requestConfirmDelete('Are you sure you want to delete this key result?', async () => {
+      try {
+        await getBindings().Dismiss(keyResultId);
+        for (const t of themes) {
+          if (removeKeyResultFromTree(t.objectives, keyResultId)) break;
+        }
+        themes = themes;
+        await refreshProgress();
+        await verifyThemeState();
+      } catch (e) {
+        console.error('Failed to delete key result:', e);
+        error = extractError(e);
+        await loadThemes();
       }
-      themes = themes;
-      await refreshProgress();
-      await verifyThemeState();
-    } catch (e) {
-      console.error('Failed to delete key result:', e);
-      error = extractError(e);
-      await loadThemes();
-    }
+    });
   }
 
   // Routine CRUD
@@ -739,24 +759,24 @@
     }
   }
 
-  async function deleteRoutine(routineId: string) {
-    if (!confirm('Are you sure you want to delete this routine?')) return;
-
-    try {
-      await getBindings().Dismiss(routineId);
-      for (const t of themes) {
-        if (t.routines) {
-          const idx = t.routines.findIndex(r => r.id === routineId);
-          if (idx >= 0) { t.routines.splice(idx, 1); break; }
+  function deleteRoutine(routineId: string) {
+    requestConfirmDelete('Are you sure you want to delete this routine?', async () => {
+      try {
+        await getBindings().Dismiss(routineId);
+        for (const t of themes) {
+          if (t.routines) {
+            const idx = t.routines.findIndex(r => r.id === routineId);
+            if (idx >= 0) { t.routines.splice(idx, 1); break; }
+          }
         }
+        themes = themes;
+        await verifyThemeState();
+      } catch (e) {
+        console.error('Failed to delete routine:', e);
+        error = extractError(e);
+        await loadThemes();
       }
-      themes = themes;
-      await verifyThemeState();
-    } catch (e) {
-      console.error('Failed to delete routine:', e);
-      error = extractError(e);
-      await loadThemes();
-    }
+    });
   }
 
   function startEditRoutine(routine: Routine) {
@@ -1817,6 +1837,16 @@
       {/snippet}
     </Dialog>
   {/if}
+{/if}
+
+{#if confirmDeleteMessage}
+  <Dialog title="Confirm Delete" onclose={cancelConfirmDelete} maxWidth="360px">
+    <p>{confirmDeleteMessage}</p>
+    {#snippet actions()}
+      <Button variant="secondary" onclick={cancelConfirmDelete}>Cancel</Button>
+      <Button variant="danger" onclick={executeConfirmDelete}>Delete</Button>
+    {/snippet}
+  </Dialog>
 {/if}
 
 <style>
