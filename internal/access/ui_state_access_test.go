@@ -195,3 +195,47 @@ func TestUnit_SaveTaskDrafts_WritesAndReadsBack(t *testing.T) {
 		t.Errorf("expected %s, got %s", string(drafts), string(loaded))
 	}
 }
+
+func TestUnit_UIStateAccess_LoadAdvisorEnabled_Default(t *testing.T) {
+	ua, _, cleanup := setupTestUIStateAccess(t)
+	defer cleanup()
+
+	enabled, err := ua.LoadAdvisorEnabled()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if enabled {
+		t.Error("expected advisor to be disabled by default, got enabled")
+	}
+}
+
+func TestUnit_UIStateAccess_SaveAndLoadAdvisorEnabled(t *testing.T) {
+	ua, _, cleanup := setupTestUIStateAccess(t)
+	defer cleanup()
+
+	// Enable advisor
+	if err := ua.SaveAdvisorEnabled(true); err != nil {
+		t.Fatalf("unexpected error saving: %v", err)
+	}
+
+	enabled, err := ua.LoadAdvisorEnabled()
+	if err != nil {
+		t.Fatalf("unexpected error loading: %v", err)
+	}
+	if !enabled {
+		t.Error("expected advisor to be enabled after save(true)")
+	}
+
+	// Disable advisor
+	if err := ua.SaveAdvisorEnabled(false); err != nil {
+		t.Fatalf("unexpected error saving: %v", err)
+	}
+
+	enabled, err = ua.LoadAdvisorEnabled()
+	if err != nil {
+		t.Fatalf("unexpected error loading: %v", err)
+	}
+	if enabled {
+		t.Error("expected advisor to be disabled after save(false)")
+	}
+}

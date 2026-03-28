@@ -9,7 +9,9 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/bootstrap"
+	"github.com/rkn/bearing/internal/engines/chat_engine"
 	"github.com/rkn/bearing/internal/managers"
 	"github.com/rkn/bearing/internal/utilities"
 	"github.com/wailsapp/wails/v2"
@@ -28,6 +30,7 @@ type App struct {
 	ctx              context.Context
 	planningManager  *managers.PlanningManager
 	workspaceManager *managers.WorkspaceManager
+	adviceManager    *managers.AdviceManager
 	logFile          *os.File
 }
 
@@ -49,6 +52,7 @@ func (a *App) startup(ctx context.Context) {
 
 	a.planningManager = result.PlanningManager
 	a.workspaceManager = result.WorkspaceManager
+	a.adviceManager = result.AdviceManager
 	a.logFile = result.LogFile
 	slog.Info("Bearing started", "version", version)
 }
@@ -250,6 +254,48 @@ func (a *App) GetPersonalVision() (*managers.PersonalVision, error) {
 
 func (a *App) SavePersonalVision(mission, vision string) error {
 	return a.planningManager.SavePersonalVision(mission, vision)
+}
+
+// --- Advisor operations ---
+
+// RequestAdvice sends a user message to the AI advisor with conversation
+// history and optional OKR selection.
+func (a *App) RequestAdvice(message string, historyJSON string, selectedOKRIds []string) (*chat_engine.AdviceResponse, error) {
+	var history []chat_engine.ChatMessage
+	if historyJSON != "" {
+		if err := json.Unmarshal([]byte(historyJSON), &history); err != nil {
+			slog.Error("RequestAdvice: failed to parse history JSON", "error", err)
+			return nil, fmt.Errorf("Invalid conversation history format.")
+		}
+	}
+
+	return a.adviceManager.RequestAdvice(message, history, selectedOKRIds)
+}
+
+// GetAvailableModels returns the list of available AI model providers.
+func (a *App) GetAvailableModels() []access.ModelInfo {
+	return a.adviceManager.GetAvailableModels()
+}
+
+// GetAdviceSetting returns whether the advisor feature is enabled.
+func (a *App) GetAdviceSetting() (bool, error) {
+	return a.adviceManager.GetEnabled()
+}
+
+// SetAdviceSetting enables or disables the advisor feature.
+func (a *App) SetAdviceSetting(enabled bool) error {
+	return a.adviceManager.SetEnabled(enabled)
+}
+
+// AcceptSuggestion applies a structured suggestion from the advisor.
+func (a *App) AcceptSuggestion(suggestionJSON string, parentContext string) error {
+	var suggestion chat_engine.Suggestion
+	if err := json.Unmarshal([]byte(suggestionJSON), &suggestion); err != nil {
+		slog.Error("AcceptSuggestion: failed to parse suggestion JSON", "error", err)
+		return fmt.Errorf("Invalid suggestion format.")
+	}
+
+	return a.adviceManager.AcceptSuggestion(suggestion, parentContext)
 }
 
 func main() {

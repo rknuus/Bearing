@@ -11,6 +11,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
 
+  import AdvisorChat from '../components/AdvisorChat.svelte';
   import TagFilterBar from '../components/TagFilterBar.svelte';
   import { getBindings, extractError, openExternalLink } from '../lib/utils/bindings';
   import { getObjectiveStatus } from '../lib/utils/okr-status';
@@ -23,9 +24,15 @@
     onNavigateToCalendar?: (date?: string, themeId?: string) => void;
     onNavigateToTasks?: (options?: { themeId?: string; date?: string }) => void;
     highlightItemId?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- opaque to this view, typed inside AdvisorChat
+    advisorMessages?: any[];
+    advisorPanelOpen?: boolean;
+    advisorBusy?: boolean;
+    advisorSelectedOKRIds?: string[];
+    onAdvisorSend?: (message: string, selectedIds?: string[]) => void;
   }
 
-  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId }: Props = $props();
+  let { onNavigateToCalendar, onNavigateToTasks, highlightItemId, advisorMessages = $bindable([]), advisorPanelOpen = $bindable(false), advisorBusy = $bindable(false), advisorSelectedOKRIds: selectedOKRIds = $bindable([]), onAdvisorSend }: Props = $props();
 
   // Types matching the Go structs
   interface KeyResult {
@@ -168,6 +175,20 @@
 
   // Tag filter state (local only, not persisted)
   let filterTagIds: string[] = $state([]);
+
+  // Advisor chat message type
+  interface ChatMessage {
+    role: 'user' | 'advisor';
+    content: string;
+    timestamp: number;
+    error?: string;
+  }
+
+  // Advisor state
+  let advisorEnabled = $state(false);
+  let advisorAvailable = $state(false);
+  let advisorModels = $state<{name: string, provider: string, type: string, available: boolean, reason: string}[]>([]);
+  let lastSelectedId: string | null = null;
 
   function getObjectiveProgress(objectiveId: string): number {
     for (const tp of themeProgress) {
@@ -937,6 +958,105 @@
       .map(t => t.name);
   }
 
+  // Advisor methods
+  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}[]}> {
+    const bindings = getBindings();
+    const historyJSON = JSON.stringify(history.map(m => ({role: m.role === 'advisor' ? 'assistant' : m.role, content: m.content})));
+    const result = await bindings.RequestAdvice(message, historyJSON, selectedIds ?? selectedOKRIds);
+    // After getting advice, refresh themes to pick up any state changes
+    await loadThemes();
+    return result as {text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}[]};
+  }
+
+  async function handleAcceptSuggestion(suggestion: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}): Promise<void> {
+    const bindings = getBindings();
+    const suggestionJSON = JSON.stringify(suggestion);
+    const parentContext = selectedOKRIds.length > 0 ? selectedOKRIds[0] : '';
+    await bindings.AcceptSuggestion(suggestionJSON, parentContext);
+    await loadThemes();
+  }
+
+  async function handleRecheckModels() {
+    try {
+      advisorModels = await getBindings().GetAvailableModels();
+      advisorAvailable = advisorModels.some(m => m.available);
+    } catch {
+      advisorAvailable = false;
+    }
+  }
+
+  async function toggleAdvisorPanel() {
+    if (!advisorEnabled) {
+      // First click: enable the advisor
+      try {
+        await getBindings().SetAdviceSetting(true);
+        advisorEnabled = true;
+        advisorModels = await getBindings().GetAvailableModels();
+        advisorAvailable = advisorModels.some(m => m.available);
+        advisorPanelOpen = true;
+      } catch {
+        // Silently fail — button remains, user can retry
+      }
+      return;
+    }
+    advisorPanelOpen = !advisorPanelOpen;
+  }
+
+  function toggleOKRSelection(itemId: string, event: MouseEvent) {
+    // Only respond to Cmd+Click (macOS) / Ctrl+Click
+    if (!event.metaKey && !event.ctrlKey) return;
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.shiftKey && lastSelectedId) {
+      // Range selection: select all items between lastSelectedId and itemId
+      const allIds = collectAllItemIds(themes);
+      const startIdx = allIds.indexOf(lastSelectedId);
+      const endIdx = allIds.indexOf(itemId);
+      if (startIdx >= 0 && endIdx >= 0) {
+        const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+        selectedOKRIds = allIds.slice(from, to + 1);
+        return;
+      }
+    }
+
+    // Toggle individual selection
+    if (selectedOKRIds.includes(itemId)) {
+      selectedOKRIds = selectedOKRIds.filter(id => id !== itemId);
+    } else {
+      selectedOKRIds = [...selectedOKRIds, itemId];
+    }
+    lastSelectedId = itemId;
+  }
+
+  function collectAllItemIds(themeList: LifeTheme[]): string[] {
+    const ids: string[] = [];
+    for (const theme of themeList) {
+      ids.push(theme.id);
+      for (const obj of theme.objectives) {
+        collectObjectiveIds(obj, ids);
+      }
+      for (const routine of theme.routines ?? []) {
+        ids.push(routine.id);
+      }
+    }
+    return ids;
+  }
+
+  function collectObjectiveIds(obj: Objective, ids: string[]) {
+    ids.push(obj.id);
+    for (const kr of obj.keyResults) ids.push(kr.id);
+    for (const child of obj.objectives ?? []) collectObjectiveIds(child, ids);
+  }
+
+  function handleOKRKeyDown(event: KeyboardEvent) {
+    const modKey = event.ctrlKey || event.metaKey;
+    if (modKey && event.shiftKey && (event.key === 'a' || event.key === 'A')) {
+      event.preventDefault();
+      toggleAdvisorPanel();
+    }
+  }
+
   onMount(async () => {
     try {
       const navCtx = await getBindings().LoadNavigationContext();
@@ -956,6 +1076,17 @@
     contextLoaded = true;
     loadThemes();
     loadVision();
+
+    // Load advisor setting and availability
+    try {
+      advisorEnabled = await getBindings().GetAdviceSetting();
+      if (advisorEnabled) {
+        advisorModels = await getBindings().GetAvailableModels();
+        advisorAvailable = advisorModels.some(m => m.available);
+      }
+    } catch {
+      // Advisor not available — graceful degradation
+    }
   });
 
   // Persist toggle states to NavigationContext
@@ -1001,7 +1132,10 @@
   });
 </script>
 
+<svelte:window onkeydown={handleOKRKeyDown} />
+
 <div class="okr-view">
+  <div class="okr-content">
   <header class="okr-header">
     <h1>Life Themes & OKRs</h1>
     <div class="header-controls">
@@ -1016,6 +1150,9 @@
         onclick={() => { showNewThemeForm = true; }}
       >
         + Add Theme
+      </Button>
+      <Button variant={advisorPanelOpen ? "primary" : "secondary"} onclick={toggleAdvisorPanel}>
+        {advisorPanelOpen ? 'Close Advisor' : 'Advisor'}
       </Button>
     </div>
   </header>
@@ -1160,7 +1297,8 @@
       {highlightItemId}
     >
       {#snippet themeHeader(theme: LifeTheme)}
-        <div class="item-header theme-header">
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+        <div class="item-header theme-header" class:selected-okr={selectedOKRIds.includes(theme.id)} onclick={(e) => toggleOKRSelection(theme.id, e)}>
           <button
             class="expand-button"
             onclick={() => toggleExpanded(theme.id)}
@@ -1353,7 +1491,8 @@
       {/snippet}
 
       {#snippet objectiveHeader(objective: Objective, themeColor: string)}
-        <div class="item-header objective-header" class:okr-completed={!isActive(objective.status)}>
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+        <div class="item-header objective-header" class:okr-completed={!isActive(objective.status)} class:selected-okr={selectedOKRIds.includes(objective.id)} onclick={(e) => toggleOKRSelection(objective.id, e)}>
           <button
             class="expand-button"
             onclick={() => toggleExpanded(objective.id)}
@@ -1471,7 +1610,8 @@
       {/snippet}
 
       {#snippet keyResultItem(kr: KeyResult, themeColor: string)}
-        <div class="item-header kr-header" class:okr-completed={!isActive(kr.status)}>
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+        <div class="item-header kr-header" class:okr-completed={!isActive(kr.status)} class:selected-okr={selectedOKRIds.includes(kr.id)} onclick={(e) => toggleOKRSelection(kr.id, e)}>
           <span class="kr-marker" style="background-color: {themeColor};"></span>
 
           {#if editingKeyResultId === kr.id}
@@ -1544,7 +1684,38 @@
       </div>
     {/if}
   {/if}
-</div>
+  </div><!-- .okr-content -->
+
+  {#if advisorEnabled}
+    <div class="advisor-panel" class:open={advisorPanelOpen}>
+      <div class="advisor-panel-header">
+        <h3>Goal Advisor</h3>
+        <button class="advisor-close-btn" onclick={toggleAdvisorPanel} aria-label="Close advisor panel">&times;</button>
+      </div>
+      {#if advisorModels.length > 0}
+        <div class="advisor-model-badges">
+          {#each advisorModels as model (model.name)}
+            <span class="model-badge" class:available={model.available} class:unavailable={!model.available}>
+              <span class="model-type-indicator">{model.type === 'local' ? '\uD83D\uDCBB' : '\u2601\uFE0F'}</span>
+              {model.name}
+            </span>
+          {/each}
+        </div>
+      {/if}
+      <AdvisorChat
+        onRequestAdvice={handleRequestAdvice}
+        onSendMessage={onAdvisorSend}
+        onAcceptSuggestion={handleAcceptSuggestion}
+        available={advisorAvailable}
+        models={advisorModels}
+        {selectedOKRIds}
+        onRecheck={handleRecheckModels}
+        bind:messages={advisorMessages}
+        bind:busy={advisorBusy}
+      />
+    </div>
+  {/if}
+</div><!-- .okr-view -->
 
 {#if closingObjectiveId}
   {@const closingObj = getClosingObjective()}
@@ -1601,6 +1772,14 @@
 
 <style>
   .okr-view {
+    display: flex;
+    flex-direction: row;
+    min-height: 100%;
+  }
+
+  .okr-content {
+    flex: 1;
+    min-width: 0;
     padding: 1.5rem;
     max-width: 900px;
     margin: 0 auto;
@@ -2506,5 +2685,87 @@
     outline: none;
     border-color: var(--color-primary-500);
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  /* Advisor slide-out panel */
+  .advisor-panel {
+    width: 0;
+    overflow: hidden;
+    transition: width 0.3s ease;
+    border-left: 1px solid var(--color-gray-200);
+    display: flex;
+    flex-direction: column;
+    background: white;
+    flex-shrink: 0;
+  }
+
+  .advisor-panel.open {
+    width: 380px;
+  }
+
+  .advisor-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-gray-200);
+    flex-shrink: 0;
+  }
+
+  .advisor-panel-header h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .advisor-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--color-gray-500);
+    padding: 0.25rem;
+    line-height: 1;
+  }
+
+  .advisor-close-btn:hover {
+    color: var(--color-gray-700);
+  }
+
+  .advisor-model-badges {
+    padding: 0.5rem 1rem;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+
+  .model-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    background: var(--color-gray-100);
+    color: var(--color-gray-600);
+  }
+
+  .model-badge.available {
+    background: color-mix(in srgb, var(--color-primary-500) 10%, white);
+    color: var(--color-primary-600);
+  }
+
+  .model-badge.unavailable {
+    opacity: 0.5;
+  }
+
+  .model-type-indicator {
+    font-size: 0.75rem;
+  }
+
+  :global(.selected-okr) {
+    background-color: color-mix(in srgb, var(--color-primary-500) 10%, transparent) !important;
+    border-radius: 4px;
   }
 </style>

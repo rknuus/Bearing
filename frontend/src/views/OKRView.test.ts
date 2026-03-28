@@ -34,7 +34,7 @@ function makeTestThemes(): LifeTheme[] {
   ];
 }
 
-function makeMockBindings(themes: LifeTheme[]) {
+function makeMockBindings(themes: LifeTheme[], advisorEnabled = false) {
   return {
     GetHierarchy: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(themes))),
     Establish: vi.fn().mockResolvedValue({}),
@@ -52,6 +52,11 @@ function makeMockBindings(themes: LifeTheme[]) {
     GetAllThemeProgress: vi.fn().mockResolvedValue([]),
     GetPersonalVision: vi.fn().mockResolvedValue({ mission: '', vision: '' }),
     SavePersonalVision: vi.fn().mockResolvedValue(undefined),
+    GetAdviceSetting: vi.fn().mockResolvedValue(advisorEnabled),
+    GetAvailableModels: vi.fn().mockResolvedValue([
+      { name: 'Claude (Mock)', provider: 'Anthropic', type: 'remote', available: true, reason: 'Mock mode' },
+    ]),
+    RequestAdvice: vi.fn().mockResolvedValue({ text: 'Mock advice response', suggestions: [] }),
   };
 }
 
@@ -1068,6 +1073,119 @@ describe('OKRView', () => {
       expect(container.querySelector('.routine-description')?.textContent).toBe('Exercise per week');
 
       routinesEnabled.value = false;
+    });
+  });
+
+  describe('advisor panel', () => {
+    it('shows advisor button even when disabled (enables on first click)', async () => {
+      // Default makeMockBindings has advisorEnabled=false
+      await renderView();
+
+      const advisorButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.header-controls button, .header-controls .btn-primary, .header-controls .btn-secondary'))
+        .find(b => b.textContent?.trim() === 'Advisor');
+      expect(advisorButton).toBeDefined();
+
+      // Panel should not be open yet (advisor not yet enabled)
+      expect(container.querySelector('.advisor-panel.open')).toBeNull();
+    });
+
+    it('shows advisor toggle button when advisor is enabled', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      // Wait for advisor initialization to complete
+      await vi.waitFor(() => {
+        expect(mockBindings.GetAdviceSetting).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      const advisorButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+        .find(b => b.textContent?.trim() === 'Advisor');
+      expect(advisorButton).toBeTruthy();
+    });
+
+    it('opens and closes advisor panel on toggle', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      // Wait for advisor initialization
+      await vi.waitFor(() => {
+        expect(mockBindings.GetAdviceSetting).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // Panel should not be open initially
+      const panel = container.querySelector('.advisor-panel');
+      expect(panel).toBeTruthy();
+      expect(panel!.classList.contains('open')).toBe(false);
+
+      // Click the Advisor button to open
+      const advisorButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+        .find(b => b.textContent?.trim() === 'Advisor');
+      advisorButton!.click();
+      await tick();
+
+      expect(panel!.classList.contains('open')).toBe(true);
+
+      // Click the close button inside panel
+      const closeButton = container.querySelector<HTMLButtonElement>('.advisor-close-btn');
+      expect(closeButton).toBeTruthy();
+      closeButton!.click();
+      await tick();
+
+      expect(panel!.classList.contains('open')).toBe(false);
+    });
+
+    it('detects model availability on mount when advisor is enabled', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.GetAvailableModels).toHaveBeenCalled();
+      });
+    });
+
+    it('does not call GetAvailableModels when advisor is disabled', async () => {
+      // Default: advisorEnabled = false
+      await renderView();
+
+      // Give time for async initialization to settle
+      await tick();
+      await tick();
+
+      expect(mockBindings.GetAvailableModels).not.toHaveBeenCalled();
+    });
+
+    it('shows model badges when panel is open', async () => {
+      mockBindings = makeMockBindings(makeTestThemes(), true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.GetAvailableModels).toHaveBeenCalled();
+      });
+      await tick();
+      await tick();
+
+      // Open the panel
+      const advisorButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+        .find(b => b.textContent?.trim() === 'Advisor');
+      advisorButton!.click();
+      await tick();
+
+      const badges = container.querySelectorAll('.model-badge');
+      expect(badges.length).toBe(1);
+      expect(badges[0].textContent).toContain('Claude (Mock)');
+      expect(badges[0].classList.contains('available')).toBe(true);
     });
   });
 });

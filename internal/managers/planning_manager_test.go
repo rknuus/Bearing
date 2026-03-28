@@ -400,6 +400,14 @@ func (m *mockUIStateAccess) SaveTaskDrafts(data json.RawMessage) error {
 	return nil
 }
 
+func (m *mockUIStateAccess) LoadAdvisorEnabled() (bool, error) {
+	return false, nil
+}
+
+func (m *mockUIStateAccess) SaveAdvisorEnabled(enabled bool) error {
+	return nil
+}
+
 // newMockManger creates a PlanningManager with all mock dependencies for testing convenience.
 func newMockManager() (*PlanningManager, *mockThemeAccess, *mockTaskAccess) {
 	ta := newMockThemeAccess()

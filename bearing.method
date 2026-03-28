@@ -148,6 +148,20 @@ volatilities:
         - "PlanningManager"
         - "RuleEngine"
       confidence: "high"
+    - id: "vol-advice-invocation"
+      name: "Advice Model Invocation"
+      description: "How the AI advisor is invoked to review and suggest OKR goals. Covers the invocation mechanism (Claude CLI
+        subprocess, local LLM, future providers), prompt construction from OKR context, conversation history assembly,
+        structured suggestion parsing, and prompt injection prevention."
+      evidence: "Same customer over time: user switches between Claude CLI and a local LLM as their preferred advisor backend;
+        prompt engineering evolves as model capabilities improve. Different customers at same time: some users have
+        Claude CLI installed, others prefer Ollama for privacy, some opt out entirely. The invocation mechanism, prompt
+        construction strategy, and response parsing are all independently volatile."
+      encapsulated_by:
+        - "AdviceManager"
+        - "ChatEngine"
+        - "ModelAccess"
+      confidence: "high"
   rejected:
     - name: "Eisenhower Priority Matrix"
       reason: "The four-quadrant Eisenhower priority model (important-urgent, important-not-urgent, not-important-urgent,
@@ -196,6 +210,14 @@ components:
         last). Manages status directories, zone key migration in task ordering, and slug generation. 5 methods on a
         single facet. Separated from PlanningManager because workspace structure volatility (how the board is laid out)
         changes independently from planning item lifecycle volatility."
+    - id: "fdf81e59-7ef4-4e61-a130-e1bdab111497"
+      name: "AdviceManager"
+      description: "Manager component (IAdviceManager) orchestrating AI-powered goal advisory. Operations: RequestAdvice
+        (fetch OKR data via ThemeAccess, delegate prompt assembly to ChatEngine, invoke ModelAccess, return
+        AdviceResponse with text and structured suggestions), GetAvailableModels (enumerate configured model providers
+        with local/remote classification), GetEnabled/SetEnabled (opt-in setting via UIStateAccess), AcceptSuggestion
+        (route accepted suggestions to PlanningManager via async call for direct-apply creation/update of OKR items — at
+        most one async cross-manager call per use case)."
   engines:
     - id: "59843c4a-d1d8-4663-abdf-6b4aa93e7099"
       name: "RuleEngine"
@@ -215,6 +237,15 @@ components:
         progress as aggregate of top-level objective progress. Encapsulates progress computation volatility — formulas,
         rollup strategies, and weighting may change independently from OKR structure management. Receives all data
         through parameters, produces computed results with no persistence."
+    - id: "215536eb-e318-4662-8563-385bd966b502"
+      name: "ChatEngine"
+      description: "Stateless engine (IChatEngine) that assembles conversation payloads from OKR data and parses structured
+        suggestions from model responses. AssembleConversation: constructs system prompt with OKR context (themes,
+        objectives, key results, routines), applies ChatML-style prompt injection prevention, formats conversation
+        history, appends new user message. ParseSuggestions: extracts bearing-suggestion JSON blocks from model output,
+        returns clean display text plus typed Suggestion structs (theme/objective/key_result/routine with create/edit
+        actions). Handles auto-extraction of start/target values from natural language. Stateless — all data received
+        through parameters."
   resource_access:
     - id: "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
       name: "UIStateAccess"
@@ -245,6 +276,14 @@ components:
       description: "Resource Access component (IVisionAccess) for persisting personal vision data. Handles vision read/write
         with git-backed transactions via Repository. Manages vision.json. Split from PlanAccess by access volatility —
         vision.json is an independent storage resource."
+    - id: "349b4d34-b6b2-4ee9-a662-65859068f8fa"
+      name: "ModelAccess"
+      description: "Resource Access component (IModelAccess) for invoking AI language models. Strategy pattern interface with
+        provider-specific implementations. SendMessage: pipes assembled conversation to the model, returns response
+        text. GetAvailableModels: returns 0-N ModelInfo structs with name, provider, type (local/remote), availability
+        status. Initial implementation: ClaudeCLIModelAccess invokes the claude binary as a subprocess via claude
+        --print with stdin/stdout piping, configurable timeout, and user-friendly error mapping. Interface supports
+        future OllamaModelAccess (local) or other providers."
   resources: []
   utilities:
     - id: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
@@ -748,3 +787,62 @@ use_cases:
               note: "GetBoardConfiguration(), GetTasksByStatus() for each column, LoadTaskOrder() — gathers data for reconciliation.
                 Calls RuleEngine.TodoSlugFromColumns(), DropZoneForTask(), ReconcileTaskOrder() to compute correct zones
                 and repair order. SaveTaskOrder() if repair needed."
+    - id: "uc-12"
+      name: "Request Goal Advice"
+      description: "User requests AI-powered advice on their OKR goals through a chat panel in the OKR View. The advisor can
+        review existing goals for quality, suggest new objectives/key results/routines, and evaluate OKR balance.
+        Responses may include structured suggestions that the user can accept (direct-apply) or decline. Acceptance
+        routes through AdviceManager to PlanningManager via async call."
+      sequences:
+        - name: "Request Advice (multi-turn conversation)"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "RequestAdvice(message, conversationHistory, selectedOKRIds)"
+            - from: "App"
+              to: "AdviceManager"
+              note: "RequestAdvice(message, history, selectedOKRIds) — orchestrates the advice flow"
+            - from: "AdviceManager"
+              to: "ThemeAccess"
+              note: "GetThemes() — fetch OKR data for context assembly"
+            - from: "AdviceManager"
+              to: "ChatEngine"
+              note: "AssembleConversation(okrData, history, userMessage) — builds conversation payload with system prompt, OKR
+                context, sanitized history"
+            - from: "AdviceManager"
+              to: "ModelAccess"
+              note: "SendMessage(assembledMessages) — invoke Claude CLI subprocess, return response text"
+            - from: "AdviceManager"
+              to: "ChatEngine"
+              note: "ParseSuggestions(responseText) — extract structured suggestion blocks, return cleanText + []Suggestion"
+        - name: "Accept Suggestion (direct-apply)"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "AcceptSuggestion(suggestion, parentContext)"
+            - from: "App"
+              to: "AdviceManager"
+              note: "AcceptSuggestion(suggestion, parentContext) — validate and route to PlanningManager"
+            - from: "AdviceManager"
+              to: "PlanningManager"
+              async: true
+              note: "CreateObjective/CreateKeyResult/AddRoutine/UpdateObjective (async call — at most one per use case). Routes based
+                on suggestion.Type and suggestion.Action (create vs edit)."
+            - from: "PlanningManager"
+              to: "ThemeAccess"
+              note: "GetThemes(), SaveTheme() — persist the new/updated OKR item"
+            - from: "ThemeAccess"
+              to: "Repository"
+              note: "Begin() -> Stage(themes.json) -> Commit()"
+        - name: "Check Model Availability"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "GetAvailableModels()"
+            - from: "App"
+              to: "AdviceManager"
+              note: "GetAvailableModels() — delegates to ModelAccess"
+            - from: "AdviceManager"
+              to: "ModelAccess"
+              note: "GetAvailableModels() — checks claude binary on PATH, returns []ModelInfo with name, provider, type
+                (local/remote), availability"
