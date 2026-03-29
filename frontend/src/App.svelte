@@ -8,6 +8,7 @@
   import BearingLogo from './lib/components/BearingLogo.svelte';
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
+  import { getNow } from './lib/utils/clock';
   import { initLocale } from './lib/utils/date-format';
   import { handleWindowShortcut } from './lib/utils/window-commands';
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
@@ -69,12 +70,13 @@
   }
 
   // Centralized current date (updates at midnight)
-  let currentDate = $state(new Date().toISOString().split('T')[0]);
+  let currentDate = $state(getNow().toISOString().split('T')[0]);
   let toastMessage = $state<string | null>(null);
   let midnightTimer: ReturnType<typeof setTimeout> | undefined;
 
   function scheduleMidnightUpdate() {
-    const now = new Date();
+    clearTimeout(midnightTimer);
+    const now = getNow();
     const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
     const msUntilMidnight = tomorrow.getTime() - now.getTime();
     midnightTimer = setTimeout(() => {
@@ -84,7 +86,7 @@
   }
 
   async function handleDayChange() {
-    currentDate = new Date().toISOString().split('T')[0];
+    currentDate = getNow().toISOString().split('T')[0];
 
     // Re-resolve Today's Focus for the new day
     const focus = await resolveTodayFocus(getBindings());
@@ -111,6 +113,21 @@
     toastMessage = `Good morning — it's ${formatDateLong(currentDate)}`;
 
     saveNavigationContext();
+
+    try {
+      await getBindings().ProcessPriorityPromotions();
+    } catch (e) {
+      console.error('Failed to process priority promotions on day change:', e);
+    }
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) return;
+    const nowDate = getNow().toISOString().split('T')[0];
+    if (nowDate !== currentDate) {
+      handleDayChange();
+      scheduleMidnightUpdate();
+    }
   }
 
   // Derived single-theme ID for backward compat with child components (ThemeFilterBar, EisenKanView)
@@ -442,10 +459,14 @@
 
     // Start midnight day-change timer
     scheduleMidnightUpdate();
+
+    // Detect day changes after sleep/wake via visibility API
+    document.addEventListener('visibilitychange', handleVisibilityChange);
   });
 
   onDestroy(() => {
     window.removeEventListener('keydown', handleKeyDown);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
     clearTimeout(midnightTimer);
   });
 </script>
