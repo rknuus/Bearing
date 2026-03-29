@@ -196,14 +196,31 @@ type Objective struct {
 	Objectives    []Objective `json:"objectives,omitempty"`
 }
 
+// RepeatPattern defines a recurrence schedule for a routine in the Manager layer.
+type RepeatPattern struct {
+	Frequency  string `json:"frequency"`
+	Interval   int    `json:"interval"`
+	Weekdays   []int  `json:"weekdays,omitempty"`
+	DayOfMonth int    `json:"dayOfMonth,omitempty"`
+	StartDate  string `json:"startDate"`
+}
+
+// ScheduleException represents a single date override in a routine's schedule in the Manager layer.
+type ScheduleException struct {
+	OriginalDate string `json:"originalDate"`
+	NewDate      string `json:"newDate"`
+}
+
 // Routine represents an ongoing health metric in the Manager layer's public interface.
 type Routine struct {
-	ID           string `json:"id"`
-	Description  string `json:"description"`
-	CurrentValue int    `json:"currentValue"`
-	TargetValue  int    `json:"targetValue"`
-	TargetType   string `json:"targetType"`
-	Unit         string `json:"unit,omitempty"`
+	ID            string              `json:"id"`
+	Description   string              `json:"description"`
+	CurrentValue  int                 `json:"currentValue"`
+	TargetValue   int                 `json:"targetValue"`
+	TargetType    string              `json:"targetType"`
+	Unit          string              `json:"unit,omitempty"`
+	RepeatPattern *RepeatPattern      `json:"repeatPattern,omitempty"`
+	Exceptions    []ScheduleException `json:"exceptions,omitempty"`
 }
 
 // LifeTheme represents a life focus area in the Manager layer's public interface.

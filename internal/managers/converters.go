@@ -131,27 +131,89 @@ func toAccessKeyResult(m KeyResult) access.KeyResult {
 	}
 }
 
+// toManagerRepeatPattern converts an access.RepeatPattern to the Manager's RepeatPattern.
+func toManagerRepeatPattern(a *access.RepeatPattern) *RepeatPattern {
+	if a == nil {
+		return nil
+	}
+	return &RepeatPattern{
+		Frequency:  a.Frequency,
+		Interval:   a.Interval,
+		Weekdays:   a.Weekdays,
+		DayOfMonth: a.DayOfMonth,
+		StartDate:  a.StartDate,
+	}
+}
+
+// toAccessRepeatPattern converts a Manager RepeatPattern to an access.RepeatPattern.
+func toAccessRepeatPattern(m *RepeatPattern) *access.RepeatPattern {
+	if m == nil {
+		return nil
+	}
+	return &access.RepeatPattern{
+		Frequency:  m.Frequency,
+		Interval:   m.Interval,
+		Weekdays:   m.Weekdays,
+		DayOfMonth: m.DayOfMonth,
+		StartDate:  m.StartDate,
+	}
+}
+
+// toManagerExceptions converts access.ScheduleException slice to the Manager's ScheduleException slice.
+func toManagerExceptions(a []access.ScheduleException) []ScheduleException {
+	if len(a) == 0 {
+		return nil
+	}
+	result := make([]ScheduleException, len(a))
+	for i, e := range a {
+		result[i] = ScheduleException{
+			OriginalDate: e.OriginalDate,
+			NewDate:      e.NewDate,
+		}
+	}
+	return result
+}
+
+// toAccessExceptions converts Manager ScheduleException slice to access.ScheduleException slice.
+func toAccessExceptions(m []ScheduleException) []access.ScheduleException {
+	if len(m) == 0 {
+		return nil
+	}
+	result := make([]access.ScheduleException, len(m))
+	for i, e := range m {
+		result[i] = access.ScheduleException{
+			OriginalDate: e.OriginalDate,
+			NewDate:      e.NewDate,
+		}
+	}
+	return result
+}
+
 // toManagerRoutine converts an access.Routine to the Manager's Routine.
 func toManagerRoutine(a access.Routine) Routine {
 	return Routine{
-		ID:           a.ID,
-		Description:  a.Description,
-		CurrentValue: a.CurrentValue,
-		TargetValue:  a.TargetValue,
-		TargetType:   a.TargetType,
-		Unit:         a.Unit,
+		ID:            a.ID,
+		Description:   a.Description,
+		CurrentValue:  a.CurrentValue,
+		TargetValue:   a.TargetValue,
+		TargetType:    a.TargetType,
+		Unit:          a.Unit,
+		RepeatPattern: toManagerRepeatPattern(a.RepeatPattern),
+		Exceptions:    toManagerExceptions(a.Exceptions),
 	}
 }
 
 // toAccessRoutine converts a Manager Routine to an access.Routine.
 func toAccessRoutine(m Routine) access.Routine {
 	return access.Routine{
-		ID:           m.ID,
-		Description:  m.Description,
-		CurrentValue: m.CurrentValue,
-		TargetValue:  m.TargetValue,
-		TargetType:   m.TargetType,
-		Unit:         m.Unit,
+		ID:            m.ID,
+		Description:   m.Description,
+		CurrentValue:  m.CurrentValue,
+		TargetValue:   m.TargetValue,
+		TargetType:    m.TargetType,
+		Unit:          m.Unit,
+		RepeatPattern: toAccessRepeatPattern(m.RepeatPattern),
+		Exceptions:    toAccessExceptions(m.Exceptions),
 	}
 }
 
