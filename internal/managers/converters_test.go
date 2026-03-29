@@ -66,6 +66,26 @@ func TestUnit_ToManagerRoutine_RoundTrip(t *testing.T) {
 	assertRoutineEqual(t, original, result)
 }
 
+func TestUnit_ToManagerRoutine_RoundTripWithRepeatPattern(t *testing.T) {
+	original := access.Routine{
+		ID:           "r-2",
+		Description:  "Daily meditation",
+		CurrentValue: 1,
+		TargetValue:  1,
+		TargetType:   "at_least",
+		Unit:         "sessions",
+		RepeatPattern: &access.RepeatPattern{
+			Frequency: "weekly",
+			Interval:  1,
+			Weekdays:  []int{0, 2, 4},
+			StartDate: "2026-04-01",
+		},
+	}
+	mRoutine := toManagerRoutine(original)
+	result := toAccessRoutine(mRoutine)
+	assertRoutineEqual(t, original, result)
+}
+
 func TestUnit_ToManagerObjective_RoundTrip(t *testing.T) {
 	original := access.Objective{
 		ID:            "obj-1",
@@ -361,6 +381,19 @@ func assertRoutineEqual(t *testing.T, want, got access.Routine) {
 	}
 	if got.Unit != want.Unit {
 		t.Errorf("Unit: got %q, want %q", got.Unit, want.Unit)
+	}
+	if (want.RepeatPattern == nil) != (got.RepeatPattern == nil) {
+		t.Errorf("RepeatPattern: got nil=%v, want nil=%v", got.RepeatPattern == nil, want.RepeatPattern == nil)
+	} else if want.RepeatPattern != nil {
+		if got.RepeatPattern.Frequency != want.RepeatPattern.Frequency {
+			t.Errorf("RepeatPattern.Frequency: got %q, want %q", got.RepeatPattern.Frequency, want.RepeatPattern.Frequency)
+		}
+		if got.RepeatPattern.Interval != want.RepeatPattern.Interval {
+			t.Errorf("RepeatPattern.Interval: got %d, want %d", got.RepeatPattern.Interval, want.RepeatPattern.Interval)
+		}
+		if got.RepeatPattern.StartDate != want.RepeatPattern.StartDate {
+			t.Errorf("RepeatPattern.StartDate: got %q, want %q", got.RepeatPattern.StartDate, want.RepeatPattern.StartDate)
+		}
 	}
 }
 

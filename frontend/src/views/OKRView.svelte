@@ -60,6 +60,14 @@
     objectives?: Objective[];
   }
 
+  interface RepeatPattern {
+    frequency: string;
+    interval: number;
+    weekdays?: number[];
+    monthDay?: number;
+    startDate?: string;
+  }
+
   interface Routine {
     id: string;
     description: string;
@@ -67,6 +75,7 @@
     targetValue: number;
     targetType: string; // "at-or-above" | "at-or-below"
     unit?: string;
+    repeatPattern?: RepeatPattern;
   }
 
   interface LifeTheme {
@@ -135,12 +144,24 @@
   let newRoutineTargetValue = $state(1);
   let newRoutineTargetType = $state('at-or-above');
   let newRoutineUnit = $state('');
+  let newRoutineFrequency = $state('none');
+  let newRoutineInterval = $state(1);
+  let newRoutineWeekdays = $state<number[]>([]);
+  let newRoutineMonthDay = $state(1);
+  let newRoutineStartDate = $state('');
   let editingRoutineId = $state<string | null>(null);
   let editRoutineDescription = $state('');
   let editRoutineCurrentValue = $state(0);
   let editRoutineTargetValue = $state(1);
   let editRoutineTargetType = $state('at-or-above');
   let editRoutineUnit = $state('');
+  let editRoutineFrequency = $state('none');
+  let editRoutineInterval = $state(1);
+  let editRoutineWeekdays = $state<number[]>([]);
+  let editRoutineMonthDay = $state(1);
+  let editRoutineStartDate = $state('');
+
+  const WEEKDAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
   // Confirm-delete dialog state (replaces window.confirm which is suppressed in WebView)
   let confirmDeleteMessage = $state<string | null>(null);
@@ -697,12 +718,41 @@
     });
   }
 
+  // Repeat pattern helpers
+  function buildRepeatPattern(frequency: string, interval: number, weekdays: number[], monthDay: number, startDate: string): RepeatPattern | undefined {
+    if (frequency === 'none') return undefined;
+    const pattern: RepeatPattern = { frequency, interval: Math.max(1, interval) };
+    if (frequency === 'weekly' && weekdays.length > 0) {
+      pattern.weekdays = [...weekdays].sort();
+    }
+    if (frequency === 'monthly') {
+      pattern.monthDay = Math.max(1, Math.min(31, monthDay));
+    }
+    if (startDate) {
+      pattern.startDate = startDate;
+    }
+    return pattern;
+  }
+
+  function resetNewRoutineRepeat() {
+    newRoutineFrequency = 'none';
+    newRoutineInterval = 1;
+    newRoutineWeekdays = [];
+    newRoutineMonthDay = 1;
+    newRoutineStartDate = '';
+  }
+
+  function toggleWeekday(weekdays: number[], day: number): number[] {
+    return weekdays.includes(day) ? weekdays.filter(d => d !== day) : [...weekdays, day];
+  }
+
   // Routine CRUD
   async function createRoutine(themeId: string) {
     if (!newRoutineDescription.trim()) return;
 
     try {
-      const result = await getBindings().Establish({ parentId: themeId, goalType: 'routine', description: newRoutineDescription.trim(), targetValue: newRoutineTargetValue, targetType: newRoutineTargetType, unit: newRoutineUnit });
+      const repeatPattern = buildRepeatPattern(newRoutineFrequency, newRoutineInterval, newRoutineWeekdays, newRoutineMonthDay, newRoutineStartDate);
+      const result = await getBindings().Establish({ parentId: themeId, goalType: 'routine', description: newRoutineDescription.trim(), targetValue: newRoutineTargetValue, targetType: newRoutineTargetType, unit: newRoutineUnit, repeatPattern });
       const created = result.routine!;
       const theme = themes.find(t => t.id === themeId);
       if (theme) {
@@ -715,6 +765,7 @@
       newRoutineTargetValue = 1;
       newRoutineTargetType = 'at-or-above';
       newRoutineUnit = '';
+      resetNewRoutineRepeat();
       addingRoutineToTheme = null;
     } catch (e) {
       console.error('Failed to create routine:', e);
@@ -725,13 +776,16 @@
 
   async function updateRoutine(routineId: string) {
     try {
+      // Build repeat pattern or clear it
+      const repeatPattern = buildRepeatPattern(editRoutineFrequency, editRoutineInterval, editRoutineWeekdays, editRoutineMonthDay, editRoutineStartDate);
+      const clearRepeat = editRoutineFrequency === 'none';
       // Revise for metadata changes
-      await getBindings().Revise({ goalId: routineId, description: editRoutineDescription, targetValue: editRoutineTargetValue, targetType: editRoutineTargetType, unit: editRoutineUnit });
+      await getBindings().Revise({ goalId: routineId, description: editRoutineDescription, targetValue: editRoutineTargetValue, targetType: editRoutineTargetType, unit: editRoutineUnit, repeatPattern, clearRepeat });
       // RecordProgress for currentValue change
       await getBindings().RecordProgress(routineId, editRoutineCurrentValue);
       for (const t of themes) {
         const r = (t.routines ?? []).find(r => r.id === routineId);
-        if (r) { r.description = editRoutineDescription; r.currentValue = editRoutineCurrentValue; r.targetValue = editRoutineTargetValue; r.targetType = editRoutineTargetType; r.unit = editRoutineUnit; break; }
+        if (r) { r.description = editRoutineDescription; r.currentValue = editRoutineCurrentValue; r.targetValue = editRoutineTargetValue; r.targetType = editRoutineTargetType; r.unit = editRoutineUnit; r.repeatPattern = repeatPattern; break; }
       }
       themes = themes;
       await verifyThemeState();
@@ -786,11 +840,39 @@
     editRoutineTargetValue = routine.targetValue;
     editRoutineTargetType = routine.targetType;
     editRoutineUnit = routine.unit ?? '';
+    if (routine.repeatPattern) {
+      editRoutineFrequency = routine.repeatPattern.frequency;
+      editRoutineInterval = routine.repeatPattern.interval;
+      editRoutineWeekdays = routine.repeatPattern.weekdays ? [...routine.repeatPattern.weekdays] : [];
+      editRoutineMonthDay = routine.repeatPattern.monthDay ?? 1;
+      editRoutineStartDate = routine.repeatPattern.startDate ?? '';
+    } else {
+      editRoutineFrequency = 'none';
+      editRoutineInterval = 1;
+      editRoutineWeekdays = [];
+      editRoutineMonthDay = 1;
+      editRoutineStartDate = '';
+    }
   }
 
   function isRoutineOnTrack(routine: Routine): boolean {
     if (routine.targetType === 'at-or-below') return routine.currentValue <= routine.targetValue;
     return routine.currentValue >= routine.targetValue;
+  }
+
+  function formatRepeatPattern(p: RepeatPattern): string {
+    const intervalLabel = p.interval > 1 ? `${p.interval} ` : '';
+    switch (p.frequency) {
+      case 'daily': return `Every ${intervalLabel}day${p.interval > 1 ? 's' : ''}`;
+      case 'weekly': {
+        const days = (p.weekdays ?? []).map(d => WEEKDAY_LABELS[d]).join(', ');
+        const base = `Every ${intervalLabel}week${p.interval > 1 ? 's' : ''}`;
+        return days ? `${base} on ${days}` : base;
+      }
+      case 'monthly': return `Day ${p.monthDay ?? 1} every ${intervalLabel}month${p.interval > 1 ? 's' : ''}`;
+      case 'yearly': return `Every ${intervalLabel}year${p.interval > 1 ? 's' : ''}`;
+      default: return p.frequency;
+    }
   }
 
   // Status helpers
@@ -1487,8 +1569,62 @@
                   <label class="routine-field-label">Unit
                     <input type="text" class="routine-field-input" bind:value={newRoutineUnit} placeholder="e.g. kg, %" />
                   </label>
+                </div>
+                <div class="routine-form-row">
+                  <label class="routine-field-label routine-field-fixed">Repeat
+                    <select class="routine-field-select" bind:value={newRoutineFrequency}>
+                      <option value="none">None</option>
+                      <option value="daily">Daily</option>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </label>
+                  {#if newRoutineFrequency !== 'none'}
+                    {#if newRoutineFrequency === 'daily'}
+                      <label class="routine-field-label">Every
+                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                        <span class="routine-repeat-suffix">day(s)</span>
+                      </label>
+                    {:else if newRoutineFrequency === 'weekly'}
+                      <label class="routine-field-label">Every
+                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                        <span class="routine-repeat-suffix">week(s)</span>
+                      </label>
+                    {:else if newRoutineFrequency === 'monthly'}
+                      <label class="routine-field-label">Day
+                        <input type="number" class="routine-field-input" bind:value={newRoutineMonthDay} min="1" max="31" />
+                      </label>
+                      <label class="routine-field-label">every
+                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                        <span class="routine-repeat-suffix">month(s)</span>
+                      </label>
+                    {:else if newRoutineFrequency === 'yearly'}
+                      <label class="routine-field-label">Every
+                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                        <span class="routine-repeat-suffix">year(s)</span>
+                      </label>
+                    {/if}
+                    <label class="routine-field-label">Start
+                      <input type="date" class="routine-field-input" bind:value={newRoutineStartDate} />
+                    </label>
+                  {/if}
+                </div>
+                {#if newRoutineFrequency === 'weekly'}
+                  <div class="routine-weekday-row">
+                    {#each WEEKDAY_LABELS as label, i}
+                      <button
+                        class="weekday-toggle"
+                        class:weekday-active={newRoutineWeekdays.includes(i)}
+                        onclick={() => { newRoutineWeekdays = toggleWeekday(newRoutineWeekdays, i); }}
+                        type="button"
+                      >{label}</button>
+                    {/each}
+                  </div>
+                {/if}
+                <div class="routine-form-row">
                   <Button variant="primary" onclick={() => createRoutine(theme.id)}>Create</Button>
-                  <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; newRoutineTargetValue = 1; newRoutineTargetType = 'at-or-above'; newRoutineUnit = ''; }}>Cancel</Button>
+                  <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; newRoutineTargetValue = 1; newRoutineTargetType = 'at-or-above'; newRoutineUnit = ''; resetNewRoutineRepeat(); }}>Cancel</Button>
                 </div>
               </div>
             {/if}
@@ -1515,6 +1651,60 @@
                       <label class="routine-field-label">Unit
                         <input type="text" class="routine-field-input" bind:value={editRoutineUnit} placeholder="e.g. kg, %" />
                       </label>
+                    </div>
+                    <div class="routine-form-row">
+                      <label class="routine-field-label routine-field-fixed">Repeat
+                        <select class="routine-field-select" bind:value={editRoutineFrequency}>
+                          <option value="none">None</option>
+                          <option value="daily">Daily</option>
+                          <option value="weekly">Weekly</option>
+                          <option value="monthly">Monthly</option>
+                          <option value="yearly">Yearly</option>
+                        </select>
+                      </label>
+                      {#if editRoutineFrequency !== 'none'}
+                        {#if editRoutineFrequency === 'daily'}
+                          <label class="routine-field-label">Every
+                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                            <span class="routine-repeat-suffix">day(s)</span>
+                          </label>
+                        {:else if editRoutineFrequency === 'weekly'}
+                          <label class="routine-field-label">Every
+                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                            <span class="routine-repeat-suffix">week(s)</span>
+                          </label>
+                        {:else if editRoutineFrequency === 'monthly'}
+                          <label class="routine-field-label">Day
+                            <input type="number" class="routine-field-input" bind:value={editRoutineMonthDay} min="1" max="31" />
+                          </label>
+                          <label class="routine-field-label">every
+                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                            <span class="routine-repeat-suffix">month(s)</span>
+                          </label>
+                        {:else if editRoutineFrequency === 'yearly'}
+                          <label class="routine-field-label">Every
+                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                            <span class="routine-repeat-suffix">year(s)</span>
+                          </label>
+                        {/if}
+                        <label class="routine-field-label">Start
+                          <input type="date" class="routine-field-input" bind:value={editRoutineStartDate} />
+                        </label>
+                      {/if}
+                    </div>
+                    {#if editRoutineFrequency === 'weekly'}
+                      <div class="routine-weekday-row">
+                        {#each WEEKDAY_LABELS as label, i}
+                          <button
+                            class="weekday-toggle"
+                            class:weekday-active={editRoutineWeekdays.includes(i)}
+                            onclick={() => { editRoutineWeekdays = toggleWeekday(editRoutineWeekdays, i); }}
+                            type="button"
+                          >{label}</button>
+                        {/each}
+                      </div>
+                    {/if}
+                    <div class="routine-form-row">
                       <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
                       <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
                     </div>
@@ -1523,6 +1713,9 @@
                   <div class="routine-display">
                     <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
                     <span class="routine-description">{routine.description}</span>
+                    {#if routine.repeatPattern}
+                      <span class="routine-repeat-badge" title={formatRepeatPattern(routine.repeatPattern)}>{routine.repeatPattern.frequency}</span>
+                    {/if}
                     <span class="routine-values">
                       <input
                         type="number"
@@ -2632,6 +2825,50 @@
 
   .routine-field-select:focus {
     outline: none;
+    border-color: var(--color-primary-500);
+  }
+
+  .routine-repeat-badge {
+    font-size: 0.65rem;
+    padding: 0.0625rem 0.3rem;
+    border-radius: 3px;
+    background-color: var(--color-primary-50, #eff6ff);
+    color: var(--color-primary-600, #2563eb);
+    border: 1px solid var(--color-primary-200, #bfdbfe);
+    white-space: nowrap;
+    text-transform: capitalize;
+    flex-shrink: 0;
+  }
+
+  .routine-repeat-suffix {
+    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    white-space: nowrap;
+  }
+
+  .routine-weekday-row {
+    display: flex;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .weekday-toggle {
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 3px;
+    background: var(--color-white);
+    font-size: 0.7rem;
+    cursor: pointer;
+    color: var(--color-gray-600);
+  }
+
+  .weekday-toggle:hover {
+    border-color: var(--color-primary-400);
+  }
+
+  .weekday-toggle.weekday-active {
+    background-color: var(--color-primary-500);
+    color: var(--color-white);
     border-color: var(--color-primary-500);
   }
 
