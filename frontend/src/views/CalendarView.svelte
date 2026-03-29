@@ -76,11 +76,13 @@
 
     if (anchor > yearEnd) return results;
 
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const current = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
 
     // For non-weekly patterns, align to the anchor's cadence
     if (pattern.frequency !== 'weekly') {
       // Walk from anchor forward until we reach or pass current
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const walker = new Date(anchor);
       while (walker < current) {
         if (pattern.frequency === 'daily') {
@@ -96,6 +98,7 @@
       // For weekly, start at beginning of the year (or anchor, whichever is later)
       // and iterate day-by-day checking weekdays
       const day1 = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const iter = new Date(day1);
       while (iter <= yearEnd) {
         const wd = iter.getDay();
@@ -132,8 +135,9 @@
     todayStr: string,
   ): Map<string, 'all' | 'some' | 'none' | 'future'> {
     // Count total routines due per date and checked per date
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const dueCounts = new Map<string, number>();
-    const checkedCounts = new Map<string, number>();
+    const checkedCounts = new Map<string, number>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 
     for (const theme of allThemes) {
       if (!theme.routines) continue;
@@ -160,6 +164,7 @@
       }
     }
 
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const result = new Map<string, 'all' | 'some' | 'none' | 'future'>();
     for (const [dateStr, total] of dueCounts) {
       if (total === 0) continue;

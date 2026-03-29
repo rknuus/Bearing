@@ -73,6 +73,7 @@ export interface RoutinePeriodProgress {
   expected: number;
   period: string;
   onTrack: boolean;
+  overdue?: number;
 }
 
 export interface LifeTheme {
@@ -96,6 +97,7 @@ export interface EstablishRequest {
   targetValue?: number;
   targetType?: string;
   unit?: string;
+  repeatPattern?: RepeatPattern;
 }
 
 export interface EstablishResult {
@@ -116,6 +118,8 @@ export interface ReviseRequest {
   targetValue?: number;
   targetType?: string;
   unit?: string;
+  repeatPattern?: RepeatPattern;
+  clearRepeat?: boolean;
 }
 
 export interface DayFocus {
@@ -126,15 +130,6 @@ export interface DayFocus {
   okrIds?: string[];
   tags?: string[];
   routineChecks?: string[];
-}
-
-export interface RoutineOccurrence {
-  routineId: string;
-  description: string;
-  date: string;
-  status: 'scheduled' | 'sporadic' | 'overdue';
-  checked: boolean;
-  themeColor: string;
 }
 
 export interface Task {
@@ -1144,60 +1139,6 @@ export const mockAppBindings = {
     return yearFocus.filter(d => d.themeIds?.includes(themeId));
   },
 
-  // Routine scheduling operations
-  GetRoutinesForDate: async (date: string): Promise<RoutineOccurrence[]> => {
-    const occurrences: RoutineOccurrence[] = [];
-    const today = new Date(date + 'T00:00:00');
-    const dayOfWeek = today.getDay();
-
-    for (const theme of mockThemes) {
-      for (const routine of (theme.routines ?? [])) {
-        // Simulate: weekly routines are "scheduled" on weekdays, some are "overdue"
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-          occurrences.push({
-            routineId: routine.id,
-            description: routine.description,
-            date: date,
-            status: 'scheduled',
-            checked: false,
-            themeColor: theme.color,
-          });
-        }
-        // Simulate one overdue occurrence from 3 days ago
-        if (dayOfWeek === 1) {
-          const overdue = new Date(today);
-          overdue.setDate(overdue.getDate() - 3);
-          const overdueDate = overdue.toISOString().slice(0, 10);
-          occurrences.push({
-            routineId: routine.id,
-            description: routine.description,
-            date: overdueDate,
-            status: 'overdue',
-            checked: false,
-            themeColor: theme.color,
-          });
-        }
-      }
-    }
-
-    // Apply checked state from DayFocus
-    const year = parseInt(date.substring(0, 4));
-    const focus = (mockYearFocus.get(year) || []).find(f => f.date === date);
-    if (focus?.routineChecks) {
-      for (const occ of occurrences) {
-        if (focus.routineChecks.includes(occ.routineId)) {
-          occ.checked = true;
-        }
-      }
-    }
-
-    return occurrences;
-  },
-
-  RescheduleRoutineOccurrence: async (_routineId: string, _originalDate: string, _newDate: string): Promise<void> => {
-    // Mock: no-op, in real app this would update the routine schedule
-  },
-
   // Frontend logging
   LogFrontend(level: string, message: string, source: string) {
     const fn = level === 'error' ? console.error : level === 'warn' ? console.warn : console.log;
@@ -1352,6 +1293,7 @@ export const mockAppBindings = {
           targetValue,
           targetType,
           unit: unit?.trim() || undefined,
+          repeatPattern: req.repeatPattern,
         };
         theme.routines.push(routine);
         return { routine };
@@ -1387,6 +1329,8 @@ export const mockAppBindings = {
           if (req.targetValue !== undefined) r.targetValue = req.targetValue;
           if (req.targetType !== undefined) r.targetType = req.targetType;
           if (req.unit !== undefined) r.unit = req.unit;
+          if (req.clearRepeat) r.repeatPattern = undefined;
+          if (req.repeatPattern) r.repeatPattern = req.repeatPattern;
           return;
         }
       }

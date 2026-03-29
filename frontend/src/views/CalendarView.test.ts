@@ -48,6 +48,7 @@ describe('CalendarView', () => {
         if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeIds: undefined };
       }),
       GetTasks: vi.fn().mockResolvedValue([]),
+      GetRoutinesForDate: vi.fn().mockResolvedValue([]),
       LogFrontend: vi.fn(),
       LoadNavigationContext: vi.fn().mockResolvedValue({
         currentView: 'calendar',
@@ -145,9 +146,10 @@ describe('CalendarView', () => {
     // Day-num should NOT have theme tint
     expect(numCell!.style.backgroundColor).toBeFalsy();
 
-    // Text cell should have theme tint (find by text content)
-    const textCells = container.querySelectorAll<HTMLButtonElement>('.day-text');
-    const textCell = Array.from(textCells).find(c => c.textContent === 'Gym day');
+    // Text cell should have theme tint (find by inner text content span)
+    const textContentSpans = container.querySelectorAll<HTMLSpanElement>('.day-text-content');
+    const textSpan = Array.from(textContentSpans).find(c => c.textContent === 'Gym day');
+    const textCell = textSpan?.closest('.day-text') as HTMLButtonElement | null;
     expect(textCell).toBeTruthy();
     expect(textCell!.style.backgroundColor).toBeTruthy();
   });
@@ -163,8 +165,8 @@ describe('CalendarView', () => {
     await renderView();
 
     // Verify multi-theme day renders correctly with text content
-    const dayTexts = container.querySelectorAll('.day-text');
-    const textsContent = Array.from(dayTexts).map(el => el.textContent);
+    const dayTextSpans = container.querySelectorAll('.day-text-content');
+    const textsContent = Array.from(dayTextSpans).map(el => el.textContent);
     expect(textsContent).toContain('Multi-theme day');
 
     // Verify the cell exists and doesn't use single-theme background-color
@@ -401,9 +403,9 @@ describe('CalendarView', () => {
   it('displays day text for days with focus data', async () => {
     await renderView();
 
-    // Find all day-text elements and check if any contains our test text
-    const dayTexts = container.querySelectorAll('.day-text');
-    const textsContent = Array.from(dayTexts).map(el => el.textContent);
+    // Find all day-text-content spans and check if any contains our test text
+    const dayTextSpans = container.querySelectorAll('.day-text-content');
+    const textsContent = Array.from(dayTextSpans).map(el => el.textContent);
     expect(textsContent).toContain('Gym day');
     expect(textsContent).toContain('Interview prep');
   });

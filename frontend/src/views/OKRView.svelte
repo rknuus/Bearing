@@ -64,8 +64,8 @@
     frequency: string;
     interval: number;
     weekdays?: number[];
-    monthDay?: number;
-    startDate?: string;
+    dayOfMonth?: number;
+    startDate: string;
   }
 
   interface Routine {
@@ -83,7 +83,7 @@
     expected: number;
     period: string;
     onTrack: boolean;
-    overdue: number;
+    overdue?: number;
   }
 
   interface LifeTheme {
@@ -432,6 +432,7 @@
 
   async function loadRoutineProgress(themeList: LifeTheme[]) {
     const bindings = getBindings();
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- temporary computation, not reactive state
     const newProgress = new Map<string, RoutinePeriodProgress>();
     for (const theme of themeList) {
       for (const routine of (theme.routines ?? [])) {
@@ -751,15 +752,12 @@
   // Repeat pattern helpers
   function buildRepeatPattern(frequency: string, interval: number, weekdays: number[], monthDay: number, startDate: string): RepeatPattern | undefined {
     if (frequency === 'none') return undefined;
-    const pattern: RepeatPattern = { frequency, interval: Math.max(1, interval) };
+    const pattern: RepeatPattern = { frequency, interval: Math.max(1, interval), startDate: startDate || new Date().toISOString().split('T')[0] };
     if (frequency === 'weekly' && weekdays.length > 0) {
       pattern.weekdays = [...weekdays].sort();
     }
     if (frequency === 'monthly') {
-      pattern.monthDay = Math.max(1, Math.min(31, monthDay));
-    }
-    if (startDate) {
-      pattern.startDate = startDate;
+      pattern.dayOfMonth = Math.max(1, Math.min(31, monthDay));
     }
     return pattern;
   }
@@ -874,7 +872,7 @@
       editRoutineFrequency = routine.repeatPattern.frequency;
       editRoutineInterval = routine.repeatPattern.interval;
       editRoutineWeekdays = routine.repeatPattern.weekdays ? [...routine.repeatPattern.weekdays] : [];
-      editRoutineMonthDay = routine.repeatPattern.monthDay ?? 1;
+      editRoutineMonthDay = routine.repeatPattern.dayOfMonth ?? 1;
       editRoutineStartDate = routine.repeatPattern.startDate ?? '';
     } else {
       editRoutineFrequency = 'none';
@@ -899,7 +897,7 @@
         const base = `Every ${intervalLabel}week${p.interval > 1 ? 's' : ''}`;
         return days ? `${base} on ${days}` : base;
       }
-      case 'monthly': return `Day ${p.monthDay ?? 1} every ${intervalLabel}month${p.interval > 1 ? 's' : ''}`;
+      case 'monthly': return `Day ${p.dayOfMonth ?? 1} every ${intervalLabel}month${p.interval > 1 ? 's' : ''}`;
       case 'yearly': return `Every ${intervalLabel}year${p.interval > 1 ? 's' : ''}`;
       default: return p.frequency;
     }
@@ -1642,7 +1640,7 @@
                 </div>
                 {#if newRoutineFrequency === 'weekly'}
                   <div class="routine-weekday-row">
-                    {#each WEEKDAY_LABELS as label, i}
+                    {#each WEEKDAY_LABELS as label, i (i)}
                       <button
                         class="weekday-toggle"
                         class:weekday-active={newRoutineWeekdays.includes(i)}
@@ -1724,7 +1722,7 @@
                     </div>
                     {#if editRoutineFrequency === 'weekly'}
                       <div class="routine-weekday-row">
-                        {#each WEEKDAY_LABELS as label, i}
+                        {#each WEEKDAY_LABELS as label, i (i)}
                           <button
                             class="weekday-toggle"
                             class:weekday-active={editRoutineWeekdays.includes(i)}
@@ -1753,7 +1751,7 @@
                       {#if progress}
                         <span class="routine-period-progress">
                           {progress.completed}/{progress.expected} this {progress.period}
-                          {#if progress.overdue > 0}
+                          {#if (progress.overdue ?? 0) > 0}
                             <span class="routine-overdue">{progress.overdue} overdue</span>
                           {/if}
                         </span>
