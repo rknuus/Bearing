@@ -78,6 +78,14 @@
     repeatPattern?: RepeatPattern;
   }
 
+  interface RoutinePeriodProgress {
+    completed: number;
+    expected: number;
+    period: string;
+    onTrack: boolean;
+    overdue: number;
+  }
+
   interface LifeTheme {
     id: string;
     name: string;
@@ -162,6 +170,9 @@
   let editRoutineStartDate = $state('');
 
   const WEEKDAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+
+  // Period progress for periodic routines
+  let routineProgress: Map<string, RoutinePeriodProgress> = $state(new Map());
 
   // Confirm-delete dialog state (replaces window.confirm which is suppressed in WebView)
   let confirmDeleteMessage = $state<string | null>(null);
@@ -410,12 +421,31 @@
       } catch {
         themeProgress = [];
       }
+      loadRoutineProgress(themes);
     } catch (e) {
       error = extractError(e);
       console.error('Failed to load themes:', e);
     } finally {
       loading = false;
     }
+  }
+
+  async function loadRoutineProgress(themeList: LifeTheme[]) {
+    const bindings = getBindings();
+    const newProgress = new Map<string, RoutinePeriodProgress>();
+    for (const theme of themeList) {
+      for (const routine of (theme.routines ?? [])) {
+        if (routine.repeatPattern) {
+          try {
+            const progress = await bindings.GetRoutineProgress(routine.id);
+            newProgress.set(routine.id, progress);
+          } catch {
+            // Skip if progress can't be loaded
+          }
+        }
+      }
+    }
+    routineProgress = newProgress;
   }
 
   async function loadVision() {
@@ -1711,25 +1741,41 @@
                   </div>
                 {:else}
                   <div class="routine-display">
-                    <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
-                    <span class="routine-description">{routine.description}</span>
                     {#if routine.repeatPattern}
-                      <span class="routine-repeat-badge" title={formatRepeatPattern(routine.repeatPattern)}>{routine.repeatPattern.frequency}</span>
-                    {/if}
-                    <span class="routine-values">
-                      <input
-                        type="number"
-                        class="routine-current-input"
-                        value={routine.currentValue}
-                        onchange={(e) => updateRoutineCurrentValue(routine.id, parseInt((e.target as HTMLInputElement).value) || 0, routine)}
-                        title="Current value"
-                      />
-                      <span class="routine-direction">{routine.targetType === 'at-or-below' ? '\u2264' : '\u2265'}</span>
-                      <span class="routine-target">{routine.targetValue}</span>
-                      {#if routine.unit}
-                        <span class="routine-unit">{routine.unit}</span>
+                      {@const progress = routineProgress.get(routine.id)}
+                      {#if progress}
+                        <span class="routine-status-dot" class:on-track={progress.onTrack} class:off-track={!progress.onTrack}></span>
+                      {:else}
+                        <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
                       {/if}
-                    </span>
+                      <span class="routine-description">{routine.description}</span>
+                      <span class="routine-repeat-badge" title={formatRepeatPattern(routine.repeatPattern)}>{routine.repeatPattern.frequency}</span>
+                      {#if progress}
+                        <span class="routine-period-progress">
+                          {progress.completed}/{progress.expected} this {progress.period}
+                          {#if progress.overdue > 0}
+                            <span class="routine-overdue">{progress.overdue} overdue</span>
+                          {/if}
+                        </span>
+                      {/if}
+                    {:else}
+                      <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
+                      <span class="routine-description">{routine.description}</span>
+                      <span class="routine-values">
+                        <input
+                          type="number"
+                          class="routine-current-input"
+                          value={routine.currentValue}
+                          onchange={(e) => updateRoutineCurrentValue(routine.id, parseInt((e.target as HTMLInputElement).value) || 0, routine)}
+                          title="Current value"
+                        />
+                        <span class="routine-direction">{routine.targetType === 'at-or-below' ? '\u2264' : '\u2265'}</span>
+                        <span class="routine-target">{routine.targetValue}</span>
+                        {#if routine.unit}
+                          <span class="routine-unit">{routine.unit}</span>
+                        {/if}
+                      </span>
+                    {/if}
                     <div class="item-actions">
                       <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
                       <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
@@ -2720,6 +2766,19 @@
 
   .routine-status-dot.on-track { background-color: #22c55e; }
   .routine-status-dot.off-track { background-color: #ef4444; }
+
+  .routine-period-progress {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85em;
+    color: var(--color-gray-600, #666);
+  }
+
+  .routine-overdue {
+    color: #ef4444;
+    font-weight: 500;
+  }
 
   .routine-description {
     flex: 1;

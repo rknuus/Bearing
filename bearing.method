@@ -162,6 +162,20 @@ volatilities:
         - "ChatEngine"
         - "ModelAccess"
       confidence: "high"
+    - id: "vol-routine-scheduling"
+      name: "Routine Scheduling and Occurrence Computation"
+      description: "How routine occurrences are computed from repeat patterns (daily, weekly, monthly, yearly, selected
+        weekdays), how exceptions (rescheduled single occurrences) modify the schedule, how overdue occurrences are
+        determined, and how period-based completion is evaluated. The scheduling algorithm, supported repeat
+        frequencies, exception handling rules, and overdue accumulation logic may all change independently."
+      evidence: "Same customer over time: user changes repeat patterns as habits evolve (weekly → daily), adjusts start dates,
+        reschedules individual occurrences. Different customers at same time: some users want simple daily routines,
+        others want complex patterns (Mon/Wed/Fri every 2 weeks). The computation algorithm (date arithmetic, exception
+        suppression, overdue aggregation) is pure activity volatility — no state, no orchestration, just rules and
+        calculations."
+      encapsulated_by:
+        - "ScheduleEngine"
+      confidence: "high"
   rejected:
     - name: "Eisenhower Priority Matrix"
       reason: "The four-quadrant Eisenhower priority model (important-urgent, important-not-urgent, not-important-urgent,
@@ -246,6 +260,10 @@ components:
         returns clean display text plus typed Suggestion structs (theme/objective/key_result/routine with create/edit
         actions). Handles auto-extraction of start/target values from natural language. Stateless — all data received
         through parameters."
+    - id: "f1317b9d-0478-4cbb-b850-dc8139956050"
+      name: "ScheduleEngine"
+      description: "Computes routine occurrences from repeat patterns, resolves rescheduling exceptions, determines overdue
+        status, and evaluates period-based completion. Pure algorithmic engine — no state ownership, no orchestration."
   resource_access:
     - id: "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
       name: "UIStateAccess"
@@ -312,6 +330,7 @@ topology:
     - name: "Calendar"
       components:
         - "PlanningManager"
+        - "ScheduleEngine"
         - "CalendarAccess"
     - name: "CrossCutting"
       components:
@@ -523,6 +542,24 @@ use_cases:
             - from: "CalendarAccess"
               to: "Repository"
               note: "Begin() -> Stage() -> Commit() — per day in range"
+        - name: "Get Routines For Date (Scheduled + Overdue + Sporadic)"
+          steps:
+            - from: "BearingClient"
+              to: "App"
+              note: "GetRoutinesForDate(date) — queries scheduled, overdue, and sporadic routines for a calendar day"
+            - from: "App"
+              to: "PlanningManager"
+              note: "GetRoutinesForDate(date)"
+            - from: "PlanningManager"
+              to: "ThemeAccess"
+              note: "GetThemes() — loads all themes with routines, repeat patterns, and exceptions"
+            - from: "PlanningManager"
+              to: "CalendarAccess"
+              note: "GetYearFocus(year) — loads routineChecks for completion status"
+            - from: "PlanningManager"
+              to: "ScheduleEngine"
+              note: "ComputeOccurrences(pattern, exceptions, start, end) + ComputeOverdue(pattern, exceptions, completedDates, asOf) —
+                for each periodic routine"
   regular:
     - id: "uc-5"
       name: "Batch Create Tasks"
