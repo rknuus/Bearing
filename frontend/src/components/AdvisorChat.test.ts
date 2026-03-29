@@ -332,6 +332,57 @@ describe('AdvisorChat', () => {
     expect(recheckBtn).toBeNull();
   });
 
+  describe('selection hint and count', () => {
+    it('shows selection hint when no items selected', async () => {
+      await renderChat();
+
+      const hint = container.querySelector('.selection-hint');
+      expect(hint).not.toBeNull();
+      expect(hint?.textContent).toContain('Click items in the OKR tree to select context for the advisor');
+    });
+
+    it('shows selection hint when selectedOKRIds is empty array', async () => {
+      await renderChat({ selectedOKRIds: [] });
+
+      const hint = container.querySelector('.selection-hint');
+      expect(hint).not.toBeNull();
+      expect(hint?.textContent).toContain('Click items in the OKR tree to select context for the advisor');
+    });
+
+    it('shows count when items are selected', async () => {
+      await renderChat({ selectedOKRIds: ['id1', 'id2', 'id3'] });
+
+      const count = container.querySelector('.selection-count');
+      expect(count).not.toBeNull();
+      expect(count?.textContent).toContain('3 items selected');
+    });
+
+    it('shows singular "item" for single selection', async () => {
+      await renderChat({ selectedOKRIds: ['id1'] });
+
+      const count = container.querySelector('.selection-count');
+      expect(count).not.toBeNull();
+      expect(count?.textContent).toContain('1 item selected');
+      expect(count?.textContent).not.toContain('items');
+    });
+
+    it('hint and count are mutually exclusive', async () => {
+      // With a selection: count visible, hint absent
+      const { unmount: unmount1 } = await renderChat({ selectedOKRIds: ['id1'] });
+
+      expect(container.querySelector('.selection-count')).not.toBeNull();
+      expect(container.querySelector('.selection-hint')).toBeNull();
+
+      unmount1();
+
+      // Without a selection: hint visible, count absent
+      await renderChat({ selectedOKRIds: [] });
+
+      expect(container.querySelector('.selection-hint')).not.toBeNull();
+      expect(container.querySelector('.selection-count')).toBeNull();
+    });
+  });
+
   describe('auto-resize textarea', () => {
     it('textarea has overflow-y hidden by default', async () => {
       await renderChat();
