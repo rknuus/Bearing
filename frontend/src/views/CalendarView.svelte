@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type RoutineOccurrence } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -41,6 +41,16 @@
   let availableTags = $state<string[]>([]);
   let tagSectionOpen = $state(false);
   let editSelectExpandedIds = $state<string[]>([]);
+
+  // Routine editor state
+  let routineOccurrences = $state<RoutineOccurrence[]>([]);
+  let editRoutineChecks = $state<string[]>([]);
+  let reschedulingKey: string | null = $state(null);
+  let rescheduleDate = $state('');
+
+  // Derived routine groups
+  let scheduledRoutines = $derived(routineOccurrences.filter(r => r.status === 'scheduled' || r.status === 'sporadic'));
+  let overdueRoutines = $derived(routineOccurrences.filter(r => r.status === 'overdue'));
 
   // Selection state
   let selectedCells = $state<Array<{month: number; day: number}>>([]);
@@ -233,17 +243,22 @@
     // Set editingDay last so the dialog renders with correct fold state
     editingDay = { date: dateStr, month, day };
 
-    // Fetch available tags from tasks
-    try {
-      const tasks = await getBindings().GetTasks();
-      availableTags = [...new Set(tasks.flatMap(t => t.tags ?? []))].sort();
-    } catch {
-      availableTags = [];
-    }
+    // Fetch available tags and routine occurrences in parallel
+    const bindings = getBindings();
+    const [tagsResult, occurrences] = await Promise.all([
+      bindings.GetTasks().then(
+        tasks => [...new Set(tasks.flatMap(t => t.tags ?? []))].sort(),
+        () => [] as string[],
+      ),
+      bindings.GetRoutinesForDate(dateStr).catch(() => [] as RoutineOccurrence[]),
+    ]);
+    availableTags = tagsResult;
+    routineOccurrences = occurrences;
+    editRoutineChecks = occurrences.filter(o => o.checked).map(o => o.routineId);
   }
 
 
-  const DAY_FOCUS_FIELDS = ['date', 'themeIds', 'notes', 'text', 'okrIds', 'tags'];
+  const DAY_FOCUS_FIELDS = ['date', 'themeIds', 'notes', 'text', 'okrIds', 'tags', 'routineChecks'];
 
   async function verifyCalendarState() {
     const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
@@ -271,6 +286,7 @@
         text: editText,
         okrIds: editOkrIds.length > 0 ? editOkrIds : undefined,
         tags: editTags.length > 0 ? editTags : undefined,
+        routineChecks: editRoutineChecks.length > 0 ? editRoutineChecks : undefined,
       };
       await bindings.SaveDayFocus(dayFocus);
       yearFocus.set(editingDay.date, dayFocus);
@@ -410,6 +426,36 @@
       selectedCells = [];
       anchorCell = null;
     }
+  }
+
+  function toggleRoutineCheck(routineId: string) {
+    if (editRoutineChecks.includes(routineId)) {
+      editRoutineChecks = editRoutineChecks.filter(id => id !== routineId);
+    } else {
+      editRoutineChecks = [...editRoutineChecks, routineId];
+    }
+  }
+
+  function routineKey(routine: RoutineOccurrence): string {
+    return routine.routineId + ':' + routine.date;
+  }
+
+  function startReschedule(routine: RoutineOccurrence) {
+    reschedulingKey = routineKey(routine);
+    rescheduleDate = '';
+  }
+
+  async function confirmReschedule(routine: RoutineOccurrence) {
+    if (!rescheduleDate || !reschedulingKey) return;
+    const bindings = getBindings();
+    await bindings.RescheduleRoutineOccurrence(routine.routineId, routine.date, rescheduleDate);
+    reschedulingKey = null;
+    routineOccurrences = await bindings.GetRoutinesForDate(editingDay!.date);
+  }
+
+  function cancelReschedule() {
+    reschedulingKey = null;
+    rescheduleDate = '';
   }
 
   function prevYear() {
@@ -577,6 +623,55 @@
           placeholder="Add text for this day..."
         />
       </div>
+
+      {#if routineOccurrences.length > 0}
+        <div class="form-group">
+          <span class="form-label">Routines</span>
+
+          {#each scheduledRoutines as routine (routine.routineId + '-' + routine.date)}
+            <div class="routine-row">
+              <label class="routine-check">
+                <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
+                       onchange={() => toggleRoutineCheck(routine.routineId)} />
+                <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
+                <span class="routine-desc">{routine.description}</span>
+              </label>
+              {#if reschedulingKey === routineKey(routine)}
+                <div class="reschedule-inline">
+                  <input type="date" bind:value={rescheduleDate} />
+                  <button class="reschedule-confirm" onclick={() => confirmReschedule(routine)}>OK</button>
+                  <button class="reschedule-cancel" onclick={cancelReschedule}>X</button>
+                </div>
+              {:else}
+                <button class="reschedule-btn" onclick={() => startReschedule(routine)} title="Reschedule">&#x27F3;</button>
+              {/if}
+            </div>
+          {/each}
+
+          {#if overdueRoutines.length > 0}
+            <div class="overdue-label">Overdue</div>
+            {#each overdueRoutines as routine (routine.routineId + '-' + routine.date)}
+              <div class="routine-row overdue">
+                <label class="routine-check">
+                  <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
+                         onchange={() => toggleRoutineCheck(routine.routineId)} />
+                  <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
+                  <span class="routine-desc">{routine.description} ({routine.date})</span>
+                </label>
+                {#if reschedulingKey === routineKey(routine)}
+                  <div class="reschedule-inline">
+                    <input type="date" bind:value={rescheduleDate} />
+                    <button class="reschedule-confirm" onclick={() => confirmReschedule(routine)}>OK</button>
+                    <button class="reschedule-cancel" onclick={cancelReschedule}>X</button>
+                  </div>
+                {:else}
+                  <button class="reschedule-btn" onclick={() => startReschedule(routine)} title="Reschedule">&#x27F3;</button>
+                {/if}
+              </div>
+            {/each}
+          {/if}
+        </div>
+      {/if}
 
       {#snippet actions()}
         <Button variant="secondary" onclick={cancelEdit}>Cancel</Button>
@@ -860,6 +955,105 @@
 
   .collapsible-header .form-label {
     margin-bottom: 0;
+  }
+
+  /* Routine section */
+  .routine-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+  }
+
+  .routine-row.overdue {
+    color: var(--color-red-600, #dc2626);
+  }
+
+  .routine-check {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  .routine-check input[type="checkbox"] {
+    flex-shrink: 0;
+  }
+
+  .theme-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  .routine-desc {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reschedule-btn {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0.125rem 0.375rem;
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .reschedule-btn:hover {
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-700);
+  }
+
+  .reschedule-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .reschedule-inline input[type="date"] {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.25rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+  }
+
+  .reschedule-confirm,
+  .reschedule-cancel {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    color: var(--color-gray-600);
+  }
+
+  .reschedule-confirm:hover {
+    background-color: var(--color-primary-50, #eff6ff);
+    border-color: var(--color-primary-600);
+  }
+
+  .reschedule-cancel:hover {
+    background-color: var(--color-gray-100);
+  }
+
+  .overdue-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-red-600, #dc2626);
+    margin-top: 0.5rem;
+    margin-bottom: 0.125rem;
   }
 
 
