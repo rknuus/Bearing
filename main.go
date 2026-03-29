@@ -147,6 +147,18 @@ func (a *App) ClearDayFocus(date string) error {
 	return a.planningManager.ClearDayFocus(date)
 }
 
+func (a *App) GetRoutinesForDate(date string) ([]managers.RoutineOccurrence, error) {
+	return a.planningManager.GetRoutinesForDate(date)
+}
+
+func (a *App) RescheduleRoutineOccurrence(routineID, originalDate, newDate string) error {
+	return a.planningManager.RescheduleRoutineOccurrence(routineID, originalDate, newDate)
+}
+
+func (a *App) GetRoutineProgress(routineID string) (*managers.RoutinePeriodProgress, error) {
+	return a.planningManager.GetRoutineProgress(routineID)
+}
+
 // --- Task operations ---
 
 func (a *App) GetTasks() ([]managers.TaskWithStatus, error) {

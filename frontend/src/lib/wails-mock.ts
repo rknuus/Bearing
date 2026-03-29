@@ -33,6 +33,19 @@ export interface Objective {
   objectives?: Objective[];
 }
 
+export interface RepeatPattern {
+  frequency: string; // "daily", "weekly", "monthly", "yearly"
+  interval: number;
+  weekdays?: number[]; // 0=Sun..6=Sat
+  dayOfMonth?: number;
+  startDate: string; // YYYY-MM-DD
+}
+
+export interface ScheduleException {
+  originalDate: string;
+  newDate: string;
+}
+
 export interface Routine {
   id: string;
   description: string;
@@ -40,6 +53,26 @@ export interface Routine {
   targetValue: number;
   targetType: string; // "at-or-above" | "at-or-below"
   unit?: string;
+  repeatPattern?: RepeatPattern;
+  exceptions?: ScheduleException[];
+}
+
+export interface RoutineOccurrence {
+  routineId: string;
+  description: string;
+  themeId: string;
+  themeColor: string;
+  date: string;
+  status: string; // "scheduled", "overdue", "sporadic"
+  checked: boolean;
+}
+
+export interface RoutinePeriodProgress {
+  routineId: string;
+  completed: number;
+  expected: number;
+  period: string;
+  onTrack: boolean;
 }
 
 export interface LifeTheme {
@@ -92,6 +125,7 @@ export interface DayFocus {
   text: string;
   okrIds?: string[];
   tags?: string[];
+  routineChecks?: string[];
 }
 
 export interface Task {
@@ -393,7 +427,20 @@ let mockThemes: LifeTheme[] = [
       },
     ],
     routines: [
-      { id: 'HF-R1', description: 'Exercise sessions per week', currentValue: 3, targetValue: 3, targetType: 'at-or-above', unit: 'times/week' },
+      {
+        id: 'HF-R1',
+        description: 'Exercise sessions per week',
+        currentValue: 3,
+        targetValue: 3,
+        targetType: 'at-or-above',
+        unit: 'times/week',
+        repeatPattern: {
+          frequency: 'weekly',
+          interval: 1,
+          weekdays: [1, 3, 5], // Mon, Wed, Fri
+          startDate: '2026-01-01',
+        },
+      },
       { id: 'HF-R2', description: 'Body weight', currentValue: 82, targetValue: 80, targetType: 'at-or-below', unit: 'kg' },
     ],
   },
@@ -495,6 +542,79 @@ const defaultBoardConfiguration: BoardConfiguration = {
 
 // Mutable board config state (initialized from default, mutated by column CRUD)
 const mockBoardConfig: BoardConfiguration = JSON.parse(JSON.stringify(defaultBoardConfiguration));
+
+// --- Routine scheduling helpers for mock ---
+
+function computeMockOccurrences(pattern: RepeatPattern, exceptions: ScheduleException[], start: string, end: string): string[] {
+  const results: string[] = [];
+  const startDate = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+  const anchorDate = new Date(pattern.startDate + 'T00:00:00');
+  const interval = pattern.interval || 1;
+
+  const suppressedSet = new Set(exceptions.map(e => e.originalDate));
+  const replacements = exceptions.filter(e => e.newDate >= start && e.newDate <= end).map(e => e.newDate);
+
+  const current = new Date(anchorDate);
+
+  while (current <= endDate) {
+    if (current >= startDate) {
+      const dateStr = current.toISOString().split('T')[0];
+      if (pattern.frequency === 'weekly') {
+        const day = current.getDay();
+        if (pattern.weekdays?.includes(day) && !suppressedSet.has(dateStr)) {
+          results.push(dateStr);
+        }
+      } else if (!suppressedSet.has(dateStr)) {
+        results.push(dateStr);
+      }
+    }
+
+    if (pattern.frequency === 'daily') {
+      current.setDate(current.getDate() + interval);
+    } else if (pattern.frequency === 'weekly') {
+      current.setDate(current.getDate() + 1);
+    } else if (pattern.frequency === 'monthly') {
+      current.setMonth(current.getMonth() + interval);
+    } else if (pattern.frequency === 'yearly') {
+      current.setFullYear(current.getFullYear() + interval);
+    }
+  }
+
+  results.push(...replacements);
+  results.sort();
+  return results;
+}
+
+function computeMockOverdue(pattern: RepeatPattern, exceptions: ScheduleException[], completedDates: string[], asOf: string): string[] {
+  const yesterday = new Date(asOf + 'T00:00:00');
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  if (yesterdayStr < pattern.startDate) return [];
+  const occurrences = computeMockOccurrences(pattern, exceptions, pattern.startDate, yesterdayStr);
+  const completedSet = new Set(completedDates);
+  return occurrences.filter(d => !completedSet.has(d));
+}
+
+function computePeriodBounds(frequency: string, date: string): { start: string; end: string } {
+  const d = new Date(date + 'T00:00:00');
+  if (frequency === 'daily') {
+    return { start: date, end: date };
+  } else if (frequency === 'weekly') {
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
+  } else if (frequency === 'monthly') {
+    const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
+    const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+    return { start: monthStart.toISOString().split('T')[0], end: monthEnd.toISOString().split('T')[0] };
+  } else {
+    return { start: `${d.getFullYear()}-01-01`, end: `${d.getFullYear()}-12-31` };
+  }
+}
 
 // Check if we're running in Wails (has window.go)
 export const isWailsRuntime = (): boolean => {
@@ -635,6 +755,122 @@ export const mockAppBindings = {
     }
 
     mockYearFocus.set(year, entries);
+  },
+
+  GetRoutinesForDate: async (date: string): Promise<RoutineOccurrence[]> => {
+    const result: RoutineOccurrence[] = [];
+    const today = new Date().toISOString().split('T')[0];
+
+    // Get routine checks for the date
+    const year = parseInt(date.substring(0, 4));
+    const entries = mockYearFocus.get(year) || [];
+    const dayEntry = entries.find(e => e.date === date);
+    const checkedIds = new Set(dayEntry?.routineChecks || []);
+
+    for (const theme of mockThemes) {
+      for (const routine of (theme.routines || [])) {
+        if (!routine.repeatPattern) {
+          // Sporadic: show on current day
+          if (date === today) {
+            result.push({
+              routineId: routine.id,
+              description: routine.description,
+              themeId: theme.id,
+              themeColor: theme.color,
+              date: date,
+              status: 'sporadic',
+              checked: checkedIds.has(routine.id),
+            });
+          }
+          continue;
+        }
+
+        // Periodic: compute occurrences for this date
+        const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], date, date);
+        for (const occ of occurrences) {
+          result.push({
+            routineId: routine.id,
+            description: routine.description,
+            themeId: theme.id,
+            themeColor: theme.color,
+            date: occ,
+            status: 'scheduled',
+            checked: checkedIds.has(routine.id),
+          });
+        }
+
+        // Compute overdue
+        const allCheckedDates: string[] = [];
+        for (const [, yearEntries] of mockYearFocus) {
+          for (const entry of yearEntries) {
+            if (entry.routineChecks?.includes(routine.id)) {
+              allCheckedDates.push(entry.date);
+            }
+          }
+        }
+        const overdue = computeMockOverdue(routine.repeatPattern, routine.exceptions || [], allCheckedDates, date);
+        for (const od of overdue) {
+          result.push({
+            routineId: routine.id,
+            description: routine.description,
+            themeId: theme.id,
+            themeColor: theme.color,
+            date: od,
+            status: 'overdue',
+            checked: false,
+          });
+        }
+      }
+    }
+    return result;
+  },
+
+  RescheduleRoutineOccurrence: async (routineID: string, originalDate: string, newDate: string): Promise<void> => {
+    for (const theme of mockThemes) {
+      for (const routine of (theme.routines || [])) {
+        if (routine.id === routineID) {
+          if (!routine.exceptions) {
+            routine.exceptions = [];
+          }
+          routine.exceptions.push({ originalDate, newDate });
+          return;
+        }
+      }
+    }
+  },
+
+  GetRoutineProgress: async (routineID: string): Promise<RoutinePeriodProgress> => {
+    for (const theme of mockThemes) {
+      for (const routine of (theme.routines || [])) {
+        if (routine.id === routineID && routine.repeatPattern) {
+          const today = new Date().toISOString().split('T')[0];
+          const bounds = computePeriodBounds(routine.repeatPattern.frequency, today);
+          const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], bounds.start, today);
+
+          const allCheckedDates: string[] = [];
+          for (const [, yearEntries] of mockYearFocus) {
+            for (const entry of yearEntries) {
+              if (entry.routineChecks?.includes(routineID)) {
+                allCheckedDates.push(entry.date);
+              }
+            }
+          }
+          const checkedSet = new Set(allCheckedDates);
+          const completed = occurrences.filter(d => checkedSet.has(d)).length;
+
+          return {
+            routineId: routineID,
+            completed,
+            expected: occurrences.length,
+            period: routine.repeatPattern.frequency === 'daily' ? 'day'
+                   : routine.repeatPattern.frequency === 'weekly' ? 'week'
+                   : routine.repeatPattern.frequency === 'monthly' ? 'month' : 'year',
+            onTrack: completed >= occurrences.length,
+          };
+        }
+      }
+    }
+    return { routineId: routineID, completed: 0, expected: 0, period: 'week', onTrack: true };
   },
 
   // Task operations
