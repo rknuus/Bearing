@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/progress_engine"
 	"github.com/rkn/bearing/internal/engines/rule_engine"
+	"github.com/rkn/bearing/internal/engines/schedule_engine"
 )
 
 // TaskWithStatus represents a task with its current status.
@@ -234,12 +236,13 @@ type LifeTheme struct {
 
 // DayFocus represents a daily focus entry in the Manager layer's public interface.
 type DayFocus struct {
-	Date     string   `json:"date"`
-	ThemeIDs []string `json:"themeIds,omitempty"`
-	Notes    string   `json:"notes"`
-	Text     string   `json:"text"`
-	OkrIDs   []string `json:"okrIds,omitempty"`
-	Tags     []string `json:"tags,omitempty"`
+	Date          string   `json:"date"`
+	ThemeIDs      []string `json:"themeIds,omitempty"`
+	Notes         string   `json:"notes"`
+	Text          string   `json:"text"`
+	OkrIDs        []string `json:"okrIds,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+	RoutineChecks []string `json:"routineChecks,omitempty"`
 }
 
 // SectionDefinition defines a priority section within a column.
@@ -268,6 +271,26 @@ type PersonalVision struct {
 	Mission   string `json:"mission"`
 	Vision    string `json:"vision"`
 	UpdatedAt string `json:"updatedAt,omitempty"`
+}
+
+// RoutineOccurrence represents a routine due on a specific date.
+type RoutineOccurrence struct {
+	RoutineID   string `json:"routineId"`
+	Description string `json:"description"`
+	ThemeID     string `json:"themeId"`
+	ThemeColor  string `json:"themeColor"`
+	Date        string `json:"date"`
+	Status      string `json:"status"` // "scheduled", "overdue", "sporadic"
+	Checked     bool   `json:"checked"`
+}
+
+// RoutinePeriodProgress represents period-based completion for a routine.
+type RoutinePeriodProgress struct {
+	RoutineID string `json:"routineId"`
+	Completed int    `json:"completed"`
+	Expected  int    `json:"expected"`
+	Period    string `json:"period"`
+	OnTrack   bool   `json:"onTrack"`
 }
 
 // GoalType identifies the kind of goal node in the OKR hierarchy.
@@ -372,6 +395,7 @@ type PlanningManager struct {
 	uiStateAccess  access.IUIStateAccess
 	ruleEngine     rule_engine.IRuleEngine
 	progressEngine progress_engine.IProgressEngine
+	scheduleEngine schedule_engine.IScheduleEngine
 	taskOrderMu    sync.Mutex
 }
 
@@ -414,6 +438,7 @@ func NewPlanningManager(
 
 	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
 	progressEng := progress_engine.NewProgressEngine()
+	scheduleEng := schedule_engine.NewScheduleEngine()
 
 	pm := &PlanningManager{
 		themeAccess:    themeAccess,
@@ -423,6 +448,7 @@ func NewPlanningManager(
 		uiStateAccess:  uiStateAccess,
 		ruleEngine:     engine,
 		progressEngine: progressEng,
+		scheduleEngine: scheduleEng,
 	}
 
 	pm.validateTaskOrder()
@@ -2341,4 +2367,195 @@ func (m *PlanningManager) GetAllThemeProgress() ([]ThemeProgress, error) {
 	}
 
 	return result, nil
+}
+
+// GetRoutinesForDate returns all routine occurrences (scheduled, overdue, sporadic) for the given date.
+func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, error) {
+	if date == "" {
+		return nil, fmt.Errorf("date cannot be empty")
+	}
+
+	themes, err := m.themeAccess.GetThemes()
+	if err != nil {
+		return nil, fmt.Errorf("GetRoutinesForDate: failed to get themes: %w", err)
+	}
+
+	year, err := strconv.Atoi(date[:4])
+	if err != nil {
+		return nil, fmt.Errorf("GetRoutinesForDate: invalid date format: %w", err)
+	}
+
+	yearEntries, err := m.calendarAccess.GetYearFocus(year)
+	if err != nil {
+		return nil, fmt.Errorf("GetRoutinesForDate: failed to get year focus: %w", err)
+	}
+
+	// Build a map of date -> set of checked routine IDs
+	checkedByDate := make(map[string]map[string]bool)
+	for _, entry := range yearEntries {
+		if len(entry.RoutineChecks) > 0 {
+			set := make(map[string]bool)
+			for _, rid := range entry.RoutineChecks {
+				set[rid] = true
+			}
+			checkedByDate[entry.Date] = set
+		}
+	}
+
+	var result []RoutineOccurrence
+	todayChecks := checkedByDate[date]
+
+	for _, theme := range themes {
+		for _, routine := range theme.Routines {
+			enginePattern := toEngineRepeatPattern(routine.RepeatPattern)
+			engineExceptions := toEngineExceptions(routine.Exceptions)
+
+			if enginePattern == nil {
+				// Sporadic routine — always shown, check if checked
+				checked := todayChecks != nil && todayChecks[routine.ID]
+				result = append(result, RoutineOccurrence{
+					RoutineID:   routine.ID,
+					Description: routine.Description,
+					ThemeID:     theme.ID,
+					ThemeColor:  theme.Color,
+					Date:        date,
+					Status:      "sporadic",
+					Checked:     checked,
+				})
+				continue
+			}
+
+			// Periodic routine — check if scheduled for this date
+			occurrences := m.scheduleEngine.ComputeOccurrences(*enginePattern, engineExceptions, date, date)
+			for _, occ := range occurrences {
+				checked := todayChecks != nil && todayChecks[routine.ID]
+				result = append(result, RoutineOccurrence{
+					RoutineID:   routine.ID,
+					Description: routine.Description,
+					ThemeID:     theme.ID,
+					ThemeColor:  theme.Color,
+					Date:        occ,
+					Status:      "scheduled",
+					Checked:     checked,
+				})
+			}
+
+			// Check for overdue occurrences
+			var completedDates []string
+			for d, checks := range checkedByDate {
+				if checks[routine.ID] {
+					completedDates = append(completedDates, d)
+				}
+			}
+
+			overdueDates := m.scheduleEngine.ComputeOverdue(*enginePattern, engineExceptions, completedDates, date)
+			for _, od := range overdueDates {
+				result = append(result, RoutineOccurrence{
+					RoutineID:   routine.ID,
+					Description: routine.Description,
+					ThemeID:     theme.ID,
+					ThemeColor:  theme.Color,
+					Date:        od,
+					Status:      "overdue",
+					Checked:     false,
+				})
+			}
+		}
+	}
+
+	return result, nil
+}
+
+// RescheduleRoutineOccurrence adds a schedule exception to move a routine occurrence to a new date.
+func (m *PlanningManager) RescheduleRoutineOccurrence(routineID, originalDate, newDate string) error {
+	if routineID == "" || originalDate == "" || newDate == "" {
+		return fmt.Errorf("routineID, originalDate, and newDate cannot be empty")
+	}
+
+	themes, err := m.themeAccess.GetThemes()
+	if err != nil {
+		return fmt.Errorf("RescheduleRoutineOccurrence: failed to get themes: %w", err)
+	}
+
+	for _, theme := range themes {
+		for i, routine := range theme.Routines {
+			if routine.ID == routineID {
+				theme.Routines[i].Exceptions = append(theme.Routines[i].Exceptions, access.ScheduleException{
+					OriginalDate: originalDate,
+					NewDate:      newDate,
+				})
+				if err := m.themeAccess.SaveTheme(theme); err != nil {
+					return fmt.Errorf("RescheduleRoutineOccurrence: failed to save theme: %w", err)
+				}
+				return nil
+			}
+		}
+	}
+
+	return fmt.Errorf("RescheduleRoutineOccurrence: routine %s not found", routineID)
+}
+
+// GetRoutineProgress computes period-based completion stats for a periodic routine.
+func (m *PlanningManager) GetRoutineProgress(routineID string) (*RoutinePeriodProgress, error) {
+	if routineID == "" {
+		return nil, fmt.Errorf("routineID cannot be empty")
+	}
+
+	themes, err := m.themeAccess.GetThemes()
+	if err != nil {
+		return nil, fmt.Errorf("GetRoutineProgress: failed to get themes: %w", err)
+	}
+
+	// Find the routine
+	var routine *access.Routine
+	for _, theme := range themes {
+		for j := range theme.Routines {
+			if theme.Routines[j].ID == routineID {
+				routine = &theme.Routines[j]
+				break
+			}
+		}
+		if routine != nil {
+			break
+		}
+	}
+
+	if routine == nil {
+		return nil, fmt.Errorf("GetRoutineProgress: routine %s not found", routineID)
+	}
+
+	if routine.RepeatPattern == nil {
+		return nil, fmt.Errorf("GetRoutineProgress: routine %s has no repeat pattern", routineID)
+	}
+
+	enginePattern := toEngineRepeatPattern(routine.RepeatPattern)
+	engineExceptions := toEngineExceptions(routine.Exceptions)
+
+	today := time.Now().Format("2006-01-02")
+
+	year := time.Now().Year()
+	yearEntries, err := m.calendarAccess.GetYearFocus(year)
+	if err != nil {
+		return nil, fmt.Errorf("GetRoutineProgress: failed to get year focus: %w", err)
+	}
+
+	var completedDates []string
+	for _, entry := range yearEntries {
+		for _, rid := range entry.RoutineChecks {
+			if rid == routineID {
+				completedDates = append(completedDates, entry.Date)
+				break
+			}
+		}
+	}
+
+	completion := m.scheduleEngine.EvaluatePeriodCompletion(*enginePattern, engineExceptions, completedDates, today)
+
+	return &RoutinePeriodProgress{
+		RoutineID: routineID,
+		Completed: completion.Completed,
+		Expected:  completion.Expected,
+		Period:    completion.Period,
+		OnTrack:   completion.OnTrack,
+	}, nil
 }

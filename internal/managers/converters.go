@@ -3,6 +3,7 @@ package managers
 import (
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/progress_engine"
+	"github.com/rkn/bearing/internal/engines/schedule_engine"
 )
 
 // toManagerLifeTheme converts an access.LifeTheme to the Manager's LifeTheme.
@@ -250,24 +251,26 @@ func toAccessTask(m Task) access.Task {
 // toManagerDayFocus converts an access.DayFocus to the Manager's DayFocus.
 func toManagerDayFocus(a access.DayFocus) DayFocus {
 	return DayFocus{
-		Date:     a.Date,
-		ThemeIDs: a.ThemeIDs,
-		Notes:    a.Notes,
-		Text:     a.Text,
-		OkrIDs:   a.OkrIDs,
-		Tags:     a.Tags,
+		Date:          a.Date,
+		ThemeIDs:      a.ThemeIDs,
+		Notes:         a.Notes,
+		Text:          a.Text,
+		OkrIDs:        a.OkrIDs,
+		Tags:          a.Tags,
+		RoutineChecks: a.RoutineChecks,
 	}
 }
 
 // toAccessDayFocus converts a Manager DayFocus to an access.DayFocus.
 func toAccessDayFocus(m DayFocus) access.DayFocus {
 	return access.DayFocus{
-		Date:     m.Date,
-		ThemeIDs: m.ThemeIDs,
-		Notes:    m.Notes,
-		Text:     m.Text,
-		OkrIDs:   m.OkrIDs,
-		Tags:     m.Tags,
+		Date:          m.Date,
+		ThemeIDs:      m.ThemeIDs,
+		Notes:         m.Notes,
+		Text:          m.Text,
+		OkrIDs:        m.OkrIDs,
+		Tags:          m.Tags,
+		RoutineChecks: m.RoutineChecks,
 	}
 }
 
@@ -335,6 +338,35 @@ func toEngineObjectiveDataSlice(objectives []access.Objective) []progress_engine
 			Status:     obj.Status,
 			KeyResults: krs,
 			Objectives: toEngineObjectiveDataSlice(obj.Objectives),
+		}
+	}
+	return result
+}
+
+// toEngineRepeatPattern converts an access.RepeatPattern to a schedule_engine.RepeatPattern.
+func toEngineRepeatPattern(p *access.RepeatPattern) *schedule_engine.RepeatPattern {
+	if p == nil {
+		return nil
+	}
+	return &schedule_engine.RepeatPattern{
+		Frequency:  p.Frequency,
+		Interval:   p.Interval,
+		Weekdays:   p.Weekdays,
+		DayOfMonth: p.DayOfMonth,
+		StartDate:  p.StartDate,
+	}
+}
+
+// toEngineExceptions converts a slice of access.ScheduleException to schedule_engine.Exception.
+func toEngineExceptions(exceptions []access.ScheduleException) []schedule_engine.Exception {
+	if len(exceptions) == 0 {
+		return nil
+	}
+	result := make([]schedule_engine.Exception, len(exceptions))
+	for i, e := range exceptions {
+		result[i] = schedule_engine.Exception{
+			OriginalDate: e.OriginalDate,
+			NewDate:      e.NewDate,
 		}
 	}
 	return result
