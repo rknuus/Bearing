@@ -9,7 +9,7 @@
    * Frontend owns conversation history: passes full history array to onRequestAdvice.
    */
 
-  import { tick, untrack } from 'svelte';
+  import { tick, untrack, onDestroy } from 'svelte';
   import MarkdownContent from '../lib/components/MarkdownContent.svelte';
   import SuggestionCard from './SuggestionCard.svelte';
   import type { Suggestion } from './SuggestionCard.svelte';
@@ -51,6 +51,45 @@
   let { onRequestAdvice, onSendMessage, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck, messages = $bindable([]), busy = $bindable(false) }: Props = $props();
   let inputText = $state('');
   let messagesEndEl: HTMLDivElement | undefined = $state(undefined);
+  let textareaEl: HTMLTextAreaElement | undefined = $state(undefined);
+
+  let resizeObserver: ResizeObserver | undefined;
+
+  function adjustHeight() {
+    if (!textareaEl) return;
+    textareaEl.style.height = 'auto';
+    const scrollHeight = textareaEl.scrollHeight;
+    const panelEl = textareaEl.closest('.advisor-panel') as HTMLElement | null;
+    if (panelEl) {
+      const maxHeight = panelEl.clientHeight * 0.6;
+      const finalHeight = Math.min(scrollHeight, maxHeight);
+      textareaEl.style.height = finalHeight + 'px';
+      textareaEl.style.overflowY = scrollHeight > maxHeight ? 'auto' : 'hidden';
+    } else {
+      textareaEl.style.height = scrollHeight + 'px';
+      textareaEl.style.overflowY = 'hidden';
+    }
+  }
+
+  $effect(() => {
+    if (!textareaEl) return;
+    if (typeof ResizeObserver === 'undefined') return;
+    const el = textareaEl;
+    const panelEl = el.closest('.advisor-panel') as HTMLElement | null;
+    if (!panelEl) return;
+    resizeObserver = new ResizeObserver(() => {
+      adjustHeight();
+    });
+    resizeObserver.observe(panelEl);
+    return () => {
+      resizeObserver?.disconnect();
+      resizeObserver = undefined;
+    };
+  });
+
+  onDestroy(() => {
+    resizeObserver?.disconnect();
+  });
 
   function scrollToBottom() {
     tick().then(() => {
@@ -73,6 +112,7 @@
     messages = [...messages, userMessage];
     inputText = '';
     busy = true;
+    tick().then(() => adjustHeight());
     scrollToBottom();
 
     if (onSendMessage) {
@@ -119,6 +159,7 @@
     messages = [];
     inputText = '';
     busy = false;
+    tick().then(() => adjustHeight());
   }
 
   function formatTime(timestamp: number): string {
@@ -232,6 +273,8 @@
       class="chat-input"
       placeholder="Ask the advisor..."
       bind:value={inputText}
+      bind:this={textareaEl}
+      oninput={adjustHeight}
       onkeydown={handleKeydown}
       disabled={busy || !available}
       rows={1}
@@ -501,6 +544,7 @@
     outline: none;
     transition: border-color 0.15s;
     line-height: 1.5;
+    overflow-y: hidden;
   }
 
   .chat-input:focus {
