@@ -29,7 +29,7 @@ tests/ui-component/test-results/
 tests/ui-component/playwright-report/
 
 # Project management
-.pm/
+.ccpm/
 
 # TheAgent — transient history backups
 .theagent/history/
