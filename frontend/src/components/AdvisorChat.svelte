@@ -49,6 +49,7 @@
   }
 
   let { onRequestAdvice, onSendMessage, onAcceptSuggestion, available, models: _models, selectedOKRIds, onRecheck, messages = $bindable([]), busy = $bindable(false) }: Props = $props();
+  let selectedCount = $derived(selectedOKRIds?.length ?? 0);
   let inputText = $state('');
   let messagesEndEl: HTMLDivElement | undefined = $state(undefined);
   let textareaEl: HTMLTextAreaElement | undefined = $state(undefined);
@@ -266,6 +267,14 @@
     {/if}
 
     <div bind:this={messagesEndEl}></div>
+  </div>
+
+  <div class="selection-context" class:disabled-area={!available}>
+    {#if selectedCount > 0}
+      <span class="selection-count">{selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected</span>
+    {:else}
+      <span class="selection-hint">Click items in the OKR tree to select context for the advisor</span>
+    {/if}
   </div>
 
   <div class="input-area" class:disabled-area={!available}>
@@ -521,6 +530,21 @@
   .suggestions-container {
     max-width: 80%;
     margin-top: var(--space-1);
+  }
+
+  .selection-context {
+    padding: var(--space-1) var(--space-4);
+    font-size: 0.75rem;
+    line-height: 1.4;
+    flex-shrink: 0;
+  }
+
+  .selection-hint {
+    color: var(--color-gray-400);
+  }
+
+  .selection-count {
+    color: var(--color-gray-600);
   }
 
   .input-area {
