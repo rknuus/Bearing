@@ -468,10 +468,6 @@ export async function runTests() {
       await page.keyboard.press('Control+1')
       await page.waitForSelector('.okr-header', { timeout: 5000 })
 
-      // Auto-accept window.confirm() dialogs
-      const acceptDialog = (dialog) => dialog.accept()
-      page.on('dialog', acceptDialog)
-
       // Expand theme if collapsed
       const themeExpanded = await page.$('.tree-theme-edit:last-child .tree-objective-edit')
       if (!themeExpanded) {
@@ -486,27 +482,31 @@ export async function runTests() {
         await page.waitForSelector('.tree-theme-edit:last-child .tree-kr-edit', { timeout: 5000 })
       }
 
-      // Delete key result
+      // Delete key result (click delete button, confirm in dialog)
       await page.hover('.tree-theme-edit:last-child .tree-kr-edit .kr-header')
       await page.click('.tree-theme-edit:last-child .tree-kr-edit button[title="Delete"]')
+      await page.waitForSelector('.dialog-actions .btn-danger', { timeout: 5000 })
+      await page.click('.dialog-actions .btn-danger')
       await page.waitForSelector('.tree-theme-edit:last-child .tree-kr-edit', { state: 'detached', timeout: 5000 })
 
-      // Delete objective
+      // Delete objective (click delete button, confirm in dialog)
       await page.hover('.tree-theme-edit:last-child .tree-objective-edit .objective-header')
       await page.click('.tree-theme-edit:last-child .tree-objective-edit button[title="Delete"]')
+      await page.waitForSelector('.dialog-actions .btn-danger', { timeout: 5000 })
+      await page.click('.dialog-actions .btn-danger')
       await page.waitForSelector('.tree-theme-edit:last-child .tree-objective-edit', { state: 'detached', timeout: 5000 })
 
-      // Delete theme
+      // Delete theme (click delete button, confirm in dialog)
       await page.hover('.tree-theme-edit:last-child > .item-header')
       await page.click('.tree-theme-edit:last-child > .item-header button[title="Delete"]')
+      await page.waitForSelector('.dialog-actions .btn-danger', { timeout: 5000 })
+      await page.click('.dialog-actions .btn-danger')
 
       // Verify "E2E Flow" theme is gone
       await page.waitForFunction(() => {
         const names = document.querySelectorAll('.theme-pill')
         return !Array.from(names).some(n => n.textContent.trim() === 'E2E Flow')
       }, { timeout: 5000 })
-
-      page.off('dialog', acceptDialog)
 
       reporter.pass('OKR hierarchy deleted bottom-up')
     } catch (err) {
