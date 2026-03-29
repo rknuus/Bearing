@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus, type RoutineOccurrence } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -60,9 +60,123 @@
   interface ClipboardEntry { themeIds?: string[]; text: string; okrIds?: string[]; tags?: string[] }
   let clipboard = $state<ClipboardEntry[]>([]);
 
+  // Routine status map for calendar dot indicators
+  let routineStatusMap = $state(new Map<string, 'all' | 'some' | 'none' | 'future'>());
+
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
 
+  /** Compute all occurrence dates for a repeat pattern within a given year. */
+  function getYearOccurrences(pattern: RepeatPattern, yr: number): string[] {
+    const results: string[] = [];
+    const anchor = new Date(pattern.startDate + 'T00:00:00');
+    const yearStart = new Date(yr, 0, 1);
+    const yearEnd = new Date(yr, 11, 31);
+    const interval = pattern.interval || 1;
+
+    if (anchor > yearEnd) return results;
+
+    const current = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+
+    // For non-weekly patterns, align to the anchor's cadence
+    if (pattern.frequency !== 'weekly') {
+      // Walk from anchor forward until we reach or pass current
+      const walker = new Date(anchor);
+      while (walker < current) {
+        if (pattern.frequency === 'daily') {
+          walker.setDate(walker.getDate() + interval);
+        } else if (pattern.frequency === 'monthly') {
+          walker.setMonth(walker.getMonth() + interval);
+        } else if (pattern.frequency === 'yearly') {
+          walker.setFullYear(walker.getFullYear() + interval);
+        }
+      }
+      current.setTime(walker.getTime());
+    } else {
+      // For weekly, start at beginning of the year (or anchor, whichever is later)
+      // and iterate day-by-day checking weekdays
+      const day1 = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+      const iter = new Date(day1);
+      while (iter <= yearEnd) {
+        const wd = iter.getDay();
+        if (pattern.weekdays?.includes(wd)) {
+          results.push(iter.toISOString().split('T')[0]);
+        }
+        iter.setDate(iter.getDate() + 1);
+      }
+      return results;
+    }
+
+    while (current <= yearEnd) {
+      results.push(current.toISOString().split('T')[0]);
+      if (pattern.frequency === 'daily') {
+        current.setDate(current.getDate() + interval);
+      } else if (pattern.frequency === 'monthly') {
+        current.setMonth(current.getMonth() + interval);
+      } else if (pattern.frequency === 'yearly') {
+        current.setFullYear(current.getFullYear() + interval);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Compute routine status for every date in the year.
+   * Returns a Map keyed by date string (YYYY-MM-DD) with status values.
+   */
+  function computeRoutineStatusMap(
+    allThemes: LifeTheme[],
+    focusMap: SvelteMap<string, DayFocus>,
+    yr: number,
+    todayStr: string,
+  ): Map<string, 'all' | 'some' | 'none' | 'future'> {
+    // Count total routines due per date and checked per date
+    const dueCounts = new Map<string, number>();
+    const checkedCounts = new Map<string, number>();
+
+    for (const theme of allThemes) {
+      if (!theme.routines) continue;
+      for (const routine of theme.routines) {
+        let dates: string[];
+        if (routine.repeatPattern) {
+          dates = getYearOccurrences(routine.repeatPattern, yr);
+        } else {
+          // Sporadic: only applicable for today
+          if (todayStr.startsWith(`${yr}-`)) {
+            dates = [todayStr];
+          } else {
+            dates = [];
+          }
+        }
+
+        for (const d of dates) {
+          dueCounts.set(d, (dueCounts.get(d) || 0) + 1);
+          const focus = focusMap.get(d);
+          if (focus?.routineChecks?.includes(routine.id)) {
+            checkedCounts.set(d, (checkedCounts.get(d) || 0) + 1);
+          }
+        }
+      }
+    }
+
+    const result = new Map<string, 'all' | 'some' | 'none' | 'future'>();
+    for (const [dateStr, total] of dueCounts) {
+      if (total === 0) continue;
+      const checked = checkedCounts.get(dateStr) || 0;
+
+      if (dateStr > todayStr) {
+        result.set(dateStr, 'future');
+      } else if (checked >= total) {
+        result.set(dateStr, 'all');
+      } else if (checked > 0) {
+        result.set(dateStr, 'some');
+      } else {
+        result.set(dateStr, 'none');
+      }
+    }
+    return result;
+  }
 
   // Load data on mount and reload when year changes
   $effect(() => {
@@ -87,6 +201,9 @@
       for (const entry of focusResult) {
         yearFocus.set(entry.date, entry);
       }
+
+      const todayStr = currentDate || new Date().toISOString().split('T')[0];
+      routineStatusMap = computeRoutineStatusMap(themesResult, yearFocus, year, todayStr);
     } catch (e) {
       error = extractError(e);
       console.error('CalendarView: Failed to load data', e);
@@ -178,6 +295,7 @@
     today: boolean;
     sunday: boolean;
     weekdayName: string;
+    routineStatus?: 'all' | 'some' | 'none' | 'future';
   }
 
   let gridCells = $derived.by(() => {
@@ -185,6 +303,7 @@
     for (let m = 0; m < 12; m++) {
       const days = getDaysInMonth(year, m);
       for (let d = 1; d <= days; d++) {
+        const dateStr = formatDate(m, d);
         cells.push({
           month: m,
           day: d,
@@ -194,6 +313,7 @@
           today: isToday(m, d),
           sunday: isSundayDate(year, m, d),
           weekdayName: getWeekdayName(year, m, d),
+          routineStatus: routineStatusMap.get(dateStr),
         });
       }
     }
@@ -290,6 +410,10 @@
       };
       await bindings.SaveDayFocus(dayFocus);
       yearFocus.set(editingDay.date, dayFocus);
+
+      // Recompute routine status map after check changes
+      const todayStr = currentDate || new Date().toISOString().split('T')[0];
+      routineStatusMap = computeRoutineStatusMap(themes, yearFocus, year, todayStr);
 
       await verifyCalendarState();
 
@@ -546,7 +670,10 @@
               ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >
-              {cell.text}
+              <span class="day-text-content">{cell.text}</span>
+              {#if cell.routineStatus}
+                <span class="routine-dot {cell.routineStatus}"></span>
+              {/if}
             </button>
           {/each}
         {/each}
@@ -838,8 +965,6 @@
     border: none;
     cursor: pointer;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     text-align: left;
     display: flex;
     align-items: center;
@@ -853,6 +978,39 @@
   .day-text.selected {
     outline: 2px solid var(--color-primary-600);
     outline-offset: -2px;
+  }
+
+  .day-text-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .routine-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+
+  .routine-dot.all {
+    background-color: #22c55e;
+  }
+
+  .routine-dot.some {
+    background-color: #f59e0b;
+  }
+
+  .routine-dot.none {
+    background-color: #ef4444;
+  }
+
+  .routine-dot.future {
+    background-color: #9ca3af;
   }
 
   /* Theme Legend */
