@@ -541,6 +541,29 @@
     }
   }
 
+  function handleDragPointerDown() {
+    if (collapsedColumns.size === 0) return;
+    isDragging = true;
+    const cleanup = () => {
+      window.removeEventListener('pointerup', onRelease);
+      window.removeEventListener('pointercancel', onRelease);
+    };
+    const onRelease = () => {
+      cleanup();
+      if (!isDragging) return;
+      requestAnimationFrame(() => {
+        isDragging = false;
+      });
+    };
+    window.addEventListener('pointerup', onRelease, { once: true });
+    window.addEventListener('pointercancel', onRelease, { once: true });
+  }
+
+  function preunfold(node: HTMLElement) {
+    node.addEventListener('pointerdown', handleDragPointerDown);
+    return { destroy() { node.removeEventListener('pointerdown', handleDragPointerDown); } };
+  }
+
   // svelte-dnd-action handlers
   function handleDndConsider(status: string, event: CustomEvent<DndEvent<TaskWithStatus>>) {
     const { trigger, source } = event.detail.info;
@@ -1162,6 +1185,7 @@
                     class="column-content"
                     class:collapsed-section={sectionCollapsed}
                     use:dndzone={{ items: sectionTaskItems, flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack || sectionTaskItems.length === 0 }}
+                    use:preunfold
                     onconsider={(e) => handleSectionDndConsider(section.name, e)}
                     onfinalize={(e) => handleSectionDndFinalize(column.name, section.name, e)}
                   >
@@ -1185,6 +1209,7 @@
               class="column-content"
               class:collapsed-column-hidden={columnCollapsed}
               use:dndzone={{ items: columnItems[column.name] ?? [], flipDurationMs, type: 'board', dragDisabled: isValidating || isRollingBack || (columnItems[column.name] ?? []).length === 0 }}
+              use:preunfold
               onconsider={(e) => handleDndConsider(column.name, e)}
               onfinalize={(e) => handleDndFinalize(column.name, e)}
             >
