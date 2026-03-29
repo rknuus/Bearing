@@ -240,9 +240,9 @@ describe('AdvisorChat', () => {
     expect(overlay).not.toBeNull();
     expect(overlay?.textContent).toContain('Install Claude CLI to enable the goal advisor');
 
-    // Messages area and input area should be disabled
+    // Messages area, selection context, and input area should be disabled
     const disabledAreas = container.querySelectorAll('.disabled-area');
-    expect(disabledAreas.length).toBe(2);
+    expect(disabledAreas.length).toBe(3);
 
     // Input should be disabled
     const textarea = container.querySelector<HTMLTextAreaElement>('.chat-input');
