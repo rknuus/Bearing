@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import App from './App.svelte';
+import { setClockForTesting, resetClock } from './lib/utils/clock';
 
 /**
  * Build comprehensive mock bindings that satisfy all child views.
@@ -408,6 +409,100 @@ describe('App', () => {
         );
         if (!hasTodayFocus) throw new Error('Expected SaveNavigationContext with todayFocusActive');
       });
+    });
+  });
+
+  describe('day change detection', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      resetClock();
+      vi.useRealTimers();
+    });
+
+    /** Flush pending promises and microtasks when using fake timers. */
+    async function flush(rounds = 5) {
+      for (let i = 0; i < rounds; i++) {
+        await vi.advanceTimersByTimeAsync(0);
+        await tick();
+      }
+    }
+
+    async function renderAppWithFakeTimers() {
+      const result = render(App, { target: container });
+      await flush();
+      return result;
+    }
+
+    it('midnight timer triggers day change and promotions', async () => {
+      // Clock at 100ms before midnight on March 29
+      setClockForTesting(() => new Date(2026, 2, 29, 23, 59, 59, 900));
+
+      await renderAppWithFakeTimers();
+
+      // Shift clock past midnight — use noon to avoid UTC offset issues
+      setClockForTesting(() => new Date(2026, 2, 30, 12, 0, 0, 0));
+
+      // Advance timers to fire the midnight timeout (~100ms out)
+      await vi.advanceTimersByTimeAsync(200);
+      await flush();
+
+      // Toast should appear with the new date
+      const toast = container.querySelector('.toast');
+      expect(toast).toBeTruthy();
+      expect(toast!.textContent).toContain('March 30');
+
+      // ProcessPriorityPromotions should have been called
+      expect(mockBindings.ProcessPriorityPromotions).toHaveBeenCalled();
+    });
+
+    it('visibility change with new date triggers day change', async () => {
+      // Clock on March 29 at noon (avoids UTC offset issues with toISOString)
+      setClockForTesting(() => new Date(2026, 2, 29, 12, 0, 0));
+
+      await renderAppWithFakeTimers();
+
+      // Simulate overnight sleep: clock jumps to March 30 at noon
+      setClockForTesting(() => new Date(2026, 2, 30, 12, 0, 0));
+
+      // Simulate the app becoming visible
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      await flush();
+
+      // Toast should appear with the new date
+      const toast = container.querySelector('.toast');
+      expect(toast).toBeTruthy();
+      expect(toast!.textContent).toContain('March 30');
+
+      // ProcessPriorityPromotions should have been called
+      expect(mockBindings.ProcessPriorityPromotions).toHaveBeenCalled();
+    });
+
+    it('visibility change with same date does not trigger day change', async () => {
+      // Clock on March 29 at noon (avoids UTC offset issues with toISOString)
+      setClockForTesting(() => new Date(2026, 2, 29, 12, 0, 0));
+
+      await renderAppWithFakeTimers();
+
+      // Clear any init-time calls
+      mockBindings.ProcessPriorityPromotions.mockClear();
+
+      // Clock stays on same date
+      Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+
+      await flush();
+
+      // No toast should appear
+      const toast = container.querySelector('.toast');
+      expect(toast).toBeFalsy();
+
+      // ProcessPriorityPromotions should NOT have been called
+      expect(mockBindings.ProcessPriorityPromotions).not.toHaveBeenCalled();
     });
   });
 
