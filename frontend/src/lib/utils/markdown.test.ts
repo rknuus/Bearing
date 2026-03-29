@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderMarkdown } from './markdown';
+import { renderMarkdown, renderInlineMarkdown } from './markdown';
 
 describe('renderMarkdown', () => {
   it('returns empty string for empty input', () => {
@@ -61,5 +61,62 @@ describe('renderMarkdown', () => {
   it('sanitizes javascript: URLs (XSS)', () => {
     const result = renderMarkdown("[click](javascript:alert('xss'))");
     expect(result).not.toContain('javascript:');
+  });
+});
+
+describe('renderInlineMarkdown', () => {
+  it('returns empty string for empty input', () => {
+    expect(renderInlineMarkdown('')).toBe('');
+  });
+
+  it('renders bold text', () => {
+    expect(renderInlineMarkdown('**bold**')).toBe('<p><strong>bold</strong></p>\n');
+  });
+
+  it('renders italic text', () => {
+    expect(renderInlineMarkdown('*italic*')).toBe('<p><em>italic</em></p>\n');
+  });
+
+  it('renders inline code', () => {
+    expect(renderInlineMarkdown('`code`')).toBe('<p><code>code</code></p>\n');
+  });
+
+  it('renders links with href', () => {
+    const result = renderInlineMarkdown('[text](http://example.com)');
+    expect(result).toContain('<a href="http://example.com">text</a>');
+  });
+
+  it('strips headers', () => {
+    const result = renderInlineMarkdown('# H1');
+    expect(result).not.toContain('<h1>');
+    expect(result).not.toContain('<h1');
+  });
+
+  it('strips lists', () => {
+    const result = renderInlineMarkdown('- item');
+    expect(result).not.toContain('<ul>');
+    expect(result).not.toContain('<li>');
+  });
+
+  it('strips images', () => {
+    const result = renderInlineMarkdown('![alt](http://example.com/img.png)');
+    expect(result).not.toContain('<img');
+  });
+
+  it('strips blockquotes', () => {
+    const result = renderInlineMarkdown('> quote');
+    expect(result).not.toContain('<blockquote');
+  });
+
+  it('strips <script> tags (XSS)', () => {
+    const result = renderInlineMarkdown("<script>alert('xss')</script>");
+    expect(result).not.toContain('<script');
+    expect(result).not.toContain('alert');
+  });
+
+  it('strips event handlers from tags (XSS)', () => {
+    const result = renderInlineMarkdown('<img onerror="alert(\'xss\')" src="x">');
+    expect(result).not.toContain('onerror');
+    expect(result).not.toContain('alert');
   });
 });

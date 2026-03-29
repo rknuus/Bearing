@@ -21,3 +21,16 @@ export function renderRestrictedMarkdown(source: string): string {
     ALLOWED_ATTR: [],
   });
 }
+
+/**
+ * Render inline markdown — only inline formatting is allowed.
+ * Used for task titles where block-level elements would be inappropriate.
+ */
+export function renderInlineMarkdown(source: string): string {
+  if (!source) return '';
+  const html = marked.parse(source, { async: false }) as string;
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['strong', 'em', 'code', 'a', 'p', 'br'],
+    ALLOWED_ATTR: ['href'],
+  });
+}
