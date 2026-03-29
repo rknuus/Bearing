@@ -1557,4 +1557,64 @@ describe('EisenKanView', () => {
       expect(handles.length).toBe(0);
     });
   });
+
+  describe('drag with folded columns', () => {
+    it('folded column unfolds on pointerdown', async () => {
+      await renderView();
+
+      const foldBtns = container.querySelectorAll<HTMLButtonElement>('.column-fold-btn');
+      await fireEvent.click(foldBtns[1]);
+      await tick();
+
+      const board = container.querySelector('.kanban-board') as HTMLElement;
+      expect(board.style.gridTemplateColumns).toContain('48px');
+
+      const columnContents = container.querySelectorAll('.column-content');
+      await fireEvent.pointerDown(columnContents[0]);
+      await tick();
+
+      expect(board.style.gridTemplateColumns).not.toContain('48px');
+      const frParts = board.style.gridTemplateColumns.split(' ').filter(p => p === '1fr');
+      expect(frParts.length).toBe(3);
+    });
+
+    it('pointerup without drag re-folds the column', async () => {
+      vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => { cb(0); return 0; });
+
+      await renderView();
+
+      const foldBtns = container.querySelectorAll<HTMLButtonElement>('.column-fold-btn');
+      await fireEvent.click(foldBtns[1]);
+      await tick();
+
+      const board = container.querySelector('.kanban-board') as HTMLElement;
+      expect(board.style.gridTemplateColumns).toContain('48px');
+
+      const columnContents = container.querySelectorAll('.column-content');
+      await fireEvent.pointerDown(columnContents[0]);
+      await tick();
+      expect(board.style.gridTemplateColumns).not.toContain('48px');
+
+      await fireEvent.pointerUp(window);
+      await tick();
+
+      expect(board.style.gridTemplateColumns).toContain('48px');
+
+      vi.unstubAllGlobals();
+    });
+
+    it('no folded columns — pointerdown is a no-op', async () => {
+      await renderView();
+
+      const board = container.querySelector('.kanban-board') as HTMLElement;
+      const before = board.style.gridTemplateColumns;
+      expect(before).not.toContain('48px');
+
+      const columnContents = container.querySelectorAll('.column-content');
+      await fireEvent.pointerDown(columnContents[0]);
+      await tick();
+
+      expect(board.style.gridTemplateColumns).toBe(before);
+    });
+  });
 });
