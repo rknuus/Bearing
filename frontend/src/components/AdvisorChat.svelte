@@ -273,7 +273,7 @@
     {#if selectedCount > 0}
       <span class="selection-count">{selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected</span>
     {:else}
-      <span class="selection-hint">Click items in the OKR tree to select context for the advisor</span>
+      <span class="selection-hint">Cmd+Click items in the OKR tree to select context for the advisor</span>
     {/if}
   </div>
 
