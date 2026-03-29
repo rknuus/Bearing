@@ -98,7 +98,7 @@ describe('CalendarView', () => {
     expect(navButtons.length).toBe(2);
 
     const todayButton = container.querySelector('.today-button');
-    expect(todayButton?.textContent?.trim()).toBe('Today');
+    expect(todayButton?.textContent?.trim()).toBe('Current year');
   });
 
   it('renders 12 month columns in the grid', async () => {

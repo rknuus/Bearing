@@ -437,7 +437,7 @@
       ➡️
     </button>
     <button class="today-button" onclick={goToCurrentYear}>
-      Today
+      Current year
     </button>
   </div>
 
