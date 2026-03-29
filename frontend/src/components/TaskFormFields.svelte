@@ -33,7 +33,7 @@
 
   const prefix = $derived(idPrefix ? `${idPrefix}-` : '');
 
-  let titleInput: HTMLInputElement;
+  let titleInput = $state<HTMLInputElement | undefined>(undefined);
   let previewMode = $state(false);
 
   $effect(() => {
