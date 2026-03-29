@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import TagFilterBar from './TagFilterBar.svelte';
+import TagSelection from './TagSelection.svelte';
 
-describe('TagFilterBar', () => {
+describe('TagSelection', () => {
   let container: HTMLDivElement;
 
   beforeEach(() => {
@@ -26,7 +26,7 @@ describe('TagFilterBar', () => {
     todayFocusActive?: boolean;
     onTodayFocusToggle?: () => void;
   }) {
-    const result = render(TagFilterBar, {
+    const result = render(TagSelection, {
       target: container,
       props: {
         availableTags: props.availableTags,

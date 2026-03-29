@@ -260,7 +260,7 @@
     saveNavigationContext();
   }
 
-  // Tag filter handlers for TagFilterBar
+  // Tag filter handlers for TagSelection
   function handleFilterTagToggle(tag: string) {
     tagFocusActive = false;
     if (filterTagIds.includes(tag)) {

@@ -65,7 +65,7 @@ export async function runTests() {
 
     // ---- Task 201: Filter workflow ----
 
-    // Sub-test 1: ThemeFilterBar and TagFilterBar render on Tasks view
+    // Sub-test 1: ThemeFilterBar and TagSelection render on Tasks view
     reporter.startTest('201a: Filter bars render on Tasks view')
     try {
       await page.click('.nav-link:has-text("Short-term")')
@@ -78,7 +78,7 @@ export async function runTests() {
         throw new Error(`Expected "Filter by theme" label, got "${themeLabel}"`)
       }
 
-      // Verify TagFilterBar renders
+      // Verify TagSelection renders
       await page.waitForSelector('.tag-filter-bar', { timeout: 5000 })
       const tagLabel = await page.$eval('.tag-filter-bar .filter-label', el => el.textContent.trim())
       if (!tagLabel.includes('Filter by tag')) {

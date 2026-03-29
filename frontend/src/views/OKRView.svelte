@@ -12,7 +12,7 @@
   import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
 
   import AdvisorChat from '../components/AdvisorChat.svelte';
-  import TagFilterBar from '../components/TagFilterBar.svelte';
+  import TagSelection from '../components/TagSelection.svelte';
   import { getBindings, extractError, openExternalLink } from '../lib/utils/bindings';
   import { getObjectiveStatus } from '../lib/utils/okr-status';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -1308,7 +1308,7 @@
     <div class="loading">Loading themes...</div>
   {:else}
     {#if availableObjectiveTags.length > 0}
-      <TagFilterBar
+      <TagSelection
         availableTags={availableObjectiveTags}
         activeTagIds={filterTagIds}
         onToggle={handleFilterTagToggle}

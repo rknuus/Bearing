@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * TagFilterBar Component
+   * TagSelection Component
    *
    * Renders a horizontal row of gray tag pills for filtering tasks.
    * "All" pill is active when no tags are selected.

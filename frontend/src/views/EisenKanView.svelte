@@ -14,7 +14,7 @@
   import { Button, ErrorBanner } from '../lib/components';
 
   import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
-  import TagFilterBar from '../components/TagFilterBar.svelte';
+  import TagSelection from '../components/TagSelection.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
   import ErrorDialog from '../components/ErrorDialog.svelte';
@@ -1050,7 +1050,7 @@
       />
     {/if}
     {#if (availableTags.length > 0 || hasUntaggedTasks) && onFilterTagToggle && onFilterTagClear}
-      <TagFilterBar
+      <TagSelection
         {availableTags}
         activeTagIds={filterTagIds}
         onToggle={onFilterTagToggle}

@@ -573,7 +573,7 @@ describe('OKRView', () => {
       return result;
     }
 
-    it('shows TagFilterBar when objectives have tags', async () => {
+    it('shows TagSelection when objectives have tags', async () => {
       await renderTaggedView();
 
       const filterBar = container.querySelector('.tag-filter-bar');
@@ -586,7 +586,7 @@ describe('OKRView', () => {
       expect(pills[2].textContent).toContain('health');
     });
 
-    it('does not show TagFilterBar when no objectives have tags', async () => {
+    it('does not show TagSelection when no objectives have tags', async () => {
       await renderView(); // uses makeTestThemes which has no tags
 
       const filterBar = container.querySelector('.tag-filter-bar');
