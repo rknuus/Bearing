@@ -1185,7 +1185,7 @@ func (m *PlanningManager) validateTaskOrder() {
 // GetTasks returns all tasks with their status across all themes.
 // Tasks are sorted by persisted order from task_order.json within each drop zone.
 func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
-	var allTasks []TaskWithStatus
+	allTasks := []TaskWithStatus{}
 
 	config, err := m.getAccessBoardConfig()
 	if err != nil {
@@ -2360,7 +2360,7 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 		}
 	}
 
-	var result []RoutineOccurrence
+	result := []RoutineOccurrence{}
 	todayChecks := checkedByDate[date]
 
 	for _, theme := range themes {
