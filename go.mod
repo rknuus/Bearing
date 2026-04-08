@@ -3,7 +3,7 @@ module github.com/rkn/bearing
 go 1.25.0
 
 require (
-	github.com/go-git/go-git/v5 v5.17.0
+	github.com/go-git/go-git/v5 v5.17.2
 	github.com/wailsapp/wails/v2 v2.11.0
 )
 
