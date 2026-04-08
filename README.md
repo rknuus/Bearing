@@ -16,6 +16,7 @@ The core value is the **linking mechanism** - theme colors propagate through all
 
 - [Go](https://golang.org/dl/) 1.25+ (the `tool` directive in `go.mod` requires Go 1.24+)
 - [Node.js](https://nodejs.org/) 18+
+- `librsvg` and `imagemagick` (only needed for `make dev` / `make build` on macOS — they generate the app icon from `appicon.svg`). Install on macOS: `brew install librsvg imagemagick`
 
 The Wails CLI is project-pinned via the `tool` directive in `go.mod` — no manual install. The first `make dev` (or `make build` / `make test-e2e-headless`) compiles the Wails CLI from source (~30-60s); subsequent runs use Go's build cache.
 
