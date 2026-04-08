@@ -48,15 +48,32 @@ type KeyResult struct {
 	TargetValue  int    `json:"targetValue,omitempty"`  // Target value (0 = untracked, 1 = binary)
 }
 
+// RepeatPattern defines a recurrence schedule for a routine.
+type RepeatPattern struct {
+	Frequency  string `json:"frequency"`            // "daily", "weekly", "monthly", "yearly"
+	Interval   int    `json:"interval"`             // every N (default 1)
+	Weekdays   []int  `json:"weekdays,omitempty"`   // for weekly: 0=Sun..6=Sat
+	DayOfMonth int    `json:"dayOfMonth,omitempty"` // for monthly
+	StartDate  string `json:"startDate"`            // YYYY-MM-DD
+}
+
+// ScheduleException represents a single date override in a routine's schedule.
+type ScheduleException struct {
+	OriginalDate string `json:"originalDate"` // suppressed occurrence date
+	NewDate      string `json:"newDate"`      // replacement date
+}
+
 // Routine represents an ongoing health metric for a life theme.
 // Routines are "goals for stability" — metrics to maintain at or above/below a target.
 type Routine struct {
-	ID           string `json:"id"`                    // Theme-scoped: {ThemeID}-R{n}
-	Description  string `json:"description"`           // What is being tracked
-	CurrentValue int    `json:"currentValue"`          // Latest value
-	TargetValue  int    `json:"targetValue"`           // Threshold to maintain
-	TargetType   string `json:"targetType"`            // "at-or-above" or "at-or-below"
-	Unit         string `json:"unit,omitempty"`         // Optional label (kg, hours, times/week, %)
+	ID            string              `json:"id"`                      // Theme-scoped: {ThemeID}-R{n}
+	Description   string              `json:"description"`             // What is being tracked
+	CurrentValue  int                 `json:"currentValue"`            // Latest value
+	TargetValue   int                 `json:"targetValue"`             // Threshold to maintain
+	TargetType    string              `json:"targetType"`              // "at-or-above" or "at-or-below"
+	Unit          string              `json:"unit,omitempty"`          // Optional label (kg, hours, times/week, %)
+	RepeatPattern *RepeatPattern      `json:"repeatPattern,omitempty"` // Optional recurrence schedule (nil = sporadic)
+	Exceptions    []ScheduleException `json:"exceptions,omitempty"`    // Date overrides for the schedule
 }
 
 // RoutineTargetType constants
@@ -93,12 +110,13 @@ const (
 // DayFocus represents the daily focus on one or more life themes.
 // It links a calendar date to life themes with optional notes.
 type DayFocus struct {
-	Date     string   `json:"date"`              // Date in YYYY-MM-DD format
-	ThemeIDs []string `json:"themeIds,omitempty"` // Links to LifeTheme.IDs
-	Notes    string   `json:"notes"`              // Optional daily notes
-	Text     string   `json:"text"`               // Free-text content for the day
-	OkrIDs   []string `json:"okrIds,omitempty"`   // Optional OKR item references (Objective/KR IDs)
-	Tags     []string `json:"tags,omitempty"`     // Optional day-level tags
+	Date           string   `json:"date"`                     // Date in YYYY-MM-DD format
+	ThemeIDs       []string `json:"themeIds,omitempty"`        // Links to LifeTheme.IDs
+	Notes          string   `json:"notes"`                     // Optional daily notes
+	Text           string   `json:"text"`                      // Free-text content for the day
+	OkrIDs         []string `json:"okrIds,omitempty"`          // Optional OKR item references (Objective/KR IDs)
+	Tags           []string `json:"tags,omitempty"`            // Optional day-level tags
+	RoutineChecks  []string `json:"routineChecks,omitempty"`   // IDs of routines checked off on this date
 }
 
 // Task represents a single actionable item linked to a life theme.
