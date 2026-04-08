@@ -52,10 +52,11 @@ generate: frontend-install ## Generate Wails bindings (required after cloning or
 	fi
 
 .PHONY: dev
-dev: generate frontend-lint ## Run Wails app in development mode with hot reload
+dev: generate frontend-lint build/appicon.png ## Run Wails app in development mode with hot reload
 	@echo "Starting Wails development mode..."
 	@echo "Vite dev server with HMR enabled"
 	@echo "Native app window will open"
+	@rm -rf build/bin/Bearing.app
 	$(WAILS) dev
 
 .PHONY: frontend-dev
@@ -78,6 +79,7 @@ build: generate frontend-lint build/appicon.png ## Build Wails desktop applicati
 	@echo "Building $(APP_NAME)..."
 	@$(MAKE) --no-print-directory -C frontend check
 	@echo "Building Wails application..."
+	@rm -rf build/bin/Bearing.app
 	$(WAILS) build -ldflags "-X main.version=$(VERSION)"
 	@echo "Build complete: $(OUTPUT)"
 
@@ -202,19 +204,54 @@ fmt: ## Format Go code
 	@echo "Formatting Go code..."
 	go fmt ./...
 
-# Render macOS app icon from simplified SVG with squircle clipping and Apple HIG padding
-# Output: 1024x1024 PNG with 824x824 squircle content centered (100px transparent padding)
+# Render macOS app icon from simplified SVG with squircle clipping and Apple HIG padding.
+# Output: 1024x1024 PNG with 824x824 squircle content centered (100px transparent padding).
+#
+# Two failure modes this rule defends against:
+#
+#   1. Wails default-icon fallback. pkg/buildassets/buildassets.go ReadFile()
+#      silently writes its embedded default appicon.png to disk when the file
+#      is missing. This rule guarantees the file exists before `wails` runs,
+#      so the fallback path is never reached.
+#
+#   2. macOS Icon Services cache pinning. macOS caches Bearing.app's icon
+#      thumbnail by the bundle directory's path/inode/mtime. wails dev/build
+#      modify files INSIDE Contents/MacOS/ and Contents/Resources/ but those
+#      are grandchildren and don't bump the .app/ directory mtime, so the
+#      cache never invalidates. The `dev` and `build` targets `rm -rf
+#      build/bin/Bearing.app` first to give the bundle a fresh inode.
+#
+# Why .PHONY: a previous mtime-based rule got fooled by `git checkout` tying
+# appicon.svg and build/appicon.png to identical timestamps, leaving a stale
+# icon in place for weeks. Always-regen is cheap (~1s) and correct.
+#
+# If both rsvg-convert and magick are missing AND build/appicon.png is also
+# missing, this rule hard-fails with an instruction to install the toolchain.
+# A contributor who has the file (from a previous build) but no longer has
+# the tools sees a warning and the rule keeps the existing file in place.
+#
+# Manual recovery if Bearing.app icon ever shows wrong despite a correct
+# build/appicon.png on disk (macOS Icon Services cache stuck):
+#   rm -rf build/bin/Bearing.app && make build
+.PHONY: build/appicon.png icon
 build/appicon.png: appicon.svg
-	rsvg-convert -w 824 -h 824 $< -o build/appicon-raw.png
-	magick -size 1024x1024 xc:none \
-		-fill white -draw "roundrectangle 100,100 923,923 185,185" \
-		build/appicon-mask.png
-	magick -size 1024x1024 xc:none \
-		build/appicon-raw.png -gravity center -compose Over -composite \
-		build/appicon-mask.png -compose DstIn -composite $@
-	rm -f build/appicon-raw.png build/appicon-mask.png
+	@if command -v rsvg-convert >/dev/null 2>&1 && command -v magick >/dev/null 2>&1; then \
+		rsvg-convert -w 824 -h 824 $< -o build/appicon-raw.png && \
+		magick -size 1024x1024 xc:none \
+			-fill white -draw "roundrectangle 100,100 923,923 185,185" \
+			build/appicon-mask.png && \
+		magick -size 1024x1024 xc:none \
+			build/appicon-raw.png -gravity center -compose Over -composite \
+			build/appicon-mask.png -compose DstIn -composite $@ && \
+		rm -f build/appicon-raw.png build/appicon-mask.png; \
+	elif [ -f $@ ]; then \
+		echo "Warning: rsvg-convert and/or magick not installed; using existing $@."; \
+	else \
+		echo "Error: $@ is missing AND rsvg-convert/magick are not installed."; \
+		echo "Install the icon toolchain on macOS:  brew install librsvg imagemagick"; \
+		exit 1; \
+	fi
 
-.PHONY: icon
 icon: build/appicon.png ## Generate macOS app icon from appicon.svg
 
 .PHONY: migrate-tasks
