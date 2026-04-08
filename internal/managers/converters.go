@@ -3,6 +3,7 @@ package managers
 import (
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/progress_engine"
+	"github.com/rkn/bearing/internal/engines/schedule_engine"
 )
 
 // toManagerLifeTheme converts an access.LifeTheme to the Manager's LifeTheme.
@@ -131,27 +132,89 @@ func toAccessKeyResult(m KeyResult) access.KeyResult {
 	}
 }
 
+// toManagerRepeatPattern converts an access.RepeatPattern to the Manager's RepeatPattern.
+func toManagerRepeatPattern(a *access.RepeatPattern) *RepeatPattern {
+	if a == nil {
+		return nil
+	}
+	return &RepeatPattern{
+		Frequency:  a.Frequency,
+		Interval:   a.Interval,
+		Weekdays:   a.Weekdays,
+		DayOfMonth: a.DayOfMonth,
+		StartDate:  a.StartDate,
+	}
+}
+
+// toAccessRepeatPattern converts a Manager RepeatPattern to an access.RepeatPattern.
+func toAccessRepeatPattern(m *RepeatPattern) *access.RepeatPattern {
+	if m == nil {
+		return nil
+	}
+	return &access.RepeatPattern{
+		Frequency:  m.Frequency,
+		Interval:   m.Interval,
+		Weekdays:   m.Weekdays,
+		DayOfMonth: m.DayOfMonth,
+		StartDate:  m.StartDate,
+	}
+}
+
+// toManagerExceptions converts access.ScheduleException slice to the Manager's ScheduleException slice.
+func toManagerExceptions(a []access.ScheduleException) []ScheduleException {
+	if len(a) == 0 {
+		return nil
+	}
+	result := make([]ScheduleException, len(a))
+	for i, e := range a {
+		result[i] = ScheduleException{
+			OriginalDate: e.OriginalDate,
+			NewDate:      e.NewDate,
+		}
+	}
+	return result
+}
+
+// toAccessExceptions converts Manager ScheduleException slice to access.ScheduleException slice.
+func toAccessExceptions(m []ScheduleException) []access.ScheduleException {
+	if len(m) == 0 {
+		return nil
+	}
+	result := make([]access.ScheduleException, len(m))
+	for i, e := range m {
+		result[i] = access.ScheduleException{
+			OriginalDate: e.OriginalDate,
+			NewDate:      e.NewDate,
+		}
+	}
+	return result
+}
+
 // toManagerRoutine converts an access.Routine to the Manager's Routine.
 func toManagerRoutine(a access.Routine) Routine {
 	return Routine{
-		ID:           a.ID,
-		Description:  a.Description,
-		CurrentValue: a.CurrentValue,
-		TargetValue:  a.TargetValue,
-		TargetType:   a.TargetType,
-		Unit:         a.Unit,
+		ID:            a.ID,
+		Description:   a.Description,
+		CurrentValue:  a.CurrentValue,
+		TargetValue:   a.TargetValue,
+		TargetType:    a.TargetType,
+		Unit:          a.Unit,
+		RepeatPattern: toManagerRepeatPattern(a.RepeatPattern),
+		Exceptions:    toManagerExceptions(a.Exceptions),
 	}
 }
 
 // toAccessRoutine converts a Manager Routine to an access.Routine.
 func toAccessRoutine(m Routine) access.Routine {
 	return access.Routine{
-		ID:           m.ID,
-		Description:  m.Description,
-		CurrentValue: m.CurrentValue,
-		TargetValue:  m.TargetValue,
-		TargetType:   m.TargetType,
-		Unit:         m.Unit,
+		ID:            m.ID,
+		Description:   m.Description,
+		CurrentValue:  m.CurrentValue,
+		TargetValue:   m.TargetValue,
+		TargetType:    m.TargetType,
+		Unit:          m.Unit,
+		RepeatPattern: toAccessRepeatPattern(m.RepeatPattern),
+		Exceptions:    toAccessExceptions(m.Exceptions),
 	}
 }
 
@@ -188,24 +251,26 @@ func toAccessTask(m Task) access.Task {
 // toManagerDayFocus converts an access.DayFocus to the Manager's DayFocus.
 func toManagerDayFocus(a access.DayFocus) DayFocus {
 	return DayFocus{
-		Date:     a.Date,
-		ThemeIDs: a.ThemeIDs,
-		Notes:    a.Notes,
-		Text:     a.Text,
-		OkrIDs:   a.OkrIDs,
-		Tags:     a.Tags,
+		Date:          a.Date,
+		ThemeIDs:      a.ThemeIDs,
+		Notes:         a.Notes,
+		Text:          a.Text,
+		OkrIDs:        a.OkrIDs,
+		Tags:          a.Tags,
+		RoutineChecks: a.RoutineChecks,
 	}
 }
 
 // toAccessDayFocus converts a Manager DayFocus to an access.DayFocus.
 func toAccessDayFocus(m DayFocus) access.DayFocus {
 	return access.DayFocus{
-		Date:     m.Date,
-		ThemeIDs: m.ThemeIDs,
-		Notes:    m.Notes,
-		Text:     m.Text,
-		OkrIDs:   m.OkrIDs,
-		Tags:     m.Tags,
+		Date:          m.Date,
+		ThemeIDs:      m.ThemeIDs,
+		Notes:         m.Notes,
+		Text:          m.Text,
+		OkrIDs:        m.OkrIDs,
+		Tags:          m.Tags,
+		RoutineChecks: m.RoutineChecks,
 	}
 }
 
@@ -273,6 +338,35 @@ func toEngineObjectiveDataSlice(objectives []access.Objective) []progress_engine
 			Status:     obj.Status,
 			KeyResults: krs,
 			Objectives: toEngineObjectiveDataSlice(obj.Objectives),
+		}
+	}
+	return result
+}
+
+// toEngineRepeatPattern converts an access.RepeatPattern to a schedule_engine.RepeatPattern.
+func toEngineRepeatPattern(p *access.RepeatPattern) *schedule_engine.RepeatPattern {
+	if p == nil {
+		return nil
+	}
+	return &schedule_engine.RepeatPattern{
+		Frequency:  p.Frequency,
+		Interval:   p.Interval,
+		Weekdays:   p.Weekdays,
+		DayOfMonth: p.DayOfMonth,
+		StartDate:  p.StartDate,
+	}
+}
+
+// toEngineExceptions converts a slice of access.ScheduleException to schedule_engine.Exception.
+func toEngineExceptions(exceptions []access.ScheduleException) []schedule_engine.Exception {
+	if len(exceptions) == 0 {
+		return nil
+	}
+	result := make([]schedule_engine.Exception, len(exceptions))
+	for i, e := range exceptions {
+		result[i] = schedule_engine.Exception{
+			OriginalDate: e.OriginalDate,
+			NewDate:      e.NewDate,
 		}
 	}
 	return result

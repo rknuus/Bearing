@@ -129,6 +129,10 @@ func (a *App) Dismiss(goalId string) error {
 	return a.planningManager.Dismiss(goalId)
 }
 
+func (a *App) GetRoutineProgress(routineId string) (*managers.RoutinePeriodProgress, error) {
+	return a.planningManager.GetRoutineProgress(routineId)
+}
+
 func (a *App) SuggestAbbreviation(name string) (string, error) {
 	return a.planningManager.SuggestAbbreviation(name)
 }
@@ -145,6 +149,14 @@ func (a *App) SaveDayFocus(day managers.DayFocus) error {
 
 func (a *App) ClearDayFocus(date string) error {
 	return a.planningManager.ClearDayFocus(date)
+}
+
+func (a *App) GetRoutinesForDate(date string) ([]managers.RoutineOccurrence, error) {
+	return a.planningManager.GetRoutinesForDate(date)
+}
+
+func (a *App) RescheduleRoutineOccurrence(routineID, originalDate, newDate string) error {
+	return a.planningManager.RescheduleRoutineOccurrence(routineID, originalDate, newDate)
 }
 
 // --- Task operations ---

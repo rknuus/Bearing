@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -42,6 +42,16 @@
   let tagSectionOpen = $state(false);
   let editSelectExpandedIds = $state<string[]>([]);
 
+  // Routine editor state
+  let routineOccurrences = $state<RoutineOccurrence[]>([]);
+  let editRoutineChecks = $state<string[]>([]);
+  let reschedulingKey: string | null = $state(null);
+  let rescheduleDate = $state('');
+
+  // Derived routine groups
+  let scheduledRoutines = $derived(routineOccurrences.filter(r => r.status === 'scheduled' || r.status === 'sporadic'));
+  let overdueRoutines = $derived(routineOccurrences.filter(r => r.status === 'overdue'));
+
   // Selection state
   let selectedCells = $state<Array<{month: number; day: number}>>([]);
   let anchorCell = $state<{month: number; day: number} | null>(null);
@@ -50,9 +60,128 @@
   interface ClipboardEntry { themeIds?: string[]; text: string; okrIds?: string[]; tags?: string[] }
   let clipboard = $state<ClipboardEntry[]>([]);
 
+  // Routine status map for calendar dot indicators
+  let routineStatusMap = $state(new Map<string, 'all' | 'some' | 'none' | 'future'>());
+
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
 
+  /** Compute all occurrence dates for a repeat pattern within a given year. */
+  function getYearOccurrences(pattern: RepeatPattern, yr: number): string[] {
+    const results: string[] = [];
+    const anchor = new Date(pattern.startDate + 'T00:00:00');
+    const yearStart = new Date(yr, 0, 1);
+    const yearEnd = new Date(yr, 11, 31);
+    const interval = pattern.interval || 1;
+
+    if (anchor > yearEnd) return results;
+
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const current = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+
+    // For non-weekly patterns, align to the anchor's cadence
+    if (pattern.frequency !== 'weekly') {
+      // Walk from anchor forward until we reach or pass current
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
+      const walker = new Date(anchor);
+      while (walker < current) {
+        if (pattern.frequency === 'daily') {
+          walker.setDate(walker.getDate() + interval);
+        } else if (pattern.frequency === 'monthly') {
+          walker.setMonth(walker.getMonth() + interval);
+        } else if (pattern.frequency === 'yearly') {
+          walker.setFullYear(walker.getFullYear() + interval);
+        }
+      }
+      current.setTime(walker.getTime());
+    } else {
+      // For weekly, start at beginning of the year (or anchor, whichever is later)
+      // and iterate day-by-day checking weekdays
+      const day1 = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
+      const iter = new Date(day1);
+      while (iter <= yearEnd) {
+        const wd = iter.getDay();
+        if (pattern.weekdays?.includes(wd)) {
+          results.push(iter.toISOString().split('T')[0]);
+        }
+        iter.setDate(iter.getDate() + 1);
+      }
+      return results;
+    }
+
+    while (current <= yearEnd) {
+      results.push(current.toISOString().split('T')[0]);
+      if (pattern.frequency === 'daily') {
+        current.setDate(current.getDate() + interval);
+      } else if (pattern.frequency === 'monthly') {
+        current.setMonth(current.getMonth() + interval);
+      } else if (pattern.frequency === 'yearly') {
+        current.setFullYear(current.getFullYear() + interval);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Compute routine status for every date in the year.
+   * Returns a Map keyed by date string (YYYY-MM-DD) with status values.
+   */
+  function computeRoutineStatusMap(
+    allThemes: LifeTheme[],
+    focusMap: SvelteMap<string, DayFocus>,
+    yr: number,
+    todayStr: string,
+  ): Map<string, 'all' | 'some' | 'none' | 'future'> {
+    // Count total routines due per date and checked per date
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const dueCounts = new Map<string, number>();
+    const checkedCounts = new Map<string, number>(); // eslint-disable-line svelte/prefer-svelte-reactivity
+
+    for (const theme of allThemes) {
+      if (!theme.routines) continue;
+      for (const routine of theme.routines) {
+        let dates: string[];
+        if (routine.repeatPattern) {
+          dates = getYearOccurrences(routine.repeatPattern, yr);
+        } else {
+          // Sporadic: only applicable for today
+          if (todayStr.startsWith(`${yr}-`)) {
+            dates = [todayStr];
+          } else {
+            dates = [];
+          }
+        }
+
+        for (const d of dates) {
+          dueCounts.set(d, (dueCounts.get(d) || 0) + 1);
+          const focus = focusMap.get(d);
+          if (focus?.routineChecks?.includes(routine.id)) {
+            checkedCounts.set(d, (checkedCounts.get(d) || 0) + 1);
+          }
+        }
+      }
+    }
+
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const result = new Map<string, 'all' | 'some' | 'none' | 'future'>();
+    for (const [dateStr, total] of dueCounts) {
+      if (total === 0) continue;
+      const checked = checkedCounts.get(dateStr) || 0;
+
+      if (dateStr > todayStr) {
+        result.set(dateStr, 'future');
+      } else if (checked >= total) {
+        result.set(dateStr, 'all');
+      } else if (checked > 0) {
+        result.set(dateStr, 'some');
+      } else {
+        result.set(dateStr, 'none');
+      }
+    }
+    return result;
+  }
 
   // Load data on mount and reload when year changes
   $effect(() => {
@@ -77,6 +206,9 @@
       for (const entry of focusResult) {
         yearFocus.set(entry.date, entry);
       }
+
+      const todayStr = currentDate || new Date().toISOString().split('T')[0];
+      routineStatusMap = computeRoutineStatusMap(themesResult, yearFocus, year, todayStr);
     } catch (e) {
       error = extractError(e);
       console.error('CalendarView: Failed to load data', e);
@@ -168,6 +300,7 @@
     today: boolean;
     sunday: boolean;
     weekdayName: string;
+    routineStatus?: 'all' | 'some' | 'none' | 'future';
   }
 
   let gridCells = $derived.by(() => {
@@ -175,6 +308,7 @@
     for (let m = 0; m < 12; m++) {
       const days = getDaysInMonth(year, m);
       for (let d = 1; d <= days; d++) {
+        const dateStr = formatDate(m, d);
         cells.push({
           month: m,
           day: d,
@@ -184,6 +318,7 @@
           today: isToday(m, d),
           sunday: isSundayDate(year, m, d),
           weekdayName: getWeekdayName(year, m, d),
+          routineStatus: routineStatusMap.get(dateStr),
         });
       }
     }
@@ -233,17 +368,22 @@
     // Set editingDay last so the dialog renders with correct fold state
     editingDay = { date: dateStr, month, day };
 
-    // Fetch available tags from tasks
-    try {
-      const tasks = await getBindings().GetTasks();
-      availableTags = [...new Set(tasks.flatMap(t => t.tags ?? []))].sort();
-    } catch {
-      availableTags = [];
-    }
+    // Fetch available tags and routine occurrences in parallel
+    const bindings = getBindings();
+    const [tagsResult, occurrences] = await Promise.all([
+      bindings.GetTasks().then(
+        tasks => [...new Set(tasks.flatMap(t => t.tags ?? []))].sort(),
+        () => [] as string[],
+      ),
+      bindings.GetRoutinesForDate(dateStr).catch(() => [] as RoutineOccurrence[]),
+    ]);
+    availableTags = tagsResult;
+    routineOccurrences = occurrences;
+    editRoutineChecks = occurrences.filter(o => o.checked).map(o => o.routineId);
   }
 
 
-  const DAY_FOCUS_FIELDS = ['date', 'themeIds', 'notes', 'text', 'okrIds', 'tags'];
+  const DAY_FOCUS_FIELDS = ['date', 'themeIds', 'notes', 'text', 'okrIds', 'tags', 'routineChecks'];
 
   async function verifyCalendarState() {
     const byDate = (a: DayFocus, b: DayFocus) => a.date.localeCompare(b.date);
@@ -271,9 +411,14 @@
         text: editText,
         okrIds: editOkrIds.length > 0 ? editOkrIds : undefined,
         tags: editTags.length > 0 ? editTags : undefined,
+        routineChecks: editRoutineChecks.length > 0 ? editRoutineChecks : undefined,
       };
       await bindings.SaveDayFocus(dayFocus);
       yearFocus.set(editingDay.date, dayFocus);
+
+      // Recompute routine status map after check changes
+      const todayStr = currentDate || new Date().toISOString().split('T')[0];
+      routineStatusMap = computeRoutineStatusMap(themes, yearFocus, year, todayStr);
 
       await verifyCalendarState();
 
@@ -412,6 +557,36 @@
     }
   }
 
+  function toggleRoutineCheck(routineId: string) {
+    if (editRoutineChecks.includes(routineId)) {
+      editRoutineChecks = editRoutineChecks.filter(id => id !== routineId);
+    } else {
+      editRoutineChecks = [...editRoutineChecks, routineId];
+    }
+  }
+
+  function routineKey(routine: RoutineOccurrence): string {
+    return routine.routineId + ':' + routine.date;
+  }
+
+  function startReschedule(routine: RoutineOccurrence) {
+    reschedulingKey = routineKey(routine);
+    rescheduleDate = '';
+  }
+
+  async function confirmReschedule(routine: RoutineOccurrence) {
+    if (!rescheduleDate || !reschedulingKey) return;
+    const bindings = getBindings();
+    await bindings.RescheduleRoutineOccurrence(routine.routineId, routine.date, rescheduleDate);
+    reschedulingKey = null;
+    routineOccurrences = await bindings.GetRoutinesForDate(editingDay!.date);
+  }
+
+  function cancelReschedule() {
+    reschedulingKey = null;
+    rescheduleDate = '';
+  }
+
   function prevYear() {
     year = year - 1;
   }
@@ -500,7 +675,10 @@
               ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={cell.text || displayDate(cell.month, cell.day)}
             >
-              {cell.text}
+              <span class="day-text-content">{cell.text}</span>
+              {#if cell.routineStatus}
+                <span class="routine-dot {cell.routineStatus}"></span>
+              {/if}
             </button>
           {/each}
         {/each}
@@ -577,6 +755,55 @@
           placeholder="Add text for this day..."
         />
       </div>
+
+      {#if routineOccurrences.length > 0}
+        <div class="form-group">
+          <span class="form-label">Routines</span>
+
+          {#each scheduledRoutines as routine (routine.routineId + '-' + routine.date)}
+            <div class="routine-row">
+              <label class="routine-check">
+                <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
+                       onchange={() => toggleRoutineCheck(routine.routineId)} />
+                <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
+                <span class="routine-desc">{routine.description}</span>
+              </label>
+              {#if reschedulingKey === routineKey(routine)}
+                <div class="reschedule-inline">
+                  <input type="date" bind:value={rescheduleDate} />
+                  <button class="reschedule-confirm" onclick={() => confirmReschedule(routine)}>OK</button>
+                  <button class="reschedule-cancel" onclick={cancelReschedule}>X</button>
+                </div>
+              {:else}
+                <button class="reschedule-btn" onclick={() => startReschedule(routine)} title="Reschedule">&#x27F3;</button>
+              {/if}
+            </div>
+          {/each}
+
+          {#if overdueRoutines.length > 0}
+            <div class="overdue-label">Overdue</div>
+            {#each overdueRoutines as routine (routine.routineId + '-' + routine.date)}
+              <div class="routine-row overdue">
+                <label class="routine-check">
+                  <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
+                         onchange={() => toggleRoutineCheck(routine.routineId)} />
+                  <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
+                  <span class="routine-desc">{routine.description} ({routine.date})</span>
+                </label>
+                {#if reschedulingKey === routineKey(routine)}
+                  <div class="reschedule-inline">
+                    <input type="date" bind:value={rescheduleDate} />
+                    <button class="reschedule-confirm" onclick={() => confirmReschedule(routine)}>OK</button>
+                    <button class="reschedule-cancel" onclick={cancelReschedule}>X</button>
+                  </div>
+                {:else}
+                  <button class="reschedule-btn" onclick={() => startReschedule(routine)} title="Reschedule">&#x27F3;</button>
+                {/if}
+              </div>
+            {/each}
+          {/if}
+        </div>
+      {/if}
 
       {#snippet actions()}
         <Button variant="secondary" onclick={cancelEdit}>Cancel</Button>
@@ -743,8 +970,6 @@
     border: none;
     cursor: pointer;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     text-align: left;
     display: flex;
     align-items: center;
@@ -758,6 +983,39 @@
   .day-text.selected {
     outline: 2px solid var(--color-primary-600);
     outline-offset: -2px;
+  }
+
+  .day-text-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .routine-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-left: 2px;
+    flex-shrink: 0;
+  }
+
+  .routine-dot.all {
+    background-color: #22c55e;
+  }
+
+  .routine-dot.some {
+    background-color: #f59e0b;
+  }
+
+  .routine-dot.none {
+    background-color: #ef4444;
+  }
+
+  .routine-dot.future {
+    background-color: #9ca3af;
   }
 
   /* Theme Legend */
@@ -860,6 +1118,105 @@
 
   .collapsible-header .form-label {
     margin-bottom: 0;
+  }
+
+  /* Routine section */
+  .routine-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0;
+    font-size: 0.875rem;
+  }
+
+  .routine-row.overdue {
+    color: var(--color-red-600, #dc2626);
+  }
+
+  .routine-check {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    flex: 1;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  .routine-check input[type="checkbox"] {
+    flex-shrink: 0;
+  }
+
+  .theme-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+  }
+
+  .routine-desc {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .reschedule-btn {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    padding: 0.125rem 0.375rem;
+    color: var(--color-gray-500);
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .reschedule-btn:hover {
+    background-color: var(--color-gray-100);
+    color: var(--color-gray-700);
+  }
+
+  .reschedule-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .reschedule-inline input[type="date"] {
+    font-size: 0.75rem;
+    padding: 0.125rem 0.25rem;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+  }
+
+  .reschedule-confirm,
+  .reschedule-cancel {
+    background: none;
+    border: 1px solid var(--color-gray-300);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: 0.125rem 0.375rem;
+    color: var(--color-gray-600);
+  }
+
+  .reschedule-confirm:hover {
+    background-color: var(--color-primary-50, #eff6ff);
+    border-color: var(--color-primary-600);
+  }
+
+  .reschedule-cancel:hover {
+    background-color: var(--color-gray-100);
+  }
+
+  .overdue-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-red-600, #dc2626);
+    margin-top: 0.5rem;
+    margin-bottom: 0.125rem;
   }
 
 
