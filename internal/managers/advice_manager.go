@@ -208,14 +208,10 @@ func (am *AdviceManager) acceptCreate(suggestion chat_engine.Suggestion, parentC
 		if themeID == "" {
 			return fmt.Errorf("routine suggestion requires a theme ID")
 		}
-		targetVal := suggestion.RoutineData.TargetValue
 		_, err := am.planningManager.Establish(EstablishRequest{
 			GoalType:    GoalTypeRoutine,
 			ParentID:    themeID,
 			Description: suggestion.RoutineData.Description,
-			TargetValue: &targetVal,
-			TargetType:  suggestion.RoutineData.TargetType,
-			Unit:        suggestion.RoutineData.Unit,
 		})
 		if err != nil {
 			slog.Error("AcceptSuggestion: failed to create routine",
@@ -296,16 +292,6 @@ func (am *AdviceManager) acceptEdit(suggestion chat_engine.Suggestion) error {
 		if suggestion.RoutineData.Description != "" {
 			desc := suggestion.RoutineData.Description
 			req.Description = &desc
-		}
-		targetVal := suggestion.RoutineData.TargetValue
-		req.TargetValue = &targetVal
-		if suggestion.RoutineData.TargetType != "" {
-			tt := suggestion.RoutineData.TargetType
-			req.TargetType = &tt
-		}
-		if suggestion.RoutineData.Unit != "" {
-			unit := suggestion.RoutineData.Unit
-			req.Unit = &unit
 		}
 		if err := am.planningManager.Revise(req); err != nil {
 			slog.Error("AcceptSuggestion: failed to edit routine",
@@ -423,12 +409,8 @@ func filterRoutinesToOKR(routines []access.Routine, filter map[string]struct{}) 
 	for _, r := range routines {
 		if _, ok := filter[r.ID]; ok {
 			result = append(result, chat_engine.OKRRoutine{
-				ID:           r.ID,
-				Description:  r.Description,
-				CurrentValue: r.CurrentValue,
-				TargetValue:  r.TargetValue,
-				TargetType:   r.TargetType,
-				Unit:         r.Unit,
+				ID:          r.ID,
+				Description: r.Description,
 			})
 		}
 	}
@@ -483,12 +465,8 @@ func convertRoutinesToOKR(routines []access.Routine) []chat_engine.OKRRoutine {
 	result := make([]chat_engine.OKRRoutine, len(routines))
 	for i, r := range routines {
 		result[i] = chat_engine.OKRRoutine{
-			ID:           r.ID,
-			Description:  r.Description,
-			CurrentValue: r.CurrentValue,
-			TargetValue:  r.TargetValue,
-			TargetType:   r.TargetType,
-			Unit:         r.Unit,
+			ID:          r.ID,
+			Description: r.Description,
 		}
 	}
 	return result

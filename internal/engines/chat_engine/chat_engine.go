@@ -190,9 +190,6 @@ func convertRawSuggestion(raw rawSuggestion) (Suggestion, string, bool) {
 		s.RoutineData = &RoutineSuggestion{
 			ID:          raw.ID,
 			Description: raw.Description,
-			TargetValue: raw.TargetValue,
-			TargetType:  raw.TargetType,
-			Unit:        raw.Unit,
 			ThemeID:     raw.ThemeID,
 		}
 		if isEdit {
@@ -225,13 +222,12 @@ func (ce *ChatEngine) buildSystemPrompt(okrData []OKRContext) string {
 	b.WriteString("- theme: name, color (optional), id (required for edit)\n")
 	b.WriteString("- objective: title, parentId (theme or parent objective ID), id (required for edit)\n")
 	b.WriteString("- key_result: description, startValue, currentValue, targetValue, parentObjectiveId, id (required for edit)\n")
-	b.WriteString("- routine: description, targetValue, targetType (\"at_least\" or \"at_most\"), unit, themeId, id (required for edit)\n\n")
+	b.WriteString("- routine: description, themeId, id (required for edit)\n\n")
 	b.WriteString("Reference existing items by their actual IDs shown in the OKR context above.\n\n")
 
 	// Auto-extraction instructions.
 	b.WriteString("When the user describes goals in natural language, automatically extract ")
-	b.WriteString("start and target values for key results and routines. For example, ")
-	b.WriteString("\"run 3 times per week\" implies targetValue=3 and unit=\"times/week\"; ")
+	b.WriteString("start and target values for key results. For example, ")
 	b.WriteString("\"I want to read 12 books this year\" implies startValue=0 and targetValue=12.\n\n")
 
 	if len(okrData) == 0 {
@@ -267,8 +263,7 @@ func (ce *ChatEngine) writeOKRContextPrompt(b *strings.Builder, okrData []OKRCon
 		if len(ctx.Routines) > 0 {
 			b.WriteString("\nRoutines:\n")
 			for _, r := range ctx.Routines {
-				fmt.Fprintf(b, "  - %s (ID: %s) current=%d target=%d %s %s\n",
-					r.Description, r.ID, r.CurrentValue, r.TargetValue, r.TargetType, r.Unit)
+				fmt.Fprintf(b, "  - %s (ID: %s)\n", r.Description, r.ID)
 			}
 		}
 

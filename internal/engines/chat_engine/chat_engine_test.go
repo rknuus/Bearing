@@ -45,12 +45,8 @@ func TestUnit_ChatEngine_AssembleConversation_WithOKRContext(t *testing.T) {
 			},
 			Routines: []OKRRoutine{
 				{
-					ID:           "routine-1",
-					Description:  "Daily exercise",
-					CurrentValue: 3,
-					TargetValue:  5,
-					TargetType:   "at_least",
-					Unit:         "days/week",
+					ID:          "routine-1",
+					Description: "Daily exercise",
 				},
 			},
 		},
@@ -457,7 +453,7 @@ func TestUnit_ChatEngine_ParseSuggestions_AllTypes(t *testing.T) {
 		`{"type": "key_result", "action": "create", "description": "Run 500 miles", "startValue": 0, "targetValue": 500, "parentObjectiveId": "obj-1"}` + "\n" +
 		"```\n" +
 		"```bearing-suggestion\n" +
-		`{"type": "routine", "action": "create", "description": "Morning run", "targetValue": 5, "targetType": "at_least", "unit": "days/week", "themeId": "theme-1"}` + "\n" +
+		`{"type": "routine", "action": "create", "description": "Morning run", "themeId": "theme-1"}` + "\n" +
 		"```"
 
 	_, suggestions := engine.ParseSuggestions(input)
@@ -503,15 +499,6 @@ func TestUnit_ChatEngine_ParseSuggestions_AllTypes(t *testing.T) {
 	if suggestions[3].RoutineData.Description != "Morning run" {
 		t.Errorf("expected routine description 'Morning run', got %q", suggestions[3].RoutineData.Description)
 	}
-	if suggestions[3].RoutineData.TargetValue != 5 {
-		t.Errorf("expected routine targetValue 5, got %d", suggestions[3].RoutineData.TargetValue)
-	}
-	if suggestions[3].RoutineData.TargetType != "at_least" {
-		t.Errorf("expected routine targetType 'at_least', got %q", suggestions[3].RoutineData.TargetType)
-	}
-	if suggestions[3].RoutineData.Unit != "days/week" {
-		t.Errorf("expected routine unit 'days/week', got %q", suggestions[3].RoutineData.Unit)
-	}
 	if suggestions[3].RoutineData.ThemeID != "theme-1" {
 		t.Errorf("expected routine themeId 'theme-1', got %q", suggestions[3].RoutineData.ThemeID)
 	}
@@ -549,16 +536,12 @@ func TestUnit_ChatEngine_ParseSuggestions_AutoExtractedValues(t *testing.T) {
 	input := "Based on your goal to run 3 times per week:\n\n" +
 		"```bearing-suggestion\n" +
 		`{"type": "key_result", "action": "create", "description": "Run 3 times per week", "startValue": 0, "currentValue": 0, "targetValue": 3, "parentObjectiveId": "obj-fitness"}` + "\n" +
-		"```\n\n" +
-		"And a supporting routine:\n\n" +
-		"```bearing-suggestion\n" +
-		`{"type": "routine", "action": "create", "description": "Weekly running sessions", "targetValue": 3, "targetType": "at_least", "unit": "times/week", "themeId": "theme-health"}` + "\n" +
 		"```"
 
 	_, suggestions := engine.ParseSuggestions(input)
 
-	if len(suggestions) != 2 {
-		t.Fatalf("expected 2 suggestions, got %d", len(suggestions))
+	if len(suggestions) != 1 {
+		t.Fatalf("expected 1 suggestion, got %d", len(suggestions))
 	}
 
 	// Verify KR values were correctly mapped.
@@ -577,18 +560,6 @@ func TestUnit_ChatEngine_ParseSuggestions_AutoExtractedValues(t *testing.T) {
 	}
 	if kr.ParentObjectiveID != "obj-fitness" {
 		t.Errorf("expected KR parentObjectiveId 'obj-fitness', got %q", kr.ParentObjectiveID)
-	}
-
-	// Verify routine values were correctly mapped.
-	routine := suggestions[1].RoutineData
-	if routine == nil {
-		t.Fatal("expected RoutineData to be populated")
-	}
-	if routine.TargetValue != 3 {
-		t.Errorf("expected routine targetValue 3, got %d", routine.TargetValue)
-	}
-	if routine.Unit != "times/week" {
-		t.Errorf("expected routine unit 'times/week', got %q", routine.Unit)
 	}
 }
 
@@ -669,7 +640,7 @@ func TestUnit_ChatEngine_SystemPrompt_SuggestionInstructions(t *testing.T) {
 	assertContains(t, system, "name, color")
 	assertContains(t, system, "title, parentId")
 	assertContains(t, system, "description, startValue, currentValue, targetValue, parentObjectiveId")
-	assertContains(t, system, "description, targetValue, targetType")
+	assertContains(t, system, "routine: description, themeId")
 
 	// Verify edit requires ID.
 	assertContains(t, system, "id (required for edit)")
@@ -680,7 +651,6 @@ func TestUnit_ChatEngine_SystemPrompt_SuggestionInstructions(t *testing.T) {
 	// Verify auto-extraction instructions.
 	assertContains(t, system, "natural language")
 	assertContains(t, system, "start and target values")
-	assertContains(t, system, "times/week")
 }
 
 // =============================================================================

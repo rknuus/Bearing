@@ -213,14 +213,11 @@ type ScheduleException struct {
 	NewDate      string `json:"newDate"`
 }
 
-// Routine represents an ongoing health metric in the Manager layer's public interface.
+// Routine represents an ongoing activity tracked per occurrence in the Manager layer's public interface.
+// Periodic routines have a RepeatPattern; sporadic routines have none.
 type Routine struct {
 	ID            string              `json:"id"`
 	Description   string              `json:"description"`
-	CurrentValue  int                 `json:"currentValue"`
-	TargetValue   int                 `json:"targetValue"`
-	TargetType    string              `json:"targetType"`
-	Unit          string              `json:"unit,omitempty"`
 	RepeatPattern *RepeatPattern      `json:"repeatPattern,omitempty"`
 	Exceptions    []ScheduleException `json:"exceptions,omitempty"`
 }
@@ -313,8 +310,6 @@ type EstablishRequest struct {
 	Description string   `json:"description,omitempty"`
 	StartValue  *int     `json:"startValue,omitempty"`
 	TargetValue *int     `json:"targetValue,omitempty"`
-	TargetType  string   `json:"targetType,omitempty"`
-	Unit        string   `json:"unit,omitempty"`
 }
 
 // EstablishResult contains the created goal node.
@@ -336,8 +331,6 @@ type ReviseRequest struct {
 	Description *string   `json:"description,omitempty"`
 	StartValue  *int      `json:"startValue,omitempty"`
 	TargetValue *int      `json:"targetValue,omitempty"`
-	TargetType  *string   `json:"targetType,omitempty"`
-	Unit        *string   `json:"unit,omitempty"`
 }
 
 // detectGoalType determines the goal type from its ID naming convention.
@@ -825,18 +818,12 @@ func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.L
 }
 
 // addRoutine creates a new routine under the specified theme.
-func (m *PlanningManager) addRoutine(themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
+func (m *PlanningManager) addRoutine(themeId, description string) (*Routine, error) {
 	if themeId == "" {
 		return nil, fmt.Errorf("themeId cannot be empty")
 	}
 	if strings.TrimSpace(description) == "" {
 		return nil, fmt.Errorf("description cannot be empty")
-	}
-	if !IsValidRoutineTargetType(targetType) {
-		return nil, fmt.Errorf("invalid target type: %s", targetType)
-	}
-	if targetValue <= 0 {
-		return nil, fmt.Errorf("targetValue must be positive")
 	}
 
 	themes, err := m.themeAccess.GetThemes()
@@ -859,9 +846,6 @@ func (m *PlanningManager) addRoutine(themeId, description string, targetValue in
 	routine := access.Routine{
 		ID:          fmt.Sprintf("%s-R%d", themeId, maxNum+1),
 		Description: strings.TrimSpace(description),
-		TargetValue: targetValue,
-		TargetType:  targetType,
-		Unit:        strings.TrimSpace(unit),
 	}
 	targetTheme.Routines = append(targetTheme.Routines, routine)
 
@@ -2058,11 +2042,7 @@ func (m *PlanningManager) Establish(req EstablishRequest) (*EstablishResult, err
 		return &EstablishResult{KeyResult: kr}, nil
 
 	case GoalTypeRoutine:
-		targetVal := 0
-		if req.TargetValue != nil {
-			targetVal = *req.TargetValue
-		}
-		routine, err := m.addRoutine(req.ParentID, req.Description, targetVal, req.TargetType, req.Unit)
+		routine, err := m.addRoutine(req.ParentID, req.Description)
 		if err != nil {
 			return nil, err
 		}
@@ -2160,15 +2140,6 @@ func (m *PlanningManager) Revise(req ReviseRequest) error {
 		if req.Description != nil {
 			theme.Routines[idx].Description = strings.TrimSpace(*req.Description)
 		}
-		if req.TargetValue != nil {
-			theme.Routines[idx].TargetValue = *req.TargetValue
-		}
-		if req.TargetType != nil {
-			theme.Routines[idx].TargetType = *req.TargetType
-		}
-		if req.Unit != nil {
-			theme.Routines[idx].Unit = strings.TrimSpace(*req.Unit)
-		}
 		if err := m.themeAccess.SaveTheme(*theme); err != nil {
 			return fmt.Errorf("%w", err)
 		}
@@ -2180,6 +2151,8 @@ func (m *PlanningManager) Revise(req ReviseRequest) error {
 }
 
 // RecordProgress updates the current value of a measurable goal.
+// Routines no longer carry a numeric currentValue — their progress is computed
+// from RepeatPattern + routineChecks via ScheduleEngine.
 func (m *PlanningManager) RecordProgress(goalId string, value int) error {
 	if goalId == "" {
 		return fmt.Errorf("goalId cannot be empty")
@@ -2190,21 +2163,6 @@ func (m *PlanningManager) RecordProgress(goalId string, value int) error {
 	switch goalType {
 	case GoalTypeKeyResult:
 		return m.updateKeyResultProgress(goalId, value)
-
-	case GoalTypeRoutine:
-		themes, err := m.themeAccess.GetThemes()
-		if err != nil {
-			return fmt.Errorf("%w", err)
-		}
-		theme, idx := findThemeForRoutine(themes, goalId)
-		if theme == nil {
-			return fmt.Errorf("routine with ID %s not found", goalId)
-		}
-		theme.Routines[idx].CurrentValue = value
-		if err := m.themeAccess.SaveTheme(*theme); err != nil {
-			return fmt.Errorf("%w", err)
-		}
-		return nil
 
 	default:
 		return fmt.Errorf("RecordProgress not supported for goal type %s", goalType)

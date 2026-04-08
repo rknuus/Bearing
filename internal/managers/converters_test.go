@@ -54,12 +54,8 @@ func TestUnit_ToManagerKeyResult_RoundTrip(t *testing.T) {
 
 func TestUnit_ToManagerRoutine_RoundTrip(t *testing.T) {
 	original := access.Routine{
-		ID:           "r-1",
-		Description:  "Weekly exercise",
-		CurrentValue: 3,
-		TargetValue:  4,
-		TargetType:   "at_least",
-		Unit:         "sessions",
+		ID:          "r-1",
+		Description: "Weekly exercise",
 	}
 	mRoutine := toManagerRoutine(original)
 	result := toAccessRoutine(mRoutine)
@@ -68,12 +64,8 @@ func TestUnit_ToManagerRoutine_RoundTrip(t *testing.T) {
 
 func TestUnit_ToManagerRoutine_RoundTripWithRepeatPattern(t *testing.T) {
 	original := access.Routine{
-		ID:           "r-2",
-		Description:  "Daily meditation",
-		CurrentValue: 1,
-		TargetValue:  1,
-		TargetType:   "at_least",
-		Unit:         "sessions",
+		ID:          "r-2",
+		Description: "Daily meditation",
 		RepeatPattern: &access.RepeatPattern{
 			Frequency: "weekly",
 			Interval:  1,
@@ -133,7 +125,7 @@ func TestUnit_ToManagerLifeTheme_RoundTrip(t *testing.T) {
 			},
 		},
 		Routines: []access.Routine{
-			{ID: "r-1", Description: "Exercise", CurrentValue: 3, TargetValue: 4, TargetType: "at_least"},
+			{ID: "r-1", Description: "Exercise"},
 		},
 	}
 	mTheme := toManagerLifeTheme(original)
@@ -369,18 +361,6 @@ func assertRoutineEqual(t *testing.T, want, got access.Routine) {
 	}
 	if got.Description != want.Description {
 		t.Errorf("Description: got %q, want %q", got.Description, want.Description)
-	}
-	if got.CurrentValue != want.CurrentValue {
-		t.Errorf("CurrentValue: got %d, want %d", got.CurrentValue, want.CurrentValue)
-	}
-	if got.TargetValue != want.TargetValue {
-		t.Errorf("TargetValue: got %d, want %d", got.TargetValue, want.TargetValue)
-	}
-	if got.TargetType != want.TargetType {
-		t.Errorf("TargetType: got %q, want %q", got.TargetType, want.TargetType)
-	}
-	if got.Unit != want.Unit {
-		t.Errorf("Unit: got %q, want %q", got.Unit, want.Unit)
 	}
 	if (want.RepeatPattern == nil) != (got.RepeatPattern == nil) {
 		t.Errorf("RepeatPattern: got nil=%v, want nil=%v", got.RepeatPattern == nil, want.RepeatPattern == nil)

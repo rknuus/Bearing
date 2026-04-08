@@ -195,10 +195,6 @@ func toManagerRoutine(a access.Routine) Routine {
 	return Routine{
 		ID:            a.ID,
 		Description:   a.Description,
-		CurrentValue:  a.CurrentValue,
-		TargetValue:   a.TargetValue,
-		TargetType:    a.TargetType,
-		Unit:          a.Unit,
 		RepeatPattern: toManagerRepeatPattern(a.RepeatPattern),
 		Exceptions:    toManagerExceptions(a.Exceptions),
 	}
@@ -209,10 +205,6 @@ func toAccessRoutine(m Routine) access.Routine {
 	return access.Routine{
 		ID:            m.ID,
 		Description:   m.Description,
-		CurrentValue:  m.CurrentValue,
-		TargetValue:   m.TargetValue,
-		TargetType:    m.TargetType,
-		Unit:          m.Unit,
 		RepeatPattern: toAccessRepeatPattern(m.RepeatPattern),
 		Exceptions:    toAccessExceptions(m.Exceptions),
 	}

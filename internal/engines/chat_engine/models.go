@@ -36,14 +36,11 @@ type OKRKeyResult struct {
 	TargetValue  int    `json:"targetValue"`
 }
 
-// OKRRoutine represents a routine with tracking values and target type.
+// OKRRoutine represents a routine. Periodic routines have a repeat pattern;
+// sporadic routines have none. Numeric tracking is no longer part of the model.
 type OKRRoutine struct {
-	ID           string `json:"id"`
-	Description  string `json:"description"`
-	CurrentValue int    `json:"currentValue"`
-	TargetValue  int    `json:"targetValue"`
-	TargetType   string `json:"targetType"`
-	Unit         string `json:"unit,omitempty"`
+	ID          string `json:"id"`
+	Description string `json:"description"`
 }
 
 // AdviceResponse is the response from the advisor containing text and
@@ -89,11 +86,10 @@ type KeyResultSuggestion struct {
 }
 
 // RoutineSuggestion holds data for a suggested routine creation or edit.
+// Routines no longer carry numeric targets — periodicity is expressed via
+// repeat patterns (added separately in the OKR view).
 type RoutineSuggestion struct {
 	ID          string `json:"id,omitempty"`
 	Description string `json:"description"`
-	TargetValue int    `json:"targetValue"`
-	TargetType  string `json:"targetType"` // "at_least", "at_most"
-	Unit        string `json:"unit,omitempty"`
 	ThemeID     string `json:"themeId,omitempty"`
 }

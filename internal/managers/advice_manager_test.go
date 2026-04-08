@@ -166,12 +166,8 @@ func sampleThemes() []access.LifeTheme {
 			},
 			Routines: []access.Routine{
 				{
-					ID:           "H-R1",
-					Description:  "Sleep 8 hours",
-					CurrentValue: 7,
-					TargetValue:  8,
-					TargetType:   "at-or-above",
-					Unit:         "hours",
+					ID:          "H-R1",
+					Description: "Sleep 8 hours",
 				},
 			},
 		},
@@ -462,9 +458,6 @@ func TestUnit_AdviceManager_AcceptSuggestion_CreateRoutine(t *testing.T) {
 		Action: "create",
 		RoutineData: &chat_engine.RoutineSuggestion{
 			Description: "Track water intake",
-			TargetValue: 8,
-			TargetType:  "at-or-above",
-			Unit:        "glasses",
 			ThemeID:     "H",
 		},
 	}
@@ -480,12 +473,6 @@ func TestUnit_AdviceManager_AcceptSuggestion_CreateRoutine(t *testing.T) {
 	for _, r := range healthTheme.Routines {
 		if r.Description == "Track water intake" {
 			found = true
-			if r.TargetValue != 8 {
-				t.Errorf("expected target value 8, got %d", r.TargetValue)
-			}
-			if r.Unit != "glasses" {
-				t.Errorf("expected unit 'glasses', got %q", r.Unit)
-			}
 			break
 		}
 	}
@@ -773,8 +760,8 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	if routine.ID != "H-R1" {
 		t.Errorf("expected routine ID 'H-R1', got %q", routine.ID)
 	}
-	if routine.Unit != "hours" {
-		t.Errorf("expected unit 'hours', got %q", routine.Unit)
+	if routine.Description != "Sleep 8 hours" {
+		t.Errorf("expected description 'Sleep 8 hours', got %q", routine.Description)
 	}
 
 	// Test with theme ID filter

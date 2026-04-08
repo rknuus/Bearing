@@ -443,14 +443,11 @@ func testCreateKeyResult(m *PlanningManager, parentObjectiveId, description stri
 }
 
 // testAddRoutine calls Establish to create a routine.
-func testAddRoutine(m *PlanningManager, themeId, description string, targetValue int, targetType, unit string) (*Routine, error) {
+func testAddRoutine(m *PlanningManager, themeId, description string) (*Routine, error) {
 	res, err := m.Establish(EstablishRequest{
 		GoalType:    GoalTypeRoutine,
 		ParentID:    themeId,
 		Description: description,
-		TargetValue: &targetValue,
-		TargetType:  targetType,
-		Unit:        unit,
 	})
 	if err != nil {
 		return nil, err
@@ -477,20 +474,12 @@ func testUpdateKeyResult(m *PlanningManager, keyResultId, description string) er
 	return m.Revise(ReviseRequest{GoalID: keyResultId, Description: &description})
 }
 
-// testUpdateRoutine calls Revise to update a routine's fields.
-func testUpdateRoutine(m *PlanningManager, routineId, description string, currentValue, targetValue int, targetType, unit string) error {
-	// For currentValue, use RecordProgress; for other fields, use Revise.
-	err := m.Revise(ReviseRequest{
+// testUpdateRoutine calls Revise to update a routine's description.
+func testUpdateRoutine(m *PlanningManager, routineId, description string) error {
+	return m.Revise(ReviseRequest{
 		GoalID:      routineId,
 		Description: &description,
-		TargetValue: &targetValue,
-		TargetType:  &targetType,
-		Unit:        &unit,
 	})
-	if err != nil {
-		return err
-	}
-	return m.RecordProgress(routineId, currentValue)
 }
 
 // assertTaskOrderConsistency verifies that the task order map is fully consistent
@@ -1723,35 +1712,23 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("creates routine with correct ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, err := testAddRoutine(manager,"T", "Exercise sessions per week", 3, "at-or-above", "times/week")
+		routine, err := testAddRoutine(manager, "T", "Exercise sessions")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 		if routine.ID != "T-R1" {
 			t.Errorf("expected ID 'T-R1', got '%s'", routine.ID)
 		}
-		if routine.Description != "Exercise sessions per week" {
-			t.Errorf("expected description 'Exercise sessions per week', got '%s'", routine.Description)
-		}
-		if routine.TargetValue != 3 {
-			t.Errorf("expected targetValue 3, got %d", routine.TargetValue)
-		}
-		if routine.TargetType != "at-or-above" {
-			t.Errorf("expected targetType 'at-or-above', got '%s'", routine.TargetType)
-		}
-		if routine.Unit != "times/week" {
-			t.Errorf("expected unit 'times/week', got '%s'", routine.Unit)
-		}
-		if routine.CurrentValue != 0 {
-			t.Errorf("expected currentValue 0, got %d", routine.CurrentValue)
+		if routine.Description != "Exercise sessions" {
+			t.Errorf("expected description 'Exercise sessions', got '%s'", routine.Description)
 		}
 	})
 
 	t.Run("auto-increments routine ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		r1, _ := testAddRoutine(manager,"T", "Routine one", 1, "at-or-above", "")
-		r2, _ := testAddRoutine(manager,"T", "Routine two", 2, "at-or-below", "kg")
+		r1, _ := testAddRoutine(manager, "T", "Routine one")
+		r2, _ := testAddRoutine(manager, "T", "Routine two")
 		if r1.ID != "T-R1" {
 			t.Errorf("expected T-R1, got %s", r1.ID)
 		}
@@ -1763,7 +1740,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for empty description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := testAddRoutine(manager,"T", "", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager, "T", "")
 		if err == nil {
 			t.Fatal("expected error for empty description")
 		}
@@ -1772,43 +1749,16 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for whitespace-only description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := testAddRoutine(manager,"T", "   ", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager, "T", "   ")
 		if err == nil {
 			t.Fatal("expected error for whitespace-only description")
-		}
-	})
-
-	t.Run("returns error for invalid targetType", func(t *testing.T) {
-		manager, _, _ := newMockManager()
-
-		_, err := testAddRoutine(manager,"T", "Test", 3, "invalid-type", "")
-		if err == nil {
-			t.Fatal("expected error for invalid targetType")
-		}
-	})
-
-	t.Run("returns error for zero targetValue", func(t *testing.T) {
-		manager, _, _ := newMockManager()
-
-		_, err := testAddRoutine(manager,"T", "Test", 0, "at-or-above", "")
-		if err == nil {
-			t.Fatal("expected error for zero targetValue")
-		}
-	})
-
-	t.Run("returns error for negative targetValue", func(t *testing.T) {
-		manager, _, _ := newMockManager()
-
-		_, err := testAddRoutine(manager,"T", "Test", -1, "at-or-above", "")
-		if err == nil {
-			t.Fatal("expected error for negative targetValue")
 		}
 	})
 
 	t.Run("returns error for non-existent theme", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := testAddRoutine(manager,"NONEXISTENT", "Test", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager, "NONEXISTENT", "Test")
 		if err == nil {
 			t.Fatal("expected error for non-existent theme")
 		}
@@ -1817,7 +1767,7 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for empty themeId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := testAddRoutine(manager,"", "Test", 3, "at-or-above", "")
+		_, err := testAddRoutine(manager, "", "Test")
 		if err == nil {
 			t.Fatal("expected error for empty themeId")
 		}
@@ -1825,11 +1775,11 @@ func TestAddRoutine(t *testing.T) {
 }
 
 func TestUpdateRoutine(t *testing.T) {
-	t.Run("updates all routine fields", func(t *testing.T) {
+	t.Run("updates routine description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := testAddRoutine(manager,"T", "Original", 5, "at-or-above", "kg")
-		err := testUpdateRoutine(manager,routine.ID, "Updated", 3, 10, "at-or-below", "lbs")
+		routine, _ := testAddRoutine(manager, "T", "Original")
+		err := testUpdateRoutine(manager, routine.ID, "Updated")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1839,24 +1789,12 @@ func TestUpdateRoutine(t *testing.T) {
 		if updated.Description != "Updated" {
 			t.Errorf("expected description 'Updated', got '%s'", updated.Description)
 		}
-		if updated.CurrentValue != 3 {
-			t.Errorf("expected currentValue 3, got %d", updated.CurrentValue)
-		}
-		if updated.TargetValue != 10 {
-			t.Errorf("expected targetValue 10, got %d", updated.TargetValue)
-		}
-		if updated.TargetType != "at-or-below" {
-			t.Errorf("expected targetType 'at-or-below', got '%s'", updated.TargetType)
-		}
-		if updated.Unit != "lbs" {
-			t.Errorf("expected unit 'lbs', got '%s'", updated.Unit)
-		}
 	})
 
 	t.Run("returns error for empty routineId", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := testUpdateRoutine(manager,"", "Desc", 1, 5, "at-or-above", "")
+		err := testUpdateRoutine(manager, "", "Desc")
 		if err == nil {
 			t.Fatal("expected error for empty routineId")
 		}
@@ -1865,7 +1803,7 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := testUpdateRoutine(manager,"T-R999", "Desc", 1, 5, "at-or-above", "")
+		err := testUpdateRoutine(manager, "T-R999", "Desc")
 		if err == nil {
 			t.Fatal("expected error for non-existent routine")
 		}
@@ -1877,7 +1815,7 @@ func TestDeleteRoutine(t *testing.T) {
 	t.Run("deletes routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := testAddRoutine(manager,"T", "To Delete", 5, "at-or-above", "")
+		routine, _ := testAddRoutine(manager, "T", "To Delete")
 		err := manager.Dismiss(routine.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
@@ -1904,50 +1842,6 @@ func TestDeleteRoutine(t *testing.T) {
 		err := manager.Dismiss("T-R999")
 		if err == nil {
 			t.Fatal("expected error for non-existent routine")
-		}
-	})
-}
-
-func TestRoutineIsOnTrack(t *testing.T) {
-	t.Run("at-or-above on track", func(t *testing.T) {
-		routine := access.Routine{TargetType: "at-or-above", CurrentValue: 5, TargetValue: 3}
-		if !routine.IsOnTrack() {
-			t.Error("expected on track (5 >= 3)")
-		}
-	})
-
-	t.Run("at-or-above at target", func(t *testing.T) {
-		routine := access.Routine{TargetType: "at-or-above", CurrentValue: 3, TargetValue: 3}
-		if !routine.IsOnTrack() {
-			t.Error("expected on track (3 >= 3)")
-		}
-	})
-
-	t.Run("at-or-above off track", func(t *testing.T) {
-		routine := access.Routine{TargetType: "at-or-above", CurrentValue: 2, TargetValue: 3}
-		if routine.IsOnTrack() {
-			t.Error("expected off track (2 < 3)")
-		}
-	})
-
-	t.Run("at-or-below on track", func(t *testing.T) {
-		routine := access.Routine{TargetType: "at-or-below", CurrentValue: 75, TargetValue: 80}
-		if !routine.IsOnTrack() {
-			t.Error("expected on track (75 <= 80)")
-		}
-	})
-
-	t.Run("at-or-below at target", func(t *testing.T) {
-		routine := access.Routine{TargetType: "at-or-below", CurrentValue: 80, TargetValue: 80}
-		if !routine.IsOnTrack() {
-			t.Error("expected on track (80 <= 80)")
-		}
-	})
-
-	t.Run("at-or-below off track", func(t *testing.T) {
-		routine := access.Routine{TargetType: "at-or-below", CurrentValue: 82, TargetValue: 80}
-		if routine.IsOnTrack() {
-			t.Error("expected off track (82 > 80)")
 		}
 	})
 }

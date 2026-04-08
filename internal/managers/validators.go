@@ -42,11 +42,6 @@ func IsValidClosingStatus(status string) bool {
 	return false
 }
 
-// IsValidRoutineTargetType checks if a routine target type string is valid.
-func IsValidRoutineTargetType(t string) bool {
-	return t == access.RoutineTargetAtOrAbove || t == access.RoutineTargetAtOrBelow
-}
-
 // IsValidKRType checks if a KR type string is valid.
 // Empty string is treated as valid (equivalent to "metric").
 func IsValidKRType(krType string) bool {

@@ -63,31 +63,13 @@ type ScheduleException struct {
 	NewDate      string `json:"newDate"`      // replacement date
 }
 
-// Routine represents an ongoing health metric for a life theme.
-// Routines are "goals for stability" — metrics to maintain at or above/below a target.
+// Routine represents an ongoing activity tracked per occurrence for a life theme.
+// Periodic routines have a RepeatPattern; sporadic routines have none.
 type Routine struct {
 	ID            string              `json:"id"`                      // Theme-scoped: {ThemeID}-R{n}
 	Description   string              `json:"description"`             // What is being tracked
-	CurrentValue  int                 `json:"currentValue"`            // Latest value
-	TargetValue   int                 `json:"targetValue"`             // Threshold to maintain
-	TargetType    string              `json:"targetType"`              // "at-or-above" or "at-or-below"
-	Unit          string              `json:"unit,omitempty"`          // Optional label (kg, hours, times/week, %)
-	RepeatPattern *RepeatPattern      `json:"repeatPattern,omitempty"` // Optional recurrence schedule (nil = sporadic)
+	RepeatPattern *RepeatPattern      `json:"repeatPattern,omitempty"` // Recurrence schedule (nil = sporadic)
 	Exceptions    []ScheduleException `json:"exceptions,omitempty"`    // Date overrides for the schedule
-}
-
-// RoutineTargetType constants
-const (
-	RoutineTargetAtOrAbove = "at-or-above"
-	RoutineTargetAtOrBelow = "at-or-below"
-)
-
-// IsOnTrack returns true if currentValue meets the target per targetType.
-func (k Routine) IsOnTrack() bool {
-	if k.TargetType == RoutineTargetAtOrBelow {
-		return k.CurrentValue <= k.TargetValue
-	}
-	return k.CurrentValue >= k.TargetValue // at-or-above (default)
 }
 
 // ClosingStatus constants for objective closing workflow

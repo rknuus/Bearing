@@ -59,21 +59,6 @@ func TestUnit_IsValidClosingStatus(t *testing.T) {
 	}
 }
 
-func TestUnit_IsValidRoutineTargetType(t *testing.T) {
-	if !IsValidRoutineTargetType("at-or-above") {
-		t.Error("at-or-above should be valid")
-	}
-	if !IsValidRoutineTargetType("at-or-below") {
-		t.Error("at-or-below should be valid")
-	}
-	invalid := []string{"", "above", "below", "at_least"}
-	for _, s := range invalid {
-		if IsValidRoutineTargetType(s) {
-			t.Errorf("IsValidRoutineTargetType(%q) = true, want false", s)
-		}
-	}
-}
-
 func TestUnit_IsValidKRType(t *testing.T) {
 	valid := []string{"", "metric", "binary"}
 	for _, s := range valid {
