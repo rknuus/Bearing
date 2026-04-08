@@ -1001,7 +1001,7 @@ describe('OKRView', () => {
           color: '#dc2626',
           objectives: [],
           routines: [
-            { id: 'TST-R1', description: 'Exercise per week', currentValue: 3, targetValue: 3, targetType: 'at-or-above', unit: 'times/week' },
+            { id: 'TST-R1', description: 'Exercise per week' },
           ],
         },
       ];

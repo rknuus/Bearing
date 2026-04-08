@@ -960,7 +960,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (tid) => {
         const app = window.go.main.App
-        await app.Establish({ parentId: tid, goalType: 'routine', description: 'E2E Routine', targetValue: 10, targetType: 'at-or-above', unit: 'times/week' })
+        await app.Establish({ parentId: tid, goalType: 'routine', description: 'E2E Routine' })
       }, themeId)
 
       const themesAfterRoutine = readThemes(DATA_DIR)
@@ -972,18 +972,14 @@ export async function runTests() {
       if (routine.description !== 'E2E Routine') {
         throw new Error(`Expected routine description "E2E Routine", got "${routine.description}"`)
       }
-      if (routine.targetValue !== 10) {
-        throw new Error(`Expected routine targetValue=10, got ${routine.targetValue}`)
-      }
 
       expectedCommits++
       assertCommitCount('after create routine')
 
-      // Update routine
+      // Update routine description
       await page.evaluate(async (args) => {
         const app = window.go.main.App
-        await app.Revise({ goalId: args.id, description: 'Updated Routine', targetValue: 15, targetType: 'at-or-above', unit: 'hours' })
-        await app.RecordProgress(args.id, 3)
+        await app.Revise({ goalId: args.id, description: 'Updated Routine' })
       }, { id: routine.id })
 
       const themesAfterRoutineUpdate = readThemes(DATA_DIR)
@@ -992,14 +988,8 @@ export async function runTests() {
       if (updatedRoutine.description !== 'Updated Routine') {
         throw new Error(`Expected description "Updated Routine", got "${updatedRoutine.description}"`)
       }
-      if (updatedRoutine.currentValue !== 3) {
-        throw new Error(`Expected currentValue=3, got ${updatedRoutine.currentValue}`)
-      }
-      if (updatedRoutine.targetValue !== 15) {
-        throw new Error(`Expected targetValue=15, got ${updatedRoutine.targetValue}`)
-      }
 
-      expectedCommits += 2 // Revise + RecordProgress each produce a commit
+      expectedCommits++ // Revise produces a commit
       assertCommitCount('after update routine')
 
       reporter.pass(`Routine created and updated: id=${routine.id}`)

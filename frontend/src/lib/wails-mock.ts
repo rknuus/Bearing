@@ -49,10 +49,6 @@ export interface ScheduleException {
 export interface Routine {
   id: string;
   description: string;
-  currentValue: number;
-  targetValue: number;
-  targetType: string; // "at-or-above" | "at-or-below"
-  unit?: string;
   repeatPattern?: RepeatPattern;
   exceptions?: ScheduleException[];
 }
@@ -95,8 +91,6 @@ export interface EstablishRequest {
   description?: string;
   startValue?: number;
   targetValue?: number;
-  targetType?: string;
-  unit?: string;
   repeatPattern?: RepeatPattern;
 }
 
@@ -116,8 +110,6 @@ export interface ReviseRequest {
   description?: string;
   startValue?: number;
   targetValue?: number;
-  targetType?: string;
-  unit?: string;
   repeatPattern?: RepeatPattern;
   clearRepeat?: boolean;
 }
@@ -433,11 +425,7 @@ let mockThemes: LifeTheme[] = [
     routines: [
       {
         id: 'HF-R1',
-        description: 'Exercise sessions per week',
-        currentValue: 3,
-        targetValue: 3,
-        targetType: 'at-or-above',
-        unit: 'times/week',
+        description: 'Exercise sessions',
         repeatPattern: {
           frequency: 'weekly',
           interval: 1,
@@ -445,7 +433,7 @@ let mockThemes: LifeTheme[] = [
           startDate: '2026-01-01',
         },
       },
-      { id: 'HF-R2', description: 'Body weight', currentValue: 82, targetValue: 80, targetType: 'at-or-below', unit: 'kg' },
+      { id: 'HF-R2', description: 'Body weight check' },
     ],
   },
   {
@@ -1271,14 +1259,9 @@ export const mockAppBindings = {
       case 'routine': {
         const themeId = req.parentId;
         const description = req.description ?? '';
-        const targetValue = req.targetValue ?? 0;
-        const targetType = req.targetType ?? 'at-or-above';
-        const unit = req.unit ?? '';
         const theme = mockThemes.find(t => t.id === themeId);
         if (!theme) throw new Error(`Theme ${themeId} not found`);
         if (!description.trim()) throw new Error('description cannot be empty');
-        if (targetType !== 'at-or-above' && targetType !== 'at-or-below') throw new Error(`invalid target type: ${targetType}`);
-        if (targetValue <= 0) throw new Error('targetValue must be positive');
         if (!theme.routines) theme.routines = [];
         let maxRNum = 0;
         const re = new RegExp(`^${themeId}-R(\\d+)$`);
@@ -1289,10 +1272,6 @@ export const mockAppBindings = {
         const routine: Routine = {
           id: `${themeId}-R${maxRNum + 1}`,
           description: description.trim(),
-          currentValue: 0,
-          targetValue,
-          targetType,
-          unit: unit?.trim() || undefined,
           repeatPattern: req.repeatPattern,
         };
         theme.routines.push(routine);
@@ -1326,9 +1305,6 @@ export const mockAppBindings = {
         const r = (theme.routines ?? []).find(r => r.id === id);
         if (r) {
           if (req.description !== undefined) r.description = req.description;
-          if (req.targetValue !== undefined) r.targetValue = req.targetValue;
-          if (req.targetType !== undefined) r.targetType = req.targetType;
-          if (req.unit !== undefined) r.unit = req.unit;
           if (req.clearRepeat) r.repeatPattern = undefined;
           if (req.repeatPattern) r.repeatPattern = req.repeatPattern;
           return;
@@ -1349,12 +1325,6 @@ export const mockAppBindings = {
       const result = findKeyResultParent(mockThemes, goalId);
       if (!result) throw new Error(`KeyResult ${goalId} not found`);
       result.objective.keyResults[result.index].currentValue = value;
-    } else if (goalId.includes('-R')) {
-      for (const theme of mockThemes) {
-        const r = (theme.routines ?? []).find(r => r.id === goalId);
-        if (r) { r.currentValue = value; return; }
-      }
-      throw new Error(`Routine ${goalId} not found`);
     } else {
       throw new Error(`RecordProgress not supported for goal type of ${goalId}`);
     }

@@ -71,10 +71,6 @@
   interface Routine {
     id: string;
     description: string;
-    currentValue: number;
-    targetValue: number;
-    targetType: string; // "at-or-above" | "at-or-below"
-    unit?: string;
     repeatPattern?: RepeatPattern;
   }
 
@@ -149,9 +145,6 @@
   // Routine state
   let addingRoutineToTheme = $state<string | null>(null);
   let newRoutineDescription = $state('');
-  let newRoutineTargetValue = $state(1);
-  let newRoutineTargetType = $state('at-or-above');
-  let newRoutineUnit = $state('');
   let newRoutineFrequency = $state('none');
   let newRoutineInterval = $state(1);
   let newRoutineWeekdays = $state<number[]>([]);
@@ -159,10 +152,6 @@
   let newRoutineStartDate = $state('');
   let editingRoutineId = $state<string | null>(null);
   let editRoutineDescription = $state('');
-  let editRoutineCurrentValue = $state(0);
-  let editRoutineTargetValue = $state(1);
-  let editRoutineTargetType = $state('at-or-above');
-  let editRoutineUnit = $state('');
   let editRoutineFrequency = $state('none');
   let editRoutineInterval = $state(1);
   let editRoutineWeekdays = $state<number[]>([]);
@@ -780,7 +769,7 @@
 
     try {
       const repeatPattern = buildRepeatPattern(newRoutineFrequency, newRoutineInterval, newRoutineWeekdays, newRoutineMonthDay, newRoutineStartDate);
-      const result = await getBindings().Establish({ parentId: themeId, goalType: 'routine', description: newRoutineDescription.trim(), targetValue: newRoutineTargetValue, targetType: newRoutineTargetType, unit: newRoutineUnit, repeatPattern });
+      const result = await getBindings().Establish({ parentId: themeId, goalType: 'routine', description: newRoutineDescription.trim(), repeatPattern });
       const created = result.routine!;
       const theme = themes.find(t => t.id === themeId);
       if (theme) {
@@ -790,9 +779,6 @@
       themes = themes;
       await verifyThemeState();
       newRoutineDescription = '';
-      newRoutineTargetValue = 1;
-      newRoutineTargetType = 'at-or-above';
-      newRoutineUnit = '';
       resetNewRoutineRepeat();
       addingRoutineToTheme = null;
     } catch (e) {
@@ -804,38 +790,18 @@
 
   async function updateRoutine(routineId: string) {
     try {
-      // Build repeat pattern or clear it
       const repeatPattern = buildRepeatPattern(editRoutineFrequency, editRoutineInterval, editRoutineWeekdays, editRoutineMonthDay, editRoutineStartDate);
       const clearRepeat = editRoutineFrequency === 'none';
-      // Revise for metadata changes
-      await getBindings().Revise({ goalId: routineId, description: editRoutineDescription, targetValue: editRoutineTargetValue, targetType: editRoutineTargetType, unit: editRoutineUnit, repeatPattern, clearRepeat });
-      // RecordProgress for currentValue change
-      await getBindings().RecordProgress(routineId, editRoutineCurrentValue);
+      await getBindings().Revise({ goalId: routineId, description: editRoutineDescription, repeatPattern, clearRepeat });
       for (const t of themes) {
         const r = (t.routines ?? []).find(r => r.id === routineId);
-        if (r) { r.description = editRoutineDescription; r.currentValue = editRoutineCurrentValue; r.targetValue = editRoutineTargetValue; r.targetType = editRoutineTargetType; r.unit = editRoutineUnit; r.repeatPattern = repeatPattern; break; }
+        if (r) { r.description = editRoutineDescription; r.repeatPattern = repeatPattern; break; }
       }
       themes = themes;
       await verifyThemeState();
       editingRoutineId = null;
     } catch (e) {
       console.error('Failed to update routine:', e);
-      error = extractError(e);
-      await loadThemes();
-    }
-  }
-
-  async function updateRoutineCurrentValue(routineId: string, currentValue: number, _routine: Routine) {
-    try {
-      await getBindings().RecordProgress(routineId, currentValue);
-      for (const t of themes) {
-        const r = (t.routines ?? []).find(r => r.id === routineId);
-        if (r) { r.currentValue = currentValue; break; }
-      }
-      themes = themes;
-      await verifyThemeState();
-    } catch (e) {
-      console.error('Failed to update routine current value:', e);
       error = extractError(e);
       await loadThemes();
     }
@@ -864,10 +830,6 @@
   function startEditRoutine(routine: Routine) {
     editingRoutineId = routine.id;
     editRoutineDescription = routine.description;
-    editRoutineCurrentValue = routine.currentValue;
-    editRoutineTargetValue = routine.targetValue;
-    editRoutineTargetType = routine.targetType;
-    editRoutineUnit = routine.unit ?? '';
     if (routine.repeatPattern) {
       editRoutineFrequency = routine.repeatPattern.frequency;
       editRoutineInterval = routine.repeatPattern.interval;
@@ -883,10 +845,6 @@
     }
   }
 
-  function isRoutineOnTrack(routine: Routine): boolean {
-    if (routine.targetType === 'at-or-below') return routine.currentValue <= routine.targetValue;
-    return routine.currentValue >= routine.targetValue;
-  }
 
   function formatRepeatPattern(p: RepeatPattern): string {
     const intervalLabel = p.interval > 1 ? `${p.interval} ` : '';
@@ -1125,16 +1083,16 @@
   }
 
   // Advisor methods
-  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}[]}> {
+  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; themeId?: string}}[]}> {
     const bindings = getBindings();
     const historyJSON = JSON.stringify(history.map(m => ({role: m.role === 'advisor' ? 'assistant' : m.role, content: m.content})));
     const result = await bindings.RequestAdvice(message, historyJSON, selectedIds ?? selectedOKRIds);
     // After getting advice, refresh themes to pick up any state changes
     await loadThemes();
-    return result as {text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}[]};
+    return result as {text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; themeId?: string}}[]};
   }
 
-  async function handleAcceptSuggestion(suggestion: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; targetValue: number; targetType: string; unit?: string; themeId?: string}}): Promise<void> {
+  async function handleAcceptSuggestion(suggestion: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; themeId?: string}}): Promise<void> {
     const bindings = getBindings();
     const suggestionJSON = JSON.stringify(suggestion);
     const parentContext = selectedOKRIds.length > 0 ? selectedOKRIds[0] : '';
@@ -1585,20 +1543,6 @@
                   onkeydown={(e) => { if (e.key === 'Enter') createRoutine(theme.id); if (e.key === 'Escape') { addingRoutineToTheme = null; newRoutineDescription = ''; } }}
                 />
                 <div class="routine-form-row">
-                  <label class="routine-field-label">Target
-                    <input type="number" class="routine-field-input" bind:value={newRoutineTargetValue} min="1" />
-                  </label>
-                  <label class="routine-field-label routine-field-fixed">Type
-                    <select class="routine-field-select" bind:value={newRoutineTargetType}>
-                      <option value="at-or-above">&ge; (at or above)</option>
-                      <option value="at-or-below">&le; (at or below)</option>
-                    </select>
-                  </label>
-                  <label class="routine-field-label">Unit
-                    <input type="text" class="routine-field-input" bind:value={newRoutineUnit} placeholder="e.g. kg, %" />
-                  </label>
-                </div>
-                <div class="routine-form-row">
                   <label class="routine-field-label routine-field-fixed">Repeat
                     <select class="routine-field-select" bind:value={newRoutineFrequency}>
                       <option value="none">None</option>
@@ -1652,7 +1596,7 @@
                 {/if}
                 <div class="routine-form-row">
                   <Button variant="primary" onclick={() => createRoutine(theme.id)}>Create</Button>
-                  <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; newRoutineTargetValue = 1; newRoutineTargetType = 'at-or-above'; newRoutineUnit = ''; resetNewRoutineRepeat(); }}>Cancel</Button>
+                  <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; resetNewRoutineRepeat(); }}>Cancel</Button>
                 </div>
               </div>
             {/if}
@@ -1663,23 +1607,6 @@
                   <div class="routine-edit-form">
                     <input type="text" class="inline-edit" bind:value={editRoutineDescription}
                       onkeydown={(e) => { if (e.key === 'Enter') updateRoutine(routine.id); if (e.key === 'Escape') cancelEdit(); }} />
-                    <div class="routine-form-row">
-                      <label class="routine-field-label">Current
-                        <input type="number" class="routine-field-input" bind:value={editRoutineCurrentValue} />
-                      </label>
-                      <label class="routine-field-label">Target
-                        <input type="number" class="routine-field-input" bind:value={editRoutineTargetValue} min="1" />
-                      </label>
-                      <label class="routine-field-label routine-field-fixed">Type
-                        <select class="routine-field-select" bind:value={editRoutineTargetType}>
-                          <option value="at-or-above">&ge; (at or above)</option>
-                          <option value="at-or-below">&le; (at or below)</option>
-                        </select>
-                      </label>
-                      <label class="routine-field-label">Unit
-                        <input type="text" class="routine-field-input" bind:value={editRoutineUnit} placeholder="e.g. kg, %" />
-                      </label>
-                    </div>
                     <div class="routine-form-row">
                       <label class="routine-field-label routine-field-fixed">Repeat
                         <select class="routine-field-select" bind:value={editRoutineFrequency}>
@@ -1744,7 +1671,7 @@
                       {#if progress}
                         <span class="routine-status-dot" class:on-track={progress.onTrack} class:off-track={!progress.onTrack}></span>
                       {:else}
-                        <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
+                        <span class="routine-status-dot on-track"></span>
                       {/if}
                       <span class="routine-description">{routine.description}</span>
                       <span class="routine-repeat-badge" title={formatRepeatPattern(routine.repeatPattern)}>{routine.repeatPattern.frequency}</span>
@@ -1757,22 +1684,9 @@
                         </span>
                       {/if}
                     {:else}
-                      <span class="routine-status-dot" class:on-track={isRoutineOnTrack(routine)} class:off-track={!isRoutineOnTrack(routine)}></span>
+                      <span class="routine-status-dot on-track"></span>
                       <span class="routine-description">{routine.description}</span>
-                      <span class="routine-values">
-                        <input
-                          type="number"
-                          class="routine-current-input"
-                          value={routine.currentValue}
-                          onchange={(e) => updateRoutineCurrentValue(routine.id, parseInt((e.target as HTMLInputElement).value) || 0, routine)}
-                          title="Current value"
-                        />
-                        <span class="routine-direction">{routine.targetType === 'at-or-below' ? '\u2264' : '\u2265'}</span>
-                        <span class="routine-target">{routine.targetValue}</span>
-                        {#if routine.unit}
-                          <span class="routine-unit">{routine.unit}</span>
-                        {/if}
-                      </span>
+                      <span class="routine-sporadic-badge">sporadic</span>
                     {/if}
                     <div class="item-actions">
                       <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
@@ -2784,41 +2698,13 @@
     color: var(--color-gray-700);
   }
 
-  .routine-values {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-    color: var(--color-gray-600);
-    flex-shrink: 0;
-  }
-
-  .routine-current-input {
-    width: 40px;
-    padding: 0 0.25rem;
-    border: 1px solid var(--color-gray-300);
+  .routine-sporadic-badge {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
     border-radius: 3px;
-    font-size: 0.75rem;
-    text-align: center;
-  }
-
-  .routine-current-input:focus {
-    outline: none;
-    border-color: var(--color-primary-500);
-  }
-
-  .routine-direction {
-    font-size: 0.875rem;
+    background: var(--color-gray-100);
     color: var(--color-gray-500);
-  }
-
-  .routine-target {
-    font-weight: 500;
-  }
-
-  .routine-unit {
-    font-size: 0.75rem;
-    color: var(--color-gray-400);
+    flex-shrink: 0;
   }
 
   .routine-form {

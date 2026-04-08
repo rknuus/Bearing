@@ -32,9 +32,6 @@
   interface RoutineData {
     id?: string;
     description: string;
-    targetValue: number;
-    targetType: string;
-    unit?: string;
     themeId?: string;
   }
 
@@ -152,12 +149,6 @@
     status = 'default';
     errorText = '';
   }
-
-  function formatTargetType(tt: string): string {
-    if (tt === 'at-or-above' || tt === 'at_least') return 'at least';
-    if (tt === 'at-or-below' || tt === 'at_most') return 'at most';
-    return tt;
-  }
 </script>
 
 <div
@@ -195,9 +186,6 @@
       </div>
     {:else if suggestion.type === 'routine' && suggestion.routineData}
       <MarkdownContent content={suggestion.routineData.description} restricted={true} />
-      <div class="routine-values">
-        {formatTargetType(suggestion.routineData.targetType)} {suggestion.routineData.targetValue}{#if suggestion.routineData.unit}&nbsp;{suggestion.routineData.unit}{/if}
-      </div>
     {/if}
   </div>
 
@@ -327,8 +315,7 @@
     flex-shrink: 0;
   }
 
-  .kr-values,
-  .routine-values {
+  .kr-values {
     font-size: 0.75rem;
     color: var(--color-gray-500);
     margin-top: var(--space-1);

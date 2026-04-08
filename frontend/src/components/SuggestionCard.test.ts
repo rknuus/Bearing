@@ -77,7 +77,7 @@ describe('SuggestionCard', () => {
     await renderCard(makeSuggestion({
       type: 'routine',
       action: 'create',
-      routineData: { description: 'Sleep 8 hours', targetValue: 8, targetType: 'at-or-above', unit: 'hours' },
+      routineData: { description: 'Sleep 8 hours' },
     }));
     const badge = container.querySelector('.type-badge');
     expect(badge?.textContent).toBe('Routine');
@@ -260,16 +260,12 @@ describe('SuggestionCard', () => {
     expect(values?.textContent).toContain('40');
   });
 
-  it('renders routine values with target type and unit', async () => {
+  it('renders routine description', async () => {
     await renderCard(makeSuggestion({
       type: 'routine',
       action: 'create',
-      routineData: { description: 'Sleep', targetValue: 8, targetType: 'at-or-above', unit: 'hours', themeId: 'H' },
+      routineData: { description: 'Sleep', themeId: 'H' },
     }));
-    const values = container.querySelector('.routine-values');
-    expect(values).not.toBeNull();
-    expect(values?.textContent).toContain('at least');
-    expect(values?.textContent).toContain('8');
-    expect(values?.textContent).toContain('hours');
+    expect(container.textContent).toContain('Sleep');
   });
 });
