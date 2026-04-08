@@ -1,1 +1,1 @@
-export const FEATURE_ROUTINES_ENABLED = false;
+export const FEATURE_ROUTINES_ENABLED = true;
