@@ -8,6 +8,11 @@ APP_NAME := bearing
 BIN_DIR := build/bin
 OUTPUT := $(BIN_DIR)/$(APP_NAME)
 
+# Wails CLI is project-pinned via the `tool` directive in go.mod, so the
+# version always matches the runtime in `require`. First invocation compiles
+# the CLI from source (~30-60s); subsequent runs are cached by `go tool`.
+WAILS := go tool github.com/wailsapp/wails/v2/cmd/wails
+
 # Version can be set via environment variable: make build VERSION=1.0.0
 VERSION ?= dev
 
@@ -40,7 +45,7 @@ generate: frontend-install ## Generate Wails bindings (required after cloning or
 		echo "Building frontend first..."; \
 		$(MAKE) --no-print-directory -C frontend build-dist; \
 		echo "Generating Wails bindings..."; \
-		~/go/bin/wails generate module; \
+		$(WAILS) generate module; \
 		echo "Bindings generated at frontend/src/lib/wails/"; \
 	else \
 		echo "Wails bindings already exist, skipping generation."; \
@@ -51,7 +56,7 @@ dev: generate frontend-lint ## Run Wails app in development mode with hot reload
 	@echo "Starting Wails development mode..."
 	@echo "Vite dev server with HMR enabled"
 	@echo "Native app window will open"
-	~/go/bin/wails dev
+	$(WAILS) dev
 
 .PHONY: frontend-dev
 frontend-dev: ## Run Vite dev server only (for browser testing with mock bindings)
@@ -73,7 +78,7 @@ build: generate frontend-lint build/appicon.png ## Build Wails desktop applicati
 	@echo "Building $(APP_NAME)..."
 	@$(MAKE) --no-print-directory -C frontend check
 	@echo "Building Wails application..."
-	~/go/bin/wails build -ldflags "-X main.version=$(VERSION)"
+	$(WAILS) build -ldflags "-X main.version=$(VERSION)"
 	@echo "Build complete: $(OUTPUT)"
 
 .PHONY: build-go

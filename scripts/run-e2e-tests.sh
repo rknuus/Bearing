@@ -37,7 +37,7 @@ fi
 # Start Wails dev server in background
 echo "Starting Wails dev server on port $E2E_PORT..."
 WAILS_LOG="$BEARING_E2E_DIR/wails-dev.log"
-BEARING_DATA_DIR="$BEARING_E2E_DIR" VITE_PORT="$E2E_VITE_PORT" ~/go/bin/wails dev -devserver "localhost:$E2E_PORT" &>"$WAILS_LOG" &
+BEARING_DATA_DIR="$BEARING_E2E_DIR" VITE_PORT="$E2E_VITE_PORT" go tool github.com/wailsapp/wails/v2/cmd/wails dev -devserver "localhost:$E2E_PORT" &>"$WAILS_LOG" &
 WAILS_PID=$!
 
 # Wait for server to be ready
