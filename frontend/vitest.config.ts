@@ -4,8 +4,9 @@ import { svelte } from '@sveltejs/vite-plugin-svelte';
 export default defineConfig({
   plugins: [
     svelte({
-      hot: !process.env.VITEST,
-      // Disable vitePreprocess for tests to avoid CSS preprocessing issues
+      // Disable vitePreprocess for tests to avoid CSS preprocessing issues.
+      // HMR is automatically off in VITEST runs; the old `hot` option was
+      // removed in @sveltejs/vite-plugin-svelte v7 and is no longer valid.
       configFile: false
     })
   ],
