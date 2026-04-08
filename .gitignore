@@ -1,6 +1,9 @@
 # Local settings
 .claude/settings.local.json
 
+# CCPM agent worktrees (created by parallel agent execution; never check in)
+.claude/worktrees/
+
 # Build outputs
 build/
 frontend/dist/
