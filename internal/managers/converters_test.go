@@ -5,6 +5,7 @@ import (
 
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/progress_engine"
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 func TestUnit_ToManagerTask_RoundTrip(t *testing.T) {
@@ -15,9 +16,9 @@ func TestUnit_ToManagerTask_RoundTrip(t *testing.T) {
 		ThemeID:       "T",
 		Priority:      "important-urgent",
 		Tags:          []string{"tag1", "tag2"},
-		PromotionDate: "2026-04-01",
-		CreatedAt:     "2026-03-20T10:00:00Z",
-		UpdatedAt:     "2026-03-20T12:00:00Z",
+		PromotionDate: utilities.MustParseCalendarDate("2026-04-01"),
+		CreatedAt:     utilities.MustParseTimestamp("2026-03-20T10:00:00Z"),
+		UpdatedAt:     utilities.MustParseTimestamp("2026-03-20T12:00:00Z"),
 	}
 	mTask := toManagerTask(original)
 	result := toAccessTask(mTask)
@@ -70,7 +71,7 @@ func TestUnit_ToManagerRoutine_RoundTripWithRepeatPattern(t *testing.T) {
 			Frequency: "weekly",
 			Interval:  1,
 			Weekdays:  []int{0, 2, 4},
-			StartDate: "2026-04-01",
+			StartDate: utilities.MustParseCalendarDate("2026-04-01"),
 		},
 	}
 	mRoutine := toManagerRoutine(original)
@@ -87,7 +88,7 @@ func TestUnit_ToManagerObjective_RoundTrip(t *testing.T) {
 		Tags:          []string{"health"},
 		ClosingStatus: "achieved",
 		ClosingNotes:  "Done well",
-		ClosedAt:      "2026-03-15",
+		ClosedAt:      utilities.MustParseTimestamp("2026-03-15T00:00:00Z"),
 		KeyResults: []access.KeyResult{
 			{ID: "kr-1", ParentID: "obj-1", Description: "Run 100 miles", TargetValue: 100, CurrentValue: 50},
 		},
@@ -149,7 +150,7 @@ func TestUnit_ToManagerLifeTheme_NoRoutines(t *testing.T) {
 
 func TestUnit_ToManagerDayFocus_RoundTrip(t *testing.T) {
 	original := access.DayFocus{
-		Date:     "2026-03-20",
+		Date:     utilities.MustParseCalendarDate("2026-03-20"),
 		ThemeIDs: []string{"T1", "T2"},
 		Notes:    "Focus day",
 		Text:     "Some text",
@@ -163,11 +164,11 @@ func TestUnit_ToManagerDayFocus_RoundTrip(t *testing.T) {
 
 func TestUnit_ToManagerDayFocus_EmptySlices(t *testing.T) {
 	original := access.DayFocus{
-		Date: "2026-01-01",
+		Date: utilities.MustParseCalendarDate("2026-01-01"),
 	}
 	mDF := toManagerDayFocus(original)
 	result := toAccessDayFocus(mDF)
-	if result.Date != original.Date {
+	if result.Date.String() != original.Date.String() {
 		t.Errorf("date: got %q, want %q", result.Date, original.Date)
 	}
 }
@@ -229,7 +230,7 @@ func TestUnit_ToManagerPersonalVision(t *testing.T) {
 	original := &access.PersonalVision{
 		Mission:   "Make the world better",
 		Vision:    "A peaceful world",
-		UpdatedAt: "2026-03-20T10:00:00Z",
+		UpdatedAt: utilities.MustParseTimestamp("2026-03-20T10:00:00Z"),
 	}
 	result := toManagerPersonalVision(original)
 	if result.Mission != original.Mission {
@@ -238,7 +239,7 @@ func TestUnit_ToManagerPersonalVision(t *testing.T) {
 	if result.Vision != original.Vision {
 		t.Errorf("vision: got %q, want %q", result.Vision, original.Vision)
 	}
-	if result.UpdatedAt != original.UpdatedAt {
+	if result.UpdatedAt.String() != original.UpdatedAt.String() {
 		t.Errorf("updatedAt: got %q, want %q", result.UpdatedAt, original.UpdatedAt)
 	}
 }
@@ -315,13 +316,13 @@ func assertTaskEqual(t *testing.T, want, got access.Task) {
 		t.Errorf("Priority: got %q, want %q", got.Priority, want.Priority)
 	}
 	assertStringSlice(t, "Tags", want.Tags, got.Tags)
-	if got.PromotionDate != want.PromotionDate {
+	if got.PromotionDate.String() != want.PromotionDate.String() {
 		t.Errorf("PromotionDate: got %q, want %q", got.PromotionDate, want.PromotionDate)
 	}
-	if got.CreatedAt != want.CreatedAt {
+	if got.CreatedAt.String() != want.CreatedAt.String() {
 		t.Errorf("CreatedAt: got %q, want %q", got.CreatedAt, want.CreatedAt)
 	}
-	if got.UpdatedAt != want.UpdatedAt {
+	if got.UpdatedAt.String() != want.UpdatedAt.String() {
 		t.Errorf("UpdatedAt: got %q, want %q", got.UpdatedAt, want.UpdatedAt)
 	}
 }
@@ -371,7 +372,7 @@ func assertRoutineEqual(t *testing.T, want, got access.Routine) {
 		if got.RepeatPattern.Interval != want.RepeatPattern.Interval {
 			t.Errorf("RepeatPattern.Interval: got %d, want %d", got.RepeatPattern.Interval, want.RepeatPattern.Interval)
 		}
-		if got.RepeatPattern.StartDate != want.RepeatPattern.StartDate {
+		if got.RepeatPattern.StartDate.String() != want.RepeatPattern.StartDate.String() {
 			t.Errorf("RepeatPattern.StartDate: got %q, want %q", got.RepeatPattern.StartDate, want.RepeatPattern.StartDate)
 		}
 	}
@@ -398,7 +399,7 @@ func assertObjectiveEqual(t *testing.T, want, got access.Objective) {
 	if got.ClosingNotes != want.ClosingNotes {
 		t.Errorf("ClosingNotes: got %q, want %q", got.ClosingNotes, want.ClosingNotes)
 	}
-	if got.ClosedAt != want.ClosedAt {
+	if got.ClosedAt.String() != want.ClosedAt.String() {
 		t.Errorf("ClosedAt: got %q, want %q", got.ClosedAt, want.ClosedAt)
 	}
 	if len(got.KeyResults) != len(want.KeyResults) {
@@ -442,7 +443,7 @@ func assertLifeThemeEqual(t *testing.T, want, got access.LifeTheme) {
 
 func assertDayFocusEqual(t *testing.T, want, got access.DayFocus) {
 	t.Helper()
-	if got.Date != want.Date {
+	if got.Date.String() != want.Date.String() {
 		t.Errorf("Date: got %q, want %q", got.Date, want.Date)
 	}
 	assertStringSlice(t, "ThemeIDs", want.ThemeIDs, got.ThemeIDs)

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/rkn/bearing/internal/access"
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 // mockThemeAccess implements access.IThemeAccess for testing.
@@ -392,7 +393,7 @@ func (m *mockCalendarAccess) GetDayFocus(date string) (*access.DayFocus, error) 
 }
 
 func (m *mockCalendarAccess) SaveDayFocus(day access.DayFocus) error {
-	m.days[day.Date] = day
+	m.days[day.Date.String()] = day
 	return nil
 }
 
@@ -1866,7 +1867,7 @@ func TestUpdateRoutine(t *testing.T) {
 				Frequency: "weekly",
 				Interval:  1,
 				Weekdays:  []int{0},
-				StartDate: "2026-04-12",
+				StartDate: utilities.MustParseCalendarDate("2026-04-12"),
 			},
 		})
 		if err != nil {
@@ -1897,7 +1898,7 @@ func TestUpdateRoutine(t *testing.T) {
 			RepeatPattern: &RepeatPattern{
 				Frequency: "daily",
 				Interval:  1,
-				StartDate: "2026-04-12",
+				StartDate: utilities.MustParseCalendarDate("2026-04-12"),
 			},
 		})
 
@@ -1927,7 +1928,7 @@ func TestUpdateRoutine(t *testing.T) {
 				Frequency: "weekly",
 				Interval:  1,
 				Weekdays:  []int{0, 3},
-				StartDate: "2026-04-12",
+				StartDate: utilities.MustParseCalendarDate("2026-04-12"),
 			},
 		})
 		if err != nil {
@@ -2104,7 +2105,7 @@ func TestCreateTask(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if task.PromotionDate != "2026-02-28" {
+		if task.PromotionDate.String() != "2026-02-28" {
 			t.Errorf("expected promotionDate '2026-02-28', got '%s'", task.PromotionDate)
 		}
 	})
@@ -2302,10 +2303,10 @@ func TestGetTasks_OrderWithInterleavedZones(t *testing.T) {
 		// two halves and may never directly compare A(iu) with D(iu) if cross-zone
 		// comparisons return "equal".
 		mockAccess.tasks["todo"] = []access.Task{
-			{ID: "T-A", Title: "A", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
-			{ID: "T-B", Title: "B", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
-			{ID: "T-C", Title: "C", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: "2026-01-03T00:00:00Z"},
-			{ID: "T-D", Title: "D", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-04T00:00:00Z"},
+			{ID: "T-A", Title: "A", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-01T00:00:00Z")},
+			{ID: "T-B", Title: "B", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-02T00:00:00Z")},
+			{ID: "T-C", Title: "C", ThemeID: "T", Priority: "important-not-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-03T00:00:00Z")},
+			{ID: "T-D", Title: "D", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-04T00:00:00Z")},
 		}
 
 		// Persisted order says T-D should come before T-A
@@ -3303,7 +3304,7 @@ func TestPersonalVision(t *testing.T) {
 		if vision.Vision != "Be the best version of myself" {
 			t.Errorf("expected vision 'Be the best version of myself', got %q", vision.Vision)
 		}
-		if vision.UpdatedAt == "" {
+		if vision.UpdatedAt.IsZero() {
 			t.Error("expected UpdatedAt to be set")
 		}
 	})
@@ -3333,7 +3334,7 @@ func TestCloseObjective(t *testing.T) {
 		if found.ClosingNotes != "Great progress!" {
 			t.Errorf("expected closingNotes 'Great progress!', got '%s'", found.ClosingNotes)
 		}
-		if found.ClosedAt == "" {
+		if found.ClosedAt.IsZero() {
 			t.Error("expected closedAt to be set")
 		}
 
@@ -3449,7 +3450,7 @@ func TestReopenObjective(t *testing.T) {
 		if found.ClosingNotes != "" {
 			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
 		}
-		if found.ClosedAt != "" {
+		if !found.ClosedAt.IsZero() {
 			t.Errorf("expected empty closedAt, got '%s'", found.ClosedAt)
 		}
 
@@ -3548,7 +3549,7 @@ func TestBackwardCompatClosingStatus(t *testing.T) {
 		if found.ClosingNotes != "" {
 			t.Errorf("expected empty closingNotes, got '%s'", found.ClosingNotes)
 		}
-		if found.ClosedAt != "" {
+		if !found.ClosedAt.IsZero() {
 			t.Errorf("expected empty closedAt, got '%s'", found.ClosedAt)
 		}
 	})
@@ -3814,9 +3815,9 @@ func TestUnit_GetTasks_SortsArchivedByArchivedOrder(t *testing.T) {
 
 	// Directly set up archived tasks with specific order
 	mockAccess.tasks["archived"] = []access.Task{
-		{ID: "A1", Title: "Alpha", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
-		{ID: "A2", Title: "Beta", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
-		{ID: "A3", Title: "Gamma", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-03T00:00:00Z"},
+		{ID: "A1", Title: "Alpha", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-01T00:00:00Z")},
+		{ID: "A2", Title: "Beta", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-02T00:00:00Z")},
+		{ID: "A3", Title: "Gamma", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-03T00:00:00Z")},
 	}
 	// Archived order: A3 first, then A1, then A2 (not matching CreatedAt order)
 	mockAccess.archivedOrder = []string{"A3", "A1", "A2"}
@@ -3852,10 +3853,10 @@ func TestUnit_GetTasks_ArchivedFallbackCreatedAtDescending(t *testing.T) {
 
 	// Set up archived tasks: some in archived order, some not
 	mockAccess.tasks["archived"] = []access.Task{
-		{ID: "A1", Title: "Ordered 1", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-01T00:00:00Z"},
-		{ID: "A2", Title: "Ordered 2", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-02T00:00:00Z"},
-		{ID: "U1", Title: "Unordered Old", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-10T00:00:00Z"},
-		{ID: "U2", Title: "Unordered New", ThemeID: "T", Priority: "important-urgent", CreatedAt: "2026-01-20T00:00:00Z"},
+		{ID: "A1", Title: "Ordered 1", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-01T00:00:00Z")},
+		{ID: "A2", Title: "Ordered 2", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-02T00:00:00Z")},
+		{ID: "U1", Title: "Unordered Old", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-10T00:00:00Z")},
+		{ID: "U2", Title: "Unordered New", ThemeID: "T", Priority: "important-urgent", CreatedAt: utilities.MustParseTimestamp("2026-01-20T00:00:00Z")},
 	}
 	// Only A2 and A1 are in archived order (in that order); U1 and U2 are not
 	mockAccess.archivedOrder = []string{"A2", "A1"}
@@ -3956,7 +3957,7 @@ func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOnTimeRoutine(t *testing.T)
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
 	}
 	infos := []RoutineTaskInfo{
@@ -3990,7 +3991,7 @@ func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOverdueRoutine(t *testing.T
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
 	}
 	infos := []RoutineTaskInfo{
@@ -4021,7 +4022,7 @@ func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInTodoOnUncheck(t *testing.T) 
 
 	// Uncheck R1: previousChecks had R1, current has none
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: nil,
 	}
 	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
@@ -4043,7 +4044,7 @@ func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInDoingOnUncheck(t *testing.T)
 	}
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: nil,
 	}
 	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
@@ -4064,7 +4065,7 @@ func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInDoneOnUncheck(t *testing.T
 	}
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: nil,
 	}
 	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
@@ -4085,7 +4086,7 @@ func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInArchivedOnUncheck(t *testi
 	}
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: nil,
 	}
 	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
@@ -4102,7 +4103,7 @@ func TestUnit_SaveDayFocusWithRoutines_Idempotent(t *testing.T) {
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
 	}
 	infos := []RoutineTaskInfo{
@@ -4132,7 +4133,7 @@ func TestUnit_SaveDayFocusWithRoutines_AddsRoutineTagWhenChecked(t *testing.T) {
 	manager, _, _, calMock := newMockManagerWithCalendar()
 
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
 		Tags:          nil,
 	}
@@ -4159,7 +4160,7 @@ func TestUnit_SaveDayFocusWithRoutines_RemovesRoutineTagWhenAllUnchecked(t *test
 
 	// Start with one routine checked and "Routine" tag
 	day := DayFocus{
-		Date:          "2026-04-10",
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: nil,
 		Tags:          []string{"Routine"},
 	}

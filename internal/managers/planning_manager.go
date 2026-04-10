@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/progress_engine"
 	"github.com/rkn/bearing/internal/engines/rule_engine"
 	"github.com/rkn/bearing/internal/engines/schedule_engine"
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 // TaskWithStatus represents a task with its current status.
@@ -27,12 +27,12 @@ type TaskWithStatus struct {
 
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
-	CurrentView                  string   `json:"currentView"`
-	CurrentItem                  string   `json:"currentItem"`
-	FilterThemeID                string   `json:"filterThemeId"`
-	FilterThemeIDs               []string `json:"filterThemeIds,omitempty"`
-	LastAccessed                 string   `json:"lastAccessed"`
-	ShowCompleted                bool     `json:"showCompleted,omitempty"`
+	CurrentView                  string              `json:"currentView"`
+	CurrentItem                  string              `json:"currentItem"`
+	FilterThemeID                string              `json:"filterThemeId"`
+	FilterThemeIDs               []string            `json:"filterThemeIds,omitempty"`
+	LastAccessed                 utilities.Timestamp  `json:"lastAccessed"`
+	ShowCompleted                bool                `json:"showCompleted,omitempty"`
 	ShowArchived                 bool     `json:"showArchived,omitempty"`
 	ShowArchivedTasks            bool     `json:"showArchivedTasks,omitempty"`
 	ExpandedOkrIds               []string `json:"expandedOkrIds,omitempty"`
@@ -161,15 +161,15 @@ type ThemeProgress struct {
 
 // Task represents a task in the Manager layer's public interface.
 type Task struct {
-	ID            string   `json:"id"`
-	Title         string   `json:"title"`
-	Description   string   `json:"description,omitempty"`
-	ThemeID       string   `json:"themeId"`
-	Priority      string   `json:"priority"`
-	Tags          []string `json:"tags,omitempty"`
-	PromotionDate string   `json:"promotionDate,omitempty"`
-	CreatedAt     string   `json:"createdAt,omitempty"`
-	UpdatedAt     string   `json:"updatedAt,omitempty"`
+	ID            string                `json:"id"`
+	Title         string                `json:"title"`
+	Description   string                `json:"description,omitempty"`
+	ThemeID       string                `json:"themeId"`
+	Priority      string                `json:"priority"`
+	Tags          []string              `json:"tags,omitempty"`
+	PromotionDate utilities.CalendarDate `json:"promotionDate,omitzero"`
+	CreatedAt     utilities.Timestamp    `json:"createdAt,omitzero"`
+	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitzero"`
 }
 
 // KeyResult represents a measurable outcome in the Manager layer's public interface.
@@ -186,31 +186,31 @@ type KeyResult struct {
 
 // Objective represents a medium-term goal in the Manager layer's public interface.
 type Objective struct {
-	ID            string      `json:"id"`
-	ParentID      string      `json:"parentId"`
-	Title         string      `json:"title"`
-	Status        string      `json:"status,omitempty"`
-	Tags          []string    `json:"tags,omitempty"`
-	ClosingStatus string      `json:"closingStatus,omitempty"`
-	ClosingNotes  string      `json:"closingNotes,omitempty"`
-	ClosedAt      string      `json:"closedAt,omitempty"`
-	KeyResults    []KeyResult `json:"keyResults"`
-	Objectives    []Objective `json:"objectives,omitempty"`
+	ID            string              `json:"id"`
+	ParentID      string              `json:"parentId"`
+	Title         string              `json:"title"`
+	Status        string              `json:"status,omitempty"`
+	Tags          []string            `json:"tags,omitempty"`
+	ClosingStatus string              `json:"closingStatus,omitempty"`
+	ClosingNotes  string              `json:"closingNotes,omitempty"`
+	ClosedAt      utilities.Timestamp `json:"closedAt,omitzero"`
+	KeyResults    []KeyResult         `json:"keyResults"`
+	Objectives    []Objective         `json:"objectives,omitempty"`
 }
 
 // RepeatPattern defines a recurrence schedule for a routine in the Manager layer.
 type RepeatPattern struct {
-	Frequency  string `json:"frequency"`
-	Interval   int    `json:"interval"`
-	Weekdays   []int  `json:"weekdays,omitempty"`
-	DayOfMonth int    `json:"dayOfMonth,omitempty"`
-	StartDate  string `json:"startDate"`
+	Frequency  string                `json:"frequency"`
+	Interval   int                   `json:"interval"`
+	Weekdays   []int                 `json:"weekdays,omitempty"`
+	DayOfMonth int                   `json:"dayOfMonth,omitempty"`
+	StartDate  utilities.CalendarDate `json:"startDate"`
 }
 
 // ScheduleException represents a single date override in a routine's schedule in the Manager layer.
 type ScheduleException struct {
-	OriginalDate string `json:"originalDate"`
-	NewDate      string `json:"newDate"`
+	OriginalDate utilities.CalendarDate `json:"originalDate"`
+	NewDate      utilities.CalendarDate `json:"newDate"`
 }
 
 // Routine represents an ongoing activity tracked per occurrence in the Manager layer's public interface.
@@ -233,13 +233,13 @@ type LifeTheme struct {
 
 // DayFocus represents a daily focus entry in the Manager layer's public interface.
 type DayFocus struct {
-	Date          string   `json:"date"`
-	ThemeIDs      []string `json:"themeIds,omitempty"`
-	Notes         string   `json:"notes"`
-	Text          string   `json:"text"`
-	OkrIDs        []string `json:"okrIds,omitempty"`
-	Tags          []string `json:"tags,omitempty"`
-	RoutineChecks []string `json:"routineChecks,omitempty"`
+	Date          utilities.CalendarDate `json:"date"`
+	ThemeIDs      []string               `json:"themeIds,omitempty"`
+	Notes         string                 `json:"notes"`
+	Text          string                 `json:"text"`
+	OkrIDs        []string               `json:"okrIds,omitempty"`
+	Tags          []string               `json:"tags,omitempty"`
+	RoutineChecks []string               `json:"routineChecks,omitempty"`
 }
 
 // SectionDefinition defines a priority section within a column.
@@ -265,9 +265,9 @@ type BoardConfiguration struct {
 
 // PersonalVision stores the user's personal mission and vision statements.
 type PersonalVision struct {
-	Mission   string `json:"mission"`
-	Vision    string `json:"vision"`
-	UpdatedAt string `json:"updatedAt,omitempty"`
+	Mission   string              `json:"mission"`
+	Vision    string              `json:"vision"`
+	UpdatedAt utilities.Timestamp `json:"updatedAt,omitzero"`
 }
 
 // RoutineOccurrence represents a routine due on a specific date.
@@ -1027,7 +1027,7 @@ func (m *PlanningManager) CloseObjective(objectiveId, closingStatus, closingNote
 			obj.Status = string(access.OKRStatusCompleted)
 			obj.ClosingStatus = closingStatus
 			obj.ClosingNotes = closingNotes
-			obj.ClosedAt = time.Now().UTC().Format(time.RFC3339)
+			obj.ClosedAt = utilities.Now()
 
 			// Close all active direct child KRs
 			for j := range obj.KeyResults {
@@ -1068,7 +1068,7 @@ func (m *PlanningManager) ReopenObjective(objectiveId string) error {
 			obj.Status = ""
 			obj.ClosingStatus = ""
 			obj.ClosingNotes = ""
-			obj.ClosedAt = ""
+			obj.ClosedAt = utilities.Timestamp{}
 
 			// Reopen all completed direct child KRs
 			for j := range obj.KeyResults {
@@ -1105,7 +1105,7 @@ func (m *PlanningManager) GetYearFocus(year int) ([]DayFocus, error) {
 
 // SaveDayFocus saves or updates a day focus entry.
 func (m *PlanningManager) SaveDayFocus(day DayFocus) error {
-	if day.Date == "" {
+	if day.Date.IsZero() {
 		return fmt.Errorf("date cannot be empty")
 	}
 	if err := m.calendarAccess.SaveDayFocus(toAccessDayFocus(day)); err != nil {
@@ -1123,7 +1123,7 @@ func (m *PlanningManager) SaveDayFocus(day DayFocus) error {
 //
 // It also auto-manages the "Routine" day tag based on whether any routines are checked.
 func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []RoutineTaskInfo, previousChecks []string) error {
-	if day.Date == "" {
+	if day.Date.IsZero() {
 		return fmt.Errorf("date cannot be empty")
 	}
 
@@ -1260,7 +1260,7 @@ func (m *PlanningManager) ClearDayFocus(date string) error {
 
 	// Save with nil theme IDs to clear it
 	cleared := access.DayFocus{
-		Date:     date,
+		Date:     existing.Date,
 		ThemeIDs: nil,
 		Notes:    existing.Notes, // Preserve notes
 		Text:     existing.Text,  // Preserve text
@@ -1400,7 +1400,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 				return false
 			}
 			// Both unknown: sort by CreatedAt descending (newest first)
-			return a.CreatedAt > b.CreatedAt
+			return a.CreatedAt.Time().After(b.CreatedAt.Time())
 		}
 
 		// Active tasks: sort by task_order.json position
@@ -1416,7 +1416,7 @@ func (m *PlanningManager) GetTasks() ([]TaskWithStatus, error) {
 			return false
 		}
 		// Both unknown: sort by CreatedAt
-		return a.CreatedAt < b.CreatedAt
+		return a.CreatedAt.Time().Before(b.CreatedAt.Time())
 	})
 
 	return allTasks, nil
@@ -1431,11 +1431,11 @@ func (m *PlanningManager) buildTaskInfoList() ([]rule_engine.TaskInfo, error) {
 	infos := make([]rule_engine.TaskInfo, len(allTasks))
 	for i, t := range allTasks {
 		infos[i] = rule_engine.TaskInfo{
-			ID:           t.ID,
-			Title:        t.Title,
+			ID:        t.ID,
+			Title:     t.Title,
 			Status:    t.Status,
 			Priority:  t.Priority,
-			CreatedAt: t.CreatedAt,
+			CreatedAt: t.CreatedAt.String(),
 		}
 	}
 	return infos, nil
@@ -1465,8 +1465,11 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 		return nil, fmt.Errorf("invalid priority: %s", priority)
 	}
 
+	var promDate utilities.CalendarDate
 	if promotionDate != "" {
-		if _, err := time.Parse("2006-01-02", promotionDate); err != nil {
+		var err error
+		promDate, err = utilities.ParseCalendarDate(promotionDate)
+		if err != nil {
 			return nil, fmt.Errorf("invalid promotionDate format: %s", promotionDate)
 		}
 	}
@@ -1486,7 +1489,7 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 		Priority:      priority,
 		Description:   description,
 		Tags:          tagSlice,
-		PromotionDate: promotionDate,
+		PromotionDate: promDate,
 	}
 
 	// Evaluate rules before creating
@@ -1572,11 +1575,11 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	taskInfos := make([]rule_engine.TaskInfo, len(allTasks))
 	for i, t := range allTasks {
 		taskInfos[i] = rule_engine.TaskInfo{
-			ID:           t.ID,
-			Title:        t.Title,
+			ID:        t.ID,
+			Title:     t.Title,
 			Status:    t.Status,
 			Priority:  t.Priority,
-			CreatedAt: t.CreatedAt,
+			CreatedAt: t.CreatedAt.String(),
 		}
 	}
 
@@ -1714,8 +1717,7 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		return nil, fmt.Errorf("failed to get tasks: %w", err)
 	}
 
-	now := time.Now()
-	today := now.Format("2006-01-02")
+	today := utilities.Today()
 	var promoted []PromotedTask
 	config, _ := m.getAccessBoardConfig()
 	todoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
@@ -1729,13 +1731,13 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	orderChanged := false
 
 	for _, t := range allTasks {
-		if t.PromotionDate == "" {
+		if t.PromotionDate.IsZero() {
 			continue
 		}
 		if t.Priority != string(access.PriorityImportantNotUrgent) {
 			continue
 		}
-		if t.PromotionDate > today {
+		if t.PromotionDate.Time().After(today.Time()) {
 			continue
 		}
 
@@ -1743,7 +1745,7 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		updatedTask := t.Task
 		oldPriority := updatedTask.Priority
 		updatedTask.Priority = string(access.PriorityImportantUrgent)
-		updatedTask.PromotionDate = "" // Clear after promotion
+		updatedTask.PromotionDate = utilities.CalendarDate{} // Clear after promotion
 
 		accessTask := toAccessTask(updatedTask)
 		if err := m.taskAccess.WriteTask(accessTask); err != nil {
@@ -2058,7 +2060,7 @@ func toEngineTaskData(t Task) *rule_engine.TaskData {
 		Title:       t.Title,
 		Description: t.Description,
 		Priority:    t.Priority,
-		CreatedAt:   t.CreatedAt,
+		CreatedAt:   t.CreatedAt.String(),
 	}
 }
 
@@ -2430,7 +2432,7 @@ func (m *PlanningManager) SavePersonalVision(mission, vision string) error {
 	v := &access.PersonalVision{
 		Mission:   mission,
 		Vision:    vision,
-		UpdatedAt: time.Now().UTC().Format(time.RFC3339),
+		UpdatedAt: utilities.Now(),
 	}
 	return m.visionAccess.SaveVision(v)
 }
@@ -2500,7 +2502,7 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 			for _, rid := range entry.RoutineChecks {
 				set[rid] = true
 			}
-			checkedByDate[entry.Date] = set
+			checkedByDate[entry.Date.String()] = set
 		}
 	}
 
@@ -2582,9 +2584,17 @@ func (m *PlanningManager) RescheduleRoutineOccurrence(routineID, originalDate, n
 	for _, theme := range themes {
 		for i, routine := range theme.Routines {
 			if routine.ID == routineID {
+				origDate, err := utilities.ParseCalendarDate(originalDate)
+				if err != nil {
+					return fmt.Errorf("RescheduleRoutineOccurrence: invalid originalDate: %w", err)
+				}
+				newDt, err := utilities.ParseCalendarDate(newDate)
+				if err != nil {
+					return fmt.Errorf("RescheduleRoutineOccurrence: invalid newDate: %w", err)
+				}
 				theme.Routines[i].Exceptions = append(theme.Routines[i].Exceptions, access.ScheduleException{
-					OriginalDate: originalDate,
-					NewDate:      newDate,
+					OriginalDate: origDate,
+					NewDate:      newDt,
 				})
 				if err := m.themeAccess.SaveTheme(theme); err != nil {
 					return fmt.Errorf("RescheduleRoutineOccurrence: failed to save theme: %w", err)
@@ -2633,9 +2643,10 @@ func (m *PlanningManager) GetRoutineProgress(routineID string) (*RoutinePeriodPr
 	enginePattern := toEngineRepeatPattern(routine.RepeatPattern)
 	engineExceptions := toEngineExceptions(routine.Exceptions)
 
-	today := time.Now().Format("2006-01-02")
+	todayDate := utilities.Today()
+	today := todayDate.String()
 
-	year := time.Now().Year()
+	year := todayDate.Time().Year()
 	yearEntries, err := m.calendarAccess.GetYearFocus(year)
 	if err != nil {
 		return nil, fmt.Errorf("GetRoutineProgress: failed to get year focus: %w", err)
@@ -2645,7 +2656,7 @@ func (m *PlanningManager) GetRoutineProgress(routineID string) (*RoutinePeriodPr
 	for _, entry := range yearEntries {
 		for _, rid := range entry.RoutineChecks {
 			if rid == routineID {
-				completedDates = append(completedDates, entry.Date)
+				completedDates = append(completedDates, entry.Date.String())
 				break
 			}
 		}

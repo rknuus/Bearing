@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 func setupTestUIStateAccess(t *testing.T) (*UIStateAccess, string, func()) {
@@ -56,7 +58,7 @@ func TestUnit_LoadNavigationContext_ReturnsSavedContext(t *testing.T) {
 		CurrentItem:                  "task-42",
 		FilterThemeID:                "THM",
 		FilterThemeIDs:               []string{"THM", "WRK"},
-		LastAccessed:                 "2026-03-21T10:00:00Z",
+		LastAccessed:                 utilities.MustParseTimestamp("2026-03-21T10:00:00Z"),
 		ShowCompleted:                true,
 		ShowArchived:                 false,
 		ShowArchivedTasks:            true,
@@ -95,7 +97,7 @@ func TestUnit_LoadNavigationContext_ReturnsSavedContext(t *testing.T) {
 	if len(loaded.FilterThemeIDs) != len(saved.FilterThemeIDs) {
 		t.Errorf("FilterThemeIDs length: expected %d, got %d", len(saved.FilterThemeIDs), len(loaded.FilterThemeIDs))
 	}
-	if loaded.LastAccessed != saved.LastAccessed {
+	if loaded.LastAccessed.String() != saved.LastAccessed.String() {
 		t.Errorf("LastAccessed: expected %q, got %q", saved.LastAccessed, loaded.LastAccessed)
 	}
 	if loaded.ShowCompleted != saved.ShowCompleted {

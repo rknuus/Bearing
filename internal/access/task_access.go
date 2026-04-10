@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -273,7 +272,7 @@ func (ta *TaskAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 		return nil, false, fmt.Errorf("TaskAccess.saveTaskFile: themeID cannot be empty")
 	}
 
-	now := time.Now().UTC().Format(time.RFC3339)
+	now := utilities.Now()
 	isNew := task.ID == ""
 
 	// Generate ID if not provided
@@ -282,7 +281,7 @@ func (ta *TaskAccess) saveTaskFile(task *Task) ([]string, bool, error) {
 	}
 
 	// Set timestamps
-	if task.CreatedAt == "" {
+	if task.CreatedAt.IsZero() {
 		task.CreatedAt = now
 	}
 	task.UpdatedAt = now

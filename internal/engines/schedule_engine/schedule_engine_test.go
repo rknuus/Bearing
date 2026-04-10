@@ -3,6 +3,8 @@ package schedule_engine
 import (
 	"reflect"
 	"testing"
+
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 func TestUnit_DailyEveryDay(t *testing.T) {
@@ -10,7 +12,7 @@ func TestUnit_DailyEveryDay(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, "2025-01-01", "2025-01-05")
 
 	want := []string{"2025-01-01", "2025-01-02", "2025-01-03", "2025-01-04", "2025-01-05"}
@@ -24,7 +26,7 @@ func TestUnit_DailyEvery3Days(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  3,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, "2025-01-01", "2025-01-10")
 
 	want := []string{"2025-01-01", "2025-01-04", "2025-01-07", "2025-01-10"}
@@ -40,7 +42,7 @@ func TestUnit_WeeklyMonWedFri(t *testing.T) {
 		Frequency: "weekly",
 		Interval:  1,
 		Weekdays:  []int{1, 3, 5}, // Mon, Wed, Fri
-		StartDate: "2025-01-06",
+		StartDate: utilities.MustParseCalendarDate("2025-01-06"),
 	}, nil, "2025-01-06", "2025-01-12")
 
 	want := []string{"2025-01-06", "2025-01-08", "2025-01-10"}
@@ -56,7 +58,7 @@ func TestUnit_WeeklyEvery2Weeks(t *testing.T) {
 		Frequency: "weekly",
 		Interval:  2,
 		Weekdays:  []int{1}, // Monday only
-		StartDate: "2025-01-06",
+		StartDate: utilities.MustParseCalendarDate("2025-01-06"),
 	}, nil, "2025-01-06", "2025-02-03")
 
 	// Week of Jan 6, skip week of Jan 13, week of Jan 20, skip Jan 27, week of Feb 3
@@ -72,7 +74,7 @@ func TestUnit_MonthlyOn15th(t *testing.T) {
 		Frequency:  "monthly",
 		Interval:   1,
 		DayOfMonth: 15,
-		StartDate:  "2025-01-15",
+		StartDate:  utilities.MustParseCalendarDate("2025-01-15"),
 	}, nil, "2025-01-01", "2025-04-30")
 
 	want := []string{"2025-01-15", "2025-02-15", "2025-03-15", "2025-04-15"}
@@ -87,7 +89,7 @@ func TestUnit_MonthlyOn31stClamps(t *testing.T) {
 		Frequency:  "monthly",
 		Interval:   1,
 		DayOfMonth: 31,
-		StartDate:  "2025-01-31",
+		StartDate:  utilities.MustParseCalendarDate("2025-01-31"),
 	}, nil, "2025-01-01", "2025-05-31")
 
 	// Jan 31, Feb 28 (2025 not leap), Mar 31, Apr 30, May 31
@@ -102,7 +104,7 @@ func TestUnit_YearlyMarch15(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "yearly",
 		Interval:  1,
-		StartDate: "2023-03-15",
+		StartDate: utilities.MustParseCalendarDate("2023-03-15"),
 	}, nil, "2023-01-01", "2026-12-31")
 
 	want := []string{"2023-03-15", "2024-03-15", "2025-03-15", "2026-03-15"}
@@ -116,7 +118,7 @@ func TestUnit_YearlyFeb29HandlesNonLeapYears(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "yearly",
 		Interval:  1,
-		StartDate: "2024-02-29",
+		StartDate: utilities.MustParseCalendarDate("2024-02-29"),
 	}, nil, "2024-01-01", "2028-12-31")
 
 	// 2024 leap -> Feb 29, 2025 non-leap -> Feb 28, 2026 -> Feb 28, 2027 -> Feb 28, 2028 leap -> Feb 29
@@ -131,9 +133,9 @@ func TestUnit_ExceptionSuppressAndReplace(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, []Exception{
-		{OriginalDate: "2025-01-03", NewDate: "2025-01-06"},
+		{OriginalDate: utilities.MustParseCalendarDate("2025-01-03"), NewDate: utilities.MustParseCalendarDate("2025-01-06")},
 	}, "2025-01-01", "2025-01-07")
 
 	// 1,2,4,5,6(replacement),6(regular),7
@@ -148,9 +150,9 @@ func TestUnit_ExceptionReplacementOutsideRange(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, []Exception{
-		{OriginalDate: "2025-01-03", NewDate: "2025-01-10"},
+		{OriginalDate: utilities.MustParseCalendarDate("2025-01-03"), NewDate: utilities.MustParseCalendarDate("2025-01-10")},
 	}, "2025-01-01", "2025-01-05")
 
 	// 1,2,4,5 (3 suppressed, replacement 10 outside range)
@@ -165,7 +167,7 @@ func TestUnit_StartDateAfterRangeStart(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-05",
+		StartDate: utilities.MustParseCalendarDate("2025-01-05"),
 	}, nil, "2025-01-01", "2025-01-07")
 
 	// Only generates from StartDate, so 5,6,7
@@ -180,7 +182,7 @@ func TestUnit_StartDateAfterRangeEnd(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-02-01",
+		StartDate: utilities.MustParseCalendarDate("2025-02-01"),
 	}, nil, "2025-01-01", "2025-01-31")
 
 	if len(result) != 0 {
@@ -193,7 +195,7 @@ func TestUnit_ComputeOverdueMixedCompletedAndMissed(t *testing.T) {
 	result := se.ComputeOverdue(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, []string{"2025-01-01", "2025-01-03"}, "2025-01-05")
 
 	// Occurrences before Jan 5: 1,2,3,4. Completed: 1,3. Overdue: 2,4.
@@ -208,7 +210,7 @@ func TestUnit_ComputeOverdueAllCompleted(t *testing.T) {
 	result := se.ComputeOverdue(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, []string{"2025-01-01", "2025-01-02", "2025-01-03"}, "2025-01-04")
 
 	if len(result) != 0 {
@@ -221,7 +223,7 @@ func TestUnit_ComputeOverdueNoneCompleted(t *testing.T) {
 	result := se.ComputeOverdue(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, nil, "2025-01-04")
 
 	want := []string{"2025-01-01", "2025-01-02", "2025-01-03"}
@@ -241,7 +243,7 @@ func TestUnit_EvaluatePeriodCompletionWeeklyPattern(t *testing.T) {
 		Frequency: "weekly",
 		Interval:  1,
 		Weekdays:  []int{1, 3, 5},
-		StartDate: "2025-01-06",
+		StartDate: utilities.MustParseCalendarDate("2025-01-06"),
 	}, nil, []string{"2025-01-06"}, "2025-01-08")
 
 	if result.Period != "week" {
@@ -268,7 +270,7 @@ func TestUnit_EvaluatePeriodCompletionMonthlyOnTrack(t *testing.T) {
 		Frequency:  "monthly",
 		Interval:   1,
 		DayOfMonth: 15,
-		StartDate:  "2025-01-15",
+		StartDate:  utilities.MustParseCalendarDate("2025-01-15"),
 	}, nil, []string{"2025-01-15"}, "2025-01-20")
 
 	if result.Period != "month" {
@@ -292,7 +294,7 @@ func TestUnit_EvaluatePeriodCompletionBehindSchedule(t *testing.T) {
 	result := se.EvaluatePeriodCompletion(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, nil, "2025-01-05")
 
 	if result.Period != "day" {
@@ -315,7 +317,7 @@ func TestUnit_WeeklyEmptyWeekdaysReturnsEmpty(t *testing.T) {
 		Frequency: "weekly",
 		Interval:  1,
 		Weekdays:  nil,
-		StartDate: "2025-01-06",
+		StartDate: utilities.MustParseCalendarDate("2025-01-06"),
 	}, nil, "2025-01-06", "2025-01-12")
 
 	if len(result) != 0 {
@@ -330,7 +332,7 @@ func TestUnit_WeeklySundayNoOccurrencesBeforeStartDate(t *testing.T) {
 		Frequency: "weekly",
 		Interval:  1,
 		Weekdays:  []int{0}, // Sunday
-		StartDate: "2026-04-12",
+		StartDate: utilities.MustParseCalendarDate("2026-04-12"),
 	}, nil, "2026-04-10", "2026-04-10")
 
 	if len(result) != 0 {
@@ -345,7 +347,7 @@ func TestUnit_ComputeOverdueWeeklyFutureStartDate(t *testing.T) {
 		Frequency: "weekly",
 		Interval:  1,
 		Weekdays:  []int{0},
-		StartDate: "2026-04-12",
+		StartDate: utilities.MustParseCalendarDate("2026-04-12"),
 	}, nil, nil, "2026-04-10")
 
 	if len(result) != 0 {
@@ -358,7 +360,7 @@ func TestUnit_ComputeOverdueDailyFutureStartDate(t *testing.T) {
 	result := se.ComputeOverdue(RepeatPattern{
 		Frequency: "daily",
 		Interval:  1,
-		StartDate: "2026-05-01",
+		StartDate: utilities.MustParseCalendarDate("2026-05-01"),
 	}, nil, nil, "2026-04-15")
 
 	if len(result) != 0 {
@@ -371,7 +373,7 @@ func TestUnit_IntervalZeroTreatedAsOne(t *testing.T) {
 	result := se.ComputeOccurrences(RepeatPattern{
 		Frequency: "daily",
 		Interval:  0,
-		StartDate: "2025-01-01",
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, "2025-01-01", "2025-01-03")
 
 	want := []string{"2025-01-01", "2025-01-02", "2025-01-03"}

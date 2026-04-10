@@ -410,7 +410,7 @@ func TestSaveDayFocus(t *testing.T) {
 
 	// Save day focus
 	dayFocus := DayFocus{
-		Date:     "2026-01-15",
+		Date:     utilities.MustParseCalendarDate("2026-01-15"),
 		ThemeIDs: []string{"H"},
 		Notes:    "Focus on morning exercise",
 	}
@@ -430,7 +430,7 @@ func TestSaveDayFocus(t *testing.T) {
 		t.Fatal("Expected day focus, got nil")
 	}
 
-	if retrieved.Date != "2026-01-15" {
+	if retrieved.Date.String() != "2026-01-15" {
 		t.Errorf("Expected date 2026-01-15, got %s", retrieved.Date)
 	}
 	if len(retrieved.ThemeIDs) != 1 || retrieved.ThemeIDs[0] != "H" {
@@ -447,7 +447,7 @@ func TestSaveDayFocus_Update(t *testing.T) {
 
 	// Save initial day focus
 	dayFocus := DayFocus{
-		Date:     "2026-01-15",
+		Date:     utilities.MustParseCalendarDate("2026-01-15"),
 		ThemeIDs: []string{"H"},
 		Notes:    "Initial notes",
 	}
@@ -479,9 +479,9 @@ func TestGetYearFocus(t *testing.T) {
 
 	// Save multiple day focuses
 	days := []DayFocus{
-		{Date: "2026-01-15", ThemeIDs: []string{"H"}, Notes: "Day 1"},
-		{Date: "2026-01-16", ThemeIDs: []string{"H"}, Notes: "Day 2"},
-		{Date: "2026-02-01", ThemeIDs: []string{"C"}, Notes: "Day 3"},
+		{Date: utilities.MustParseCalendarDate("2026-01-15"), ThemeIDs: []string{"H"}, Notes: "Day 1"},
+		{Date: utilities.MustParseCalendarDate("2026-01-16"), ThemeIDs: []string{"H"}, Notes: "Day 2"},
+		{Date: utilities.MustParseCalendarDate("2026-02-01"), ThemeIDs: []string{"C"}, Notes: "Day 3"},
 	}
 
 	for _, day := range days {
@@ -501,10 +501,10 @@ func TestGetYearFocus(t *testing.T) {
 	}
 
 	// Verify sorted by date
-	if yearFocus[0].Date != "2026-01-15" {
+	if yearFocus[0].Date.String() != "2026-01-15" {
 		t.Errorf("Expected first date 2026-01-15, got %s", yearFocus[0].Date)
 	}
-	if yearFocus[2].Date != "2026-02-01" {
+	if yearFocus[2].Date.String() != "2026-02-01" {
 		t.Errorf("Expected last date 2026-02-01, got %s", yearFocus[2].Date)
 	}
 }
@@ -1005,7 +1005,7 @@ func TestFileStructure(t *testing.T) {
 	}
 
 	// Save day focus and verify calendar structure
-	dayFocus := DayFocus{Date: "2026-01-15", ThemeIDs: []string{"H"}, Notes: "Test"}
+	dayFocus := DayFocus{Date: utilities.MustParseCalendarDate("2026-01-15"), ThemeIDs: []string{"H"}, Notes: "Test"}
 	if err := env.calendar.SaveDayFocus(dayFocus); err != nil {
 		t.Fatalf("SaveDayFocus failed: %v", err)
 	}

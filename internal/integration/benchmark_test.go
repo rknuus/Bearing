@@ -100,7 +100,7 @@ func TestPerformance_CalendarYearLoad(t *testing.T) {
 	year := 2026
 	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < 365; i++ {
-		date := startDate.AddDate(0, 0, i).Format("2006-01-02")
+		date := utilities.NewCalendarDate(startDate.AddDate(0, 0, i))
 		_ = manager.SaveDayFocus(managers.DayFocus{
 			Date:     date,
 			ThemeIDs: []string{theme.ID},
@@ -207,7 +207,7 @@ func TestPerformance_NavigationContextLoad(t *testing.T) {
 		CurrentView:   "eisenkan",
 		CurrentItem:   "task-123",
 		FilterThemeID: "THEME-01",
-		LastAccessed:  time.Now().Format(time.RFC3339),
+		LastAccessed:  utilities.Now(),
 	}
 	_ = manager.SaveNavigationContext(ctx)
 
@@ -245,7 +245,7 @@ func BenchmarkCalendarYearLoad(b *testing.B) {
 	year := 2026
 	startDate := time.Date(year, 1, 1, 0, 0, 0, 0, time.UTC)
 	for i := 0; i < 365; i++ {
-		date := startDate.AddDate(0, 0, i).Format("2006-01-02")
+		date := utilities.NewCalendarDate(startDate.AddDate(0, 0, i))
 		_ = manager.SaveDayFocus(managers.DayFocus{
 			Date:     date,
 			ThemeIDs: []string{theme.ID},
@@ -376,7 +376,7 @@ func BenchmarkNavigationContextRoundTrip(b *testing.B) {
 		CurrentView:   "eisenkan",
 		CurrentItem:   "task-123",
 		FilterThemeID: "THEME-01",
-		LastAccessed:  time.Now().Format(time.RFC3339),
+		LastAccessed:  utilities.Now(),
 	}
 
 	b.ResetTimer()
@@ -402,7 +402,7 @@ func BenchmarkDayFocusSave(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		date := baseDate.AddDate(0, 0, i).Format("2006-01-02")
+		date := utilities.NewCalendarDate(baseDate.AddDate(0, 0, i))
 		err := manager.SaveDayFocus(managers.DayFocus{
 			Date:     date,
 			ThemeIDs: []string{theme.ID},
