@@ -1,8 +1,10 @@
 ---
 name: bump-go-toolchain
 description: Upgrade Go toolchain to latest stable with project-pinned version via go.mod toolchain directive
-status: backlog
+status: complete
 created: 2026-04-10T09:26:27Z
+updated: 2026-04-10T09:40:46Z
+completed: 2026-04-10T09:40:46Z
 ---
 
 # Initiative: bump-go-toolchain
