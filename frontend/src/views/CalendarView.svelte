@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RoutineTaskInfo, type RepeatPattern } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -45,6 +45,7 @@
   // Routine editor state
   let routineOccurrences = $state<RoutineOccurrence[]>([]);
   let editRoutineChecks = $state<string[]>([]);
+  let previousRoutineChecks = $state<string[]>([]);
   let reschedulingKey: string | null = $state(null);
   let rescheduleDate = $state('');
 
@@ -421,7 +422,9 @@
     ]);
     availableTags = tagsResult;
     routineOccurrences = occurrences;
-    editRoutineChecks = occurrences.filter(o => o.checked).map(o => o.routineId);
+    const checks = occurrences.filter(o => o.checked).map(o => o.routineId);
+    editRoutineChecks = checks;
+    previousRoutineChecks = [...checks];
   }
 
 
@@ -455,7 +458,13 @@
         tags: editTags.length > 0 ? editTags : undefined,
         routineChecks: editRoutineChecks.length > 0 ? editRoutineChecks : undefined,
       };
-      await bindings.SaveDayFocus(dayFocus);
+      const routineInfos: RoutineTaskInfo[] = routineOccurrences.map(o => ({
+        routineId: o.routineId,
+        description: o.description,
+        themeId: o.themeId,
+        isOverdue: o.status === 'overdue',
+      }));
+      await bindings.SaveDayFocusWithRoutines(dayFocus, routineInfos, previousRoutineChecks);
       yearFocus.set(editingDay.date, dayFocus);
 
       // Recompute routine maps after check changes
@@ -602,10 +611,21 @@
   }
 
   function toggleRoutineCheck(routineId: string) {
+    const hadChecks = editRoutineChecks.length > 0;
     if (editRoutineChecks.includes(routineId)) {
       editRoutineChecks = editRoutineChecks.filter(id => id !== routineId);
     } else {
       editRoutineChecks = [...editRoutineChecks, routineId];
+    }
+    const hasChecks = editRoutineChecks.length > 0;
+
+    // Auto-manage "Routine" day tag
+    if (!hadChecks && hasChecks) {
+      if (!editTags.includes('Routine')) {
+        editTags = [...editTags, 'Routine'];
+      }
+    } else if (hadChecks && !hasChecks) {
+      editTags = editTags.filter(t => t !== 'Routine');
     }
   }
 

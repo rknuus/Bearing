@@ -43,6 +43,11 @@ describe('CalendarView', () => {
         if (idx >= 0) currentYearFocus[idx] = day;
         else currentYearFocus.push(day);
       }),
+      SaveDayFocusWithRoutines: vi.fn().mockImplementation(async (day: DayFocus) => {
+        const idx = currentYearFocus.findIndex(e => e.date === day.date);
+        if (idx >= 0) currentYearFocus[idx] = day;
+        else currentYearFocus.push(day);
+      }),
       ClearDayFocus: vi.fn().mockImplementation(async (date: string) => {
         const idx = currentYearFocus.findIndex(e => e.date === date);
         if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeIds: undefined };
@@ -244,7 +249,7 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+      expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
     });
   });
 
@@ -293,11 +298,13 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
-        expect.objectContaining({ date: '2025-01-01', text: '' })
+      expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+        expect.objectContaining({ date: '2025-01-01', text: '' }),
+        expect.any(Array),
+        expect.any(Array),
       );
       // themeIds should be undefined (no themes selected)
-      const call = mockBindings.SaveDayFocus.mock.calls.find(
+      const call = mockBindings.SaveDayFocusWithRoutines.mock.calls.find(
         (c: unknown[]) => (c[0] as DayFocus).date === '2025-01-01'
       );
       expect(call).toBeTruthy();
@@ -452,7 +459,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
       });
       await tick();
       await tick();
@@ -599,8 +606,10 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
-          expect.objectContaining({ okrIds: ['HF-O1'] })
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+          expect.objectContaining({ okrIds: ['HF-O1'] }),
+          expect.any(Array),
+          expect.any(Array),
         );
       });
     });
@@ -623,8 +632,8 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
-        const call = mockBindings.SaveDayFocus.mock.calls[0];
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
         expect((call[0] as DayFocus).themeIds).toBeUndefined();
       });
     });
@@ -724,8 +733,10 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
-          expect.objectContaining({ tags: ['review'] })
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+          expect.objectContaining({ tags: ['review'] }),
+          expect.any(Array),
+          expect.any(Array),
         );
       });
     });
@@ -1137,7 +1148,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
       });
 
       // Wait for the async NavigationContext persistence
