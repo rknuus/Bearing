@@ -54,6 +54,7 @@ describe('CalendarView', () => {
         if (idx >= 0) currentYearFocus[idx] = { ...currentYearFocus[idx], themeIds: undefined };
       }),
       GetTasks: vi.fn().mockResolvedValue([]),
+      GetRoutines: vi.fn().mockResolvedValue([]),
       GetRoutinesForDate: vi.fn().mockResolvedValue([]),
       LogFrontend: vi.fn(),
       LoadNavigationContext: vi.fn().mockResolvedValue({
@@ -1452,8 +1453,6 @@ describe('CalendarView', () => {
         {
           routineId: 'R1',
           description: 'Morning run',
-          themeId: 'HF',
-          themeColor: '#22c55e',
           date: parseCalendarDate('2025-01-01'),
           status: 'scheduled',
           checked: false,
@@ -1461,8 +1460,6 @@ describe('CalendarView', () => {
         {
           routineId: 'R2',
           description: 'Evening stretch',
-          themeId: 'CG',
-          themeColor: '#3b82f6',
           date: parseCalendarDate('2025-01-01'),
           status: 'overdue',
           checked: false,

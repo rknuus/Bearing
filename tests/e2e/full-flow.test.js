@@ -21,6 +21,7 @@ import {
   waitForServers,
   readJSON,
   readThemes,
+  readRoutines,
   getGitLog,
   getGitCommitCount,
   assertFileExists,
@@ -958,17 +959,16 @@ export async function runTests() {
     // ---- 4n: Create and edit routine ----
     reporter.startTest('Phase 4n: Create and edit routine and verify files')
     try {
-      await page.evaluate(async (tid) => {
+      await page.evaluate(async () => {
         const app = window.go.main.App
-        await app.Establish({ parentId: tid, goalType: 'routine', description: 'E2E Routine' })
-      }, themeId)
+        await app.Establish({ parentId: '', goalType: 'routine', description: 'E2E Routine' })
+      })
 
-      const themesAfterRoutine = readThemes(DATA_DIR)
-      const themeAfterRoutine = themesAfterRoutine.find(t => t.name === 'E2E Theme')
-      if (!themeAfterRoutine.routines || themeAfterRoutine.routines.length < 1) {
+      const routinesAfterCreate = readRoutines(DATA_DIR)
+      if (routinesAfterCreate.length < 1) {
         throw new Error('Expected at least 1 routine')
       }
-      const routine = themeAfterRoutine.routines[0]
+      const routine = routinesAfterCreate[0]
       if (routine.description !== 'E2E Routine') {
         throw new Error(`Expected routine description "E2E Routine", got "${routine.description}"`)
       }
@@ -982,9 +982,8 @@ export async function runTests() {
         await app.Revise({ goalId: args.id, description: 'Updated Routine' })
       }, { id: routine.id })
 
-      const themesAfterRoutineUpdate = readThemes(DATA_DIR)
-      const themeAfterRoutineUpdate = themesAfterRoutineUpdate.find(t => t.name === 'E2E Theme')
-      const updatedRoutine = themeAfterRoutineUpdate.routines.find(r => r.id === routine.id)
+      const routinesAfterUpdate = readRoutines(DATA_DIR)
+      const updatedRoutine = routinesAfterUpdate.find(r => r.id === routine.id)
       if (updatedRoutine.description !== 'Updated Routine') {
         throw new Error(`Expected description "Updated Routine", got "${updatedRoutine.description}"`)
       }
@@ -1000,18 +999,16 @@ export async function runTests() {
     // ---- 4o: Delete routine ----
     reporter.startTest('Phase 4o: Delete routine and verify files')
     try {
-      const themesForRoutineDel = readThemes(DATA_DIR)
-      const themeForRoutineDel = themesForRoutineDel.find(t => t.name === 'E2E Theme')
-      const routineToDel = themeForRoutineDel.routines[0]
+      const routinesForDel = readRoutines(DATA_DIR)
+      const routineToDel = routinesForDel[0]
 
       await page.evaluate(async (id) => {
         const app = window.go.main.App
         await app.Dismiss(id)
       }, routineToDel.id)
 
-      const themesAfterRoutineDel = readThemes(DATA_DIR)
-      const themeAfterRoutineDel = themesAfterRoutineDel.find(t => t.name === 'E2E Theme')
-      if (themeAfterRoutineDel.routines && themeAfterRoutineDel.routines.length > 0) {
+      const routinesAfterDel = readRoutines(DATA_DIR)
+      if (routinesAfterDel.length > 0) {
         throw new Error('Expected 0 routines after deletion')
       }
 

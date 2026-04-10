@@ -155,6 +155,10 @@ func (a *App) ClearDayFocus(date string) error {
 	return a.planningManager.ClearDayFocus(date)
 }
 
+func (a *App) GetRoutines() ([]managers.Routine, error) {
+	return a.planningManager.GetRoutines()
+}
+
 func (a *App) GetRoutinesForDate(date string) ([]managers.RoutineOccurrence, error) {
 	return a.planningManager.GetRoutinesForDate(date)
 }

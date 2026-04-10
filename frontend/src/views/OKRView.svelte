@@ -17,7 +17,6 @@
   import { getObjectiveStatus } from '../lib/utils/okr-status';
   import { checkStateFromData } from '../lib/utils/state-check';
   import { renderMarkdown } from '../lib/utils/markdown';
-  import { FEATURE_ROUTINES_ENABLED } from '../lib/constants/feature-flags';
   import { today as todayDate, toTimestamp } from '../lib/utils/date-utils';
   import { getNow } from '../lib/utils/clock';
 
@@ -89,7 +88,6 @@
     name: string;
     color: string;
     objectives: Objective[];
-    routines?: Routine[];
   }
 
   interface ObjectiveProgressEntry {
@@ -145,7 +143,8 @@
   let newKeyResultTargetValue = $state(1);
 
   // Routine state
-  let addingRoutineToTheme = $state<string | null>(null);
+  let routines = $state<Routine[]>([]);
+  let addingRoutine = $state(false);
   let newRoutineDescription = $state('');
   let newRoutineFrequency = $state('none');
   let newRoutineInterval = $state(1);
@@ -412,7 +411,7 @@
       } catch {
         themeProgress = [];
       }
-      loadRoutineProgress(themes);
+      await loadRoutines();
     } catch (e) {
       error = extractError(e);
       console.error('Failed to load themes:', e);
@@ -421,19 +420,27 @@
     }
   }
 
-  async function loadRoutineProgress(themeList: LifeTheme[]) {
+  async function loadRoutines() {
+    const bindings = getBindings();
+    try {
+      routines = await bindings.GetRoutines();
+    } catch {
+      routines = [];
+    }
+    await loadRoutineProgress(routines);
+  }
+
+  async function loadRoutineProgress(routineList: Routine[]) {
     const bindings = getBindings();
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- temporary computation, not reactive state
     const newProgress = new Map<string, RoutinePeriodProgress>();
-    for (const theme of themeList) {
-      for (const routine of (theme.routines ?? [])) {
-        if (routine.repeatPattern) {
-          try {
-            const progress = await bindings.GetRoutineProgress(routine.id);
-            newProgress.set(routine.id, progress);
-          } catch {
-            // Skip if progress can't be loaded
-          }
+    for (const routine of routineList) {
+      if (routine.repeatPattern) {
+        try {
+          const progress = await bindings.GetRoutineProgress(routine.id);
+          newProgress.set(routine.id, progress);
+        } catch {
+          // Skip if progress can't be loaded
         }
       }
     }
@@ -575,7 +582,6 @@
       const result = await getBindings().Establish({ parentId: '', goalType: 'theme', name: newThemeName.trim(), color: newThemeColor });
       const created = result.theme!;
       created.objectives = created.objectives ?? [];
-      created.routines = created.routines ?? [];
       themes = [...themes, created];
       await refreshProgress();
       await verifyThemeState();
@@ -770,27 +776,22 @@
   }
 
   // Routine CRUD
-  async function createRoutine(themeId: string) {
+  async function createRoutine() {
     if (!newRoutineDescription.trim()) return;
 
     try {
       const repeatPattern = buildRepeatPattern(newRoutineFrequency, newRoutineInterval, newRoutineWeekdays, newRoutineMonthDay, newRoutineStartDate);
-      const result = await getBindings().Establish({ parentId: themeId, goalType: 'routine', description: newRoutineDescription.trim(), repeatPattern });
+      const result = await getBindings().Establish({ parentId: '', goalType: 'routine', description: newRoutineDescription.trim(), repeatPattern });
       const created = result.routine!;
-      const theme = themes.find(t => t.id === themeId);
-      if (theme) {
-        if (!theme.routines) theme.routines = [];
-        theme.routines.push(created);
-      }
-      themes = themes;
-      await verifyThemeState();
+      routines = [...routines, created];
+      await loadRoutineProgress(routines);
       newRoutineDescription = '';
       resetNewRoutineRepeat();
-      addingRoutineToTheme = null;
+      addingRoutine = false;
     } catch (e) {
       console.error('Failed to create routine:', e);
       error = extractError(e);
-      await loadThemes();
+      await loadRoutines();
     }
   }
 
@@ -799,17 +800,15 @@
       const repeatPattern = buildRepeatPattern(editRoutineFrequency, editRoutineInterval, editRoutineWeekdays, editRoutineMonthDay, editRoutineStartDate);
       const clearRepeat = editRoutineFrequency === 'none';
       await getBindings().Revise({ goalId: routineId, description: editRoutineDescription, repeatPattern, clearRepeat });
-      for (const t of themes) {
-        const r = (t.routines ?? []).find(r => r.id === routineId);
-        if (r) { r.description = editRoutineDescription; r.repeatPattern = repeatPattern; break; }
-      }
-      themes = themes;
-      await verifyThemeState();
+      const r = routines.find(r => r.id === routineId);
+      if (r) { r.description = editRoutineDescription; r.repeatPattern = repeatPattern; }
+      routines = routines;
+      await loadRoutineProgress(routines);
       editingRoutineId = null;
     } catch (e) {
       console.error('Failed to update routine:', e);
       error = extractError(e);
-      await loadThemes();
+      await loadRoutines();
     }
   }
 
@@ -817,18 +816,11 @@
     requestConfirmDelete('Are you sure you want to delete this routine?', async () => {
       try {
         await getBindings().Dismiss(routineId);
-        for (const t of themes) {
-          if (t.routines) {
-            const idx = t.routines.findIndex(r => r.id === routineId);
-            if (idx >= 0) { t.routines.splice(idx, 1); break; }
-          }
-        }
-        themes = themes;
-        await verifyThemeState();
+        routines = routines.filter(r => r.id !== routineId);
       } catch (e) {
         console.error('Failed to delete routine:', e);
         error = extractError(e);
-        await loadThemes();
+        await loadRoutines();
       }
     });
   }
@@ -1089,16 +1081,16 @@
   }
 
   // Advisor methods
-  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; themeId?: string}}[]}> {
+  async function handleRequestAdvice(message: string, history: ChatMessage[], selectedIds?: string[]): Promise<{text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string}}[]}> {
     const bindings = getBindings();
     const historyJSON = JSON.stringify(history.map(m => ({role: m.role === 'advisor' ? 'assistant' : m.role, content: m.content})));
     const result = await bindings.RequestAdvice(message, historyJSON, selectedIds ?? selectedOKRIds);
     // After getting advice, refresh themes to pick up any state changes
     await loadThemes();
-    return result as {text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; themeId?: string}}[]};
+    return result as {text: string; suggestions?: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string}}[]};
   }
 
-  async function handleAcceptSuggestion(suggestion: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string; themeId?: string}}): Promise<void> {
+  async function handleAcceptSuggestion(suggestion: {type: string; action: string; themeData?: {id?: string; name: string; color?: string}; objectiveData?: {id?: string; title: string; parentId?: string}; keyResultData?: {id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string}; routineData?: {id?: string; description: string}}): Promise<void> {
     const bindings = getBindings();
     const suggestionJSON = JSON.stringify(suggestion);
     const parentContext = selectedOKRIds.length > 0 ? selectedOKRIds[0] : '';
@@ -1168,9 +1160,9 @@
       for (const obj of theme.objectives) {
         collectObjectiveIds(obj, ids);
       }
-      for (const routine of theme.routines ?? []) {
-        ids.push(routine.id);
-      }
+    }
+    for (const routine of routines) {
+      ids.push(routine.id);
     }
     return ids;
   }
@@ -1493,13 +1485,6 @@
                 onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
                 title="Add OKR"
               >+ OKR</Button>
-              {#if FEATURE_ROUTINES_ENABLED}
-                <Button
-                  variant="icon" color="add"
-                  onclick={() => { addingRoutineToTheme = theme.id; expandId(theme.id); }}
-                  title="Add Routine"
-                >+ Routine</Button>
-              {/if}
             </div>
           {/if}
         </div>
@@ -1519,189 +1504,10 @@
           </div>
         {/if}
 
-        {#if FEATURE_ROUTINES_ENABLED}
-          {#if theme.objectives.length === 0 && !(theme.routines?.length) && addingObjectiveTo !== theme.id && addingRoutineToTheme !== theme.id}
-            <div class="empty-state">
-              No objectives or routines yet.
-              <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
-              or
-              <button class="link-button" onclick={() => { addingRoutineToTheme = theme.id; }}>add a routine</button>
-            </div>
-          {/if}
-        {:else}
-          {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
-            <div class="empty-state">
-              No objectives yet.
-              <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
-            </div>
-          {/if}
-        {/if}
-
-        {#if FEATURE_ROUTINES_ENABLED}
-          <!-- Routines Section -->
-          <div class="routine-section">
-            {#if addingRoutineToTheme === theme.id}
-              <div class="new-item-form routine-form">
-                <input
-                  type="text"
-                  placeholder="Routine description"
-                  bind:value={newRoutineDescription}
-                  onkeydown={(e) => { if (e.key === 'Enter') createRoutine(theme.id); if (e.key === 'Escape') { addingRoutineToTheme = null; newRoutineDescription = ''; } }}
-                />
-                <div class="routine-form-row">
-                  <label class="routine-field-label routine-field-fixed">Repeat
-                    <select class="routine-field-select" bind:value={newRoutineFrequency}>
-                      <option value="none">None</option>
-                      <option value="daily">Daily</option>
-                      <option value="weekly">Weekly</option>
-                      <option value="monthly">Monthly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
-                  </label>
-                  {#if newRoutineFrequency !== 'none'}
-                    {#if newRoutineFrequency === 'daily'}
-                      <label class="routine-field-label">Every
-                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
-                        <span class="routine-repeat-suffix">day(s)</span>
-                      </label>
-                    {:else if newRoutineFrequency === 'weekly'}
-                      <label class="routine-field-label">Every
-                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
-                        <span class="routine-repeat-suffix">week(s)</span>
-                      </label>
-                    {:else if newRoutineFrequency === 'monthly'}
-                      <label class="routine-field-label">Day
-                        <input type="number" class="routine-field-input" bind:value={newRoutineMonthDay} min="1" max="31" />
-                      </label>
-                      <label class="routine-field-label">every
-                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
-                        <span class="routine-repeat-suffix">month(s)</span>
-                      </label>
-                    {:else if newRoutineFrequency === 'yearly'}
-                      <label class="routine-field-label">Every
-                        <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
-                        <span class="routine-repeat-suffix">year(s)</span>
-                      </label>
-                    {/if}
-                    <label class="routine-field-label">Start
-                      <input type="date" class="routine-field-input" bind:value={newRoutineStartDate} />
-                    </label>
-                  {/if}
-                </div>
-                {#if newRoutineFrequency === 'weekly'}
-                  <div class="routine-weekday-row">
-                    {#each WEEKDAY_LABELS as label, i (i)}
-                      <button
-                        class="weekday-toggle"
-                        class:weekday-active={newRoutineWeekdays.includes(i)}
-                        onclick={() => { newRoutineWeekdays = toggleWeekday(newRoutineWeekdays, i); }}
-                        type="button"
-                      >{label}</button>
-                    {/each}
-                  </div>
-                {/if}
-                <div class="routine-form-row">
-                  <Button variant="primary" onclick={() => createRoutine(theme.id)}>Create</Button>
-                  <Button variant="secondary" onclick={() => { addingRoutineToTheme = null; newRoutineDescription = ''; resetNewRoutineRepeat(); }}>Cancel</Button>
-                </div>
-              </div>
-            {/if}
-
-            {#each theme.routines ?? [] as routine (routine.id)}
-              <div class="routine-card">
-                {#if editingRoutineId === routine.id}
-                  <div class="routine-edit-form">
-                    <input type="text" class="inline-edit" bind:value={editRoutineDescription}
-                      onkeydown={(e) => { if (e.key === 'Enter') updateRoutine(routine.id); if (e.key === 'Escape') cancelEdit(); }} />
-                    <div class="routine-form-row">
-                      <label class="routine-field-label routine-field-fixed">Repeat
-                        <select class="routine-field-select" bind:value={editRoutineFrequency}>
-                          <option value="none">None</option>
-                          <option value="daily">Daily</option>
-                          <option value="weekly">Weekly</option>
-                          <option value="monthly">Monthly</option>
-                          <option value="yearly">Yearly</option>
-                        </select>
-                      </label>
-                      {#if editRoutineFrequency !== 'none'}
-                        {#if editRoutineFrequency === 'daily'}
-                          <label class="routine-field-label">Every
-                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
-                            <span class="routine-repeat-suffix">day(s)</span>
-                          </label>
-                        {:else if editRoutineFrequency === 'weekly'}
-                          <label class="routine-field-label">Every
-                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
-                            <span class="routine-repeat-suffix">week(s)</span>
-                          </label>
-                        {:else if editRoutineFrequency === 'monthly'}
-                          <label class="routine-field-label">Day
-                            <input type="number" class="routine-field-input" bind:value={editRoutineMonthDay} min="1" max="31" />
-                          </label>
-                          <label class="routine-field-label">every
-                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
-                            <span class="routine-repeat-suffix">month(s)</span>
-                          </label>
-                        {:else if editRoutineFrequency === 'yearly'}
-                          <label class="routine-field-label">Every
-                            <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
-                            <span class="routine-repeat-suffix">year(s)</span>
-                          </label>
-                        {/if}
-                        <label class="routine-field-label">Start
-                          <input type="date" class="routine-field-input" bind:value={editRoutineStartDate} />
-                        </label>
-                      {/if}
-                    </div>
-                    {#if editRoutineFrequency === 'weekly'}
-                      <div class="routine-weekday-row">
-                        {#each WEEKDAY_LABELS as label, i (i)}
-                          <button
-                            class="weekday-toggle"
-                            class:weekday-active={editRoutineWeekdays.includes(i)}
-                            onclick={() => { editRoutineWeekdays = toggleWeekday(editRoutineWeekdays, i); }}
-                            type="button"
-                          >{label}</button>
-                        {/each}
-                      </div>
-                    {/if}
-                    <div class="routine-form-row">
-                      <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
-                      <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
-                    </div>
-                  </div>
-                {:else}
-                  <div class="routine-display">
-                    {#if routine.repeatPattern}
-                      {@const progress = routineProgress.get(routine.id)}
-                      {#if progress}
-                        <span class="routine-status-dot" class:on-track={progress.onTrack} class:off-track={!progress.onTrack}></span>
-                      {:else}
-                        <span class="routine-status-dot on-track"></span>
-                      {/if}
-                      <span class="routine-description">{routine.description}</span>
-                      <span class="routine-repeat-badge" title={formatRepeatPattern(routine.repeatPattern)}>{routine.repeatPattern.frequency}</span>
-                      {#if progress}
-                        <span class="routine-period-progress">
-                          {progress.completed}/{progress.expected} this {progress.period}
-                          {#if (progress.overdue ?? 0) > 0}
-                            <span class="routine-overdue">{progress.overdue} overdue</span>
-                          {/if}
-                        </span>
-                      {/if}
-                    {:else}
-                      <span class="routine-status-dot on-track"></span>
-                      <span class="routine-description">{routine.description}</span>
-                      <span class="routine-sporadic-badge">sporadic</span>
-                    {/if}
-                    <div class="item-actions">
-                      <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
-                      <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
-                    </div>
-                  </div>
-                {/if}
-              </div>
-            {/each}
+        {#if theme.objectives.length === 0 && addingObjectiveTo !== theme.id}
+          <div class="empty-state">
+            No objectives yet.
+            <button class="link-button" onclick={() => { addingObjectiveTo = theme.id; }}>Add an OKR</button>
           </div>
         {/if}
       {/snippet}
@@ -1889,6 +1695,184 @@
         </div>
       {/snippet}
     </ThemeOKRTree>
+
+    <!-- Standalone Routines Section -->
+    <section class="routines-section">
+      <div class="routines-section-header">
+        <h2 class="section-title">Routines</h2>
+        <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">+ Routine</Button>
+      </div>
+
+      {#if addingRoutine}
+        <div class="new-item-form routine-form">
+          <input
+            type="text"
+            placeholder="Routine description"
+            bind:value={newRoutineDescription}
+            onkeydown={(e) => { if (e.key === 'Enter') createRoutine(); if (e.key === 'Escape') { addingRoutine = false; newRoutineDescription = ''; } }}
+          />
+          <div class="routine-form-row">
+            <label class="routine-field-label routine-field-fixed">Repeat
+              <select class="routine-field-select" bind:value={newRoutineFrequency}>
+                <option value="none">None</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+              </select>
+            </label>
+            {#if newRoutineFrequency !== 'none'}
+              {#if newRoutineFrequency === 'daily'}
+                <label class="routine-field-label">Every
+                  <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                  <span class="routine-repeat-suffix">day(s)</span>
+                </label>
+              {:else if newRoutineFrequency === 'weekly'}
+                <label class="routine-field-label">Every
+                  <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                  <span class="routine-repeat-suffix">week(s)</span>
+                </label>
+              {:else if newRoutineFrequency === 'monthly'}
+                <label class="routine-field-label">Day
+                  <input type="number" class="routine-field-input" bind:value={newRoutineMonthDay} min="1" max="31" />
+                </label>
+                <label class="routine-field-label">every
+                  <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                  <span class="routine-repeat-suffix">month(s)</span>
+                </label>
+              {:else if newRoutineFrequency === 'yearly'}
+                <label class="routine-field-label">Every
+                  <input type="number" class="routine-field-input" bind:value={newRoutineInterval} min="1" />
+                  <span class="routine-repeat-suffix">year(s)</span>
+                </label>
+              {/if}
+              <label class="routine-field-label">Start
+                <input type="date" class="routine-field-input" bind:value={newRoutineStartDate} />
+              </label>
+            {/if}
+          </div>
+          {#if newRoutineFrequency === 'weekly'}
+            <div class="routine-weekday-row">
+              {#each WEEKDAY_LABELS as label, i (i)}
+                <button
+                  class="weekday-toggle"
+                  class:weekday-active={newRoutineWeekdays.includes(i)}
+                  onclick={() => { newRoutineWeekdays = toggleWeekday(newRoutineWeekdays, i); }}
+                  type="button"
+                >{label}</button>
+              {/each}
+            </div>
+          {/if}
+          <div class="routine-form-row">
+            <Button variant="primary" onclick={createRoutine}>Create</Button>
+            <Button variant="secondary" onclick={() => { addingRoutine = false; newRoutineDescription = ''; resetNewRoutineRepeat(); }}>Cancel</Button>
+          </div>
+        </div>
+      {/if}
+
+      {#each routines as routine (routine.id)}
+        <div class="routine-card">
+          {#if editingRoutineId === routine.id}
+            <div class="routine-edit-form">
+              <input type="text" class="inline-edit" bind:value={editRoutineDescription}
+                onkeydown={(e) => { if (e.key === 'Enter') updateRoutine(routine.id); if (e.key === 'Escape') cancelEdit(); }} />
+              <div class="routine-form-row">
+                <label class="routine-field-label routine-field-fixed">Repeat
+                  <select class="routine-field-select" bind:value={editRoutineFrequency}>
+                    <option value="none">None</option>
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </label>
+                {#if editRoutineFrequency !== 'none'}
+                  {#if editRoutineFrequency === 'daily'}
+                    <label class="routine-field-label">Every
+                      <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                      <span class="routine-repeat-suffix">day(s)</span>
+                    </label>
+                  {:else if editRoutineFrequency === 'weekly'}
+                    <label class="routine-field-label">Every
+                      <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                      <span class="routine-repeat-suffix">week(s)</span>
+                    </label>
+                  {:else if editRoutineFrequency === 'monthly'}
+                    <label class="routine-field-label">Day
+                      <input type="number" class="routine-field-input" bind:value={editRoutineMonthDay} min="1" max="31" />
+                    </label>
+                    <label class="routine-field-label">every
+                      <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                      <span class="routine-repeat-suffix">month(s)</span>
+                    </label>
+                  {:else if editRoutineFrequency === 'yearly'}
+                    <label class="routine-field-label">Every
+                      <input type="number" class="routine-field-input" bind:value={editRoutineInterval} min="1" />
+                      <span class="routine-repeat-suffix">year(s)</span>
+                    </label>
+                  {/if}
+                  <label class="routine-field-label">Start
+                    <input type="date" class="routine-field-input" bind:value={editRoutineStartDate} />
+                  </label>
+                {/if}
+              </div>
+              {#if editRoutineFrequency === 'weekly'}
+                <div class="routine-weekday-row">
+                  {#each WEEKDAY_LABELS as label, i (i)}
+                    <button
+                      class="weekday-toggle"
+                      class:weekday-active={editRoutineWeekdays.includes(i)}
+                      onclick={() => { editRoutineWeekdays = toggleWeekday(editRoutineWeekdays, i); }}
+                      type="button"
+                    >{label}</button>
+                  {/each}
+                </div>
+              {/if}
+              <div class="routine-form-row">
+                <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
+                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+              </div>
+            </div>
+          {:else}
+            <div class="routine-display">
+              {#if routine.repeatPattern}
+                {@const progress = routineProgress.get(routine.id)}
+                {#if progress}
+                  <span class="routine-status-dot" class:on-track={progress.onTrack} class:off-track={!progress.onTrack}></span>
+                {:else}
+                  <span class="routine-status-dot on-track"></span>
+                {/if}
+                <span class="routine-description">{routine.description}</span>
+                <span class="routine-repeat-badge" title={formatRepeatPattern(routine.repeatPattern)}>{routine.repeatPattern.frequency}</span>
+                {#if progress}
+                  <span class="routine-period-progress">
+                    {progress.completed}/{progress.expected} this {progress.period}
+                    {#if (progress.overdue ?? 0) > 0}
+                      <span class="routine-overdue">{progress.overdue} overdue</span>
+                    {/if}
+                  </span>
+                {/if}
+              {:else}
+                <span class="routine-status-dot on-track"></span>
+                <span class="routine-description">{routine.description}</span>
+                <span class="routine-sporadic-badge">sporadic</span>
+              {/if}
+              <div class="item-actions">
+                <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
+                <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/each}
+
+      {#if routines.length === 0 && !addingRoutine}
+        <div class="empty-state">
+          No routines yet.
+          <button class="link-button" onclick={() => { addingRoutine = true; }}>Add a routine</button>
+        </div>
+      {/if}
+    </section>
 
     {#if themes.length === 0 && !showNewThemeForm}
       <div class="empty-state large">
@@ -2651,11 +2635,25 @@
     justify-content: flex-end;
   }
 
-  /* Routine Section */
-  .routine-section {
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
-    border-top: 1px dashed var(--color-gray-200);
+  /* Standalone Routines Section */
+  .routines-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--color-gray-200);
+  }
+
+  .routines-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-gray-700);
+    margin: 0;
   }
 
   .routine-card {

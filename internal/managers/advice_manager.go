@@ -18,9 +18,10 @@ type IAdviceManager interface {
 }
 
 // AdviceManager orchestrates the AI advisor flow by coordinating ChatEngine,
-// ModelAccess, ThemeAccess, and UIStateAccess.
+// ModelAccess, ThemeAccess, RoutineAccess, and UIStateAccess.
 type AdviceManager struct {
 	themeAccess     access.IThemeAccess
+	routineAccess   access.IRoutineAccess
 	chatEngine      chat_engine.IChatEngine
 	modelAccess     access.IModelAccess
 	uiStateAccess   access.IUIStateAccess
@@ -31,6 +32,7 @@ type AdviceManager struct {
 // All dependencies must be non-nil.
 func NewAdviceManager(
 	themeAccess access.IThemeAccess,
+	routineAccess access.IRoutineAccess,
 	chatEngine chat_engine.IChatEngine,
 	modelAccess access.IModelAccess,
 	uiStateAccess access.IUIStateAccess,
@@ -38,6 +40,9 @@ func NewAdviceManager(
 ) (*AdviceManager, error) {
 	if themeAccess == nil {
 		return nil, fmt.Errorf("themeAccess cannot be nil")
+	}
+	if routineAccess == nil {
+		return nil, fmt.Errorf("routineAccess cannot be nil")
 	}
 	if chatEngine == nil {
 		return nil, fmt.Errorf("chatEngine cannot be nil")
@@ -54,6 +59,7 @@ func NewAdviceManager(
 
 	return &AdviceManager{
 		themeAccess:     themeAccess,
+		routineAccess:   routineAccess,
 		chatEngine:      chatEngine,
 		modelAccess:     modelAccess,
 		uiStateAccess:   uiStateAccess,
@@ -65,7 +71,7 @@ func NewAdviceManager(
 // conversation history. It returns the advisor's response with any parsed
 // suggestions.
 func (am *AdviceManager) RequestAdvice(message string, history []chat_engine.ChatMessage, selectedOKRIds []string) (*chat_engine.AdviceResponse, error) {
-	// 1. Fetch themes
+	// 1. Fetch themes and routines
 	themes, err := am.themeAccess.GetThemes()
 	if err != nil {
 		slog.Error("AdviceManager.RequestAdvice: failed to fetch themes",
@@ -73,8 +79,15 @@ func (am *AdviceManager) RequestAdvice(message string, history []chat_engine.Cha
 		return nil, fmt.Errorf("Unable to load your goals. Please try again.")
 	}
 
+	routines, err := am.routineAccess.GetRoutines()
+	if err != nil {
+		slog.Error("AdviceManager.RequestAdvice: failed to fetch routines",
+			"error", err)
+		return nil, fmt.Errorf("Unable to load your routines. Please try again.")
+	}
+
 	// 2. Convert themes to OKR context, filtering by selectedOKRIds
-	okrContexts := convertThemesToOKRContext(themes, selectedOKRIds)
+	okrContexts := convertThemesToOKRContext(themes, routines, selectedOKRIds)
 
 	// 3. Assemble conversation
 	conversationMessages := am.chatEngine.AssembleConversation(okrContexts, history, message)
@@ -201,21 +214,13 @@ func (am *AdviceManager) acceptCreate(suggestion chat_engine.Suggestion, parentC
 		if suggestion.RoutineData == nil {
 			return fmt.Errorf("routine suggestion missing routineData")
 		}
-		themeID := suggestion.RoutineData.ThemeID
-		if themeID == "" {
-			themeID = parentContext
-		}
-		if themeID == "" {
-			return fmt.Errorf("routine suggestion requires a theme ID")
-		}
 		_, err := am.planningManager.Establish(EstablishRequest{
 			GoalType:    GoalTypeRoutine,
-			ParentID:    themeID,
 			Description: suggestion.RoutineData.Description,
 		})
 		if err != nil {
 			slog.Error("AcceptSuggestion: failed to create routine",
-				"description", suggestion.RoutineData.Description, "themeID", themeID, "error", err)
+				"description", suggestion.RoutineData.Description, "error", err)
 			return fmt.Errorf("Failed to create routine: %w", err)
 		}
 		return nil
@@ -305,52 +310,64 @@ func (am *AdviceManager) acceptEdit(suggestion chat_engine.Suggestion) error {
 	}
 }
 
-// convertThemesToOKRContext converts access layer themes to engine layer OKR
-// contexts. If selectedOKRIds is non-empty, a theme is included when the theme
-// itself or any of its descendants (objectives, key results, routines) appears
-// in the selection. Only the selected descendants are kept, giving the model
-// focused context.
-func convertThemesToOKRContext(themes []access.LifeTheme, selectedOKRIds []string) []chat_engine.OKRContext {
+// convertThemesToOKRContext converts access layer themes and routines to engine
+// layer OKR contexts. Routines are now independent of themes and are included as
+// a separate context entry. If selectedOKRIds is non-empty, only selected items
+// are included.
+func convertThemesToOKRContext(themes []access.LifeTheme, routines []access.Routine, selectedOKRIds []string) []chat_engine.OKRContext {
 	filter := buildIDSet(selectedOKRIds)
 	if len(filter) == 0 {
 		// No filter — include everything.
-		contexts := make([]chat_engine.OKRContext, 0, len(themes))
+		contexts := make([]chat_engine.OKRContext, 0, len(themes)+1)
 		for _, theme := range themes {
 			contexts = append(contexts, chat_engine.OKRContext{
 				ThemeID:    theme.ID,
 				ThemeName:  theme.Name,
 				Objectives: convertObjectivesToOKR(theme.Objectives),
-				Routines:   convertRoutinesToOKR(theme.Routines),
+			})
+		}
+		// Add routines as a separate context entry
+		if len(routines) > 0 {
+			contexts = append(contexts, chat_engine.OKRContext{
+				ThemeName: "Routines",
+				Routines:  convertRoutinesToOKR(routines),
 			})
 		}
 		return contexts
 	}
 
 	// With a filter: include a theme when any of its IDs match.
-	contexts := make([]chat_engine.OKRContext, 0, len(themes))
+	contexts := make([]chat_engine.OKRContext, 0, len(themes)+1)
 	for _, theme := range themes {
 		_, themeSelected := filter[theme.ID]
 
 		objs := filterObjectivesToOKR(theme.Objectives, filter)
-		routines := filterRoutinesToOKR(theme.Routines, filter)
 
-		if !themeSelected && len(objs) == 0 && len(routines) == 0 {
+		if !themeSelected && len(objs) == 0 {
 			continue
 		}
 
 		// If the theme itself was selected, include all its descendants.
 		if themeSelected {
 			objs = convertObjectivesToOKR(theme.Objectives)
-			routines = convertRoutinesToOKR(theme.Routines)
 		}
 
 		contexts = append(contexts, chat_engine.OKRContext{
 			ThemeID:    theme.ID,
 			ThemeName:  theme.Name,
 			Objectives: objs,
-			Routines:   routines,
 		})
 	}
+
+	// Add filtered routines as a separate context entry
+	filteredRoutines := filterRoutinesToOKR(routines, filter)
+	if len(filteredRoutines) > 0 {
+		contexts = append(contexts, chat_engine.OKRContext{
+			ThemeName: "Routines",
+			Routines:  filteredRoutines,
+		})
+	}
+
 	return contexts
 }
 

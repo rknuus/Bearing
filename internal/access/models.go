@@ -17,7 +17,6 @@ type LifeTheme struct {
 	Name       string      `json:"name"`            // Human-readable theme name
 	Color      string      `json:"color"`           // Hex color code for UI display
 	Objectives []Objective `json:"objectives"`      // Associated objectives for this theme
-	Routines   []Routine   `json:"routines,omitempty"` // Ongoing health metrics for this theme
 }
 
 // Objective represents a medium-term goal under a life theme.
@@ -67,7 +66,7 @@ type ScheduleException struct {
 // Routine represents an ongoing activity tracked per occurrence for a life theme.
 // Periodic routines have a RepeatPattern; sporadic routines have none.
 type Routine struct {
-	ID            string              `json:"id"`                      // Theme-scoped: {ThemeID}-R{n}
+	ID            string              `json:"id"`                      // Unique routine ID: R{n}
 	Description   string              `json:"description"`             // What is being tracked
 	RepeatPattern *RepeatPattern      `json:"repeatPattern,omitempty"` // Recurrence schedule (nil = sporadic)
 	Exceptions    []ScheduleException `json:"exceptions,omitempty"`    // Date overrides for the schedule
@@ -271,6 +270,11 @@ func ValidPriorities() []Priority {
 // ThemesFile represents the structure of the themes.json file
 type ThemesFile struct {
 	Themes []LifeTheme `json:"themes"`
+}
+
+// RoutinesFile represents the structure of the routines.json file
+type RoutinesFile struct {
+	Routines []Routine `json:"routines"`
 }
 
 // YearFocusFile represents the structure of a year's calendar file (e.g., 2026.json)

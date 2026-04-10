@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RoutineTaskInfo, type RepeatPattern } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RoutineTaskInfo, type RepeatPattern, type Routine, ROUTINE_COLOR } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -147,7 +147,7 @@
    * Returns status and tooltip Maps keyed by date string (YYYY-MM-DD).
    */
   function computeRoutineMaps(
-    allThemes: LifeTheme[],
+    allRoutines: Routine[],
     focusMap: SvelteMap<string, DayFocus>,
     yr: number,
     todayStr: string,
@@ -159,34 +159,31 @@
     const dueDescriptions = new Map<string, string[]>(); // eslint-disable-line svelte/prefer-svelte-reactivity
     const checkedDescriptions = new Map<string, string[]>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 
-    for (const theme of allThemes) {
-      if (!theme.routines) continue;
-      for (const routine of theme.routines) {
-        let dates: string[];
-        if (routine.repeatPattern) {
-          dates = getYearOccurrences(routine.repeatPattern, yr);
+    for (const routine of allRoutines) {
+      let dates: string[];
+      if (routine.repeatPattern) {
+        dates = getYearOccurrences(routine.repeatPattern, yr);
+      } else {
+        // Sporadic: only applicable for today
+        if (todayStr.startsWith(`${yr}-`)) {
+          dates = [todayStr];
         } else {
-          // Sporadic: only applicable for today
-          if (todayStr.startsWith(`${yr}-`)) {
-            dates = [todayStr];
-          } else {
-            dates = [];
-          }
+          dates = [];
         }
+      }
 
-        for (const d of dates) {
-          dueCounts.set(d, (dueCounts.get(d) || 0) + 1);
-          const descs = dueDescriptions.get(d) || [];
-          descs.push(routine.description);
-          dueDescriptions.set(d, descs);
+      for (const d of dates) {
+        dueCounts.set(d, (dueCounts.get(d) || 0) + 1);
+        const descs = dueDescriptions.get(d) || [];
+        descs.push(routine.description);
+        dueDescriptions.set(d, descs);
 
-          const focus = focusMap.get(d);
-          if (focus?.routineChecks?.includes(routine.id)) {
-            checkedCounts.set(d, (checkedCounts.get(d) || 0) + 1);
-            const cDescs = checkedDescriptions.get(d) || [];
-            cDescs.push(routine.description);
-            checkedDescriptions.set(d, cDescs);
-          }
+        const focus = focusMap.get(d);
+        if (focus?.routineChecks?.includes(routine.id)) {
+          checkedCounts.set(d, (checkedCounts.get(d) || 0) + 1);
+          const cDescs = checkedDescriptions.get(d) || [];
+          cDescs.push(routine.description);
+          checkedDescriptions.set(d, cDescs);
         }
       }
     }
@@ -231,9 +228,10 @@
     try {
       const bindings = getBindings();
 
-      const [themesResult, focusResult] = await Promise.all([
+      const [themesResult, focusResult, routinesResult] = await Promise.all([
         bindings.GetHierarchy(),
         bindings.GetYearFocus(year),
+        bindings.GetRoutines(),
       ]);
 
       themes = themesResult;
@@ -244,7 +242,7 @@
       }
 
       const todayStr = currentDate || todayCalendarDate();
-      const routineMaps = computeRoutineMaps(themesResult, yearFocus, year, todayStr);
+      const routineMaps = computeRoutineMaps(routinesResult, yearFocus, year, todayStr);
       routineStatusMap = routineMaps.statusMap;
       routineTooltipMap = routineMaps.tooltipMap;
     } catch (e) {
@@ -456,7 +454,6 @@
       const routineInfos: RoutineTaskInfo[] = routineOccurrences.map(o => ({
         routineId: o.routineId,
         description: o.description,
-        themeId: o.themeId,
         isOverdue: o.status === 'overdue',
       }));
       await bindings.SaveDayFocusWithRoutines(dayFocus, routineInfos, previousRoutineChecks);
@@ -465,9 +462,14 @@
 
       // Recompute routine maps after check changes
       const todayStr = currentDate || todayCalendarDate();
-      const routineMaps = computeRoutineMaps(themes, yearFocus, year, todayStr);
-      routineStatusMap = routineMaps.statusMap;
-      routineTooltipMap = routineMaps.tooltipMap;
+      try {
+        const allRoutines = await bindings.GetRoutines();
+        const routineMaps = computeRoutineMaps(allRoutines, yearFocus, year, todayStr);
+        routineStatusMap = routineMaps.statusMap;
+        routineTooltipMap = routineMaps.tooltipMap;
+      } catch {
+        // Non-critical: routine dot status may be stale
+      }
 
       await verifyCalendarState();
 
@@ -790,7 +792,7 @@
               <label class="routine-check">
                 <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
                        onchange={() => toggleRoutineCheck(routine.routineId)} />
-                <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
+                <span class="theme-dot" style="background-color: {ROUTINE_COLOR}"></span>
                 <span class="routine-desc">{routine.description}</span>
               </label>
               {#if reschedulingKey === routineKey(routine)}
@@ -812,7 +814,7 @@
                 <label class="routine-check">
                   <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
                          onchange={() => toggleRoutineCheck(routine.routineId)} />
-                  <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
+                  <span class="theme-dot" style="background-color: {ROUTINE_COLOR}"></span>
                   <span class="routine-desc">{routine.description} ({formatDateLocale(routine.date)})</span>
                 </label>
                 {#if reschedulingKey === routineKey(routine)}

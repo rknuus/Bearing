@@ -375,6 +375,59 @@ func (m *mockTaskAccess) SaveArchivedOrder(order []string) error {
 	return nil
 }
 
+// mockRoutineAccess implements access.IRoutineAccess for testing.
+type mockRoutineAccess struct {
+	mu       sync.Mutex
+	routines []access.Routine
+}
+
+func newMockRoutineAccess() *mockRoutineAccess {
+	return &mockRoutineAccess{
+		routines: []access.Routine{},
+	}
+}
+
+func (m *mockRoutineAccess) GetRoutines() ([]access.Routine, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	result := make([]access.Routine, len(m.routines))
+	copy(result, m.routines)
+	return result, nil
+}
+
+func (m *mockRoutineAccess) SaveRoutine(routine access.Routine) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, r := range m.routines {
+		if r.ID == routine.ID {
+			m.routines[i] = routine
+			return nil
+		}
+	}
+	m.routines = append(m.routines, routine)
+	return nil
+}
+
+func (m *mockRoutineAccess) DeleteRoutine(id string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for i, r := range m.routines {
+		if r.ID == id {
+			m.routines = append(m.routines[:i], m.routines[i+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("routine with ID %s not found", id)
+}
+
+func (m *mockRoutineAccess) SaveRoutines(routines []access.Routine) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.routines = make([]access.Routine, len(routines))
+	copy(m.routines, routines)
+	return nil
+}
+
 // mockCalendarAccess implements access.ICalendarAccess for testing.
 // It stores day focus entries in memory so tests can verify saved data.
 type mockCalendarAccess struct {
@@ -445,11 +498,11 @@ func (m *mockUIStateAccess) SaveAdvisorEnabled(enabled bool) error {
 	return nil
 }
 
-// newMockManger creates a PlanningManager with all mock dependencies for testing convenience.
+// newMockManager creates a PlanningManager with all mock dependencies for testing convenience.
 func newMockManager() (*PlanningManager, *mockThemeAccess, *mockTaskAccess) {
 	ta := newMockThemeAccess()
 	ka := newMockTaskAccess()
-	pm, _ := NewPlanningManager(ta, ka, newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+	pm, _ := NewPlanningManager(ta, ka, newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 	return pm, ta, ka
 }
 
@@ -458,7 +511,7 @@ func newMockManagerWithCalendar() (*PlanningManager, *mockThemeAccess, *mockTask
 	ta := newMockThemeAccess()
 	ka := newMockTaskAccess()
 	ca := newMockCalendarAccess()
-	pm, _ := NewPlanningManager(ta, ka, ca, &mockVisionAccess{}, &mockUIStateAccess{})
+	pm, _ := NewPlanningManager(ta, ka, ca, newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 	return pm, ta, ka, ca
 }
 
@@ -489,10 +542,9 @@ func testCreateKeyResult(m *PlanningManager, parentObjectiveId, description stri
 }
 
 // testAddRoutine calls Establish to create a routine.
-func testAddRoutine(m *PlanningManager, themeId, description string) (*Routine, error) {
+func testAddRoutine(m *PlanningManager, description string) (*Routine, error) {
 	res, err := m.Establish(EstablishRequest{
 		GoalType:    GoalTypeRoutine,
-		ParentID:    themeId,
 		Description: description,
 	})
 	if err != nil {
@@ -637,7 +689,7 @@ func findKeyResultByID(objectives []Objective, id string) *KeyResult {
 
 func TestNewPlanningManager(t *testing.T) {
 	t.Run("creates manager with valid access", func(t *testing.T) {
-		manager, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+		manager, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -647,14 +699,21 @@ func TestNewPlanningManager(t *testing.T) {
 	})
 
 	t.Run("returns error with nil theme access", func(t *testing.T) {
-		_, err := NewPlanningManager(nil, newMockTaskAccess(), newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+		_, err := NewPlanningManager(nil, newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 		if err == nil {
 			t.Fatal("expected error for nil theme access")
 		}
 	})
 
+	t.Run("returns error with nil routine access", func(t *testing.T) {
+		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), nil, &mockVisionAccess{}, &mockUIStateAccess{})
+		if err == nil {
+			t.Fatal("expected error for nil routine access")
+		}
+	})
+
 	t.Run("returns error with nil ui state access", func(t *testing.T) {
-		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), &mockVisionAccess{}, nil)
+		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, nil)
 		if err == nil {
 			t.Fatal("expected error for nil ui state access")
 		}
@@ -1758,12 +1817,12 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("creates routine with correct ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, err := testAddRoutine(manager, "T", "Exercise sessions")
+		routine, err := testAddRoutine(manager, "Exercise sessions")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
-		if routine.ID != "T-R1" {
-			t.Errorf("expected ID 'T-R1', got '%s'", routine.ID)
+		if routine.ID != "R1" {
+			t.Errorf("expected ID 'R1', got '%s'", routine.ID)
 		}
 		if routine.Description != "Exercise sessions" {
 			t.Errorf("expected description 'Exercise sessions', got '%s'", routine.Description)
@@ -1773,20 +1832,20 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("auto-increments routine ID", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		r1, _ := testAddRoutine(manager, "T", "Routine one")
-		r2, _ := testAddRoutine(manager, "T", "Routine two")
-		if r1.ID != "T-R1" {
-			t.Errorf("expected T-R1, got %s", r1.ID)
+		r1, _ := testAddRoutine(manager, "Routine one")
+		r2, _ := testAddRoutine(manager, "Routine two")
+		if r1.ID != "R1" {
+			t.Errorf("expected R1, got %s", r1.ID)
 		}
-		if r2.ID != "T-R2" {
-			t.Errorf("expected T-R2, got %s", r2.ID)
+		if r2.ID != "R2" {
+			t.Errorf("expected R2, got %s", r2.ID)
 		}
 	})
 
 	t.Run("returns error for empty description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := testAddRoutine(manager, "T", "")
+		_, err := testAddRoutine(manager, "")
 		if err == nil {
 			t.Fatal("expected error for empty description")
 		}
@@ -1795,27 +1854,9 @@ func TestAddRoutine(t *testing.T) {
 	t.Run("returns error for whitespace-only description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := testAddRoutine(manager, "T", "   ")
+		_, err := testAddRoutine(manager, "   ")
 		if err == nil {
 			t.Fatal("expected error for whitespace-only description")
-		}
-	})
-
-	t.Run("returns error for non-existent theme", func(t *testing.T) {
-		manager, _, _ := newMockManager()
-
-		_, err := testAddRoutine(manager, "NONEXISTENT", "Test")
-		if err == nil {
-			t.Fatal("expected error for non-existent theme")
-		}
-	})
-
-	t.Run("returns error for empty themeId", func(t *testing.T) {
-		manager, _, _ := newMockManager()
-
-		_, err := testAddRoutine(manager, "", "Test")
-		if err == nil {
-			t.Fatal("expected error for empty themeId")
 		}
 	})
 }
@@ -1824,14 +1865,14 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("updates routine description", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := testAddRoutine(manager, "T", "Original")
+		routine, _ := testAddRoutine(manager, "Original")
 		err := testUpdateRoutine(manager, routine.ID, "Updated")
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetHierarchy()
-		updated := themes[0].Routines[0]
+		routines, _ := manager.GetRoutines()
+		updated := routines[0]
 		if updated.Description != "Updated" {
 			t.Errorf("expected description 'Updated', got '%s'", updated.Description)
 		}
@@ -1849,7 +1890,7 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := testUpdateRoutine(manager, "T-R999", "Desc")
+		err := testUpdateRoutine(manager, "R999", "Desc")
 		if err == nil {
 			t.Fatal("expected error for non-existent routine")
 		}
@@ -1858,7 +1899,7 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("sets repeat pattern on routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := testAddRoutine(manager, "T", "Exercise")
+		routine, _ := testAddRoutine(manager, "Exercise")
 		desc := "Exercise"
 		err := manager.Revise(ReviseRequest{
 			GoalID:      routine.ID,
@@ -1874,8 +1915,8 @@ func TestUpdateRoutine(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetHierarchy()
-		updated := themes[0].Routines[0]
+		routines, _ := manager.GetRoutines()
+		updated := routines[0]
 		if updated.RepeatPattern == nil {
 			t.Fatal("expected repeat pattern to be set, got nil")
 		}
@@ -1890,7 +1931,7 @@ func TestUpdateRoutine(t *testing.T) {
 	t.Run("clears repeat pattern with ClearRepeat", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := testAddRoutine(manager, "T", "Exercise")
+		routine, _ := testAddRoutine(manager, "Exercise")
 		desc := "Exercise"
 		_ = manager.Revise(ReviseRequest{
 			GoalID:      routine.ID,
@@ -1910,8 +1951,8 @@ func TestUpdateRoutine(t *testing.T) {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetHierarchy()
-		updated := themes[0].Routines[0]
+		routines, _ := manager.GetRoutines()
+		updated := routines[0]
 		if updated.RepeatPattern != nil {
 			t.Errorf("expected repeat pattern to be cleared, got %+v", updated.RepeatPattern)
 		}
@@ -1922,7 +1963,6 @@ func TestUpdateRoutine(t *testing.T) {
 
 		result, err := manager.Establish(EstablishRequest{
 			GoalType:    GoalTypeRoutine,
-			ParentID:    "T",
 			Description: "Weekly exercise",
 			RepeatPattern: &RepeatPattern{
 				Frequency: "weekly",
@@ -1941,8 +1981,8 @@ func TestUpdateRoutine(t *testing.T) {
 			t.Errorf("expected frequency 'weekly', got '%s'", result.Routine.RepeatPattern.Frequency)
 		}
 
-		themes, _ := manager.GetHierarchy()
-		persisted := themes[0].Routines[0]
+		routines, _ := manager.GetRoutines()
+		persisted := routines[0]
 		if persisted.RepeatPattern == nil {
 			t.Fatal("expected repeat pattern persisted, got nil")
 		}
@@ -1954,15 +1994,15 @@ func TestDeleteRoutine(t *testing.T) {
 	t.Run("deletes routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		routine, _ := testAddRoutine(manager, "T", "To Delete")
+		routine, _ := testAddRoutine(manager, "To Delete")
 		err := manager.Dismiss(routine.ID)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
 
-		themes, _ := manager.GetHierarchy()
-		if len(themes[0].Routines) != 0 {
-			t.Errorf("expected 0 routines after delete, got %d", len(themes[0].Routines))
+		routines, _ := manager.GetRoutines()
+		if len(routines) != 0 {
+			t.Errorf("expected 0 routines after delete, got %d", len(routines))
 		}
 	})
 
@@ -1978,7 +2018,7 @@ func TestDeleteRoutine(t *testing.T) {
 	t.Run("returns error for non-existent routine", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		err := manager.Dismiss("T-R999")
+		err := manager.Dismiss("R999")
 		if err == nil {
 			t.Fatal("expected error for non-existent routine")
 		}
@@ -2982,7 +3022,7 @@ func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
 	}
 
 	// NewPlanningManager calls validateTaskOrder
-	manager, err := NewPlanningManager(newMockThemeAccess(), mockTasks, newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+	manager, err := NewPlanningManager(newMockThemeAccess(), mockTasks, newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 	if err != nil {
 		t.Fatalf("NewPlanningManager failed: %v", err)
 	}
@@ -3961,7 +4001,7 @@ func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOnTimeRoutine(t *testing.T)
 		RoutineChecks: []string{"R1"},
 	}
 	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", ThemeID: "T", IsOverdue: false},
+		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
 	}
 
 	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
@@ -3995,7 +4035,7 @@ func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOverdueRoutine(t *testing.T
 		RoutineChecks: []string{"R1"},
 	}
 	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Overdue run", ThemeID: "T", IsOverdue: true},
+		{RoutineID: "R1", Description: "Overdue run", IsOverdue: true},
 	}
 
 	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
@@ -4107,7 +4147,7 @@ func TestUnit_SaveDayFocusWithRoutines_Idempotent(t *testing.T) {
 		RoutineChecks: []string{"R1"},
 	}
 	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", ThemeID: "T", IsOverdue: false},
+		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
 	}
 
 	// First call creates the task
@@ -4138,7 +4178,7 @@ func TestUnit_SaveDayFocusWithRoutines_AddsRoutineTagWhenChecked(t *testing.T) {
 		Tags:          nil,
 	}
 	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", ThemeID: "T", IsOverdue: false},
+		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
 	}
 
 	err := manager.SaveDayFocusWithRoutines(day, infos, nil)

@@ -116,11 +116,13 @@ func newTestAdviceManager(
 	modelAccess access.IModelAccess,
 	uiStateAccess access.IUIStateAccess,
 ) (*AdviceManager, error) {
+	ra := newMockRoutineAccess()
 	// Create a minimal PlanningManager for the dependency
 	pm, err := NewPlanningManager(
 		themeAccess,
 		newMockTaskAccess(),
 		&mockCalendarAccess{},
+		ra,
 		&mockVisionAccess{},
 		uiStateAccess,
 	)
@@ -128,7 +130,7 @@ func newTestAdviceManager(
 		return nil, fmt.Errorf("failed to create PlanningManager for test: %w", err)
 	}
 
-	return NewAdviceManager(themeAccess, chatEngine, modelAccess, uiStateAccess, pm)
+	return NewAdviceManager(themeAccess, ra, chatEngine, modelAccess, uiStateAccess, pm)
 }
 
 // sampleThemes returns test themes with objectives, key results, and routines.
@@ -162,12 +164,6 @@ func sampleThemes() []access.LifeTheme {
 							Status:   "active",
 						},
 					},
-				},
-			},
-			Routines: []access.Routine{
-				{
-					ID:          "H-R1",
-					Description: "Sleep 8 hours",
 				},
 			},
 		},
@@ -225,8 +221,9 @@ func TestUnit_AdviceManager_RequestAdvice_WithSelectedOKRIds(t *testing.T) {
 	ma := &mockAdviceModelAccess{response: "Advice for health."}
 	ua := &mockAdviceUIStateAccess{}
 
-	pm, _ := NewPlanningManager(ta, newMockTaskAccess(), &mockCalendarAccess{}, &mockVisionAccess{}, ua)
-	am, err := NewAdviceManager(ta, capturingEngine, ma, ua, pm)
+	ra := newMockRoutineAccess()
+	pm, _ := NewPlanningManager(ta, newMockTaskAccess(), &mockCalendarAccess{}, ra, &mockVisionAccess{}, ua)
+	am, err := NewAdviceManager(ta, ra, capturingEngine, ma, ua, pm)
 	if err != nil {
 		t.Fatalf("failed to create AdviceManager: %v", err)
 	}
@@ -458,7 +455,6 @@ func TestUnit_AdviceManager_AcceptSuggestion_CreateRoutine(t *testing.T) {
 		Action: "create",
 		RoutineData: &chat_engine.RoutineSuggestion{
 			Description: "Track water intake",
-			ThemeID:     "H",
 		},
 	}
 	err = am.AcceptSuggestion(suggestion, "")
@@ -466,18 +462,17 @@ func TestUnit_AdviceManager_AcceptSuggestion_CreateRoutine(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify the routine was created under the Health theme
-	savedThemes, _ := ta.GetThemes()
-	healthTheme := savedThemes[0]
+	// Verify the routine was created via RoutineAccess
+	routines, _ := am.planningManager.GetRoutines()
 	found := false
-	for _, r := range healthTheme.Routines {
+	for _, r := range routines {
 		if r.Description == "Track water intake" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected 'Track water intake' routine to be created under Health theme")
+		t.Error("expected 'Track water intake' routine to be created")
 	}
 }
 
@@ -690,24 +685,28 @@ func TestUnit_AdviceManager_AcceptSuggestion_MissingParentErrors(t *testing.T) {
 		t.Fatal("expected error for missing parent on key result")
 	}
 
-	// Routine without theme
+	// Routine without theme — should succeed (routines are theme-independent)
 	err = am.AcceptSuggestion(chat_engine.Suggestion{
 		Type:        "routine",
 		Action:      "create",
-		RoutineData: &chat_engine.RoutineSuggestion{Description: "No theme routine"},
+		RoutineData: &chat_engine.RoutineSuggestion{Description: "Independent routine"},
 	}, "")
-	if err == nil {
-		t.Fatal("expected error for missing theme on routine")
+	if err != nil {
+		t.Fatalf("unexpected error creating routine: %v", err)
 	}
 }
 
 func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	themes := sampleThemes()
+	routines := []access.Routine{
+		{ID: "R1", Description: "Sleep 8 hours"},
+	}
 
-	// Test with no filter (all themes)
-	contexts := convertThemesToOKRContext(themes, nil)
-	if len(contexts) != 2 {
-		t.Fatalf("expected 2 contexts, got %d", len(contexts))
+	// Test with no filter (all themes + routines)
+	contexts := convertThemesToOKRContext(themes, routines, nil)
+	// 2 themes + 1 routines context
+	if len(contexts) != 3 {
+		t.Fatalf("expected 3 contexts, got %d", len(contexts))
 	}
 
 	// Verify Health theme conversion
@@ -752,20 +751,23 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 		t.Errorf("expected child objective ID 'H-O2', got %q", obj.Children[0].ID)
 	}
 
-	// Verify routines
-	if len(health.Routines) != 1 {
-		t.Fatalf("expected 1 routine, got %d", len(health.Routines))
+	// Verify routines context entry (last entry)
+	routineCtx := contexts[2]
+	if routineCtx.ThemeName != "Routines" {
+		t.Errorf("expected routines context name 'Routines', got %q", routineCtx.ThemeName)
 	}
-	routine := health.Routines[0]
-	if routine.ID != "H-R1" {
-		t.Errorf("expected routine ID 'H-R1', got %q", routine.ID)
+	if len(routineCtx.Routines) != 1 {
+		t.Fatalf("expected 1 routine, got %d", len(routineCtx.Routines))
 	}
-	if routine.Description != "Sleep 8 hours" {
-		t.Errorf("expected description 'Sleep 8 hours', got %q", routine.Description)
+	if routineCtx.Routines[0].ID != "R1" {
+		t.Errorf("expected routine ID 'R1', got %q", routineCtx.Routines[0].ID)
+	}
+	if routineCtx.Routines[0].Description != "Sleep 8 hours" {
+		t.Errorf("expected description 'Sleep 8 hours', got %q", routineCtx.Routines[0].Description)
 	}
 
 	// Test with theme ID filter
-	filteredContexts := convertThemesToOKRContext(themes, []string{"CF"})
+	filteredContexts := convertThemesToOKRContext(themes, routines, []string{"CF"})
 	if len(filteredContexts) != 1 {
 		t.Fatalf("expected 1 filtered context, got %d", len(filteredContexts))
 	}
@@ -774,13 +776,14 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	}
 
 	// Test with empty slice (should return all)
-	allContexts := convertThemesToOKRContext(themes, []string{})
-	if len(allContexts) != 2 {
-		t.Fatalf("expected 2 contexts with empty filter, got %d", len(allContexts))
+	allContexts := convertThemesToOKRContext(themes, routines, []string{})
+	// 2 themes + 1 routines
+	if len(allContexts) != 3 {
+		t.Fatalf("expected 3 contexts with empty filter, got %d", len(allContexts))
 	}
 
 	// Test with objective ID — should include parent theme, only the selected objective
-	objContexts := convertThemesToOKRContext(themes, []string{"H-O1"})
+	objContexts := convertThemesToOKRContext(themes, routines, []string{"H-O1"})
 	if len(objContexts) != 1 {
 		t.Fatalf("expected 1 context for objective filter, got %d", len(objContexts))
 	}
@@ -802,7 +805,7 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	}
 
 	// Test with KR ID — should include parent theme and parent objective
-	krContexts := convertThemesToOKRContext(themes, []string{"H-KR1"})
+	krContexts := convertThemesToOKRContext(themes, routines, []string{"H-KR1"})
 	if len(krContexts) != 1 {
 		t.Fatalf("expected 1 context for KR filter, got %d", len(krContexts))
 	}
@@ -817,7 +820,7 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	}
 
 	// Test with objective + its KRs — objective selected means all descendants included
-	mixedContexts := convertThemesToOKRContext(themes, []string{"H-O1", "H-KR1"})
+	mixedContexts := convertThemesToOKRContext(themes, routines, []string{"H-O1", "H-KR1"})
 	if len(mixedContexts) != 1 {
 		t.Fatalf("expected 1 context, got %d", len(mixedContexts))
 	}
@@ -826,15 +829,15 @@ func TestUnit_ConvertThemesToOKRContext(t *testing.T) {
 	}
 
 	// Test with routine ID
-	routineContexts := convertThemesToOKRContext(themes, []string{"H-R1"})
+	routineContexts := convertThemesToOKRContext(themes, routines, []string{"R1"})
 	if len(routineContexts) != 1 {
 		t.Fatalf("expected 1 context for routine filter, got %d", len(routineContexts))
 	}
 	if len(routineContexts[0].Routines) != 1 {
 		t.Fatalf("expected 1 routine, got %d", len(routineContexts[0].Routines))
 	}
-	if routineContexts[0].Routines[0].ID != "H-R1" {
-		t.Errorf("expected routine 'H-R1', got %q", routineContexts[0].Routines[0].ID)
+	if routineContexts[0].Routines[0].ID != "R1" {
+		t.Errorf("expected routine 'R1', got %q", routineContexts[0].Routines[0].ID)
 	}
 }
 

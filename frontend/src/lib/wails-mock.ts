@@ -60,8 +60,6 @@ export interface Routine {
 export interface RoutineOccurrence {
   routineId: string;
   description: string;
-  themeId: string;
-  themeColor: string;
   date: CalendarDate;
   status: string; // "scheduled", "overdue", "sporadic"
   checked: boolean;
@@ -81,7 +79,6 @@ export interface LifeTheme {
   name: string;
   color: string;
   objectives: Objective[];
-  routines?: Routine[];
 }
 
 export type GoalType = 'theme' | 'objective' | 'key-result' | 'routine';
@@ -131,9 +128,10 @@ export interface DayFocus {
 export interface RoutineTaskInfo {
   routineId: string;
   description: string;
-  themeId: string;
   isOverdue: boolean;
 }
+
+export const ROUTINE_COLOR = '#6b7280';
 
 export interface Task {
   id: string;
@@ -433,19 +431,6 @@ let mockThemes: LifeTheme[] = [
         objectives: [],
       },
     ],
-    routines: [
-      {
-        id: 'HF-R1',
-        description: 'Exercise sessions',
-        repeatPattern: {
-          frequency: 'weekly',
-          interval: 1,
-          weekdays: [1, 3, 5], // Mon, Wed, Fri
-          startDate: '2026-01-01',
-        },
-      },
-      { id: 'HF-R2', description: 'Body weight check' },
-    ],
   },
   {
     id: 'CG',
@@ -469,6 +454,20 @@ let mockThemes: LifeTheme[] = [
   { id: 'PF', name: 'Personal Finance', color: '#f59e0b', objectives: [] },
   { id: 'L', name: 'Learning', color: '#8b5cf6', objectives: [] },
   { id: 'R', name: 'Relationships', color: '#ec4899', objectives: [] },
+];
+
+const mockRoutines: Routine[] = [
+  {
+    id: 'R1',
+    description: 'Exercise sessions',
+    repeatPattern: {
+      frequency: 'weekly',
+      interval: 1,
+      weekdays: [1, 3, 5], // Mon, Wed, Fri
+      startDate: '2026-01-01',
+    },
+  },
+  { id: 'R2', description: 'Body weight check' },
 ];
 
 const mockYearFocus: Map<number, DayFocus[]> = new Map();
@@ -765,6 +764,10 @@ export const mockAppBindings = {
     mockYearFocus.set(year, entries);
   },
 
+  GetRoutines: async (): Promise<Routine[]> => {
+    return JSON.parse(JSON.stringify(mockRoutines));
+  },
+
   GetRoutinesForDate: async (date: string): Promise<RoutineOccurrence[]> => {
     const result: RoutineOccurrence[] = [];
     const today = todayDate();
@@ -775,108 +778,93 @@ export const mockAppBindings = {
     const dayEntry = entries.find(e => e.date === date);
     const checkedIds = new Set(dayEntry?.routineChecks || []);
 
-    for (const theme of mockThemes) {
-      for (const routine of (theme.routines || [])) {
-        if (!routine.repeatPattern) {
-          // Sporadic: show on current day
-          if (date === today) {
-            result.push({
-              routineId: routine.id,
-              description: routine.description,
-              themeId: theme.id,
-              themeColor: theme.color,
-              date: parseCalendarDate(date),
-              status: 'sporadic',
-              checked: checkedIds.has(routine.id),
-            });
-          }
-          continue;
-        }
-
-        // Periodic: compute occurrences for this date
-        const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], date, date);
-        for (const occ of occurrences) {
+    for (const routine of mockRoutines) {
+      if (!routine.repeatPattern) {
+        // Sporadic: show on current day
+        if (date === today) {
           result.push({
             routineId: routine.id,
             description: routine.description,
-            themeId: theme.id,
-            themeColor: theme.color,
-            date: parseCalendarDate(occ),
-            status: 'scheduled',
+            date: parseCalendarDate(date),
+            status: 'sporadic',
             checked: checkedIds.has(routine.id),
           });
         }
+        continue;
+      }
 
-        // Compute overdue
-        const allCheckedDates: string[] = [];
-        for (const [, yearEntries] of mockYearFocus) {
-          for (const entry of yearEntries) {
-            if (entry.routineChecks?.includes(routine.id)) {
-              allCheckedDates.push(entry.date);
-            }
+      // Periodic: compute occurrences for this date
+      const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], date, date);
+      for (const occ of occurrences) {
+        result.push({
+          routineId: routine.id,
+          description: routine.description,
+          date: parseCalendarDate(occ),
+          status: 'scheduled',
+          checked: checkedIds.has(routine.id),
+        });
+      }
+
+      // Compute overdue
+      const allCheckedDates: string[] = [];
+      for (const [, yearEntries] of mockYearFocus) {
+        for (const entry of yearEntries) {
+          if (entry.routineChecks?.includes(routine.id)) {
+            allCheckedDates.push(entry.date);
           }
         }
-        const overdue = computeMockOverdue(routine.repeatPattern, routine.exceptions || [], allCheckedDates, date);
-        for (const od of overdue) {
-          result.push({
-            routineId: routine.id,
-            description: routine.description,
-            themeId: theme.id,
-            themeColor: theme.color,
-            date: parseCalendarDate(od),
-            status: 'overdue',
-            checked: false,
-          });
-        }
+      }
+      const overdue = computeMockOverdue(routine.repeatPattern, routine.exceptions || [], allCheckedDates, date);
+      for (const od of overdue) {
+        result.push({
+          routineId: routine.id,
+          description: routine.description,
+          date: parseCalendarDate(od),
+          status: 'overdue',
+          checked: false,
+        });
       }
     }
     return result;
   },
 
   RescheduleRoutineOccurrence: async (routineID: string, originalDate: string, newDate: string): Promise<void> => {
-    for (const theme of mockThemes) {
-      for (const routine of (theme.routines || [])) {
-        if (routine.id === routineID) {
-          if (!routine.exceptions) {
-            routine.exceptions = [];
-          }
-          routine.exceptions.push({ originalDate, newDate });
-          return;
-        }
+    const routine = mockRoutines.find(r => r.id === routineID);
+    if (routine) {
+      if (!routine.exceptions) {
+        routine.exceptions = [];
       }
+      routine.exceptions.push({ originalDate, newDate });
     }
   },
 
   GetRoutineProgress: async (routineID: string): Promise<RoutinePeriodProgress> => {
-    for (const theme of mockThemes) {
-      for (const routine of (theme.routines || [])) {
-        if (routine.id === routineID && routine.repeatPattern) {
-          const todayStr = todayDate();
-          const bounds = computePeriodBounds(routine.repeatPattern.frequency, todayStr);
-          const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], bounds.start, todayStr);
+    const routine = mockRoutines.find(r => r.id === routineID);
+    if (routine && routine.repeatPattern) {
+      const todayStr = todayDate();
+      const bounds = computePeriodBounds(routine.repeatPattern.frequency, todayStr);
+      const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], bounds.start, todayStr);
 
-          const allCheckedDates: string[] = [];
-          for (const [, yearEntries] of mockYearFocus) {
-            for (const entry of yearEntries) {
-              if (entry.routineChecks?.includes(routineID)) {
-                allCheckedDates.push(entry.date);
-              }
-            }
+      const allCheckedDates: string[] = [];
+      for (const [, yearEntries] of mockYearFocus) {
+        for (const entry of yearEntries) {
+          if (entry.routineChecks?.includes(routineID)) {
+            allCheckedDates.push(entry.date);
           }
-          const checkedSet = new Set(allCheckedDates);
-          const completed = occurrences.filter(d => checkedSet.has(d)).length;
-
-          return {
-            routineId: routineID,
-            completed,
-            expected: occurrences.length,
-            period: routine.repeatPattern.frequency === 'daily' ? 'day'
-                   : routine.repeatPattern.frequency === 'weekly' ? 'week'
-                   : routine.repeatPattern.frequency === 'monthly' ? 'month' : 'year',
-            onTrack: completed >= occurrences.length,
-          };
         }
       }
+      const checkedSet = new Set(allCheckedDates);
+      const completed = occurrences.filter(d => checkedSet.has(d)).length;
+
+      return {
+        routineId: routineID,
+        completed,
+        expected: occurrences.length,
+        period: routine.repeatPattern.frequency === 'daily' ? 'day'
+               : routine.repeatPattern.frequency === 'weekly' ? 'week'
+               : routine.repeatPattern.frequency === 'monthly' ? 'month' : 'year',
+        onTrack: completed >= occurrences.length,
+      };
     }
     return { routineId: routineID, completed: 0, expected: 0, period: 'week', onTrack: true };
   },
@@ -1273,24 +1261,20 @@ export const mockAppBindings = {
         return { keyResult };
       }
       case 'routine': {
-        const themeId = req.parentId;
         const description = req.description ?? '';
-        const theme = mockThemes.find(t => t.id === themeId);
-        if (!theme) throw new Error(`Theme ${themeId} not found`);
         if (!description.trim()) throw new Error('description cannot be empty');
-        if (!theme.routines) theme.routines = [];
         let maxRNum = 0;
-        const re = new RegExp(`^${themeId}-R(\\d+)$`);
-        for (const routine of theme.routines) {
-          const match = routine.id.match(re);
+        const re = /^R(\d+)$/;
+        for (const r of mockRoutines) {
+          const match = r.id.match(re);
           if (match) maxRNum = Math.max(maxRNum, parseInt(match[1]));
         }
         const routine: Routine = {
-          id: `${themeId}-R${maxRNum + 1}`,
+          id: `R${maxRNum + 1}`,
           description: description.trim(),
           repeatPattern: req.repeatPattern,
         };
-        theme.routines.push(routine);
+        mockRoutines.push(routine);
         return { routine };
       }
       default:
@@ -1315,18 +1299,13 @@ export const mockAppBindings = {
       if (!obj) throw new Error(`Objective ${id} not found`);
       if (req.title !== undefined) obj.title = req.title;
       if (req.tags !== undefined) obj.tags = req.tags;
-    } else if (id.includes('-R')) {
+    } else if (id.match(/^R\d+$/)) {
       // Routine
-      for (const theme of mockThemes) {
-        const r = (theme.routines ?? []).find(r => r.id === id);
-        if (r) {
-          if (req.description !== undefined) r.description = req.description;
-          if (req.clearRepeat) r.repeatPattern = undefined;
-          if (req.repeatPattern) r.repeatPattern = req.repeatPattern;
-          return;
-        }
-      }
-      throw new Error(`Routine ${id} not found`);
+      const r = mockRoutines.find(r => r.id === id);
+      if (!r) throw new Error(`Routine ${id} not found`);
+      if (req.description !== undefined) r.description = req.description;
+      if (req.clearRepeat) r.repeatPattern = undefined;
+      if (req.repeatPattern) r.repeatPattern = req.repeatPattern;
     } else {
       // Theme (no hyphen pattern)
       const theme = mockThemes.find(t => t.id === id);
@@ -1355,15 +1334,10 @@ export const mockAppBindings = {
       const result = findObjectiveParent(mockThemes, goalId);
       if (!result) throw new Error(`Objective ${goalId} not found`);
       result.list.splice(result.index, 1);
-    } else if (goalId.includes('-R')) {
-      for (const theme of mockThemes) {
-        const idx = (theme.routines ?? []).findIndex(r => r.id === goalId);
-        if (idx >= 0) {
-          theme.routines!.splice(idx, 1);
-          return;
-        }
-      }
-      throw new Error(`Routine ${goalId} not found`);
+    } else if (goalId.match(/^R\d+$/)) {
+      const idx = mockRoutines.findIndex(r => r.id === goalId);
+      if (idx < 0) throw new Error(`Routine ${goalId} not found`);
+      mockRoutines.splice(idx, 1);
     } else {
       mockThemes = mockThemes.filter(t => t.id !== goalId);
     }
@@ -1394,7 +1368,7 @@ export const mockAppBindings = {
           {
             type: "routine",
             action: "create",
-            routineData: { description: "Track sleep quality", targetValue: 7, targetType: "at-or-above", unit: "hours/night", themeId: "H" }
+            routineData: { description: "Track sleep quality", targetValue: 7, targetType: "at-or-above", unit: "hours/night" }
           }
         ]
       },

@@ -81,10 +81,14 @@ func Initialize() (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize VisionAccess: %w", err)
 	}
+	routineAccess, err := access.NewRoutineAccess(bearingDir, repo)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize RoutineAccess: %w", err)
+	}
 	uiStateAccess := access.NewUIStateAccess(bearingDir)
 
 	// Initialize Managers
-	planningManager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess)
+	planningManager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize PlanningManager: %w", err)
 	}
@@ -100,7 +104,7 @@ func Initialize() (*Result, error) {
 	modelAccess := access.NewClaudeCLIModelAccess(0)
 
 	// Initialize AdviceManager
-	adviceManager, err := managers.NewAdviceManager(themeAccess, chatEngine, modelAccess, uiStateAccess, planningManager)
+	adviceManager, err := managers.NewAdviceManager(themeAccess, routineAccess, chatEngine, modelAccess, uiStateAccess, planningManager)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize AdviceManager: %w", err)
 	}
