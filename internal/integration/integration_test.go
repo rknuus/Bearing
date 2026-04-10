@@ -82,9 +82,16 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Task
 		t.Fatalf("Failed to create VisionAccess: %v", err)
 	}
 
+	routineAccess, err := access.NewRoutineAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create RoutineAccess: %v", err)
+	}
+
 	uiStateAccess := access.NewUIStateAccess(dataDir)
 
-	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess)
+	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
@@ -531,8 +538,12 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to reopen VisionAccess: %v", err)
 	}
+	routineAccess2, err := access.NewRoutineAccess(dataDir, repo2)
+	if err != nil {
+		t.Fatalf("Failed to reopen RoutineAccess: %v", err)
+	}
 	uiStateAccess2 := access.NewUIStateAccess(dataDir)
-	manager2, err := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, visionAccess2, uiStateAccess2)
+	manager2, err := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, routineAccess2, visionAccess2, uiStateAccess2)
 	if err != nil {
 		t.Fatalf("Failed to reopen PlanningManager: %v", err)
 	}
@@ -629,9 +640,10 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	themeAccess2, _ := access.NewThemeAccess(dataDir2, repo2)
 	taskAccess2, _ := access.NewTaskAccess(dataDir2, repo2)
 	calendarAccess2, _ := access.NewCalendarAccess(dataDir2, repo2)
+	routineAccess2, _ := access.NewRoutineAccess(dataDir2, repo2)
 	visionAccess2, _ := access.NewVisionAccess(dataDir2, repo2)
 	uiStateAccess2 := access.NewUIStateAccess(dataDir2)
-	manager2, _ := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, visionAccess2, uiStateAccess2)
+	manager2, _ := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, routineAccess2, visionAccess2, uiStateAccess2)
 
 	// Load and verify
 	loadedCtx, err := manager2.LoadNavigationContext()

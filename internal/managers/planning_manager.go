@@ -228,7 +228,6 @@ type LifeTheme struct {
 	Name       string      `json:"name"`
 	Color      string      `json:"color"`
 	Objectives []Objective `json:"objectives"`
-	Routines   []Routine   `json:"routines,omitempty"`
 }
 
 // DayFocus represents a daily focus entry in the Manager layer's public interface.
@@ -274,8 +273,6 @@ type PersonalVision struct {
 type RoutineOccurrence struct {
 	RoutineID   string `json:"routineId"`
 	Description string `json:"description"`
-	ThemeID     string `json:"themeId"`
-	ThemeColor  string `json:"themeColor"`
 	Date        string `json:"date"`
 	Status      string `json:"status"` // "scheduled", "overdue", "sporadic"
 	Checked     bool   `json:"checked"`
@@ -294,7 +291,6 @@ type RoutinePeriodProgress struct {
 type RoutineTaskInfo struct {
 	RoutineID   string `json:"routineId"`
 	Description string `json:"description"`
-	ThemeID     string `json:"themeId"`
 	IsOverdue   bool   `json:"isOverdue"`
 }
 
@@ -345,17 +341,24 @@ type ReviseRequest struct {
 }
 
 // detectGoalType determines the goal type from its ID naming convention.
-// Theme IDs are uppercase abbreviations (no hyphens with O/KR/R suffix).
-// Objectives: {themeId}-O{n}, Key Results: {themeId}-KR{n}, Routines: {themeId}-R{n}
+// Theme IDs are uppercase abbreviations (no hyphens with O/KR suffix).
+// Objectives: {themeId}-O{n}, Key Results: {themeId}-KR{n}, Routines: R{n}
 func detectGoalType(id string) GoalType {
 	if strings.Contains(id, "-KR") {
 		return GoalTypeKeyResult
 	}
-	if strings.Contains(id, "-R") {
-		return GoalTypeRoutine
-	}
 	if strings.Contains(id, "-O") {
 		return GoalTypeObjective
+	}
+	// Routine IDs: R{n} (new format) or {themeId}-R{n} (legacy format)
+	if strings.HasPrefix(id, "R") {
+		rest := id[1:]
+		if _, err := strconv.Atoi(rest); err == nil {
+			return GoalTypeRoutine
+		}
+	}
+	if strings.Contains(id, "-R") {
+		return GoalTypeRoutine
 	}
 	return GoalTypeTheme
 }
@@ -395,6 +398,7 @@ type PlanningManager struct {
 	themeAccess    access.IThemeAccess
 	taskAccess     access.ITaskAccess
 	calendarAccess access.ICalendarAccess
+	routineAccess  access.IRoutineAccess
 	visionAccess   access.IVisionAccess
 	uiStateAccess  access.IUIStateAccess
 	ruleEngine     rule_engine.IRuleEngine
@@ -421,6 +425,7 @@ func NewPlanningManager(
 	themeAccess access.IThemeAccess,
 	taskAccess access.ITaskAccess,
 	calendarAccess access.ICalendarAccess,
+	routineAccess access.IRoutineAccess,
 	visionAccess access.IVisionAccess,
 	uiStateAccess access.IUIStateAccess,
 ) (*PlanningManager, error) {
@@ -432,6 +437,9 @@ func NewPlanningManager(
 	}
 	if calendarAccess == nil {
 		return nil, fmt.Errorf("calendarAccess cannot be nil")
+	}
+	if routineAccess == nil {
+		return nil, fmt.Errorf("routineAccess cannot be nil")
 	}
 	if visionAccess == nil {
 		return nil, fmt.Errorf("visionAccess cannot be nil")
@@ -448,6 +456,7 @@ func NewPlanningManager(
 		themeAccess:    themeAccess,
 		taskAccess:     taskAccess,
 		calendarAccess: calendarAccess,
+		routineAccess:  routineAccess,
 		visionAccess:   visionAccess,
 		uiStateAccess:  uiStateAccess,
 		ruleEngine:     engine,
@@ -800,68 +809,24 @@ func (m *PlanningManager) deleteKeyResult(keyResultId string) error {
 	return fmt.Errorf("key result with ID %s not found", keyResultId)
 }
 
-// getMaxRoutineNum returns the highest routine number in a theme's routines.
-func getMaxRoutineNum(theme access.LifeTheme) int {
-	max := 0
-	prefix := theme.ID + "-R"
-	for _, routine := range theme.Routines {
-		if strings.HasPrefix(routine.ID, prefix) {
-			var n int
-			if _, err := fmt.Sscanf(routine.ID, theme.ID+"-R%d", &n); err == nil && n > max {
-				max = n
-			}
-		}
-	}
-	return max
-}
-
-// findThemeForRoutine finds the theme containing the routine with the given ID.
-// Routine IDs are prefixed with the theme ID, e.g. "HF-R1".
-func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.LifeTheme, int) {
-	for i := range themes {
-		for j := range themes[i].Routines {
-			if themes[i].Routines[j].ID == routineId {
-				return &themes[i], j
-			}
-		}
-	}
-	return nil, -1
-}
-
-// addRoutine creates a new routine under the specified theme.
-func (m *PlanningManager) addRoutine(themeId, description string, repeatPattern *RepeatPattern) (*Routine, error) {
-	if themeId == "" {
-		return nil, fmt.Errorf("themeId cannot be empty")
-	}
+// addRoutine creates a new routine via RoutineAccess.
+func (m *PlanningManager) addRoutine(description string, repeatPattern *RepeatPattern) (*Routine, error) {
 	if strings.TrimSpace(description) == "" {
 		return nil, fmt.Errorf("description cannot be empty")
 	}
 
-	themes, err := m.themeAccess.GetThemes()
+	routines, err := m.routineAccess.GetRoutines()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	var targetTheme *access.LifeTheme
-	for i := range themes {
-		if themes[i].ID == themeId {
-			targetTheme = &themes[i]
-			break
-		}
-	}
-	if targetTheme == nil {
-		return nil, fmt.Errorf("theme with ID %s not found", themeId)
-	}
-
-	maxNum := getMaxRoutineNum(*targetTheme)
 	routine := access.Routine{
-		ID:            fmt.Sprintf("%s-R%d", themeId, maxNum+1),
+		ID:            access.NextRoutineID(routines),
 		Description:   strings.TrimSpace(description),
 		RepeatPattern: toAccessRepeatPattern(repeatPattern),
 	}
-	targetTheme.Routines = append(targetTheme.Routines, routine)
 
-	if err := m.themeAccess.SaveTheme(*targetTheme); err != nil {
+	if err := m.routineAccess.SaveRoutine(routine); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
@@ -869,25 +834,13 @@ func (m *PlanningManager) addRoutine(themeId, description string, repeatPattern 
 	return &result, nil
 }
 
-// deleteRoutine removes a routine by ID.
+// deleteRoutine removes a routine by ID via RoutineAccess.
 func (m *PlanningManager) deleteRoutine(routineId string) error {
 	if routineId == "" {
 		return fmt.Errorf("routineId cannot be empty")
 	}
 
-	themes, err := m.themeAccess.GetThemes()
-	if err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	theme, idx := findThemeForRoutine(themes, routineId)
-	if theme == nil {
-		return fmt.Errorf("routine with ID %s not found", routineId)
-	}
-
-	theme.Routines = append(theme.Routines[:idx], theme.Routines[idx+1:]...)
-
-	if err := m.themeAccess.SaveTheme(*theme); err != nil {
+	if err := m.routineAccess.DeleteRoutine(routineId); err != nil {
 		return fmt.Errorf("%w", err)
 	}
 	return nil
@@ -1187,7 +1140,7 @@ func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []
 			priority = string(access.PriorityImportantUrgent)
 		}
 
-		if _, err := m.CreateTask(info.Description, info.ThemeID, priority, ref, "Routine", ""); err != nil {
+		if _, err := m.CreateTask(info.Description, "", priority, ref, "Routine", ""); err != nil {
 			return fmt.Errorf("SaveDayFocusWithRoutines: failed to create task for routine %s: %w", routineID, err)
 		}
 		slog.Info("SaveDayFocusWithRoutines: created task for routine", "routineId", routineID, "date", day.Date)
@@ -2183,7 +2136,7 @@ func (m *PlanningManager) Establish(req EstablishRequest) (*EstablishResult, err
 		return &EstablishResult{KeyResult: kr}, nil
 
 	case GoalTypeRoutine:
-		routine, err := m.addRoutine(req.ParentID, req.Description, req.RepeatPattern)
+		routine, err := m.addRoutine(req.Description, req.RepeatPattern)
 		if err != nil {
 			return nil, err
 		}
@@ -2270,23 +2223,29 @@ func (m *PlanningManager) Revise(req ReviseRequest) error {
 		return fmt.Errorf("key result with ID %s not found", req.GoalID)
 
 	case GoalTypeRoutine:
-		themes, err := m.themeAccess.GetThemes()
+		routines, err := m.routineAccess.GetRoutines()
 		if err != nil {
 			return fmt.Errorf("%w", err)
 		}
-		theme, idx := findThemeForRoutine(themes, req.GoalID)
-		if theme == nil {
+		var routine *access.Routine
+		for i := range routines {
+			if routines[i].ID == req.GoalID {
+				routine = &routines[i]
+				break
+			}
+		}
+		if routine == nil {
 			return fmt.Errorf("routine with ID %s not found", req.GoalID)
 		}
 		if req.Description != nil {
-			theme.Routines[idx].Description = strings.TrimSpace(*req.Description)
+			routine.Description = strings.TrimSpace(*req.Description)
 		}
 		if req.ClearRepeat {
-			theme.Routines[idx].RepeatPattern = nil
+			routine.RepeatPattern = nil
 		} else if req.RepeatPattern != nil {
-			theme.Routines[idx].RepeatPattern = toAccessRepeatPattern(req.RepeatPattern)
+			routine.RepeatPattern = toAccessRepeatPattern(req.RepeatPattern)
 		}
-		if err := m.themeAccess.SaveTheme(*theme); err != nil {
+		if err := m.routineAccess.SaveRoutine(*routine); err != nil {
 			return fmt.Errorf("%w", err)
 		}
 		return nil
@@ -2479,9 +2438,9 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 		return nil, fmt.Errorf("date cannot be empty")
 	}
 
-	themes, err := m.themeAccess.GetThemes()
+	routines, err := m.routineAccess.GetRoutines()
 	if err != nil {
-		return nil, fmt.Errorf("GetRoutinesForDate: failed to get themes: %w", err)
+		return nil, fmt.Errorf("GetRoutinesForDate: failed to get routines: %w", err)
 	}
 
 	year, err := strconv.Atoi(date[:4])
@@ -2509,61 +2468,53 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 	result := []RoutineOccurrence{}
 	todayChecks := checkedByDate[date]
 
-	for _, theme := range themes {
-		for _, routine := range theme.Routines {
-			enginePattern := toEngineRepeatPattern(routine.RepeatPattern)
-			engineExceptions := toEngineExceptions(routine.Exceptions)
+	for _, routine := range routines {
+		enginePattern := toEngineRepeatPattern(routine.RepeatPattern)
+		engineExceptions := toEngineExceptions(routine.Exceptions)
 
-			if enginePattern == nil {
-				// Sporadic routine — always shown, check if checked
-				checked := todayChecks != nil && todayChecks[routine.ID]
-				result = append(result, RoutineOccurrence{
-					RoutineID:   routine.ID,
-					Description: routine.Description,
-					ThemeID:     theme.ID,
-					ThemeColor:  theme.Color,
-					Date:        date,
-					Status:      "sporadic",
-					Checked:     checked,
-				})
-				continue
-			}
+		if enginePattern == nil {
+			// Sporadic routine — always shown, check if checked
+			checked := todayChecks != nil && todayChecks[routine.ID]
+			result = append(result, RoutineOccurrence{
+				RoutineID:   routine.ID,
+				Description: routine.Description,
+				Date:        date,
+				Status:      "sporadic",
+				Checked:     checked,
+			})
+			continue
+		}
 
-			// Periodic routine — check if scheduled for this date
-			occurrences := m.scheduleEngine.ComputeOccurrences(*enginePattern, engineExceptions, date, date)
-			for _, occ := range occurrences {
-				checked := todayChecks != nil && todayChecks[routine.ID]
-				result = append(result, RoutineOccurrence{
-					RoutineID:   routine.ID,
-					Description: routine.Description,
-					ThemeID:     theme.ID,
-					ThemeColor:  theme.Color,
-					Date:        occ,
-					Status:      "scheduled",
-					Checked:     checked,
-				})
-			}
+		// Periodic routine — check if scheduled for this date
+		occurrences := m.scheduleEngine.ComputeOccurrences(*enginePattern, engineExceptions, date, date)
+		for _, occ := range occurrences {
+			checked := todayChecks != nil && todayChecks[routine.ID]
+			result = append(result, RoutineOccurrence{
+				RoutineID:   routine.ID,
+				Description: routine.Description,
+				Date:        occ,
+				Status:      "scheduled",
+				Checked:     checked,
+			})
+		}
 
-			// Check for overdue occurrences
-			var completedDates []string
-			for d, checks := range checkedByDate {
-				if checks[routine.ID] {
-					completedDates = append(completedDates, d)
-				}
+		// Check for overdue occurrences
+		var completedDates []string
+		for d, checks := range checkedByDate {
+			if checks[routine.ID] {
+				completedDates = append(completedDates, d)
 			}
+		}
 
-			overdueDates := m.scheduleEngine.ComputeOverdue(*enginePattern, engineExceptions, completedDates, date)
-			for _, od := range overdueDates {
-				result = append(result, RoutineOccurrence{
-					RoutineID:   routine.ID,
-					Description: routine.Description,
-					ThemeID:     theme.ID,
-					ThemeColor:  theme.Color,
-					Date:        od,
-					Status:      "overdue",
-					Checked:     false,
-				})
-			}
+		overdueDates := m.scheduleEngine.ComputeOverdue(*enginePattern, engineExceptions, completedDates, date)
+		for _, od := range overdueDates {
+			result = append(result, RoutineOccurrence{
+				RoutineID:   routine.ID,
+				Description: routine.Description,
+				Date:        od,
+				Status:      "overdue",
+				Checked:     false,
+			})
 		}
 	}
 
@@ -2576,31 +2527,29 @@ func (m *PlanningManager) RescheduleRoutineOccurrence(routineID, originalDate, n
 		return fmt.Errorf("routineID, originalDate, and newDate cannot be empty")
 	}
 
-	themes, err := m.themeAccess.GetThemes()
+	routines, err := m.routineAccess.GetRoutines()
 	if err != nil {
-		return fmt.Errorf("RescheduleRoutineOccurrence: failed to get themes: %w", err)
+		return fmt.Errorf("RescheduleRoutineOccurrence: failed to get routines: %w", err)
 	}
 
-	for _, theme := range themes {
-		for i, routine := range theme.Routines {
-			if routine.ID == routineID {
-				origDate, err := utilities.ParseCalendarDate(originalDate)
-				if err != nil {
-					return fmt.Errorf("RescheduleRoutineOccurrence: invalid originalDate: %w", err)
-				}
-				newDt, err := utilities.ParseCalendarDate(newDate)
-				if err != nil {
-					return fmt.Errorf("RescheduleRoutineOccurrence: invalid newDate: %w", err)
-				}
-				theme.Routines[i].Exceptions = append(theme.Routines[i].Exceptions, access.ScheduleException{
-					OriginalDate: origDate,
-					NewDate:      newDt,
-				})
-				if err := m.themeAccess.SaveTheme(theme); err != nil {
-					return fmt.Errorf("RescheduleRoutineOccurrence: failed to save theme: %w", err)
-				}
-				return nil
+	for _, routine := range routines {
+		if routine.ID == routineID {
+			origDate, err := utilities.ParseCalendarDate(originalDate)
+			if err != nil {
+				return fmt.Errorf("RescheduleRoutineOccurrence: invalid originalDate: %w", err)
 			}
+			newDt, err := utilities.ParseCalendarDate(newDate)
+			if err != nil {
+				return fmt.Errorf("RescheduleRoutineOccurrence: invalid newDate: %w", err)
+			}
+			routine.Exceptions = append(routine.Exceptions, access.ScheduleException{
+				OriginalDate: origDate,
+				NewDate:      newDt,
+			})
+			if err := m.routineAccess.SaveRoutine(routine); err != nil {
+				return fmt.Errorf("RescheduleRoutineOccurrence: failed to save routine: %w", err)
+			}
+			return nil
 		}
 	}
 
@@ -2613,21 +2562,16 @@ func (m *PlanningManager) GetRoutineProgress(routineID string) (*RoutinePeriodPr
 		return nil, fmt.Errorf("routineID cannot be empty")
 	}
 
-	themes, err := m.themeAccess.GetThemes()
+	routines, err := m.routineAccess.GetRoutines()
 	if err != nil {
-		return nil, fmt.Errorf("GetRoutineProgress: failed to get themes: %w", err)
+		return nil, fmt.Errorf("GetRoutineProgress: failed to get routines: %w", err)
 	}
 
 	// Find the routine
 	var routine *access.Routine
-	for _, theme := range themes {
-		for j := range theme.Routines {
-			if theme.Routines[j].ID == routineID {
-				routine = &theme.Routines[j]
-				break
-			}
-		}
-		if routine != nil {
+	for i := range routines {
+		if routines[i].ID == routineID {
+			routine = &routines[i]
 			break
 		}
 	}
@@ -2671,4 +2615,17 @@ func (m *PlanningManager) GetRoutineProgress(routineID string) (*RoutinePeriodPr
 		Period:    completion.Period,
 		OnTrack:   completion.OnTrack,
 	}, nil
+}
+
+// GetRoutines returns all routines via RoutineAccess, converted to manager types.
+func (m *PlanningManager) GetRoutines() ([]Routine, error) {
+	routines, err := m.routineAccess.GetRoutines()
+	if err != nil {
+		return nil, fmt.Errorf("GetRoutines: %w", err)
+	}
+	result := make([]Routine, len(routines))
+	for i, r := range routines {
+		result[i] = toManagerRoutine(r)
+	}
+	return result, nil
 }

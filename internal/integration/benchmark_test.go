@@ -69,8 +69,15 @@ func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access
 		b.Fatalf("Failed to create VisionAccess: %v", err)
 	}
 
+	routineAccess, err := access.NewRoutineAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		b.Fatalf("Failed to create RoutineAccess: %v", err)
+	}
+
 	uiStateAccess := access.NewUIStateAccess(dataDir)
-	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess)
+	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)

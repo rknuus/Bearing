@@ -12,19 +12,11 @@ func toManagerLifeTheme(a access.LifeTheme) LifeTheme {
 	for i, o := range a.Objectives {
 		objectives[i] = toManagerObjective(o)
 	}
-	var routines []Routine
-	if len(a.Routines) > 0 {
-		routines = make([]Routine, len(a.Routines))
-		for i, r := range a.Routines {
-			routines[i] = toManagerRoutine(r)
-		}
-	}
 	return LifeTheme{
 		ID:         a.ID,
 		Name:       a.Name,
 		Color:      a.Color,
 		Objectives: objectives,
-		Routines:   routines,
 	}
 }
 
@@ -34,19 +26,11 @@ func toAccessLifeTheme(m LifeTheme) access.LifeTheme {
 	for i, o := range m.Objectives {
 		objectives[i] = toAccessObjective(o)
 	}
-	var routines []access.Routine
-	if len(m.Routines) > 0 {
-		routines = make([]access.Routine, len(m.Routines))
-		for i, r := range m.Routines {
-			routines[i] = toAccessRoutine(r)
-		}
-	}
 	return access.LifeTheme{
 		ID:         m.ID,
 		Name:       m.Name,
 		Color:      m.Color,
 		Objectives: objectives,
-		Routines:   routines,
 	}
 }
 

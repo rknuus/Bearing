@@ -125,16 +125,13 @@ func TestUnit_ToManagerLifeTheme_RoundTrip(t *testing.T) {
 				},
 			},
 		},
-		Routines: []access.Routine{
-			{ID: "r-1", Description: "Exercise"},
-		},
 	}
 	mTheme := toManagerLifeTheme(original)
 	result := toAccessLifeTheme(mTheme)
 	assertLifeThemeEqual(t, original, result)
 }
 
-func TestUnit_ToManagerLifeTheme_NoRoutines(t *testing.T) {
+func TestUnit_ToManagerLifeTheme_Empty(t *testing.T) {
 	original := access.LifeTheme{
 		ID:         "T",
 		Name:       "Career",
@@ -143,9 +140,7 @@ func TestUnit_ToManagerLifeTheme_NoRoutines(t *testing.T) {
 	}
 	mTheme := toManagerLifeTheme(original)
 	result := toAccessLifeTheme(mTheme)
-	if len(result.Routines) != 0 {
-		t.Errorf("expected nil/empty routines, got %d", len(result.Routines))
-	}
+	assertLifeThemeEqual(t, original, result)
 }
 
 func TestUnit_ToManagerDayFocus_RoundTrip(t *testing.T) {
@@ -432,12 +427,6 @@ func assertLifeThemeEqual(t *testing.T, want, got access.LifeTheme) {
 	}
 	for i := range want.Objectives {
 		assertObjectiveEqual(t, want.Objectives[i], got.Objectives[i])
-	}
-	if len(got.Routines) != len(want.Routines) {
-		t.Fatalf("Routines length: got %d, want %d", len(got.Routines), len(want.Routines))
-	}
-	for i := range want.Routines {
-		assertRoutineEqual(t, want.Routines[i], got.Routines[i])
 	}
 }
 
