@@ -67,6 +67,11 @@
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
 
+  /** Format a local Date as YYYY-MM-DD without UTC conversion. */
+  function localDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+
   /** Compute all occurrence dates for a repeat pattern within a given year. */
   function getYearOccurrences(pattern: RepeatPattern, yr: number): string[] {
     const results: string[] = [];
@@ -118,7 +123,7 @@
           const d = new Date(weekStart);
           d.setDate(weekStart.getDate() + offset - 1);
           if (d < anchor || d < yearStart || d > yearEnd) continue;
-          results.push(d.toISOString().split('T')[0]);
+          results.push(localDateStr(d));
         }
         weekStart.setDate(weekStart.getDate() + 7 * interval);
       }
@@ -126,7 +131,7 @@
     }
 
     while (current <= yearEnd) {
-      results.push(current.toISOString().split('T')[0]);
+      results.push(localDateStr(current));
       if (pattern.frequency === 'daily') {
         current.setDate(current.getDate() + interval);
       } else if (pattern.frequency === 'monthly') {
@@ -240,7 +245,7 @@
         yearFocus.set(entry.date, entry);
       }
 
-      const todayStr = currentDate || new Date().toISOString().split('T')[0];
+      const todayStr = currentDate || localDateStr(new Date());
       const routineMaps = computeRoutineMaps(themesResult, yearFocus, year, todayStr);
       routineStatusMap = routineMaps.statusMap;
       routineTooltipMap = routineMaps.tooltipMap;
@@ -454,7 +459,7 @@
       yearFocus.set(editingDay.date, dayFocus);
 
       // Recompute routine maps after check changes
-      const todayStr = currentDate || new Date().toISOString().split('T')[0];
+      const todayStr = currentDate || localDateStr(new Date());
       const routineMaps = computeRoutineMaps(themes, yearFocus, year, todayStr);
       routineStatusMap = routineMaps.statusMap;
       routineTooltipMap = routineMaps.tooltipMap;
