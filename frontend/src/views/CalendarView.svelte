@@ -60,8 +60,9 @@
   interface ClipboardEntry { themeIds?: string[]; text: string; okrIds?: string[]; tags?: string[] }
   let clipboard = $state<ClipboardEntry[]>([]);
 
-  // Routine status map for calendar dot indicators
+  // Routine status and tooltip maps for calendar dot indicators
   let routineStatusMap = $state(new Map<string, 'all' | 'some' | 'none' | 'future'>());
+  let routineTooltipMap = $state(new Map<string, string>());
 
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
@@ -125,19 +126,21 @@
   }
 
   /**
-   * Compute routine status for every date in the year.
-   * Returns a Map keyed by date string (YYYY-MM-DD) with status values.
+   * Compute routine status and tooltip for every date in the year.
+   * Returns status and tooltip Maps keyed by date string (YYYY-MM-DD).
    */
-  function computeRoutineStatusMap(
+  function computeRoutineMaps(
     allThemes: LifeTheme[],
     focusMap: SvelteMap<string, DayFocus>,
     yr: number,
     todayStr: string,
-  ): Map<string, 'all' | 'some' | 'none' | 'future'> {
+  ): { statusMap: Map<string, 'all' | 'some' | 'none' | 'future'>; tooltipMap: Map<string, string> } {
     // Count total routines due per date and checked per date
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const dueCounts = new Map<string, number>();
     const checkedCounts = new Map<string, number>(); // eslint-disable-line svelte/prefer-svelte-reactivity
+    const dueDescriptions = new Map<string, string[]>(); // eslint-disable-line svelte/prefer-svelte-reactivity
+    const checkedDescriptions = new Map<string, string[]>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 
     for (const theme of allThemes) {
       if (!theme.routines) continue;
@@ -156,31 +159,47 @@
 
         for (const d of dates) {
           dueCounts.set(d, (dueCounts.get(d) || 0) + 1);
+          const descs = dueDescriptions.get(d) || [];
+          descs.push(routine.description);
+          dueDescriptions.set(d, descs);
+
           const focus = focusMap.get(d);
           if (focus?.routineChecks?.includes(routine.id)) {
             checkedCounts.set(d, (checkedCounts.get(d) || 0) + 1);
+            const cDescs = checkedDescriptions.get(d) || [];
+            cDescs.push(routine.description);
+            checkedDescriptions.set(d, cDescs);
           }
         }
       }
     }
 
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const result = new Map<string, 'all' | 'some' | 'none' | 'future'>();
+    const statusMap = new Map<string, 'all' | 'some' | 'none' | 'future'>();
+    const tooltipMap = new Map<string, string>(); // eslint-disable-line svelte/prefer-svelte-reactivity
     for (const [dateStr, total] of dueCounts) {
       if (total === 0) continue;
       const checked = checkedCounts.get(dateStr) || 0;
 
       if (dateStr > todayStr) {
-        result.set(dateStr, 'future');
+        statusMap.set(dateStr, 'future');
       } else if (checked >= total) {
-        result.set(dateStr, 'all');
+        statusMap.set(dateStr, 'all');
       } else if (checked > 0) {
-        result.set(dateStr, 'some');
+        statusMap.set(dateStr, 'some');
       } else {
-        result.set(dateStr, 'none');
+        statusMap.set(dateStr, 'none');
+      }
+
+      const cDescs = checkedDescriptions.get(dateStr);
+      const dDescs = dueDescriptions.get(dateStr);
+      if (cDescs && cDescs.length > 0) {
+        tooltipMap.set(dateStr, cDescs.join('\n'));
+      } else if (dDescs && dDescs.length > 0) {
+        tooltipMap.set(dateStr, dDescs.join('\n'));
       }
     }
-    return result;
+    return { statusMap, tooltipMap };
   }
 
   // Load data on mount and reload when year changes
@@ -208,7 +227,9 @@
       }
 
       const todayStr = currentDate || new Date().toISOString().split('T')[0];
-      routineStatusMap = computeRoutineStatusMap(themesResult, yearFocus, year, todayStr);
+      const routineMaps = computeRoutineMaps(themesResult, yearFocus, year, todayStr);
+      routineStatusMap = routineMaps.statusMap;
+      routineTooltipMap = routineMaps.tooltipMap;
     } catch (e) {
       error = extractError(e);
       console.error('CalendarView: Failed to load data', e);
@@ -301,6 +322,7 @@
     sunday: boolean;
     weekdayName: string;
     routineStatus?: 'all' | 'some' | 'none' | 'future';
+    routineTooltip?: string;
   }
 
   let gridCells = $derived.by(() => {
@@ -319,6 +341,7 @@
           sunday: isSundayDate(year, m, d),
           weekdayName: getWeekdayName(year, m, d),
           routineStatus: routineStatusMap.get(dateStr),
+          routineTooltip: routineTooltipMap.get(dateStr),
         });
       }
     }
@@ -416,9 +439,11 @@
       await bindings.SaveDayFocus(dayFocus);
       yearFocus.set(editingDay.date, dayFocus);
 
-      // Recompute routine status map after check changes
+      // Recompute routine maps after check changes
       const todayStr = currentDate || new Date().toISOString().split('T')[0];
-      routineStatusMap = computeRoutineStatusMap(themes, yearFocus, year, todayStr);
+      const routineMaps = computeRoutineMaps(themes, yearFocus, year, todayStr);
+      routineStatusMap = routineMaps.statusMap;
+      routineTooltipMap = routineMaps.tooltipMap;
 
       await verifyCalendarState();
 
@@ -677,7 +702,7 @@
             >
               <span class="day-text-content">{cell.text}</span>
               {#if cell.routineStatus}
-                <span class="routine-dot {cell.routineStatus}"></span>
+                <span class="routine-dot {cell.routineStatus}" title={cell.routineTooltip}></span>
               {/if}
             </button>
           {/each}
