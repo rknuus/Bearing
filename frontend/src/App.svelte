@@ -9,7 +9,7 @@
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
   import { getNow } from './lib/utils/clock';
-  import { today as todayDate, type CalendarDate } from './lib/utils/date-utils';
+  import { today as todayDate, toTimestamp, type CalendarDate } from './lib/utils/date-utils';
   import { initLocale } from './lib/utils/date-format';
   import { handleWindowShortcut } from './lib/utils/window-commands';
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
@@ -338,7 +338,7 @@
           filterTagIds: filterTagIds.length > 0 ? filterTagIds : undefined,
           todayFocusActive: todayFocusActive || undefined,
           tagFocusActive: tagFocusActive || undefined,
-          lastAccessed: new Date().toISOString()
+          lastAccessed: toTimestamp(getNow())
         });
       }
     } catch (e) {

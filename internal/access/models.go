@@ -302,7 +302,7 @@ type NavigationContext struct {
 	TagFocusActive    *bool    `json:"tagFocusActive,omitempty"`
 	CollapsedSections            []string `json:"collapsedSections,omitempty"`
 	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
-	CalendarDayEditorDate        string   `json:"calendarDayEditorDate,omitempty"`
+	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitzero"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }

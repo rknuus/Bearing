@@ -68,7 +68,7 @@ func TestUnit_LoadNavigationContext_ReturnsSavedContext(t *testing.T) {
 		TagFocusActive:               &tagFocus,
 		CollapsedSections:            []string{"sec1"},
 		CollapsedColumns:             []string{"col1"},
-		CalendarDayEditorDate:        "2026-03-21",
+		CalendarDayEditorDate:        utilities.MustParseCalendarDate("2026-03-21"),
 		CalendarDayEditorExpandedIds: []string{"exp1"},
 		VisionCollapsed:              &visionCollapsed,
 	}

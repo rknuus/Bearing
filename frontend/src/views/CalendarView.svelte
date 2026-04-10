@@ -14,6 +14,7 @@
   import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
   import { toCalendarDate, calendarDateToDate, today as todayCalendarDate, type CalendarDate } from '../lib/utils/date-utils';
+  import { getNow } from '../lib/utils/clock';
 
   // Props
   interface Props {
@@ -24,7 +25,7 @@
     currentDate?: CalendarDate;
   }
 
-  let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [], currentDate }: Props = $props();
+  let { year = getNow().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [], currentDate }: Props = $props();
 
   // State
   let themes = $state<LifeTheme[]>([]);
@@ -270,7 +271,7 @@
   }
 
   function isToday(month: number, day: number): boolean {
-    const today = currentDate ? calendarDateToDate(currentDate as CalendarDate) : new Date();
+    const today = currentDate ? calendarDateToDate(currentDate as CalendarDate) : getNow();
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 
@@ -655,7 +656,7 @@
   }
 
   function goToCurrentYear() {
-    year = new Date().getFullYear();
+    year = getNow().getFullYear();
   }
 </script>
 
@@ -812,7 +813,7 @@
                   <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
                          onchange={() => toggleRoutineCheck(routine.routineId)} />
                   <span class="theme-dot" style="background-color: {routine.themeColor}"></span>
-                  <span class="routine-desc">{routine.description} ({routine.date})</span>
+                  <span class="routine-desc">{routine.description} ({formatDateLocale(routine.date)})</span>
                 </label>
                 {#if reschedulingKey === routineKey(routine)}
                   <div class="reschedule-inline">
