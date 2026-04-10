@@ -161,3 +161,4 @@ Follow existing patterns in the codebase.
 - No business logic in client code
 - Avoid code duplication
 - Do not pollute production code with test code, e.g. no testid in frontend code
+- Always use strongly typed internal representation of values (e.g. dates) and take care of validation immediately after parsing input and format only immediately before output/display
