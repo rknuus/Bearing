@@ -302,14 +302,15 @@ const (
 
 // EstablishRequest carries the fields needed to create any goal node.
 type EstablishRequest struct {
-	ParentID    string   `json:"parentId"`
-	GoalType    GoalType `json:"goalType"`
-	Name        string   `json:"name,omitempty"`
-	Color       string   `json:"color,omitempty"`
-	Title       string   `json:"title,omitempty"`
-	Description string   `json:"description,omitempty"`
-	StartValue  *int     `json:"startValue,omitempty"`
-	TargetValue *int     `json:"targetValue,omitempty"`
+	ParentID      string         `json:"parentId"`
+	GoalType      GoalType       `json:"goalType"`
+	Name          string         `json:"name,omitempty"`
+	Color         string         `json:"color,omitempty"`
+	Title         string         `json:"title,omitempty"`
+	Description   string         `json:"description,omitempty"`
+	StartValue    *int           `json:"startValue,omitempty"`
+	TargetValue   *int           `json:"targetValue,omitempty"`
+	RepeatPattern *RepeatPattern `json:"repeatPattern,omitempty"`
 }
 
 // EstablishResult contains the created goal node.
@@ -323,14 +324,16 @@ type EstablishResult struct {
 // ReviseRequest carries partial updates for an existing goal node.
 // Pointer fields: nil = leave unchanged, non-nil = update to this value.
 type ReviseRequest struct {
-	GoalID      string    `json:"goalId"`
-	Name        *string   `json:"name,omitempty"`
-	Color       *string   `json:"color,omitempty"`
-	Title       *string   `json:"title,omitempty"`
-	Tags        *[]string `json:"tags,omitempty"`
-	Description *string   `json:"description,omitempty"`
-	StartValue  *int      `json:"startValue,omitempty"`
-	TargetValue *int      `json:"targetValue,omitempty"`
+	GoalID        string         `json:"goalId"`
+	Name          *string        `json:"name,omitempty"`
+	Color         *string        `json:"color,omitempty"`
+	Title         *string        `json:"title,omitempty"`
+	Tags          *[]string      `json:"tags,omitempty"`
+	Description   *string        `json:"description,omitempty"`
+	StartValue    *int           `json:"startValue,omitempty"`
+	TargetValue   *int           `json:"targetValue,omitempty"`
+	RepeatPattern *RepeatPattern `json:"repeatPattern,omitempty"`
+	ClearRepeat   bool           `json:"clearRepeat,omitempty"`
 }
 
 // detectGoalType determines the goal type from its ID naming convention.
@@ -818,7 +821,7 @@ func findThemeForRoutine(themes []access.LifeTheme, routineId string) (*access.L
 }
 
 // addRoutine creates a new routine under the specified theme.
-func (m *PlanningManager) addRoutine(themeId, description string) (*Routine, error) {
+func (m *PlanningManager) addRoutine(themeId, description string, repeatPattern *RepeatPattern) (*Routine, error) {
 	if themeId == "" {
 		return nil, fmt.Errorf("themeId cannot be empty")
 	}
@@ -844,8 +847,9 @@ func (m *PlanningManager) addRoutine(themeId, description string) (*Routine, err
 
 	maxNum := getMaxRoutineNum(*targetTheme)
 	routine := access.Routine{
-		ID:          fmt.Sprintf("%s-R%d", themeId, maxNum+1),
-		Description: strings.TrimSpace(description),
+		ID:            fmt.Sprintf("%s-R%d", themeId, maxNum+1),
+		Description:   strings.TrimSpace(description),
+		RepeatPattern: toAccessRepeatPattern(repeatPattern),
 	}
 	targetTheme.Routines = append(targetTheme.Routines, routine)
 
@@ -2042,7 +2046,7 @@ func (m *PlanningManager) Establish(req EstablishRequest) (*EstablishResult, err
 		return &EstablishResult{KeyResult: kr}, nil
 
 	case GoalTypeRoutine:
-		routine, err := m.addRoutine(req.ParentID, req.Description)
+		routine, err := m.addRoutine(req.ParentID, req.Description, req.RepeatPattern)
 		if err != nil {
 			return nil, err
 		}
@@ -2139,6 +2143,11 @@ func (m *PlanningManager) Revise(req ReviseRequest) error {
 		}
 		if req.Description != nil {
 			theme.Routines[idx].Description = strings.TrimSpace(*req.Description)
+		}
+		if req.ClearRepeat {
+			theme.Routines[idx].RepeatPattern = nil
+		} else if req.RepeatPattern != nil {
+			theme.Routines[idx].RepeatPattern = toAccessRepeatPattern(req.RepeatPattern)
 		}
 		if err := m.themeAccess.SaveTheme(*theme); err != nil {
 			return fmt.Errorf("%w", err)

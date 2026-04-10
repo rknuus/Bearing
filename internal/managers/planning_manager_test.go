@@ -1809,6 +1809,99 @@ func TestUpdateRoutine(t *testing.T) {
 		}
 	})
 
+	t.Run("sets repeat pattern on routine", func(t *testing.T) {
+		manager, _, _ := newMockManager()
+
+		routine, _ := testAddRoutine(manager, "T", "Exercise")
+		desc := "Exercise"
+		err := manager.Revise(ReviseRequest{
+			GoalID:      routine.ID,
+			Description: &desc,
+			RepeatPattern: &RepeatPattern{
+				Frequency: "weekly",
+				Interval:  1,
+				Weekdays:  []int{0},
+				StartDate: "2026-04-12",
+			},
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetHierarchy()
+		updated := themes[0].Routines[0]
+		if updated.RepeatPattern == nil {
+			t.Fatal("expected repeat pattern to be set, got nil")
+		}
+		if updated.RepeatPattern.Frequency != "weekly" {
+			t.Errorf("expected frequency 'weekly', got '%s'", updated.RepeatPattern.Frequency)
+		}
+		if len(updated.RepeatPattern.Weekdays) != 1 || updated.RepeatPattern.Weekdays[0] != 0 {
+			t.Errorf("expected weekdays [0], got %v", updated.RepeatPattern.Weekdays)
+		}
+	})
+
+	t.Run("clears repeat pattern with ClearRepeat", func(t *testing.T) {
+		manager, _, _ := newMockManager()
+
+		routine, _ := testAddRoutine(manager, "T", "Exercise")
+		desc := "Exercise"
+		_ = manager.Revise(ReviseRequest{
+			GoalID:      routine.ID,
+			Description: &desc,
+			RepeatPattern: &RepeatPattern{
+				Frequency: "daily",
+				Interval:  1,
+				StartDate: "2026-04-12",
+			},
+		})
+
+		err := manager.Revise(ReviseRequest{
+			GoalID:      routine.ID,
+			ClearRepeat: true,
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+
+		themes, _ := manager.GetHierarchy()
+		updated := themes[0].Routines[0]
+		if updated.RepeatPattern != nil {
+			t.Errorf("expected repeat pattern to be cleared, got %+v", updated.RepeatPattern)
+		}
+	})
+
+	t.Run("creates routine with repeat pattern via Establish", func(t *testing.T) {
+		manager, _, _ := newMockManager()
+
+		result, err := manager.Establish(EstablishRequest{
+			GoalType:    GoalTypeRoutine,
+			ParentID:    "T",
+			Description: "Weekly exercise",
+			RepeatPattern: &RepeatPattern{
+				Frequency: "weekly",
+				Interval:  1,
+				Weekdays:  []int{0, 3},
+				StartDate: "2026-04-12",
+			},
+		})
+		if err != nil {
+			t.Fatalf("expected no error, got %v", err)
+		}
+		if result.Routine.RepeatPattern == nil {
+			t.Fatal("expected repeat pattern on created routine, got nil")
+		}
+		if result.Routine.RepeatPattern.Frequency != "weekly" {
+			t.Errorf("expected frequency 'weekly', got '%s'", result.Routine.RepeatPattern.Frequency)
+		}
+
+		themes, _ := manager.GetHierarchy()
+		persisted := themes[0].Routines[0]
+		if persisted.RepeatPattern == nil {
+			t.Fatal("expected repeat pattern persisted, got nil")
+		}
+	})
+
 }
 
 func TestDeleteRoutine(t *testing.T) {
