@@ -96,17 +96,31 @@
       }
       current.setTime(walker.getTime());
     } else {
-      // For weekly, start at beginning of the year (or anchor, whichever is later)
-      // and iterate day-by-day checking weekdays
-      const day1 = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+      // For weekly, align to the anchor's week and step by interval weeks
+      // to match the backend's generateWeekly logic (ISO week alignment)
+      const anchorDay = anchor.getDay() || 7; // Sunday = 7 for ISO alignment
       // eslint-disable-next-line svelte/prefer-svelte-reactivity
-      const iter = new Date(day1);
-      while (iter <= yearEnd) {
-        const wd = iter.getDay();
-        if (pattern.weekdays?.includes(wd)) {
-          results.push(iter.toISOString().split('T')[0]);
+      const anchorMonday = new Date(anchor);
+      anchorMonday.setDate(anchor.getDate() - (anchorDay - 1));
+
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
+      const weekStart = new Date(anchorMonday);
+      // Advance to the first interval-aligned week that overlaps [yearStart, yearEnd]
+      while (weekStart.getTime() + 6 * 86400000 < yearStart.getTime()) {
+        weekStart.setDate(weekStart.getDate() + 7 * interval);
+      }
+
+      const sortedWeekdays = [...(pattern.weekdays || [])].sort((a, b) => a - b);
+      while (weekStart <= yearEnd) {
+        for (const wd of sortedWeekdays) {
+          const offset = wd === 0 ? 7 : wd; // Sunday at end of ISO week
+          // eslint-disable-next-line svelte/prefer-svelte-reactivity
+          const d = new Date(weekStart);
+          d.setDate(weekStart.getDate() + offset - 1);
+          if (d < anchor || d < yearStart || d > yearEnd) continue;
+          results.push(d.toISOString().split('T')[0]);
         }
-        iter.setDate(iter.getDate() + 1);
+        weekStart.setDate(weekStart.getDate() + 7 * interval);
       }
       return results;
     }
