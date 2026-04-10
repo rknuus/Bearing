@@ -721,41 +721,6 @@
         />
       </div>
 
-      <div class="form-group">
-        <button
-          class="collapsible-header"
-          onclick={() => tagSectionOpen = !tagSectionOpen}
-          aria-expanded={tagSectionOpen}
-        >
-          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
-          <span class="form-label">Tags</span>
-        </button>
-        {#if tagSectionOpen}
-          <TagEditor
-            tags={editTags}
-            {availableTags}
-            onTagsChange={(newTags) => {
-              const newDerived = newTags.join(', ');
-              if (editText === prevDerivedText || editText === '') {
-                editText = newDerived;
-              }
-              prevDerivedText = newDerived;
-              editTags = newTags;
-            }}
-          />
-        {/if}
-      </div>
-
-      <div class="form-group">
-        <label for="text-input">Text</label>
-        <input
-          id="text-input"
-          type="text"
-          bind:value={editText}
-          placeholder="Add text for this day..."
-        />
-      </div>
-
       {#if routineOccurrences.length > 0}
         <div class="form-group">
           <span class="form-label">Routines</span>
@@ -804,6 +769,41 @@
           {/if}
         </div>
       {/if}
+
+      <div class="form-group">
+        <button
+          class="collapsible-header"
+          onclick={() => tagSectionOpen = !tagSectionOpen}
+          aria-expanded={tagSectionOpen}
+        >
+          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
+          <span class="form-label">Tags</span>
+        </button>
+        {#if tagSectionOpen}
+          <TagEditor
+            tags={editTags}
+            {availableTags}
+            onTagsChange={(newTags) => {
+              const newDerived = newTags.join(', ');
+              if (editText === prevDerivedText || editText === '') {
+                editText = newDerived;
+              }
+              prevDerivedText = newDerived;
+              editTags = newTags;
+            }}
+          />
+        {/if}
+      </div>
+
+      <div class="form-group">
+        <label for="text-input">Text</label>
+        <input
+          id="text-input"
+          type="text"
+          bind:value={editText}
+          placeholder="Add text for this day..."
+        />
+      </div>
 
       {#snippet actions()}
         <Button variant="secondary" onclick={cancelEdit}>Cancel</Button>
