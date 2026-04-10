@@ -1157,14 +1157,21 @@ func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []
 
 	// Process newly checked routines — create tasks
 	for _, routineID := range newlyChecked {
-		tag := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
+		ref := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
 
-		// Idempotency check: skip if task with this tag already exists
-		existing, err := m.taskAccess.FindTasksByTag(tag)
+		// Idempotency check: skip if a Routine-tagged task with this description already exists
+		existing, err := m.taskAccess.FindTasksByTag("Routine")
 		if err != nil {
 			return fmt.Errorf("SaveDayFocusWithRoutines: failed to find tasks by tag: %w", err)
 		}
-		if len(existing) > 0 {
+		found := false
+		for _, t := range existing {
+			if t.Task.Description == ref {
+				found = true
+				break
+			}
+		}
+		if found {
 			slog.Debug("SaveDayFocusWithRoutines: task already exists for routine", "routineId", routineID, "date", day.Date)
 			continue
 		}
@@ -1180,7 +1187,7 @@ func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []
 			priority = string(access.PriorityImportantUrgent)
 		}
 
-		if _, err := m.CreateTask(info.Description, info.ThemeID, priority, "", tag, ""); err != nil {
+		if _, err := m.CreateTask(info.Description, info.ThemeID, priority, ref, "Routine", ""); err != nil {
 			return fmt.Errorf("SaveDayFocusWithRoutines: failed to create task for routine %s: %w", routineID, err)
 		}
 		slog.Info("SaveDayFocusWithRoutines: created task for routine", "routineId", routineID, "date", day.Date)
@@ -1188,17 +1195,17 @@ func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []
 
 	// Process newly unchecked routines — delete tasks if eligible
 	for _, routineID := range newlyUnchecked {
-		tag := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
+		ref := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
 
-		matches, err := m.taskAccess.FindTasksByTag(tag)
+		matches, err := m.taskAccess.FindTasksByTag("Routine")
 		if err != nil {
 			return fmt.Errorf("SaveDayFocusWithRoutines: failed to find tasks by tag: %w", err)
 		}
-		if len(matches) == 0 {
-			continue
-		}
 
 		for _, match := range matches {
+			if match.Task.Description != ref {
+				continue
+			}
 			if match.Status == string(access.TaskStatusTodo) || match.Status == string(access.TaskStatusDoing) {
 				if err := m.DeleteTask(match.Task.ID); err != nil {
 					return fmt.Errorf("SaveDayFocusWithRoutines: failed to delete task %s: %w", match.Task.ID, err)

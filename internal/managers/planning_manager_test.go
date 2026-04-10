@@ -3977,9 +3977,12 @@ func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOnTimeRoutine(t *testing.T)
 	if task.Priority != string(access.PriorityImportantNotUrgent) {
 		t.Errorf("expected priority %s, got %s", access.PriorityImportantNotUrgent, task.Priority)
 	}
-	expectedTag := "routine:R1:2026-04-10"
-	if !slices.Contains(task.Tags, expectedTag) {
-		t.Errorf("expected task to have tag %q, got %v", expectedTag, task.Tags)
+	if !slices.Contains(task.Tags, "Routine") {
+		t.Errorf("expected task to have tag %q, got %v", "Routine", task.Tags)
+	}
+	expectedDesc := "routine:R1:2026-04-10"
+	if task.Description != expectedDesc {
+		t.Errorf("expected task description %q, got %q", expectedDesc, task.Description)
 	}
 }
 
@@ -4011,10 +4014,9 @@ func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOverdueRoutine(t *testing.T
 func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInTodoOnUncheck(t *testing.T) {
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
-	// Pre-create a task in todo with the routine tag
-	tag := "routine:R1:2026-04-10"
+	// Pre-create a task in todo with the Routine tag and routine ref in description
 	mockTasks.tasks["todo"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
 	}
 
 	// Uncheck R1: previousChecks had R1, current has none
@@ -4036,9 +4038,8 @@ func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInTodoOnUncheck(t *testing.T) 
 func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInDoingOnUncheck(t *testing.T) {
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
-	tag := "routine:R1:2026-04-10"
 	mockTasks.tasks["doing"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
 	}
 
 	day := DayFocus{
@@ -4058,9 +4059,8 @@ func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInDoingOnUncheck(t *testing.T)
 func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInDoneOnUncheck(t *testing.T) {
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
-	tag := "routine:R1:2026-04-10"
 	mockTasks.tasks["done"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
 	}
 
 	day := DayFocus{
@@ -4080,9 +4080,8 @@ func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInDoneOnUncheck(t *testing.T
 func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInArchivedOnUncheck(t *testing.T) {
 	manager, _, mockTasks, _ := newMockManagerWithCalendar()
 
-	tag := "routine:R1:2026-04-10"
 	mockTasks.tasks["archived"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
 	}
 
 	day := DayFocus{

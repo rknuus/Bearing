@@ -465,6 +465,7 @@
         isOverdue: o.status === 'overdue',
       }));
       await bindings.SaveDayFocusWithRoutines(dayFocus, routineInfos, previousRoutineChecks);
+      previousRoutineChecks = [...editRoutineChecks];
       yearFocus.set(editingDay.date, dayFocus);
 
       // Recompute routine maps after check changes
