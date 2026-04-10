@@ -190,17 +190,17 @@
   }
 
   async function navigateToEisenKan(options?: { themeId?: string; date?: string }) {
-    // Re-resolve today's focus in case the user just set it in Calendar
+    // Re-resolve today's focus data (may have changed in Calendar)
     const focus = await resolveTodayFocus(getBindings());
     todayFocusThemeIds = focus.themeIds;
     todayFocusTags = focus.tags;
-    if (todayFocusThemeIds.length > 0 && options?.themeId === undefined) {
-      todayFocusActive = true;
-      filterThemeIds = [...todayFocusThemeIds];
+
+    // Only apply today's focus as filter if user hasn't overridden it
+    if (options?.themeId === undefined && todayFocusActive) {
+      filterThemeIds = todayFocusThemeIds.length > 0 ? [...todayFocusThemeIds] : [];
     }
-    if (todayFocusTags.length > 0) {
-      tagFocusActive = true;
-      filterTagIds = [...todayFocusTags];
+    if (tagFocusActive) {
+      filterTagIds = todayFocusTags.length > 0 ? [...todayFocusTags] : [];
     }
     navigateTo('eisenkan', options);
   }
