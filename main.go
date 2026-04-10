@@ -147,6 +147,10 @@ func (a *App) SaveDayFocus(day managers.DayFocus) error {
 	return a.planningManager.SaveDayFocus(day)
 }
 
+func (a *App) SaveDayFocusWithRoutines(day managers.DayFocus, routineInfos []managers.RoutineTaskInfo, previousChecks []string) error {
+	return a.planningManager.SaveDayFocusWithRoutines(day, routineInfos, previousChecks)
+}
+
 func (a *App) ClearDayFocus(date string) error {
 	return a.planningManager.ClearDayFocus(date)
 }

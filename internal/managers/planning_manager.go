@@ -290,6 +290,14 @@ type RoutinePeriodProgress struct {
 	OnTrack   bool   `json:"onTrack"`
 }
 
+// RoutineTaskInfo carries the metadata needed to create a task for a checked routine.
+type RoutineTaskInfo struct {
+	RoutineID   string `json:"routineId"`
+	Description string `json:"description"`
+	ThemeID     string `json:"themeId"`
+	IsOverdue   bool   `json:"isOverdue"`
+}
+
 // GoalType identifies the kind of goal node in the OKR hierarchy.
 type GoalType string
 
@@ -1103,6 +1111,133 @@ func (m *PlanningManager) SaveDayFocus(day DayFocus) error {
 	if err := m.calendarAccess.SaveDayFocus(toAccessDayFocus(day)); err != nil {
 		return fmt.Errorf("%w", err)
 	}
+	return nil
+}
+
+// SaveDayFocusWithRoutines saves a day focus entry and creates or deletes
+// routine tasks based on which routines were checked or unchecked.
+//
+// It diffs day.RoutineChecks against previousChecks to determine:
+//   - newly checked routines: create a task (idempotent — skips if tag already exists)
+//   - newly unchecked routines: delete the task if still in todo/doing
+//
+// It also auto-manages the "Routine" day tag based on whether any routines are checked.
+func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []RoutineTaskInfo, previousChecks []string) error {
+	if day.Date == "" {
+		return fmt.Errorf("date cannot be empty")
+	}
+
+	// Build lookup maps
+	currentSet := make(map[string]bool, len(day.RoutineChecks))
+	for _, id := range day.RoutineChecks {
+		currentSet[id] = true
+	}
+	previousSet := make(map[string]bool, len(previousChecks))
+	for _, id := range previousChecks {
+		previousSet[id] = true
+	}
+	infoByID := make(map[string]RoutineTaskInfo, len(routineInfos))
+	for _, info := range routineInfos {
+		infoByID[info.RoutineID] = info
+	}
+
+	// Determine newly checked and newly unchecked routines
+	var newlyChecked []string
+	for _, id := range day.RoutineChecks {
+		if !previousSet[id] {
+			newlyChecked = append(newlyChecked, id)
+		}
+	}
+	var newlyUnchecked []string
+	for _, id := range previousChecks {
+		if !currentSet[id] {
+			newlyUnchecked = append(newlyUnchecked, id)
+		}
+	}
+
+	// Process newly checked routines — create tasks
+	for _, routineID := range newlyChecked {
+		ref := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
+
+		// Idempotency check: skip if a Routine-tagged task with this description already exists
+		existing, err := m.taskAccess.FindTasksByTag("Routine")
+		if err != nil {
+			return fmt.Errorf("SaveDayFocusWithRoutines: failed to find tasks by tag: %w", err)
+		}
+		found := false
+		for _, t := range existing {
+			if t.Task.Description == ref {
+				found = true
+				break
+			}
+		}
+		if found {
+			slog.Debug("SaveDayFocusWithRoutines: task already exists for routine", "routineId", routineID, "date", day.Date)
+			continue
+		}
+
+		info, ok := infoByID[routineID]
+		if !ok {
+			slog.Warn("SaveDayFocusWithRoutines: no info for routine, skipping task creation", "routineId", routineID)
+			continue
+		}
+
+		priority := string(access.PriorityImportantNotUrgent)
+		if info.IsOverdue {
+			priority = string(access.PriorityImportantUrgent)
+		}
+
+		if _, err := m.CreateTask(info.Description, info.ThemeID, priority, ref, "Routine", ""); err != nil {
+			return fmt.Errorf("SaveDayFocusWithRoutines: failed to create task for routine %s: %w", routineID, err)
+		}
+		slog.Info("SaveDayFocusWithRoutines: created task for routine", "routineId", routineID, "date", day.Date)
+	}
+
+	// Process newly unchecked routines — delete tasks if eligible
+	for _, routineID := range newlyUnchecked {
+		ref := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
+
+		matches, err := m.taskAccess.FindTasksByTag("Routine")
+		if err != nil {
+			return fmt.Errorf("SaveDayFocusWithRoutines: failed to find tasks by tag: %w", err)
+		}
+
+		for _, match := range matches {
+			if match.Task.Description != ref {
+				continue
+			}
+			if match.Status == string(access.TaskStatusTodo) || match.Status == string(access.TaskStatusDoing) {
+				if err := m.DeleteTask(match.Task.ID); err != nil {
+					return fmt.Errorf("SaveDayFocusWithRoutines: failed to delete task %s: %w", match.Task.ID, err)
+				}
+				slog.Info("SaveDayFocusWithRoutines: deleted task for unchecked routine", "routineId", routineID, "taskId", match.Task.ID)
+			}
+			// done/archived: leave as-is
+		}
+	}
+
+	// Auto-manage "Routine" day tag
+	hasRoutineTag := false
+	routineTagIndex := -1
+	for i, t := range day.Tags {
+		if t == "Routine" {
+			hasRoutineTag = true
+			routineTagIndex = i
+			break
+		}
+	}
+
+	if len(day.RoutineChecks) > 0 && !hasRoutineTag {
+		day.Tags = append(day.Tags, "Routine")
+	} else if len(day.RoutineChecks) == 0 && hasRoutineTag {
+		day.Tags = append(day.Tags[:routineTagIndex], day.Tags[routineTagIndex+1:]...)
+	}
+
+	// Delegate to existing SaveDayFocus
+	if err := m.calendarAccess.SaveDayFocus(toAccessDayFocus(day)); err != nil {
+		return fmt.Errorf("SaveDayFocusWithRoutines: %w", err)
+	}
+
 	return nil
 }
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import type { LifeTheme, DayFocus } from '../lib/wails-mock';
+import type { LifeTheme, DayFocus, RoutineOccurrence, RoutineTaskInfo } from '../lib/wails-mock';
 import CalendarView from './CalendarView.svelte';
 import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
@@ -39,6 +39,11 @@ describe('CalendarView', () => {
       GetHierarchy: vi.fn().mockResolvedValue(JSON.parse(JSON.stringify(themes))),
       GetYearFocus: vi.fn().mockImplementation(async () => JSON.parse(JSON.stringify(currentYearFocus))),
       SaveDayFocus: vi.fn().mockImplementation(async (day: DayFocus) => {
+        const idx = currentYearFocus.findIndex(e => e.date === day.date);
+        if (idx >= 0) currentYearFocus[idx] = day;
+        else currentYearFocus.push(day);
+      }),
+      SaveDayFocusWithRoutines: vi.fn().mockImplementation(async (day: DayFocus) => {
         const idx = currentYearFocus.findIndex(e => e.date === day.date);
         if (idx >= 0) currentYearFocus[idx] = day;
         else currentYearFocus.push(day);
@@ -244,7 +249,7 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+      expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
     });
   });
 
@@ -293,11 +298,13 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
-        expect.objectContaining({ date: '2025-01-01', text: '' })
+      expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+        expect.objectContaining({ date: '2025-01-01', text: '' }),
+        expect.any(Array),
+        expect.any(Array),
       );
       // themeIds should be undefined (no themes selected)
-      const call = mockBindings.SaveDayFocus.mock.calls.find(
+      const call = mockBindings.SaveDayFocusWithRoutines.mock.calls.find(
         (c: unknown[]) => (c[0] as DayFocus).date === '2025-01-01'
       );
       expect(call).toBeTruthy();
@@ -452,7 +459,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
       });
       await tick();
       await tick();
@@ -599,8 +606,10 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
-          expect.objectContaining({ okrIds: ['HF-O1'] })
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+          expect.objectContaining({ okrIds: ['HF-O1'] }),
+          expect.any(Array),
+          expect.any(Array),
         );
       });
     });
@@ -623,8 +632,8 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
-        const call = mockBindings.SaveDayFocus.mock.calls[0];
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
         expect((call[0] as DayFocus).themeIds).toBeUndefined();
       });
     });
@@ -724,8 +733,10 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalledWith(
-          expect.objectContaining({ tags: ['review'] })
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+          expect.objectContaining({ tags: ['review'] }),
+          expect.any(Array),
+          expect.any(Array),
         );
       });
     });
@@ -1137,7 +1148,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocus).toHaveBeenCalled();
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
       });
 
       // Wait for the async NavigationContext persistence
@@ -1431,6 +1442,156 @@ describe('CalendarView', () => {
       expect(textCells[0].classList.contains('selected')).toBe(false);
       const selectedCount = container.querySelectorAll('.day-text.selected').length;
       expect(selectedCount).toBe(0);
+    });
+  });
+
+  describe('routine-task bridge', () => {
+    function makeRoutineOccurrences(): RoutineOccurrence[] {
+      return [
+        {
+          routineId: 'R1',
+          description: 'Morning run',
+          themeId: 'HF',
+          themeColor: '#22c55e',
+          date: '2025-01-01',
+          status: 'scheduled',
+          checked: false,
+        },
+        {
+          routineId: 'R2',
+          description: 'Evening stretch',
+          themeId: 'CG',
+          themeColor: '#3b82f6',
+          date: '2025-01-01',
+          status: 'overdue',
+          checked: false,
+        },
+      ];
+    }
+
+    async function openDialogWithRoutines(
+      routines: RoutineOccurrence[] = makeRoutineOccurrences(),
+      yearFocus: DayFocus[] = [],
+    ) {
+      mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
+      mockBindings.GetRoutinesForDate.mockResolvedValue(routines);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (window as any).go = { main: { App: mockBindings } };
+      await renderView();
+
+      const dateStr = formatDateLocale('2025-01-01');
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const targetCell = Array.from(dayCells).find(c => c.title?.includes(dateStr));
+      targetCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+      // Wait for GetRoutinesForDate to resolve
+      await tick();
+    }
+
+    it('adds Routine tag when first routine is checked', async () => {
+      await openDialogWithRoutines();
+
+      // Check the first routine
+      const routineCheckboxes = container.querySelectorAll<HTMLInputElement>('.routine-check input[type="checkbox"]');
+      expect(routineCheckboxes.length).toBeGreaterThanOrEqual(1);
+      routineCheckboxes[0].click();
+      await tick();
+
+      // Verify "Routine" tag is now in the tag pills
+      // The tag section should show Routine as active (it's auto-managed)
+      // Save and verify the tag is included
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+        const savedDay = call[0] as DayFocus;
+        expect(savedDay.tags).toContain('Routine');
+        expect(savedDay.routineChecks).toContain('R1');
+      });
+    });
+
+    it('removes Routine tag when last routine is unchecked', async () => {
+      // Start with one routine already checked
+      const routines = makeRoutineOccurrences();
+      routines[0].checked = true;
+      const yearFocus: DayFocus[] = [
+        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', tags: ['Routine'], routineChecks: ['R1'] },
+      ];
+
+      await openDialogWithRoutines(routines, yearFocus);
+
+      // Uncheck the only checked routine (R1)
+      const routineCheckboxes = container.querySelectorAll<HTMLInputElement>('.routine-check input[type="checkbox"]');
+      // R1 is the first checkbox, and it should be checked
+      const r1Checkbox = Array.from(routineCheckboxes).find(cb => cb.checked);
+      expect(r1Checkbox).toBeTruthy();
+      r1Checkbox!.click();
+      await tick();
+
+      // Save and verify the tag is removed
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+        const savedDay = call[0] as DayFocus;
+        // Tags should not contain Routine (either undefined or missing)
+        expect(savedDay.tags ?? []).not.toContain('Routine');
+      });
+    });
+
+    it('calls SaveDayFocusWithRoutines with correct routine metadata and previous checks', async () => {
+      // Start with R1 already checked
+      const routines = makeRoutineOccurrences();
+      routines[0].checked = true;
+      const yearFocus: DayFocus[] = [
+        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', routineChecks: ['R1'] },
+      ];
+
+      await openDialogWithRoutines(routines, yearFocus);
+
+      // Check R2 as well
+      const routineCheckboxes = container.querySelectorAll<HTMLInputElement>('.routine-check input[type="checkbox"]');
+      const uncheckedBox = Array.from(routineCheckboxes).find(cb => !cb.checked);
+      expect(uncheckedBox).toBeTruthy();
+      uncheckedBox!.click();
+      await tick();
+
+      // Save
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+
+        // Arg 0: DayFocus
+        const savedDay = call[0] as DayFocus;
+        expect(savedDay.routineChecks).toEqual(expect.arrayContaining(['R1', 'R2']));
+
+        // Arg 1: routineInfos — includes all occurrences with correct overdue flag
+        const infos = call[1] as RoutineTaskInfo[];
+        expect(infos.length).toBe(2);
+        const r1Info = infos.find((i: RoutineTaskInfo) => i.routineId === 'R1');
+        const r2Info = infos.find((i: RoutineTaskInfo) => i.routineId === 'R2');
+        expect(r1Info).toBeTruthy();
+        expect(r1Info!.isOverdue).toBe(false);
+        expect(r2Info).toBeTruthy();
+        expect(r2Info!.isOverdue).toBe(true);
+
+        // Arg 2: previousChecks — the snapshot before edits
+        const prevChecks = call[2] as string[];
+        expect(prevChecks).toEqual(['R1']);
+      });
     });
   });
 });

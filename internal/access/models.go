@@ -156,6 +156,13 @@ type QueryCriteria struct {
 	Tags           []string `json:"tags,omitempty"`           // Filter by tags (any match)
 }
 
+// TaggedTask pairs a task with its current status directory slug.
+// Used by FindTasksByTag to return tasks along with their status.
+type TaggedTask struct {
+	Task   Task   `json:"task"`
+	Status string `json:"status"`
+}
+
 // TaskStatus represents the kanban column status for tasks
 type TaskStatus string
 

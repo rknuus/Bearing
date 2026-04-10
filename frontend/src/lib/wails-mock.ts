@@ -124,6 +124,13 @@ export interface DayFocus {
   routineChecks?: string[];
 }
 
+export interface RoutineTaskInfo {
+  routineId: string;
+  description: string;
+  themeId: string;
+  isOverdue: boolean;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -734,6 +741,11 @@ export const mockAppBindings = {
     // Sort by date
     entries.sort((a, b) => a.date.localeCompare(b.date));
     mockYearFocus.set(year, entries);
+  },
+
+  SaveDayFocusWithRoutines: async (day: DayFocus, _routineInfos: RoutineTaskInfo[], _previousChecks: string[]): Promise<void> => {
+    // In mock mode, delegate to plain SaveDayFocus (task creation is backend-only)
+    return mockAppBindings.SaveDayFocus(day);
   },
 
   ClearDayFocus: async (date: string): Promise<void> => {
