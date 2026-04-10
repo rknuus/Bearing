@@ -375,11 +375,30 @@ func (m *mockTaskAccess) SaveArchivedOrder(order []string) error {
 }
 
 // mockCalendarAccess implements access.ICalendarAccess for testing.
-type mockCalendarAccess struct{}
+// It stores day focus entries in memory so tests can verify saved data.
+type mockCalendarAccess struct {
+	days map[string]access.DayFocus
+}
 
-func (m *mockCalendarAccess) GetDayFocus(date string) (*access.DayFocus, error) { return nil, nil }
-func (m *mockCalendarAccess) SaveDayFocus(day access.DayFocus) error            { return nil }
-func (m *mockCalendarAccess) GetYearFocus(year int) ([]access.DayFocus, error)  { return nil, nil }
+func newMockCalendarAccess() *mockCalendarAccess {
+	return &mockCalendarAccess{days: make(map[string]access.DayFocus)}
+}
+
+func (m *mockCalendarAccess) GetDayFocus(date string) (*access.DayFocus, error) {
+	if d, ok := m.days[date]; ok {
+		return &d, nil
+	}
+	return nil, nil
+}
+
+func (m *mockCalendarAccess) SaveDayFocus(day access.DayFocus) error {
+	m.days[day.Date] = day
+	return nil
+}
+
+func (m *mockCalendarAccess) GetYearFocus(year int) ([]access.DayFocus, error) {
+	return nil, nil
+}
 
 // mockVisionAccess implements access.IVisionAccess for testing.
 type mockVisionAccess struct {
@@ -429,8 +448,17 @@ func (m *mockUIStateAccess) SaveAdvisorEnabled(enabled bool) error {
 func newMockManager() (*PlanningManager, *mockThemeAccess, *mockTaskAccess) {
 	ta := newMockThemeAccess()
 	ka := newMockTaskAccess()
-	pm, _ := NewPlanningManager(ta, ka, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	pm, _ := NewPlanningManager(ta, ka, newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 	return pm, ta, ka
+}
+
+// newMockManagerWithCalendar creates a PlanningManager that also returns the calendar mock.
+func newMockManagerWithCalendar() (*PlanningManager, *mockThemeAccess, *mockTaskAccess, *mockCalendarAccess) {
+	ta := newMockThemeAccess()
+	ka := newMockTaskAccess()
+	ca := newMockCalendarAccess()
+	pm, _ := NewPlanningManager(ta, ka, ca, &mockVisionAccess{}, &mockUIStateAccess{})
+	return pm, ta, ka, ca
 }
 
 // --- Test helper wrappers around behavioral API ---
@@ -608,7 +636,7 @@ func findKeyResultByID(objectives []Objective, id string) *KeyResult {
 
 func TestNewPlanningManager(t *testing.T) {
 	t.Run("creates manager with valid access", func(t *testing.T) {
-		manager, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+		manager, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -618,14 +646,14 @@ func TestNewPlanningManager(t *testing.T) {
 	})
 
 	t.Run("returns error with nil theme access", func(t *testing.T) {
-		_, err := NewPlanningManager(nil, newMockTaskAccess(), &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+		_, err := NewPlanningManager(nil, newMockTaskAccess(), newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 		if err == nil {
 			t.Fatal("expected error for nil theme access")
 		}
 	})
 
 	t.Run("returns error with nil ui state access", func(t *testing.T) {
-		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), &mockCalendarAccess{}, &mockVisionAccess{}, nil)
+		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), &mockVisionAccess{}, nil)
 		if err == nil {
 			t.Fatal("expected error for nil ui state access")
 		}
@@ -2953,7 +2981,7 @@ func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
 	}
 
 	// NewPlanningManager calls validateTaskOrder
-	manager, err := NewPlanningManager(newMockThemeAccess(), mockTasks, &mockCalendarAccess{}, &mockVisionAccess{}, &mockUIStateAccess{})
+	manager, err := NewPlanningManager(newMockThemeAccess(), mockTasks, newMockCalendarAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
 	if err != nil {
 		t.Fatalf("NewPlanningManager failed: %v", err)
 	}
@@ -3862,5 +3890,292 @@ func TestUnit_GetTasks_ArchivedFallbackCreatedAtDescending(t *testing.T) {
 	}
 	if archived[3].ID != "U1" {
 		t.Errorf("position 3: expected U1 (oldest unordered), got %s", archived[3].ID)
+	}
+}
+
+// --- FindTasksByTag tests ---
+
+func TestUnit_FindTasksByTag_ReturnsMatchingAcrossStatuses(t *testing.T) {
+	mockAccess := newMockTaskAccess()
+
+	// Create tasks with the same tag in different statuses
+	tag := "routine:R1:2026-04-10"
+	mockAccess.tasks["todo"] = []access.Task{
+		{ID: "T1", Title: "Task 1", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+		{ID: "T2", Title: "Task 2", ThemeID: "T", Priority: "important-urgent", Tags: []string{"other"}},
+	}
+	mockAccess.tasks["doing"] = []access.Task{
+		{ID: "T3", Title: "Task 3", ThemeID: "T", Priority: "important-urgent", Tags: []string{tag, "extra"}},
+	}
+	mockAccess.tasks["done"] = []access.Task{
+		{ID: "T4", Title: "Task 4", ThemeID: "T", Priority: "important-urgent", Tags: []string{"unrelated"}},
+	}
+
+	results, err := mockAccess.FindTasksByTag(tag)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected 2 matching tasks, got %d", len(results))
+	}
+
+	ids := make(map[string]string) // id -> status
+	for _, r := range results {
+		ids[r.Task.ID] = r.Status
+	}
+	if ids["T1"] != "todo" {
+		t.Errorf("expected T1 in todo, got %q", ids["T1"])
+	}
+	if ids["T3"] != "doing" {
+		t.Errorf("expected T3 in doing, got %q", ids["T3"])
+	}
+}
+
+func TestUnit_FindTasksByTag_ReturnsEmptyForNonMatchingTag(t *testing.T) {
+	mockAccess := newMockTaskAccess()
+
+	mockAccess.tasks["todo"] = []access.Task{
+		{ID: "T1", Title: "Task", ThemeID: "T", Priority: "important-urgent", Tags: []string{"backend"}},
+	}
+	mockAccess.tasks["doing"] = []access.Task{
+		{ID: "T2", Title: "Task", ThemeID: "T", Priority: "important-urgent", Tags: []string{"frontend"}},
+	}
+
+	results, err := mockAccess.FindTasksByTag("routine:nonexistent:2026-01-01")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 0 {
+		t.Fatalf("expected 0 results, got %d", len(results))
+	}
+}
+
+// --- SaveDayFocusWithRoutines tests ---
+
+func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOnTimeRoutine(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: []string{"R1"},
+	}
+	infos := []RoutineTaskInfo{
+		{RoutineID: "R1", Description: "Morning run", ThemeID: "T", IsOverdue: false},
+	}
+
+	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify a task was created in todo status
+	todoTasks := mockTasks.tasks["todo"]
+	if len(todoTasks) != 1 {
+		t.Fatalf("expected 1 todo task, got %d", len(todoTasks))
+	}
+	task := todoTasks[0]
+	if task.Priority != string(access.PriorityImportantNotUrgent) {
+		t.Errorf("expected priority %s, got %s", access.PriorityImportantNotUrgent, task.Priority)
+	}
+	expectedTag := "routine:R1:2026-04-10"
+	if !slices.Contains(task.Tags, expectedTag) {
+		t.Errorf("expected task to have tag %q, got %v", expectedTag, task.Tags)
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOverdueRoutine(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: []string{"R1"},
+	}
+	infos := []RoutineTaskInfo{
+		{RoutineID: "R1", Description: "Overdue run", ThemeID: "T", IsOverdue: true},
+	}
+
+	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	todoTasks := mockTasks.tasks["todo"]
+	if len(todoTasks) != 1 {
+		t.Fatalf("expected 1 todo task, got %d", len(todoTasks))
+	}
+	if todoTasks[0].Priority != string(access.PriorityImportantUrgent) {
+		t.Errorf("expected priority %s, got %s", access.PriorityImportantUrgent, todoTasks[0].Priority)
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInTodoOnUncheck(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	// Pre-create a task in todo with the routine tag
+	tag := "routine:R1:2026-04-10"
+	mockTasks.tasks["todo"] = []access.Task{
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+	}
+
+	// Uncheck R1: previousChecks had R1, current has none
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: nil,
+	}
+	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Task should be deleted
+	if len(mockTasks.tasks["todo"]) != 0 {
+		t.Errorf("expected todo tasks to be empty, got %d", len(mockTasks.tasks["todo"]))
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInDoingOnUncheck(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	tag := "routine:R1:2026-04-10"
+	mockTasks.tasks["doing"] = []access.Task{
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+	}
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: nil,
+	}
+	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(mockTasks.tasks["doing"]) != 0 {
+		t.Errorf("expected doing tasks to be empty, got %d", len(mockTasks.tasks["doing"]))
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInDoneOnUncheck(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	tag := "routine:R1:2026-04-10"
+	mockTasks.tasks["done"] = []access.Task{
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+	}
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: nil,
+	}
+	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(mockTasks.tasks["done"]) != 1 {
+		t.Errorf("expected done task to be preserved, got %d tasks", len(mockTasks.tasks["done"]))
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInArchivedOnUncheck(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	tag := "routine:R1:2026-04-10"
+	mockTasks.tasks["archived"] = []access.Task{
+		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{tag}},
+	}
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: nil,
+	}
+	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(mockTasks.tasks["archived"]) != 1 {
+		t.Errorf("expected archived task to be preserved, got %d tasks", len(mockTasks.tasks["archived"]))
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_Idempotent(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: []string{"R1"},
+	}
+	infos := []RoutineTaskInfo{
+		{RoutineID: "R1", Description: "Morning run", ThemeID: "T", IsOverdue: false},
+	}
+
+	// First call creates the task
+	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
+	if err != nil {
+		t.Fatalf("first call failed: %v", err)
+	}
+	if len(mockTasks.tasks["todo"]) != 1 {
+		t.Fatalf("expected 1 todo task after first call, got %d", len(mockTasks.tasks["todo"]))
+	}
+
+	// Second call with same checks — no new task should be created
+	err = manager.SaveDayFocusWithRoutines(day, infos, []string{"R1"})
+	if err != nil {
+		t.Fatalf("second call failed: %v", err)
+	}
+	if len(mockTasks.tasks["todo"]) != 1 {
+		t.Errorf("expected 1 todo task after second call (no duplicate), got %d", len(mockTasks.tasks["todo"]))
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_AddsRoutineTagWhenChecked(t *testing.T) {
+	manager, _, _, calMock := newMockManagerWithCalendar()
+
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: []string{"R1"},
+		Tags:          nil,
+	}
+	infos := []RoutineTaskInfo{
+		{RoutineID: "R1", Description: "Morning run", ThemeID: "T", IsOverdue: false},
+	}
+
+	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	saved, ok := calMock.days["2026-04-10"]
+	if !ok {
+		t.Fatal("expected day focus to be saved")
+	}
+	if !slices.Contains(saved.Tags, "Routine") {
+		t.Errorf("expected 'Routine' in tags, got %v", saved.Tags)
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_RemovesRoutineTagWhenAllUnchecked(t *testing.T) {
+	manager, _, _, calMock := newMockManagerWithCalendar()
+
+	// Start with one routine checked and "Routine" tag
+	day := DayFocus{
+		Date:          "2026-04-10",
+		RoutineChecks: nil,
+		Tags:          []string{"Routine"},
+	}
+
+	// Previously R1 was checked, now unchecked
+	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	saved, ok := calMock.days["2026-04-10"]
+	if !ok {
+		t.Fatal("expected day focus to be saved")
+	}
+	if slices.Contains(saved.Tags, "Routine") {
+		t.Errorf("expected 'Routine' tag to be removed, got %v", saved.Tags)
 	}
 }
