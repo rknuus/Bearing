@@ -50,15 +50,17 @@
     <span class="priority-badge" style="background-color: {priorityColors[task.priority]};">
       {priorityLabels[task.priority]}
     </span>
-    <button
-      type="button"
-      class="theme-badge"
-      style="background-color: {getThemeColor(themes, task.themeId)};"
-      onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
-      title="Go to theme"
-    >
-      {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
-    </button>
+    {#if task.themeId}
+      <button
+        type="button"
+        class="theme-badge"
+        style="background-color: {getThemeColor(themes, task.themeId)};"
+        onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
+        title="Go to theme"
+      >
+        {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
+      </button>
+    {/if}
   </div>
   <h3 class="task-title">{task.title}</h3>
   <TagBadges tags={task.tags} />

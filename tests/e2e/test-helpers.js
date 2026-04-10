@@ -73,6 +73,16 @@ export function readThemes(dataDir) {
 }
 
 /**
+ * Read routines array from routines.json
+ */
+export function readRoutines(dataDir) {
+  const fullPath = path.join(dataDir, 'routines.json')
+  if (!fs.existsSync(fullPath)) return []
+  const data = readJSON(dataDir, 'routines.json')
+  return data.routines || []
+}
+
+/**
  * Run git log --oneline and return array of commit messages
  */
 export function getGitLog(dataDir) {

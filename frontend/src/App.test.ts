@@ -31,7 +31,11 @@ function makeMockBindings() {
     // CalendarView APIs
     GetYearFocus: vi.fn().mockResolvedValue([]),
     SaveDayFocus: vi.fn().mockResolvedValue(undefined),
+    SaveDayFocusWithRoutines: vi.fn().mockResolvedValue(undefined),
     ClearDayFocus: vi.fn().mockResolvedValue(undefined),
+    GetRoutines: vi.fn().mockResolvedValue([]),
+    GetRoutinesForDate: vi.fn().mockResolvedValue([]),
+    GetRoutineProgress: vi.fn().mockResolvedValue({ routineId: '', completed: 0, expected: 0, period: 'week', onTrack: true }),
     // EisenKanView APIs (used via mockAppBindings, but provided for completeness)
     GetTasks: vi.fn().mockResolvedValue([]),
     CreateTask: vi.fn().mockResolvedValue(null),
@@ -56,6 +60,8 @@ function makeMockBindings() {
     GetPersonalVision: vi.fn().mockResolvedValue({ mission: '', vision: '' }),
     SavePersonalVision: vi.fn().mockResolvedValue(undefined),
     LogFrontend: vi.fn(),
+    GetAdviceSetting: vi.fn().mockResolvedValue(false),
+    GetAvailableModels: vi.fn().mockResolvedValue([]),
   };
 }
 

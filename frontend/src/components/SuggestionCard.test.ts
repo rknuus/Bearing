@@ -264,7 +264,7 @@ describe('SuggestionCard', () => {
     await renderCard(makeSuggestion({
       type: 'routine',
       action: 'create',
-      routineData: { description: 'Sleep', themeId: 'H' },
+      routineData: { description: 'Sleep' },
     }));
     expect(container.textContent).toContain('Sleep');
   });

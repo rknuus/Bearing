@@ -32,7 +32,6 @@
   interface RoutineData {
     id?: string;
     description: string;
-    themeId?: string;
   }
 
   export interface Suggestion {
@@ -87,9 +86,6 @@
     if (suggestion.type === 'key_result') {
       return !suggestion.keyResultData?.parentObjectiveId;
     }
-    if (suggestion.type === 'routine') {
-      return !suggestion.routineData?.themeId;
-    }
     return false;
   });
 
@@ -119,8 +115,6 @@
       enriched.objectiveData = { ...suggestion.objectiveData, parentId: resolvedParentId };
     } else if (suggestion.type === 'key_result' && suggestion.keyResultData) {
       enriched.keyResultData = { ...suggestion.keyResultData, parentObjectiveId: resolvedParentId };
-    } else if (suggestion.type === 'routine' && suggestion.routineData) {
-      enriched.routineData = { ...suggestion.routineData, themeId: resolvedParentId };
     }
     return enriched;
   }

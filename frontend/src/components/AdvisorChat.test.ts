@@ -9,7 +9,7 @@ interface Suggestion {
   themeData?: { id?: string; name: string; color?: string };
   objectiveData?: { id?: string; title: string; parentId?: string };
   keyResultData?: { id?: string; description: string; startValue: number; currentValue: number; targetValue: number; parentObjectiveId?: string };
-  routineData?: { id?: string; description: string; themeId?: string };
+  routineData?: { id?: string; description: string };
 }
 
 interface ChatMessage {
