@@ -323,6 +323,49 @@ func TestUnit_WeeklyEmptyWeekdaysReturnsEmpty(t *testing.T) {
 	}
 }
 
+func TestUnit_WeeklySundayNoOccurrencesBeforeStartDate(t *testing.T) {
+	se := NewScheduleEngine()
+	// Weekly Sunday starting 2026-04-12 (a Sunday), querying for 2026-04-10 (Friday before start)
+	result := se.ComputeOccurrences(RepeatPattern{
+		Frequency: "weekly",
+		Interval:  1,
+		Weekdays:  []int{0}, // Sunday
+		StartDate: "2026-04-12",
+	}, nil, "2026-04-10", "2026-04-10")
+
+	if len(result) != 0 {
+		t.Errorf("expected no occurrences before start date, got %v", result)
+	}
+}
+
+func TestUnit_ComputeOverdueWeeklyFutureStartDate(t *testing.T) {
+	se := NewScheduleEngine()
+	// Weekly Sunday starting 2026-04-12, asOf 2026-04-10 — no overdue since routine hasn't started
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "weekly",
+		Interval:  1,
+		Weekdays:  []int{0},
+		StartDate: "2026-04-12",
+	}, nil, nil, "2026-04-10")
+
+	if len(result) != 0 {
+		t.Errorf("expected no overdue for future start date, got %v", result)
+	}
+}
+
+func TestUnit_ComputeOverdueDailyFutureStartDate(t *testing.T) {
+	se := NewScheduleEngine()
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: "2026-05-01",
+	}, nil, nil, "2026-04-15")
+
+	if len(result) != 0 {
+		t.Errorf("expected no overdue for future start date, got %v", result)
+	}
+}
+
 func TestUnit_IntervalZeroTreatedAsOne(t *testing.T) {
 	se := NewScheduleEngine()
 	result := se.ComputeOccurrences(RepeatPattern{
