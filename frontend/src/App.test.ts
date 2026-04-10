@@ -348,7 +348,7 @@ describe('App', () => {
       });
     });
 
-    it('re-activates Today\'s Focus on EisenKan navigation even if previously false', async () => {
+    it('preserves todayFocusActive=false on EisenKan navigation when user deactivated it', async () => {
       setupTodayFocusMocks();
       mockBindings.LoadNavigationContext.mockResolvedValue({
         currentView: 'eisenkan',
@@ -361,7 +361,7 @@ describe('App', () => {
 
       await renderApp();
 
-      // Navigate to Tasks — should auto-activate Today's Focus since a DayFocus exists
+      // Navigate to Tasks — should NOT re-activate Today's Focus since user deactivated it
       mockBindings.SaveNavigationContext.mockClear();
       const taskLink = Array.from(container.querySelectorAll<HTMLButtonElement>('.nav-link'))
         .find(l => l.textContent?.trim() === 'Short-term');
@@ -370,14 +370,15 @@ describe('App', () => {
 
       await vi.waitFor(() => {
         const saveCalls = mockBindings.SaveNavigationContext.mock.calls;
-        const hasFocusActive = saveCalls.some(
+        // todayFocusActive persists as `|| undefined` when false, so check it is NOT true
+        const hasReactivated = saveCalls.some(
           (call: unknown[]) => {
             const ctx = call[0] as { todayFocusActive?: boolean; filterThemeIds?: string[] };
-            return ctx.todayFocusActive === true &&
-              ctx.filterThemeIds !== undefined && ctx.filterThemeIds.includes('HF');
+            return ctx.todayFocusActive === true;
           }
         );
-        if (!hasFocusActive) throw new Error('Expected SaveNavigationContext with todayFocusActive=true and filterThemeIds=[HF]');
+        if (saveCalls.length === 0) throw new Error('SaveNavigationContext not called yet');
+        if (hasReactivated) throw new Error('Expected todayFocusActive to remain inactive, but it was re-activated');
       });
     });
 
