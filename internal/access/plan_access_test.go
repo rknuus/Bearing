@@ -15,6 +15,7 @@ type testEnv struct {
 	tasks    *TaskAccess
 	calendar *CalendarAccess
 	vision   *VisionAccess
+	routines *RoutineAccess
 	dataDir  string
 }
 
@@ -72,12 +73,19 @@ func setupTestEnv(t *testing.T) (*testEnv, string, func()) {
 		t.Fatalf("Failed to create VisionAccess: %v", err)
 	}
 
+	rtn, err := NewRoutineAccess(dataDir, repo)
+	if err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to create RoutineAccess: %v", err)
+	}
+
 	cleanup := func() {
 		repo.Close()
 		os.RemoveAll(tmpDir)
 	}
 
-	return &testEnv{themes: themes, tasks: tasks, calendar: cal, vision: vis, dataDir: dataDir}, tmpDir, cleanup
+	return &testEnv{themes: themes, tasks: tasks, calendar: cal, vision: vis, routines: rtn, dataDir: dataDir}, tmpDir, cleanup
 }
 
 // setupTestPlanAccess is a backward-compatible helper that returns a TaskAccess
