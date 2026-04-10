@@ -91,5 +91,4 @@ type KeyResultSuggestion struct {
 type RoutineSuggestion struct {
 	ID          string `json:"id,omitempty"`
 	Description string `json:"description"`
-	ThemeID     string `json:"themeId,omitempty"`
 }

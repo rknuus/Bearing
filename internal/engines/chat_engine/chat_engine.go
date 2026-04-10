@@ -76,7 +76,7 @@ type rawSuggestion struct {
 	CurrentValue      int    `json:"currentValue,omitempty"`
 	TargetValue       int    `json:"targetValue,omitempty"`
 	ParentObjectiveID string `json:"parentObjectiveId,omitempty"`
-	// Routine fields
+	// Legacy fields — parsed but not propagated to typed DTOs.
 	TargetType string `json:"targetType,omitempty"`
 	Unit       string `json:"unit,omitempty"`
 	ThemeID    string `json:"themeId,omitempty"`
@@ -190,7 +190,6 @@ func convertRawSuggestion(raw rawSuggestion) (Suggestion, string, bool) {
 		s.RoutineData = &RoutineSuggestion{
 			ID:          raw.ID,
 			Description: raw.Description,
-			ThemeID:     raw.ThemeID,
 		}
 		if isEdit {
 			return s, "[Suggestion: Edit routine]", true

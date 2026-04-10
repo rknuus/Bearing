@@ -455,7 +455,6 @@ func TestUnit_AdviceManager_AcceptSuggestion_CreateRoutine(t *testing.T) {
 		Action: "create",
 		RoutineData: &chat_engine.RoutineSuggestion{
 			Description: "Track water intake",
-			ThemeID:     "H",
 		},
 	}
 	err = am.AcceptSuggestion(suggestion, "")

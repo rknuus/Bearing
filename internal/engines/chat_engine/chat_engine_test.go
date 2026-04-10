@@ -499,9 +499,6 @@ func TestUnit_ChatEngine_ParseSuggestions_AllTypes(t *testing.T) {
 	if suggestions[3].RoutineData.Description != "Morning run" {
 		t.Errorf("expected routine description 'Morning run', got %q", suggestions[3].RoutineData.Description)
 	}
-	if suggestions[3].RoutineData.ThemeID != "theme-1" {
-		t.Errorf("expected routine themeId 'theme-1', got %q", suggestions[3].RoutineData.ThemeID)
-	}
 }
 
 func TestUnit_ChatEngine_ParseSuggestions_CleanText(t *testing.T) {
