@@ -31,7 +31,7 @@ type Objective struct {
 	Tags          []string    `json:"tags,omitempty"`          // Freeform tags for categorization
 	ClosingStatus string      `json:"closingStatus,omitempty"` // achieved, partially-achieved, missed, postponed, canceled
 	ClosingNotes  string      `json:"closingNotes,omitempty"`  // Reflection notes
-	ClosedAt      utilities.Timestamp `json:"closedAt,omitzero"`       // ISO 8601 timestamp
+	ClosedAt      utilities.Timestamp `json:"closedAt,omitempty"`       // ISO 8601 timestamp
 	KeyResults    []KeyResult `json:"keyResults"`              // Measurable key results
 	Objectives    []Objective `json:"objectives,omitempty"`    // Nested child objectives
 }
@@ -111,9 +111,9 @@ type Task struct {
 	ThemeID       string   `json:"themeId"`                  // Links to a LifeTheme.ID
 	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, important-not-urgent, not-important-urgent
 	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
-	PromotionDate utilities.CalendarDate `json:"promotionDate,omitzero"` // Date when priority should be promoted (YYYY-MM-DD)
-	CreatedAt     utilities.Timestamp    `json:"createdAt,omitzero"`     // ISO 8601 creation timestamp
-	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitzero"`     // ISO 8601 last-update timestamp
+	PromotionDate utilities.CalendarDate `json:"promotionDate,omitempty"` // Date when priority should be promoted (YYYY-MM-DD)
+	CreatedAt     utilities.Timestamp    `json:"createdAt,omitempty"`     // ISO 8601 creation timestamp
+	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitempty"`     // ISO 8601 last-update timestamp
 }
 
 // ColumnType represents the semantic type of a board column.
@@ -283,7 +283,7 @@ type YearFocusFile struct {
 type PersonalVision struct {
 	Mission   string `json:"mission"`
 	Vision    string `json:"vision"`
-	UpdatedAt utilities.Timestamp `json:"updatedAt,omitzero"`
+	UpdatedAt utilities.Timestamp `json:"updatedAt,omitempty"`
 }
 
 // NavigationContext stores the user's navigation state for persistence.
@@ -302,7 +302,7 @@ type NavigationContext struct {
 	TagFocusActive    *bool    `json:"tagFocusActive,omitempty"`
 	CollapsedSections            []string `json:"collapsedSections,omitempty"`
 	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
-	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitzero"`
+	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitempty"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }

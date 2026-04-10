@@ -257,11 +257,10 @@ func TestUnit_CalendarDate_UnmarshalInvalid(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUnit_CalendarDate_OmitZero(t *testing.T) {
-	// Go 1.24+ omitzero calls IsZero() on struct types to decide whether to
-	// omit the field. CalendarDate{}.IsZero() returns true, so it is omitted.
+	// String-based CalendarDate with omitempty: the zero value ("") is omitted.
 	type record struct {
 		Name string       `json:"name"`
-		Date CalendarDate `json:"date,omitzero"`
+		Date CalendarDate `json:"date,omitempty"`
 	}
 	r := record{Name: "test"}
 	b, err := json.Marshal(r)
@@ -274,14 +273,14 @@ func TestUnit_CalendarDate_OmitZero(t *testing.T) {
 		t.Fatalf("Unmarshal to map error: %v", err)
 	}
 	if _, exists := m["date"]; exists {
-		t.Errorf("zero CalendarDate with omitzero was not omitted: %s", b)
+		t.Errorf("zero CalendarDate with omitempty was not omitted: %s", b)
 	}
 }
 
 func TestUnit_CalendarDate_OmitZeroPresent(t *testing.T) {
 	type record struct {
 		Name string       `json:"name"`
-		Date CalendarDate `json:"date,omitzero"`
+		Date CalendarDate `json:"date,omitempty"`
 	}
 	r := record{Name: "test", Date: MustParseCalendarDate("2026-04-10")}
 	b, err := json.Marshal(r)
@@ -441,9 +440,9 @@ func TestUnit_Timestamp_ParseInvalid(t *testing.T) {
 }
 
 func TestUnit_Timestamp_Now(t *testing.T) {
-	before := time.Now().UTC()
+	before := time.Now().UTC().Truncate(time.Second)
 	ts := Now()
-	after := time.Now().UTC()
+	after := time.Now().UTC().Add(time.Second).Truncate(time.Second)
 
 	got := ts.Time()
 	if got.Before(before) || got.After(after) {
@@ -591,11 +590,10 @@ func TestUnit_Timestamp_UnmarshalInvalid(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestUnit_Timestamp_OmitZero(t *testing.T) {
-	// Go 1.24+ omitzero calls IsZero() on struct types to decide whether to
-	// omit the field. Timestamp{}.IsZero() returns true, so it is omitted.
+	// String-based Timestamp with omitempty: the zero value ("") is omitted.
 	type record struct {
 		Name    string    `json:"name"`
-		Created Timestamp `json:"created,omitzero"`
+		Created Timestamp `json:"created,omitempty"`
 	}
 	r := record{Name: "test"}
 	b, err := json.Marshal(r)
@@ -608,14 +606,14 @@ func TestUnit_Timestamp_OmitZero(t *testing.T) {
 		t.Fatalf("Unmarshal to map error: %v", err)
 	}
 	if _, exists := m["created"]; exists {
-		t.Errorf("zero Timestamp with omitzero was not omitted: %s", b)
+		t.Errorf("zero Timestamp with omitempty was not omitted: %s", b)
 	}
 }
 
 func TestUnit_Timestamp_OmitZeroPresent(t *testing.T) {
 	type record struct {
 		Name    string    `json:"name"`
-		Created Timestamp `json:"created,omitzero"`
+		Created Timestamp `json:"created,omitempty"`
 	}
 	r := record{Name: "test", Created: MustParseTimestamp("2026-04-10T14:30:59Z")}
 	b, err := json.Marshal(r)

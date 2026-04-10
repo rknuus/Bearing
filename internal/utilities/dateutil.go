@@ -8,23 +8,18 @@ import (
 
 const calendarDateFormat = "2006-01-02"
 
-// CalendarDate represents a date without a time component.
-// It wraps time.Time and enforces YYYY-MM-DD serialization.
-// The zero value serializes as an empty string and is omitted
-// by json:",omitzero" (Go 1.24+) because IsZero returns true.
-type CalendarDate struct {
-	t time.Time
-}
+// CalendarDate represents a date without a time component as a YYYY-MM-DD string.
+// Using a string-based type (rather than a struct) ensures Wails binding generation
+// resolves it as a plain string in TypeScript while still providing Go type safety.
+// The zero value is the empty string, compatible with json omitempty.
+// Validation happens at parse time (ParseCalendarDate, UnmarshalJSON).
+type CalendarDate string
 
 // NewCalendarDate creates a CalendarDate from a time.Time, extracting the
-// local year/month/day and storing as UTC midnight. This normalization
-// ensures that .Time() comparisons between any two CalendarDate values
-// are safe regardless of how they were constructed (parsed from string,
-// created from Today(), etc.).
+// local year/month/day. This means time.Now() produces today's local date,
+// while time.Parse results use the parsed date as-is.
 func NewCalendarDate(t time.Time) CalendarDate {
-	return CalendarDate{
-		t: time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC),
-	}
+	return CalendarDate(t.Format(calendarDateFormat))
 }
 
 // ParseCalendarDate parses a "YYYY-MM-DD" string into a CalendarDate.
@@ -33,13 +28,12 @@ func NewCalendarDate(t time.Time) CalendarDate {
 func ParseCalendarDate(s string) (CalendarDate, error) {
 	t, err := time.Parse(calendarDateFormat, s)
 	if err != nil {
-		return CalendarDate{}, fmt.Errorf("invalid CalendarDate %q: %w", s, err)
+		return "", fmt.Errorf("invalid CalendarDate %q: %w", s, err)
 	}
-	// Reject dates that the standard library silently normalises (e.g. Feb 30).
 	if t.Format(calendarDateFormat) != s {
-		return CalendarDate{}, fmt.Errorf("invalid CalendarDate %q: date does not exist", s)
+		return "", fmt.Errorf("invalid CalendarDate %q: date does not exist", s)
 	}
-	return CalendarDate{t: t}, nil
+	return CalendarDate(s), nil
 }
 
 // MustParseCalendarDate is like ParseCalendarDate but panics on error.
@@ -52,37 +46,31 @@ func MustParseCalendarDate(s string) CalendarDate {
 	return d
 }
 
-// Today returns the current date in the user's local timezone, stored as
-// UTC midnight. This is correct for a local-first desktop app: the user's
-// wall-clock date is what matters, and UTC normalization ensures safe
-// comparisons with parsed dates.
+// Today returns the current date in the user's local timezone.
+// This is correct for a local-first desktop app: the user's wall-clock
+// date is what matters.
 func Today() CalendarDate {
 	return NewCalendarDate(time.Now())
 }
 
-// Time returns the underlying time.Time value.
+// Time returns the date as a time.Time (UTC midnight).
+// Parsing is performed on each call; for repeated access, cache the result.
 func (d CalendarDate) Time() time.Time {
-	return d.t
-}
-
-// String returns the date formatted as "YYYY-MM-DD".
-// The zero value returns an empty string.
-func (d CalendarDate) String() string {
-	if d.t.IsZero() {
-		return ""
+	if d == "" {
+		return time.Time{}
 	}
-	return d.t.Format(calendarDateFormat)
+	t, _ := time.Parse(calendarDateFormat, string(d))
+	return t
 }
 
-// IsZero reports whether d represents the zero value.
+// String returns the YYYY-MM-DD representation, or "" for the zero value.
+func (d CalendarDate) String() string {
+	return string(d)
+}
+
+// IsZero reports whether d represents the zero value (empty string).
 func (d CalendarDate) IsZero() bool {
-	return d.t.IsZero()
-}
-
-// MarshalJSON implements json.Marshaler.
-// Zero value produces "", otherwise "YYYY-MM-DD".
-func (d CalendarDate) MarshalJSON() ([]byte, error) {
-	return json.Marshal(d.String())
+	return d == ""
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -93,57 +81,54 @@ func (d *CalendarDate) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("CalendarDate: expected string or null, got %s", string(b))
 	}
 	if s == nil || *s == "" {
-		d.t = time.Time{}
+		*d = ""
 		return nil
 	}
 	parsed, err := ParseCalendarDate(*s)
 	if err != nil {
 		return err
 	}
-	d.t = parsed.t
+	*d = parsed
 	return nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (d CalendarDate) MarshalText() ([]byte, error) {
-	return []byte(d.String()), nil
+	return []byte(d), nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (d *CalendarDate) UnmarshalText(b []byte) error {
 	s := string(b)
 	if s == "" {
-		d.t = time.Time{}
+		*d = ""
 		return nil
 	}
 	parsed, err := ParseCalendarDate(s)
 	if err != nil {
 		return err
 	}
-	d.t = parsed.t
+	*d = parsed
 	return nil
 }
 
-// Timestamp represents an instant in time with full precision.
-// It wraps time.Time and enforces RFC3339 serialization.
-// The zero value serializes as an empty string and is omitted
-// by json:",omitzero" (Go 1.24+) because IsZero returns true.
-type Timestamp struct {
-	t time.Time
-}
+// Timestamp represents an instant in time as an RFC3339 string.
+// Using a string-based type ensures Wails binding generation resolves it
+// as a plain string in TypeScript while still providing Go type safety.
+// The zero value is the empty string, compatible with json omitempty.
+type Timestamp string
 
 // NewTimestamp creates a Timestamp from a time.Time.
 func NewTimestamp(t time.Time) Timestamp {
-	return Timestamp{t: t}
+	return Timestamp(t.Format(time.RFC3339))
 }
 
 // ParseTimestamp parses an RFC3339 string into a Timestamp.
 func ParseTimestamp(s string) (Timestamp, error) {
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return Timestamp{}, fmt.Errorf("invalid Timestamp %q: %w", s, err)
+	if _, err := time.Parse(time.RFC3339, s); err != nil {
+		return "", fmt.Errorf("invalid Timestamp %q: %w", s, err)
 	}
-	return Timestamp{t: t}, nil
+	return Timestamp(s), nil
 }
 
 // MustParseTimestamp is like ParseTimestamp but panics on error.
@@ -158,32 +143,27 @@ func MustParseTimestamp(s string) Timestamp {
 
 // Now returns the current time in UTC as a Timestamp.
 func Now() Timestamp {
-	return Timestamp{t: time.Now().UTC()}
+	return NewTimestamp(time.Now().UTC())
 }
 
-// Time returns the underlying time.Time value.
+// Time returns the timestamp as a time.Time.
+// Parsing is performed on each call; for repeated access, cache the result.
 func (ts Timestamp) Time() time.Time {
-	return ts.t
-}
-
-// String returns the timestamp formatted as RFC3339.
-// The zero value returns an empty string.
-func (ts Timestamp) String() string {
-	if ts.t.IsZero() {
-		return ""
+	if ts == "" {
+		return time.Time{}
 	}
-	return ts.t.Format(time.RFC3339)
+	t, _ := time.Parse(time.RFC3339, string(ts))
+	return t
 }
 
-// IsZero reports whether ts represents the zero value.
+// String returns the RFC3339 representation, or "" for the zero value.
+func (ts Timestamp) String() string {
+	return string(ts)
+}
+
+// IsZero reports whether ts represents the zero value (empty string).
 func (ts Timestamp) IsZero() bool {
-	return ts.t.IsZero()
-}
-
-// MarshalJSON implements json.Marshaler.
-// Zero value produces "", otherwise an RFC3339 string.
-func (ts Timestamp) MarshalJSON() ([]byte, error) {
-	return json.Marshal(ts.String())
+	return ts == ""
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -194,33 +174,33 @@ func (ts *Timestamp) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("Timestamp: expected string or null, got %s", string(b))
 	}
 	if s == nil || *s == "" {
-		ts.t = time.Time{}
+		*ts = ""
 		return nil
 	}
 	parsed, err := ParseTimestamp(*s)
 	if err != nil {
 		return err
 	}
-	ts.t = parsed.t
+	*ts = parsed
 	return nil
 }
 
 // MarshalText implements encoding.TextMarshaler.
 func (ts Timestamp) MarshalText() ([]byte, error) {
-	return []byte(ts.String()), nil
+	return []byte(ts), nil
 }
 
 // UnmarshalText implements encoding.TextUnmarshaler.
 func (ts *Timestamp) UnmarshalText(b []byte) error {
 	s := string(b)
 	if s == "" {
-		ts.t = time.Time{}
+		*ts = ""
 		return nil
 	}
 	parsed, err := ParseTimestamp(s)
 	if err != nil {
 		return err
 	}
-	ts.t = parsed.t
+	*ts = parsed
 	return nil
 }

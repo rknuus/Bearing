@@ -41,7 +41,7 @@ type NavigationContext struct {
 	TagFocusActive               *bool    `json:"tagFocusActive,omitempty"`
 	CollapsedSections            []string `json:"collapsedSections,omitempty"`
 	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
-	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitzero"`
+	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitempty"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }
@@ -167,9 +167,9 @@ type Task struct {
 	ThemeID       string                `json:"themeId"`
 	Priority      string                `json:"priority"`
 	Tags          []string              `json:"tags,omitempty"`
-	PromotionDate utilities.CalendarDate `json:"promotionDate,omitzero"`
-	CreatedAt     utilities.Timestamp    `json:"createdAt,omitzero"`
-	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitzero"`
+	PromotionDate utilities.CalendarDate `json:"promotionDate,omitempty"`
+	CreatedAt     utilities.Timestamp    `json:"createdAt,omitempty"`
+	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitempty"`
 }
 
 // KeyResult represents a measurable outcome in the Manager layer's public interface.
@@ -193,7 +193,7 @@ type Objective struct {
 	Tags          []string            `json:"tags,omitempty"`
 	ClosingStatus string              `json:"closingStatus,omitempty"`
 	ClosingNotes  string              `json:"closingNotes,omitempty"`
-	ClosedAt      utilities.Timestamp `json:"closedAt,omitzero"`
+	ClosedAt      utilities.Timestamp `json:"closedAt,omitempty"`
 	KeyResults    []KeyResult         `json:"keyResults"`
 	Objectives    []Objective         `json:"objectives,omitempty"`
 }
@@ -267,7 +267,7 @@ type BoardConfiguration struct {
 type PersonalVision struct {
 	Mission   string              `json:"mission"`
 	Vision    string              `json:"vision"`
-	UpdatedAt utilities.Timestamp `json:"updatedAt,omitzero"`
+	UpdatedAt utilities.Timestamp `json:"updatedAt,omitempty"`
 }
 
 // RoutineOccurrence represents a routine due on a specific date.
@@ -1068,7 +1068,7 @@ func (m *PlanningManager) ReopenObjective(objectiveId string) error {
 			obj.Status = ""
 			obj.ClosingStatus = ""
 			obj.ClosingNotes = ""
-			obj.ClosedAt = utilities.Timestamp{}
+			obj.ClosedAt = ""
 
 			// Reopen all completed direct child KRs
 			for j := range obj.KeyResults {
@@ -1745,7 +1745,7 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		updatedTask := t.Task
 		oldPriority := updatedTask.Priority
 		updatedTask.Priority = string(access.PriorityImportantUrgent)
-		updatedTask.PromotionDate = utilities.CalendarDate{} // Clear after promotion
+		updatedTask.PromotionDate = "" // Clear after promotion
 
 		accessTask := toAccessTask(updatedTask)
 		if err := m.taskAccess.WriteTask(accessTask); err != nil {
