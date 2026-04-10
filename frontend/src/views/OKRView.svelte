@@ -738,12 +738,16 @@
     });
   }
 
+  // Weekday conversion: UI uses ISO order (0=Mon..6=Sun), backend uses JS/Go order (0=Sun..6=Sat)
+  function uiWeekdayToBackend(uiDay: number): number { return (uiDay + 1) % 7; }
+  function backendWeekdayToUi(backendDay: number): number { return (backendDay + 6) % 7; }
+
   // Repeat pattern helpers
   function buildRepeatPattern(frequency: string, interval: number, weekdays: number[], monthDay: number, startDate: string): RepeatPattern | undefined {
     if (frequency === 'none') return undefined;
     const pattern: RepeatPattern = { frequency, interval: Math.max(1, interval), startDate: startDate || new Date().toISOString().split('T')[0] };
     if (frequency === 'weekly' && weekdays.length > 0) {
-      pattern.weekdays = [...weekdays].sort();
+      pattern.weekdays = weekdays.map(uiWeekdayToBackend).sort((a, b) => a - b);
     }
     if (frequency === 'monthly') {
       pattern.dayOfMonth = Math.max(1, Math.min(31, monthDay));
@@ -833,7 +837,7 @@
     if (routine.repeatPattern) {
       editRoutineFrequency = routine.repeatPattern.frequency;
       editRoutineInterval = routine.repeatPattern.interval;
-      editRoutineWeekdays = routine.repeatPattern.weekdays ? [...routine.repeatPattern.weekdays] : [];
+      editRoutineWeekdays = routine.repeatPattern.weekdays ? routine.repeatPattern.weekdays.map(backendWeekdayToUi) : [];
       editRoutineMonthDay = routine.repeatPattern.dayOfMonth ?? 1;
       editRoutineStartDate = routine.repeatPattern.startDate ?? '';
     } else {
@@ -851,7 +855,7 @@
     switch (p.frequency) {
       case 'daily': return `Every ${intervalLabel}day${p.interval > 1 ? 's' : ''}`;
       case 'weekly': {
-        const days = (p.weekdays ?? []).map(d => WEEKDAY_LABELS[d]).join(', ');
+        const days = (p.weekdays ?? []).map(d => WEEKDAY_LABELS[backendWeekdayToUi(d)]).join(', ');
         const base = `Every ${intervalLabel}week${p.interval > 1 ? 's' : ''}`;
         return days ? `${base} on ${days}` : base;
       }

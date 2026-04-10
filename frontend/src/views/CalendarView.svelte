@@ -60,11 +60,17 @@
   interface ClipboardEntry { themeIds?: string[]; text: string; okrIds?: string[]; tags?: string[] }
   let clipboard = $state<ClipboardEntry[]>([]);
 
-  // Routine status map for calendar dot indicators
+  // Routine status and tooltip maps for calendar dot indicators
   let routineStatusMap = $state(new Map<string, 'all' | 'some' | 'none' | 'future'>());
+  let routineTooltipMap = $state(new Map<string, string>());
 
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
+
+  /** Format a local Date as YYYY-MM-DD without UTC conversion. */
+  function localDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
 
   /** Compute all occurrence dates for a repeat pattern within a given year. */
   function getYearOccurrences(pattern: RepeatPattern, yr: number): string[] {
@@ -95,23 +101,37 @@
       }
       current.setTime(walker.getTime());
     } else {
-      // For weekly, start at beginning of the year (or anchor, whichever is later)
-      // and iterate day-by-day checking weekdays
-      const day1 = new Date(Math.max(anchor.getTime(), yearStart.getTime()));
+      // For weekly, align to the anchor's week and step by interval weeks
+      // to match the backend's generateWeekly logic (ISO week alignment)
+      const anchorDay = anchor.getDay() || 7; // Sunday = 7 for ISO alignment
       // eslint-disable-next-line svelte/prefer-svelte-reactivity
-      const iter = new Date(day1);
-      while (iter <= yearEnd) {
-        const wd = iter.getDay();
-        if (pattern.weekdays?.includes(wd)) {
-          results.push(iter.toISOString().split('T')[0]);
+      const anchorMonday = new Date(anchor);
+      anchorMonday.setDate(anchor.getDate() - (anchorDay - 1));
+
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
+      const weekStart = new Date(anchorMonday);
+      // Advance to the first interval-aligned week that overlaps [yearStart, yearEnd]
+      while (weekStart.getTime() + 6 * 86400000 < yearStart.getTime()) {
+        weekStart.setDate(weekStart.getDate() + 7 * interval);
+      }
+
+      const sortedWeekdays = [...(pattern.weekdays || [])].sort((a, b) => a - b);
+      while (weekStart <= yearEnd) {
+        for (const wd of sortedWeekdays) {
+          const offset = wd === 0 ? 7 : wd; // Sunday at end of ISO week
+          // eslint-disable-next-line svelte/prefer-svelte-reactivity
+          const d = new Date(weekStart);
+          d.setDate(weekStart.getDate() + offset - 1);
+          if (d < anchor || d < yearStart || d > yearEnd) continue;
+          results.push(localDateStr(d));
         }
-        iter.setDate(iter.getDate() + 1);
+        weekStart.setDate(weekStart.getDate() + 7 * interval);
       }
       return results;
     }
 
     while (current <= yearEnd) {
-      results.push(current.toISOString().split('T')[0]);
+      results.push(localDateStr(current));
       if (pattern.frequency === 'daily') {
         current.setDate(current.getDate() + interval);
       } else if (pattern.frequency === 'monthly') {
@@ -125,19 +145,21 @@
   }
 
   /**
-   * Compute routine status for every date in the year.
-   * Returns a Map keyed by date string (YYYY-MM-DD) with status values.
+   * Compute routine status and tooltip for every date in the year.
+   * Returns status and tooltip Maps keyed by date string (YYYY-MM-DD).
    */
-  function computeRoutineStatusMap(
+  function computeRoutineMaps(
     allThemes: LifeTheme[],
     focusMap: SvelteMap<string, DayFocus>,
     yr: number,
     todayStr: string,
-  ): Map<string, 'all' | 'some' | 'none' | 'future'> {
+  ): { statusMap: Map<string, 'all' | 'some' | 'none' | 'future'>; tooltipMap: Map<string, string> } {
     // Count total routines due per date and checked per date
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const dueCounts = new Map<string, number>();
     const checkedCounts = new Map<string, number>(); // eslint-disable-line svelte/prefer-svelte-reactivity
+    const dueDescriptions = new Map<string, string[]>(); // eslint-disable-line svelte/prefer-svelte-reactivity
+    const checkedDescriptions = new Map<string, string[]>(); // eslint-disable-line svelte/prefer-svelte-reactivity
 
     for (const theme of allThemes) {
       if (!theme.routines) continue;
@@ -156,31 +178,47 @@
 
         for (const d of dates) {
           dueCounts.set(d, (dueCounts.get(d) || 0) + 1);
+          const descs = dueDescriptions.get(d) || [];
+          descs.push(routine.description);
+          dueDescriptions.set(d, descs);
+
           const focus = focusMap.get(d);
           if (focus?.routineChecks?.includes(routine.id)) {
             checkedCounts.set(d, (checkedCounts.get(d) || 0) + 1);
+            const cDescs = checkedDescriptions.get(d) || [];
+            cDescs.push(routine.description);
+            checkedDescriptions.set(d, cDescs);
           }
         }
       }
     }
 
     // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const result = new Map<string, 'all' | 'some' | 'none' | 'future'>();
+    const statusMap = new Map<string, 'all' | 'some' | 'none' | 'future'>();
+    const tooltipMap = new Map<string, string>(); // eslint-disable-line svelte/prefer-svelte-reactivity
     for (const [dateStr, total] of dueCounts) {
       if (total === 0) continue;
       const checked = checkedCounts.get(dateStr) || 0;
 
       if (dateStr > todayStr) {
-        result.set(dateStr, 'future');
+        statusMap.set(dateStr, 'future');
       } else if (checked >= total) {
-        result.set(dateStr, 'all');
+        statusMap.set(dateStr, 'all');
       } else if (checked > 0) {
-        result.set(dateStr, 'some');
+        statusMap.set(dateStr, 'some');
       } else {
-        result.set(dateStr, 'none');
+        statusMap.set(dateStr, 'none');
+      }
+
+      const cDescs = checkedDescriptions.get(dateStr);
+      const dDescs = dueDescriptions.get(dateStr);
+      if (cDescs && cDescs.length > 0) {
+        tooltipMap.set(dateStr, cDescs.join('\n'));
+      } else if (dDescs && dDescs.length > 0) {
+        tooltipMap.set(dateStr, dDescs.join('\n'));
       }
     }
-    return result;
+    return { statusMap, tooltipMap };
   }
 
   // Load data on mount and reload when year changes
@@ -207,8 +245,10 @@
         yearFocus.set(entry.date, entry);
       }
 
-      const todayStr = currentDate || new Date().toISOString().split('T')[0];
-      routineStatusMap = computeRoutineStatusMap(themesResult, yearFocus, year, todayStr);
+      const todayStr = currentDate || localDateStr(new Date());
+      const routineMaps = computeRoutineMaps(themesResult, yearFocus, year, todayStr);
+      routineStatusMap = routineMaps.statusMap;
+      routineTooltipMap = routineMaps.tooltipMap;
     } catch (e) {
       error = extractError(e);
       console.error('CalendarView: Failed to load data', e);
@@ -301,6 +341,7 @@
     sunday: boolean;
     weekdayName: string;
     routineStatus?: 'all' | 'some' | 'none' | 'future';
+    routineTooltip?: string;
   }
 
   let gridCells = $derived.by(() => {
@@ -319,6 +360,7 @@
           sunday: isSundayDate(year, m, d),
           weekdayName: getWeekdayName(year, m, d),
           routineStatus: routineStatusMap.get(dateStr),
+          routineTooltip: routineTooltipMap.get(dateStr),
         });
       }
     }
@@ -416,9 +458,11 @@
       await bindings.SaveDayFocus(dayFocus);
       yearFocus.set(editingDay.date, dayFocus);
 
-      // Recompute routine status map after check changes
-      const todayStr = currentDate || new Date().toISOString().split('T')[0];
-      routineStatusMap = computeRoutineStatusMap(themes, yearFocus, year, todayStr);
+      // Recompute routine maps after check changes
+      const todayStr = currentDate || localDateStr(new Date());
+      const routineMaps = computeRoutineMaps(themes, yearFocus, year, todayStr);
+      routineStatusMap = routineMaps.statusMap;
+      routineTooltipMap = routineMaps.tooltipMap;
 
       await verifyCalendarState();
 
@@ -677,7 +721,7 @@
             >
               <span class="day-text-content">{cell.text}</span>
               {#if cell.routineStatus}
-                <span class="routine-dot {cell.routineStatus}"></span>
+                <span class="routine-dot {cell.routineStatus}" title={cell.routineTooltip}></span>
               {/if}
             </button>
           {/each}
@@ -718,41 +762,6 @@
           }}
           onOkrSelectionChange={(ids) => { editOkrIds = ids; }}
           onSelectExpandedIdsChange={(ids) => { editSelectExpandedIds = ids; }}
-        />
-      </div>
-
-      <div class="form-group">
-        <button
-          class="collapsible-header"
-          onclick={() => tagSectionOpen = !tagSectionOpen}
-          aria-expanded={tagSectionOpen}
-        >
-          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
-          <span class="form-label">Tags</span>
-        </button>
-        {#if tagSectionOpen}
-          <TagEditor
-            tags={editTags}
-            {availableTags}
-            onTagsChange={(newTags) => {
-              const newDerived = newTags.join(', ');
-              if (editText === prevDerivedText || editText === '') {
-                editText = newDerived;
-              }
-              prevDerivedText = newDerived;
-              editTags = newTags;
-            }}
-          />
-        {/if}
-      </div>
-
-      <div class="form-group">
-        <label for="text-input">Text</label>
-        <input
-          id="text-input"
-          type="text"
-          bind:value={editText}
-          placeholder="Add text for this day..."
         />
       </div>
 
@@ -804,6 +813,41 @@
           {/if}
         </div>
       {/if}
+
+      <div class="form-group">
+        <button
+          class="collapsible-header"
+          onclick={() => tagSectionOpen = !tagSectionOpen}
+          aria-expanded={tagSectionOpen}
+        >
+          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
+          <span class="form-label">Tags</span>
+        </button>
+        {#if tagSectionOpen}
+          <TagEditor
+            tags={editTags}
+            {availableTags}
+            onTagsChange={(newTags) => {
+              const newDerived = newTags.join(', ');
+              if (editText === prevDerivedText || editText === '') {
+                editText = newDerived;
+              }
+              prevDerivedText = newDerived;
+              editTags = newTags;
+            }}
+          />
+        {/if}
+      </div>
+
+      <div class="form-group">
+        <label for="text-input">Text</label>
+        <input
+          id="text-input"
+          type="text"
+          bind:value={editText}
+          placeholder="Add text for this day..."
+        />
+      </div>
 
       {#snippet actions()}
         <Button variant="secondary" onclick={cancelEdit}>Cancel</Button>
