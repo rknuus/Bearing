@@ -764,7 +764,7 @@
 
   <!-- Day Editor Dialog -->
   {#if editingDay}
-    <Dialog title={displayDate(editingDay.month, editingDay.day)} id="dialog-title" onclose={cancelEdit}>
+    <Dialog title={displayDate(editingDay.month, editingDay.day)} id="dialog-title" maxWidth="700px" onclose={cancelEdit}>
       <div class="form-group">
         <span class="form-label">Theme & OKR References</span>
         <ThemeOKRTree
