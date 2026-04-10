@@ -13,6 +13,7 @@
   import MarkdownContent from '../lib/components/MarkdownContent.svelte';
   import SuggestionCard from './SuggestionCard.svelte';
   import type { Suggestion } from './SuggestionCard.svelte';
+  import { getNow } from '../lib/utils/clock';
 
   interface ChatMessage {
     role: 'user' | 'advisor';
@@ -107,7 +108,7 @@
     const userMessage: ChatMessage = {
       role: 'user',
       content: text,
-      timestamp: Date.now(),
+      timestamp: getNow().getTime(),
     };
 
     messages = [...messages, userMessage];
@@ -131,7 +132,7 @@
       const advisorMessage: ChatMessage = {
         role: 'advisor',
         content: response.text,
-        timestamp: Date.now(),
+        timestamp: getNow().getTime(),
         suggestions: response.suggestions,
       };
       messages = [...untrack(() => messages), advisorMessage];
@@ -139,7 +140,7 @@
       const errorMessage: ChatMessage = {
         role: 'advisor',
         content: '',
-        timestamp: Date.now(),
+        timestamp: getNow().getTime(),
         error: e instanceof Error ? e.message : String(e),
       };
       messages = [...untrack(() => messages), errorMessage];

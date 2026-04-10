@@ -33,6 +33,7 @@
   import { getTheme } from '../lib/utils/theme-helpers';
   import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
   import { formatDateLong } from '../lib/utils/date-format';
+  import { today as todayDate, type CalendarDate } from '../lib/utils/date-utils';
   import { checkFullState } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
@@ -50,7 +51,7 @@
     todayFocusTags?: string[];
     tagFocusActive?: boolean;
     onTagFocusToggle?: () => void;
-    currentDate?: string;
+    currentDate?: CalendarDate;
   }
 
   let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle, todayFocusTags, tagFocusActive, onTagFocusToggle, currentDate }: Props = $props();
@@ -125,7 +126,7 @@
   let sectionItems = $state<Record<string, TaskWithStatus[]>>({});
 
   // Current day display (derived from centralized currentDate prop)
-  let today = $derived(formatDateLong(currentDate ?? new Date().toISOString().split('T')[0]));
+  let today = $derived(formatDateLong(currentDate ?? todayDate()));
 
   // Context menu state for cross-view navigation
   let contextMenuTask = $state<TaskWithStatus | null>(null);

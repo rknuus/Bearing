@@ -8,6 +8,10 @@
  * NOT via HTTP. This mock enables browser-based testing.
  */
 
+import type { CalendarDate, Timestamp } from './utils/date-utils';
+import { toCalendarDate, toTimestamp, today as todayDate, parseCalendarDate } from './utils/date-utils';
+import { getNow } from './utils/clock';
+
 // Types matching Go structs
 export interface KeyResult {
   id: string;
@@ -58,7 +62,7 @@ export interface RoutineOccurrence {
   description: string;
   themeId: string;
   themeColor: string;
-  date: string;
+  date: CalendarDate;
   status: string; // "scheduled", "overdue", "sporadic"
   checked: boolean;
 }
@@ -115,7 +119,7 @@ export interface ReviseRequest {
 }
 
 export interface DayFocus {
-  date: string;
+  date: CalendarDate;
   themeIds?: string[];
   notes: string;
   text: string;
@@ -138,9 +142,9 @@ export interface Task {
   themeId: string;
   priority: string;
   tags?: string[];
-  promotionDate?: string;
-  createdAt?: string;
-  updatedAt?: string;
+  promotionDate?: CalendarDate;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface TaskWithStatus extends Task {
@@ -471,11 +475,11 @@ const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
 let mockTasks: TaskWithStatus[] = [
-  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'], createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
-  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z', updatedAt: '2026-01-31T08:00:00Z' },
-  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', priority: 'not-important-urgent', status: 'doing', tags: ['urgent', 'review'], createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T10:00:00Z' },
-  { id: 'L-T1', title: 'Update documentation', themeId: 'L', priority: 'important-not-urgent', status: 'done', tags: ['frontend'], createdAt: '2026-01-31T08:30:00Z', updatedAt: '2026-01-31T14:00:00Z' },
-  { id: 'PF-T1', title: 'Review budget spreadsheet', themeId: 'PF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T09:00:00Z', updatedAt: '2026-01-31T09:00:00Z' },
+  { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'], createdAt: '2026-01-31T08:00:00Z' as Timestamp, updatedAt: '2026-01-31T08:00:00Z' as Timestamp },
+  { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z' as Timestamp, updatedAt: '2026-01-31T08:00:00Z' as Timestamp },
+  { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', priority: 'not-important-urgent', status: 'doing', tags: ['urgent', 'review'], createdAt: '2026-01-31T09:00:00Z' as Timestamp, updatedAt: '2026-01-31T10:00:00Z' as Timestamp },
+  { id: 'L-T1', title: 'Update documentation', themeId: 'L', priority: 'important-not-urgent', status: 'done', tags: ['frontend'], createdAt: '2026-01-31T08:30:00Z' as Timestamp, updatedAt: '2026-01-31T14:00:00Z' as Timestamp },
+  { id: 'PF-T1', title: 'Review budget spreadsheet', themeId: 'PF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T09:00:00Z' as Timestamp, updatedAt: '2026-01-31T09:00:00Z' as Timestamp },
 ];
 
 // Mock task drafts storage
@@ -558,7 +562,7 @@ function computeMockOccurrences(pattern: RepeatPattern, exceptions: ScheduleExce
 
   while (current <= endDate) {
     if (current >= startDate) {
-      const dateStr = current.toISOString().split('T')[0];
+      const dateStr = toCalendarDate(current);
       if (pattern.frequency === 'weekly') {
         const day = current.getDay();
         if (pattern.weekdays?.includes(day) && !suppressedSet.has(dateStr)) {
@@ -588,7 +592,7 @@ function computeMockOccurrences(pattern: RepeatPattern, exceptions: ScheduleExce
 function computeMockOverdue(pattern: RepeatPattern, exceptions: ScheduleException[], completedDates: string[], asOf: string): string[] {
   const yesterday = new Date(asOf + 'T00:00:00');
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = toCalendarDate(yesterday);
   if (yesterdayStr < pattern.startDate) return [];
   const occurrences = computeMockOccurrences(pattern, exceptions, pattern.startDate, yesterdayStr);
   const completedSet = new Set(completedDates);
@@ -605,11 +609,11 @@ function computePeriodBounds(frequency: string, date: string): { start: string; 
     monday.setDate(d.getDate() - ((day + 6) % 7));
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
-    return { start: monday.toISOString().split('T')[0], end: sunday.toISOString().split('T')[0] };
+    return { start: toCalendarDate(monday), end: toCalendarDate(sunday) };
   } else if (frequency === 'monthly') {
     const monthStart = new Date(d.getFullYear(), d.getMonth(), 1);
     const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-    return { start: monthStart.toISOString().split('T')[0], end: monthEnd.toISOString().split('T')[0] };
+    return { start: toCalendarDate(monthStart), end: toCalendarDate(monthEnd) };
   } else {
     return { start: `${d.getFullYear()}-01-01`, end: `${d.getFullYear()}-12-31` };
   }
@@ -692,7 +696,7 @@ export const mockAppBindings = {
     obj.status = 'completed';
     obj.closingStatus = closingStatus;
     obj.closingNotes = closingNotes || undefined;
-    obj.closedAt = new Date().toISOString();
+    obj.closedAt = toTimestamp(getNow());
     // Close all active direct child KRs
     for (const kr of obj.keyResults) {
       if ((kr.status || 'active') === 'active') {
@@ -763,7 +767,7 @@ export const mockAppBindings = {
 
   GetRoutinesForDate: async (date: string): Promise<RoutineOccurrence[]> => {
     const result: RoutineOccurrence[] = [];
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayDate();
 
     // Get routine checks for the date
     const year = parseInt(date.substring(0, 4));
@@ -781,7 +785,7 @@ export const mockAppBindings = {
               description: routine.description,
               themeId: theme.id,
               themeColor: theme.color,
-              date: date,
+              date: parseCalendarDate(date),
               status: 'sporadic',
               checked: checkedIds.has(routine.id),
             });
@@ -797,7 +801,7 @@ export const mockAppBindings = {
             description: routine.description,
             themeId: theme.id,
             themeColor: theme.color,
-            date: occ,
+            date: parseCalendarDate(occ),
             status: 'scheduled',
             checked: checkedIds.has(routine.id),
           });
@@ -819,7 +823,7 @@ export const mockAppBindings = {
             description: routine.description,
             themeId: theme.id,
             themeColor: theme.color,
-            date: od,
+            date: parseCalendarDate(od),
             status: 'overdue',
             checked: false,
           });
@@ -847,9 +851,9 @@ export const mockAppBindings = {
     for (const theme of mockThemes) {
       for (const routine of (theme.routines || [])) {
         if (routine.id === routineID && routine.repeatPattern) {
-          const today = new Date().toISOString().split('T')[0];
-          const bounds = computePeriodBounds(routine.repeatPattern.frequency, today);
-          const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], bounds.start, today);
+          const todayStr = todayDate();
+          const bounds = computePeriodBounds(routine.repeatPattern.frequency, todayStr);
+          const occurrences = computeMockOccurrences(routine.repeatPattern, routine.exceptions || [], bounds.start, todayStr);
 
           const allCheckedDates: string[] = [];
           for (const [, yearEntries] of mockYearFocus) {
@@ -899,7 +903,7 @@ export const mockAppBindings = {
   },
 
   CreateTask: async (title: string, themeId: string, priority: string, description: string = '', tags: string = '', _promotionDate: string = ''): Promise<Task> => {
-    const now = new Date().toISOString();
+    const now = toTimestamp(getNow());
     const maxNum = getMaxTaskNumForTheme(mockTasks, themeId);
     const newTask: TaskWithStatus = {
       id: `${themeId}-T${maxNum + 1}`,
@@ -923,7 +927,7 @@ export const mockAppBindings = {
     if (task) {
       const oldZone = dropZoneForTask(task);
       task.status = newStatus;
-      task.updatedAt = new Date().toISOString();
+      task.updatedAt = toTimestamp(getNow());
       const newZone = dropZoneForTask(task);
       if (oldZone !== newZone) {
         taskPositions[oldZone] = (taskPositions[oldZone] ?? []).filter(id => id !== taskId);
@@ -942,7 +946,7 @@ export const mockAppBindings = {
   UpdateTask: async (task: Task): Promise<void> => {
     const index = mockTasks.findIndex(t => t.id === task.id);
     if (index >= 0) {
-      mockTasks[index] = { ...mockTasks[index], ...task, updatedAt: new Date().toISOString() };
+      mockTasks[index] = { ...mockTasks[index], ...task, updatedAt: toTimestamp(getNow()) };
     }
   },
 
@@ -985,14 +989,14 @@ export const mockAppBindings = {
 
   // Priority promotions
   ProcessPriorityPromotions: async (): Promise<PromotedTask[]> => {
-    const now = new Date().toISOString().split('T')[0];
+    const now = todayDate();
     const promoted: PromotedTask[] = [];
     for (const task of mockTasks) {
       if (task.promotionDate && task.promotionDate <= now && task.priority === 'important-not-urgent') {
         const oldPriority = task.priority;
         task.priority = 'important-urgent';
         task.promotionDate = undefined;
-        task.updatedAt = new Date().toISOString();
+        task.updatedAt = toTimestamp(getNow());
         promoted.push({
           id: task.id,
           title: task.title,
@@ -1151,7 +1155,7 @@ export const mockAppBindings = {
   },
 
   SavePersonalVision: async (mission: string, vision: string): Promise<void> => {
-    mockPersonalVision = { mission, vision, updatedAt: new Date().toISOString() };
+    mockPersonalVision = { mission, vision, updatedAt: toTimestamp(getNow()) };
   },
 
   // Progress rollup

@@ -9,6 +9,7 @@
   import { getIdType } from './lib/utils/id-parser';
   import { getBindings } from './lib/utils/bindings';
   import { getNow } from './lib/utils/clock';
+  import { today as todayDate, type CalendarDate } from './lib/utils/date-utils';
   import { initLocale } from './lib/utils/date-format';
   import { handleWindowShortcut } from './lib/utils/window-commands';
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
@@ -54,14 +55,14 @@
       advisorMessages = [...advisorMessages, {
         role: 'advisor' as const,
         content: result.text,
-        timestamp: Date.now(),
+        timestamp: getNow().getTime(),
         suggestions: result.suggestions,
       }];
     } catch (e: unknown) {
       advisorMessages = [...advisorMessages, {
         role: 'advisor' as const,
         content: '',
-        timestamp: Date.now(),
+        timestamp: getNow().getTime(),
         error: extractError(e),
       }];
     } finally {
@@ -70,7 +71,7 @@
   }
 
   // Centralized current date (updates at midnight)
-  let currentDate = $state(getNow().toISOString().split('T')[0]);
+  let currentDate = $state<CalendarDate>(todayDate());
   let toastMessage = $state<string | null>(null);
   let midnightTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -86,7 +87,7 @@
   }
 
   async function handleDayChange() {
-    currentDate = getNow().toISOString().split('T')[0];
+    currentDate = todayDate();
 
     // Re-resolve Today's Focus for the new day
     const focus = await resolveTodayFocus(getBindings());
@@ -123,7 +124,7 @@
 
   function handleVisibilityChange() {
     if (document.hidden) return;
-    const nowDate = getNow().toISOString().split('T')[0];
+    const nowDate = todayDate();
     if (nowDate !== currentDate) {
       handleDayChange();
       scheduleMidnightUpdate();
@@ -401,9 +402,9 @@
   async function resolveTodayFocus(bindings: ReturnType<typeof getBindings>): Promise<{ themeIds: string[]; tags: string[] }> {
     try {
       if (!bindings?.GetYearFocus) return { themeIds: [], tags: [] };
-      const today = new Date();
-      const yearFocus = await bindings.GetYearFocus(today.getFullYear());
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      const now = getNow();
+      const yearFocus = await bindings.GetYearFocus(now.getFullYear());
+      const todayStr = todayDate();
       const todayFocus = yearFocus.find((d: { date: string }) => d.date === todayStr);
       return {
         themeIds: todayFocus?.themeIds ?? [],

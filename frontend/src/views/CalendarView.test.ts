@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { LifeTheme, DayFocus, RoutineOccurrence, RoutineTaskInfo } from '../lib/wails-mock';
+import { parseCalendarDate } from '../lib/utils/date-utils';
 import CalendarView from './CalendarView.svelte';
 import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
@@ -24,8 +25,8 @@ function makeTestThemes(): LifeTheme[] {
 
 function makeTestYearFocus(): DayFocus[] {
   return [
-    { date: '2025-01-15', themeIds: ['HF'], notes: '', text: 'Gym day' },
-    { date: '2025-03-10', themeIds: ['CG'], notes: '', text: 'Interview prep' },
+    { date: parseCalendarDate('2025-01-15'), themeIds: ['HF'], notes: '', text: 'Gym day' },
+    { date: parseCalendarDate('2025-03-10'), themeIds: ['CG'], notes: '', text: 'Interview prep' },
   ];
 }
 
@@ -162,7 +163,7 @@ describe('CalendarView', () => {
   it('renders multi-theme day cells with text', async () => {
     // Create year focus with 2 themes on Jan 20
     const multiThemeFocus: DayFocus[] = [
-      { date: '2025-01-20', themeIds: ['HF', 'CG'], notes: '', text: 'Multi-theme day' },
+      { date: parseCalendarDate('2025-01-20'), themeIds: ['HF', 'CG'], notes: '', text: 'Multi-theme day' },
     ];
     mockBindings = makeMockBindings(makeTestThemes(), multiThemeFocus);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -256,7 +257,7 @@ describe('CalendarView', () => {
   it('clears day focus when submitting with empty fields', async () => {
     // Pre-populate a day with focus data so the clear path is exercised
     const yearFocus: DayFocus[] = [
-      { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'Existing' },
+      { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: 'Existing' },
     ];
     mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -449,8 +450,8 @@ describe('CalendarView', () => {
       // Before saving, make GetYearFocus return divergent data for the verify call:
       // the saved date will have themeIds ['CG'] locally, but backend returns ['HF']
       mockBindings.GetYearFocus.mockResolvedValueOnce([
-        { date: '2025-01-15', themeIds: ['HF'], notes: '', text: 'Gym day' },
-        { date: '2025-03-10', themeIds: ['CG'], notes: '', text: 'Interview prep' },
+        { date: parseCalendarDate('2025-01-15'), themeIds: ['HF'], notes: '', text: 'Gym day' },
+        { date: parseCalendarDate('2025-03-10'), themeIds: ['CG'], notes: '', text: 'Interview prep' },
       ]);
 
       // Click save
@@ -510,7 +511,7 @@ describe('CalendarView', () => {
 
     async function openDialogWithTheme(themeId: string, okrIds?: string[]) {
       mockBindings = makeMockBindings(themesWithOkrs(), [
-        { date: '2025-01-01', themeIds: themeId ? [themeId] : undefined, notes: '', text: '', okrIds },
+        { date: parseCalendarDate('2025-01-01'), themeIds: themeId ? [themeId] : undefined, notes: '', text: '', okrIds },
       ]);
       // Mock saved fold state so themes and objectives are expanded for OKR picker tests
       if (themeId) {
@@ -773,7 +774,7 @@ describe('CalendarView', () => {
 
     it('expands tag section by default when day has existing tags', async () => {
       mockBindings = makeMockBindings(makeTestThemes(), [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', tags: ['review'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '', tags: ['review'] },
       ]);
       mockBindings.GetTasks.mockResolvedValue([
         { id: 'T1', title: 'Task 1', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['review'] },
@@ -860,7 +861,7 @@ describe('CalendarView', () => {
 
     it('auto-updates text when removing a tag', async () => {
       await openDayDialog([
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'demo, review', tags: ['demo', 'review'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: 'demo, review', tags: ['demo', 'review'] },
       ]);
       // Tag section auto-expands when day has existing tags — don't toggle it
       await tick();
@@ -929,7 +930,7 @@ describe('CalendarView', () => {
 
     it('auto-derives text after user clears custom text and adds tags', async () => {
       await openDayDialog([
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'custom note', tags: ['demo'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: 'custom note', tags: ['demo'] },
       ]);
       // Tag section auto-expands when day has existing tags
       await tick();
@@ -950,7 +951,7 @@ describe('CalendarView', () => {
 
     it('clears text when all tags removed and text matched derived', async () => {
       await openDayDialog([
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'demo', tags: ['demo'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: 'demo', tags: ['demo'] },
       ]);
       // Tag section auto-expands when day has existing tags — don't toggle it
       await tick();
@@ -972,7 +973,7 @@ describe('CalendarView', () => {
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
       }];
       mockBindings = makeMockBindings(themes, [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '' },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '' },
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
@@ -998,7 +999,7 @@ describe('CalendarView', () => {
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
       }];
       mockBindings = makeMockBindings(themes, [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', okrIds: ['HF-O1'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '', okrIds: ['HF-O1'] },
       ]);
       // Mock saved fold state for this day with HF expanded
       mockBindings.LoadNavigationContext.mockResolvedValue({
@@ -1032,7 +1033,7 @@ describe('CalendarView', () => {
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
       }];
       mockBindings = makeMockBindings(themes, [
-        { date: '2025-01-01', notes: '', text: '' },
+        { date: parseCalendarDate('2025-01-01'), notes: '', text: '' },
       ]);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
@@ -1071,7 +1072,7 @@ describe('CalendarView', () => {
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
       }];
       mockBindings = makeMockBindings(themes, [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '' },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '' },
       ]);
       // NavigationContext has fold state for a different day
       mockBindings.LoadNavigationContext.mockResolvedValue({
@@ -1104,7 +1105,7 @@ describe('CalendarView', () => {
         objectives: [{ id: 'HF-O1', parentId: 'HF', title: 'Goal', status: 'active', keyResults: [] }],
       }];
       mockBindings = makeMockBindings(themes, [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '' },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '' },
       ]);
       // NavigationContext has fold state for this exact day
       mockBindings.LoadNavigationContext.mockResolvedValue({
@@ -1287,8 +1288,8 @@ describe('CalendarView', () => {
     it('paste single day preserves target notes', async () => {
       // Target day has existing notes
       const yearFocus: DayFocus[] = [
-        { date: '2025-01-15', themeIds: ['HF'], notes: '', text: 'Gym day', okrIds: ['O1'], tags: ['fitness'] },
-        { date: '2025-01-20', themeIds: undefined, notes: 'important note', text: '' },
+        { date: parseCalendarDate('2025-01-15'), themeIds: ['HF'], notes: '', text: 'Gym day', okrIds: ['O1'], tags: ['fitness'] },
+        { date: parseCalendarDate('2025-01-20'), themeIds: undefined, notes: 'important note', text: '' },
       ];
       mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1327,9 +1328,9 @@ describe('CalendarView', () => {
     it('paste multi-day range clamped to month', async () => {
       // Set up 3 days of data in January
       const yearFocus: DayFocus[] = [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'Day 1' },
-        { date: '2025-01-02', themeIds: ['CG'], notes: '', text: 'Day 2' },
-        { date: '2025-01-03', themeIds: undefined, notes: '', text: 'Day 3' },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: 'Day 1' },
+        { date: parseCalendarDate('2025-01-02'), themeIds: ['CG'], notes: '', text: 'Day 2' },
+        { date: parseCalendarDate('2025-01-03'), themeIds: undefined, notes: '', text: 'Day 3' },
       ];
       mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1374,8 +1375,8 @@ describe('CalendarView', () => {
 
     it('paste overwrites existing data', async () => {
       const yearFocus: DayFocus[] = [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: 'Source' },
-        { date: '2025-01-10', themeIds: ['CG'], notes: 'keep notes', text: 'Old target text' },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: 'Source' },
+        { date: parseCalendarDate('2025-01-10'), themeIds: ['CG'], notes: 'keep notes', text: 'Old target text' },
       ];
       mockBindings = makeMockBindings(makeTestThemes(), yearFocus);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1453,7 +1454,7 @@ describe('CalendarView', () => {
           description: 'Morning run',
           themeId: 'HF',
           themeColor: '#22c55e',
-          date: '2025-01-01',
+          date: parseCalendarDate('2025-01-01'),
           status: 'scheduled',
           checked: false,
         },
@@ -1462,7 +1463,7 @@ describe('CalendarView', () => {
           description: 'Evening stretch',
           themeId: 'CG',
           themeColor: '#3b82f6',
-          date: '2025-01-01',
+          date: parseCalendarDate('2025-01-01'),
           status: 'overdue',
           checked: false,
         },
@@ -1521,7 +1522,7 @@ describe('CalendarView', () => {
       const routines = makeRoutineOccurrences();
       routines[0].checked = true;
       const yearFocus: DayFocus[] = [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', tags: ['Routine'], routineChecks: ['R1'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '', tags: ['Routine'], routineChecks: ['R1'] },
       ];
 
       await openDialogWithRoutines(routines, yearFocus);
@@ -1553,7 +1554,7 @@ describe('CalendarView', () => {
       const routines = makeRoutineOccurrences();
       routines[0].checked = true;
       const yearFocus: DayFocus[] = [
-        { date: '2025-01-01', themeIds: ['HF'], notes: '', text: '', routineChecks: ['R1'] },
+        { date: parseCalendarDate('2025-01-01'), themeIds: ['HF'], notes: '', text: '', routineChecks: ['R1'] },
       ];
 
       await openDialogWithRoutines(routines, yearFocus);

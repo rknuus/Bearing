@@ -3,6 +3,7 @@ import { render } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import App from './App.svelte';
 import { setClockForTesting, resetClock } from './lib/utils/clock';
+import { today as todayDate } from './lib/utils/date-utils';
 
 /**
  * Build comprehensive mock bindings that satisfy all child views.
@@ -301,10 +302,9 @@ describe('App', () => {
   });
 
   describe('Today\'s Focus', () => {
-    /** Build a date string matching the format used by resolveTodayFocusThemeId */
+    /** Build a date string matching the format used by resolveTodayFocus */
     function todayDateString(): string {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return todayDate();
     }
 
     function setupTodayFocusMocks() {

@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { Task, LifeTheme } from '../lib/wails-mock';
+import type { Timestamp } from '../lib/utils/date-utils';
 import EditTaskDialog from './EditTaskDialog.svelte';
 
 function makeTestThemes(): LifeTheme[] {
@@ -19,8 +20,8 @@ function makeTestTask(overrides: Partial<Task> = {}): Task {
     themeId: 'HF',
     priority: 'important-urgent',
     tags: ['health', 'morning'],
-    createdAt: '2026-01-31T08:00:00Z',
-    updatedAt: '2026-01-31T08:00:00Z',
+    createdAt: '2026-01-31T08:00:00Z' as Timestamp,
+    updatedAt: '2026-01-31T08:00:00Z' as Timestamp,
     ...overrides,
   };
 }

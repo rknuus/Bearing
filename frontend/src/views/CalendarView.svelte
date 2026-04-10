@@ -13,6 +13,7 @@
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
   import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
+  import { toCalendarDate, calendarDateToDate, today as todayCalendarDate, type CalendarDate } from '../lib/utils/date-utils';
 
   // Props
   interface Props {
@@ -20,7 +21,7 @@
     onNavigateToTheme?: (themeId: string) => void;
     onNavigateToTasks?: (options?: { themeId?: string; date?: string }) => void;
     filterThemeIds?: string[];
-    currentDate?: string;
+    currentDate?: CalendarDate;
   }
 
   let { year = new Date().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [], currentDate }: Props = $props();
@@ -32,7 +33,7 @@
   let error = $state<string | null>(null);
 
   // Day editor dialog state
-  let editingDay = $state<{ date: string; month: number; day: number } | null>(null);
+  let editingDay = $state<{ date: CalendarDate; month: number; day: number } | null>(null);
   let editThemeIds = $state<string[]>([]);
   let editText = $state('');
   let editOkrIds = $state<string[]>([]);
@@ -67,11 +68,6 @@
 
   // Full month names for headers and dialog
   const monthNames = Array.from({ length: 12 }, (_, i) => formatMonthName(i));
-
-  /** Format a local Date as YYYY-MM-DD without UTC conversion. */
-  function localDateStr(d: Date): string {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  }
 
   /** Compute all occurrence dates for a repeat pattern within a given year. */
   function getYearOccurrences(pattern: RepeatPattern, yr: number): string[] {
@@ -124,7 +120,7 @@
           const d = new Date(weekStart);
           d.setDate(weekStart.getDate() + offset - 1);
           if (d < anchor || d < yearStart || d > yearEnd) continue;
-          results.push(localDateStr(d));
+          results.push(toCalendarDate(d));
         }
         weekStart.setDate(weekStart.getDate() + 7 * interval);
       }
@@ -132,7 +128,7 @@
     }
 
     while (current <= yearEnd) {
-      results.push(localDateStr(current));
+      results.push(toCalendarDate(current));
       if (pattern.frequency === 'daily') {
         current.setDate(current.getDate() + interval);
       } else if (pattern.frequency === 'monthly') {
@@ -246,7 +242,7 @@
         yearFocus.set(entry.date, entry);
       }
 
-      const todayStr = currentDate || localDateStr(new Date());
+      const todayStr = currentDate || todayCalendarDate();
       const routineMaps = computeRoutineMaps(themesResult, yearFocus, year, todayStr);
       routineStatusMap = routineMaps.statusMap;
       routineTooltipMap = routineMaps.tooltipMap;
@@ -274,18 +270,16 @@
   }
 
   function isToday(month: number, day: number): boolean {
-    const today = currentDate ? new Date(currentDate + 'T00:00:00') : new Date();
+    const today = currentDate ? calendarDateToDate(currentDate as CalendarDate) : new Date();
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 
-  function formatDate(month: number, day: number): string {
-    const m = String(month + 1).padStart(2, '0');
-    const d = String(day).padStart(2, '0');
-    return `${year}-${m}-${d}`;
+  function formatDate(month: number, day: number): CalendarDate {
+    return toCalendarDate(new Date(year, month, day));
   }
 
   function displayDate(month: number, day: number): string {
-    return formatDateLocale(formatDate(month, day));
+    return formatDateLocale(formatDate(month, day) as string);
   }
 
   function getThemeColors(month: number, day: number): string[] {
@@ -469,7 +463,7 @@
       yearFocus.set(editingDay.date, dayFocus);
 
       // Recompute routine maps after check changes
-      const todayStr = currentDate || localDateStr(new Date());
+      const todayStr = currentDate || todayCalendarDate();
       const routineMaps = computeRoutineMaps(themes, yearFocus, year, todayStr);
       routineStatusMap = routineMaps.statusMap;
       routineTooltipMap = routineMaps.tooltipMap;
