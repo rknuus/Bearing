@@ -2,6 +2,8 @@
  * Unit tests for date-utils branded types and conversion functions
  */
 
+declare const process: { env: Record<string, string | undefined> };
+
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   toCalendarDate,
@@ -30,12 +32,19 @@ describe('toCalendarDate', () => {
   });
 
   it('uses local date methods, not UTC (timezone safety)', () => {
-    // Create a Date for 2026-04-10 at 23:00 UTC.
-    // In any timezone with a positive offset (e.g. UTC+2), this is already April 11 locally.
-    // We simulate by directly constructing a local Date at 23:59 on April 10.
-    const lateNight = new Date(2026, 3, 10, 23, 59, 59);
-    // The local date is still April 10, regardless of what UTC date might be
-    expect(toCalendarDate(lateNight)).toBe('2026-04-10');
+    const origTZ = process.env.TZ;
+    try {
+      // Force UTC+12: a UTC time of Apr 10 23:00 becomes Apr 11 11:00 locally
+      process.env.TZ = 'Pacific/Auckland';
+      const d = new Date('2026-04-10T23:00:00Z');
+      // Verify the timezone shift took effect
+      expect(d.getUTCDate()).toBe(10);
+      expect(d.getDate()).toBe(11); // local date is April 11 in Auckland
+      // toCalendarDate must return the LOCAL date, not UTC
+      expect(toCalendarDate(d)).toBe('2026-04-11');
+    } finally {
+      process.env.TZ = origTZ;
+    }
   });
 });
 
@@ -185,21 +194,35 @@ describe('timestampToDate', () => {
 });
 
 describe('timezone edge case', () => {
-  it('toCalendarDate uses local date even when UTC date differs', () => {
-    // Construct a Date where the local date is known: April 10 at 23:30
-    // Regardless of timezone, getFullYear/getMonth/getDate return the local values
-    const localApril10 = new Date(2026, 3, 10, 23, 30, 0);
-    expect(toCalendarDate(localApril10)).toBe('2026-04-10');
-    // Not the UTC date which could be April 11 in negative-offset timezones
+  const origTZ = process.env.TZ;
+  afterEach(() => { process.env.TZ = origTZ; });
+
+  it('toCalendarDate returns local date, not UTC date, when they differ', () => {
+    // Force UTC-11: a UTC time of Apr 11 01:00 is still Apr 10 14:00 locally
+    process.env.TZ = 'Pacific/Pago_Pago';
+    const d = new Date('2026-04-11T01:00:00Z');
+    expect(d.getUTCDate()).toBe(11);
+    expect(d.getDate()).toBe(10); // local date is April 10 in Pago Pago
+    expect(toCalendarDate(d)).toBe('2026-04-10');
   });
 
   it('calendarDateToDate produces local midnight, not UTC midnight', () => {
+    process.env.TZ = 'Asia/Tokyo'; // UTC+9
     const cd = parseCalendarDate('2026-04-10');
     const date = calendarDateToDate(cd);
-    // Local midnight means hours/minutes/seconds are 0 in local time
+    // Local midnight in Tokyo
     expect(date.getHours()).toBe(0);
     expect(date.getMinutes()).toBe(0);
     expect(date.getSeconds()).toBe(0);
-    expect(date.getMilliseconds()).toBe(0);
+    // UTC should be 15:00 on April 9 (midnight JST = 15:00 UTC previous day)
+    expect(date.getUTCDate()).toBe(9);
+    expect(date.getUTCHours()).toBe(15);
+  });
+
+  it('round-trip is stable across timezone with large offset', () => {
+    process.env.TZ = 'Pacific/Auckland'; // UTC+12
+    const cd = parseCalendarDate('2026-01-15');
+    const roundTripped = toCalendarDate(calendarDateToDate(cd));
+    expect(roundTripped).toBe('2026-01-15');
   });
 });
