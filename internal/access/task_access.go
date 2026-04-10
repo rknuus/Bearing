@@ -32,6 +32,9 @@ type ITaskAccess interface {
 	DeleteTask(taskID string) error
 	DeleteTaskWithOrder(taskID string) error
 
+	// Task Query
+	FindTasksByTag(tag string) ([]TaggedTask, error)
+
 	// Task Order
 	LoadTaskOrder() (map[string][]string, error)
 	SaveTaskOrder(order map[string][]string) error
@@ -184,6 +187,28 @@ func (ta *TaskAccess) findTaskInPlan(taskID string) (*Task, string, int, error) 
 	}
 
 	return nil, "", -1, nil
+}
+
+// FindTasksByTag returns all tasks across all statuses that contain the exact tag string.
+func (ta *TaskAccess) FindTasksByTag(tag string) ([]TaggedTask, error) {
+	var result []TaggedTask
+
+	for _, status := range ta.allStatusSlugs() {
+		tasks, err := ta.GetTasksByStatus(status)
+		if err != nil {
+			return nil, fmt.Errorf("TaskAccess.FindTasksByTag: failed to get tasks with status %s: %w", status, err)
+		}
+		for _, t := range tasks {
+			for _, taskTag := range t.Tags {
+				if taskTag == tag {
+					result = append(result, TaggedTask{Task: t, Status: status})
+					break
+				}
+			}
+		}
+	}
+
+	return result, nil
 }
 
 // GetTasksByTheme returns all tasks for a specific theme by filtering across all statuses.

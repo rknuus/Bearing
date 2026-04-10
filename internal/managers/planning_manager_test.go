@@ -132,6 +132,23 @@ func newMockTaskAccess() *mockTaskAccess {
 	}
 }
 
+func (m *mockTaskAccess) FindTasksByTag(tag string) ([]access.TaggedTask, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var result []access.TaggedTask
+	for status, tasks := range m.tasks {
+		for _, t := range tasks {
+			for _, taskTag := range t.Tags {
+				if taskTag == tag {
+					result = append(result, access.TaggedTask{Task: t, Status: status})
+					break
+				}
+			}
+		}
+	}
+	return result, nil
+}
+
 func (m *mockTaskAccess) GetTasksByTheme(themeID string) ([]access.Task, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
