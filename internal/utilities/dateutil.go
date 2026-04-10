@@ -16,11 +16,14 @@ type CalendarDate struct {
 	t time.Time
 }
 
-// NewCalendarDate creates a CalendarDate from a time.Time, stripping the
-// time-of-day component while preserving the location.
+// NewCalendarDate creates a CalendarDate from a time.Time, extracting the
+// local year/month/day and storing as UTC midnight. This normalization
+// ensures that .Time() comparisons between any two CalendarDate values
+// are safe regardless of how they were constructed (parsed from string,
+// created from Today(), etc.).
 func NewCalendarDate(t time.Time) CalendarDate {
 	return CalendarDate{
-		t: time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location()),
+		t: time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC),
 	}
 }
 
@@ -49,7 +52,10 @@ func MustParseCalendarDate(s string) CalendarDate {
 	return d
 }
 
-// Today returns the current local date.
+// Today returns the current date in the user's local timezone, stored as
+// UTC midnight. This is correct for a local-first desktop app: the user's
+// wall-clock date is what matters, and UTC normalization ensures safe
+// comparisons with parsed dates.
 func Today() CalendarDate {
 	return NewCalendarDate(time.Now())
 }

@@ -23,13 +23,31 @@ func TestUnit_CalendarDate_NewStripsTime(t *testing.T) {
 	}
 }
 
-func TestUnit_CalendarDate_NewPreservesLocation(t *testing.T) {
+func TestUnit_CalendarDate_NewNormalizesToUTC(t *testing.T) {
 	loc, _ := time.LoadLocation("America/New_York")
+	// June 15 at 22:00 EDT — local date is June 15, UTC date would be June 16
 	src := time.Date(2026, 6, 15, 22, 0, 0, 0, loc)
 	d := NewCalendarDate(src)
 
-	if d.Time().Location() != loc {
-		t.Errorf("NewCalendarDate changed location: got %v, want %v", d.Time().Location(), loc)
+	if d.Time().Location() != time.UTC {
+		t.Errorf("NewCalendarDate did not normalize to UTC: got %v", d.Time().Location())
+	}
+	// Must preserve the LOCAL date (June 15), not the UTC date
+	if d.String() != "2026-06-15" {
+		t.Errorf("NewCalendarDate used UTC date instead of local: got %v, want 2026-06-15", d.String())
+	}
+}
+
+func TestUnit_CalendarDate_TodayAndParsedCompareEqual(t *testing.T) {
+	// Simulates the promotion comparison bug: a date parsed from string
+	// and a date from Today() must produce the same time.Time for the
+	// same calendar date, regardless of local timezone.
+	parsed, _ := ParseCalendarDate("2026-04-10")
+	constructed := NewCalendarDate(time.Date(2026, 4, 10, 0, 0, 0, 0, time.Local))
+
+	if !parsed.Time().Equal(constructed.Time()) {
+		t.Errorf("parsed and constructed CalendarDate differ: parsed=%v, constructed=%v",
+			parsed.Time(), constructed.Time())
 	}
 }
 
@@ -85,19 +103,17 @@ func TestUnit_CalendarDate_ParseInvalid(t *testing.T) {
 }
 
 func TestUnit_CalendarDate_Today(t *testing.T) {
-	before := time.Now()
+	now := time.Now()
 	d := Today()
-	after := time.Now()
 
 	got := d.Time()
-	if got.Before(time.Date(before.Year(), before.Month(), before.Day(), 0, 0, 0, 0, before.Location())) {
-		t.Errorf("Today() date is before current date")
+	// Today() extracts local year/month/day and stores as UTC midnight.
+	expectedDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	if !got.Equal(expectedDate) {
+		t.Errorf("Today() = %v, want %v", got, expectedDate)
 	}
-	if got.After(time.Date(after.Year(), after.Month(), after.Day(), 0, 0, 0, 0, after.Location())) {
-		t.Errorf("Today() date is after current date")
-	}
-	if got.Hour() != 0 || got.Minute() != 0 || got.Second() != 0 {
-		t.Errorf("Today() has non-zero time component: %v", got)
+	if got.Location() != time.UTC {
+		t.Errorf("Today() location = %v, want UTC", got.Location())
 	}
 }
 
