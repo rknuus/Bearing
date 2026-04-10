@@ -1,8 +1,8 @@
 ---
 name: bump-go-toolchain
-status: backlog
+status: completed
 created: 2026-04-10T09:28:53Z
-progress: 0%
+progress: 100%
 initiative: .ccpm/initiatives/bump-go-toolchain/bump-go-toolchain.md
 depends_on: []
 ---
