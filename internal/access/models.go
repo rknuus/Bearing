@@ -9,6 +9,7 @@ import (
 	"github.com/rkn/bearing/internal/utilities"
 )
 
+
 // LifeTheme represents a long-term life focus area with associated objectives.
 // Life themes are the top-level organizational unit for goals and tasks.
 type LifeTheme struct {
@@ -30,7 +31,7 @@ type Objective struct {
 	Tags          []string    `json:"tags,omitempty"`          // Freeform tags for categorization
 	ClosingStatus string      `json:"closingStatus,omitempty"` // achieved, partially-achieved, missed, postponed, canceled
 	ClosingNotes  string      `json:"closingNotes,omitempty"`  // Reflection notes
-	ClosedAt      string      `json:"closedAt,omitempty"`      // ISO 8601 timestamp
+	ClosedAt      utilities.Timestamp `json:"closedAt,omitempty"`       // ISO 8601 timestamp
 	KeyResults    []KeyResult `json:"keyResults"`              // Measurable key results
 	Objectives    []Objective `json:"objectives,omitempty"`    // Nested child objectives
 }
@@ -54,13 +55,13 @@ type RepeatPattern struct {
 	Interval   int    `json:"interval"`             // every N (default 1)
 	Weekdays   []int  `json:"weekdays,omitempty"`   // for weekly: 0=Sun..6=Sat
 	DayOfMonth int    `json:"dayOfMonth,omitempty"` // for monthly
-	StartDate  string `json:"startDate"`            // YYYY-MM-DD
+	StartDate  utilities.CalendarDate `json:"startDate"`  // YYYY-MM-DD
 }
 
 // ScheduleException represents a single date override in a routine's schedule.
 type ScheduleException struct {
-	OriginalDate string `json:"originalDate"` // suppressed occurrence date
-	NewDate      string `json:"newDate"`      // replacement date
+	OriginalDate utilities.CalendarDate `json:"originalDate"` // suppressed occurrence date
+	NewDate      utilities.CalendarDate `json:"newDate"`      // replacement date
 }
 
 // Routine represents an ongoing activity tracked per occurrence for a life theme.
@@ -92,7 +93,7 @@ const (
 // DayFocus represents the daily focus on one or more life themes.
 // It links a calendar date to life themes with optional notes.
 type DayFocus struct {
-	Date           string   `json:"date"`                     // Date in YYYY-MM-DD format
+	Date           utilities.CalendarDate `json:"date"`         // Date in YYYY-MM-DD format
 	ThemeIDs       []string `json:"themeIds,omitempty"`        // Links to LifeTheme.IDs
 	Notes          string   `json:"notes"`                     // Optional daily notes
 	Text           string   `json:"text"`                      // Free-text content for the day
@@ -110,9 +111,9 @@ type Task struct {
 	ThemeID       string   `json:"themeId"`                  // Links to a LifeTheme.ID
 	Priority      string   `json:"priority"`                 // Eisenhower matrix: important-urgent, important-not-urgent, not-important-urgent
 	Tags          []string `json:"tags,omitempty"`           // Freeform tags for categorization
-	PromotionDate string   `json:"promotionDate,omitempty"`  // Date when priority should be promoted (YYYY-MM-DD)
-	CreatedAt     string   `json:"createdAt,omitempty"`      // ISO 8601 creation timestamp
-	UpdatedAt     string   `json:"updatedAt,omitempty"`      // ISO 8601 last-update timestamp
+	PromotionDate utilities.CalendarDate `json:"promotionDate,omitempty"` // Date when priority should be promoted (YYYY-MM-DD)
+	CreatedAt     utilities.Timestamp    `json:"createdAt,omitempty"`     // ISO 8601 creation timestamp
+	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitempty"`     // ISO 8601 last-update timestamp
 }
 
 // ColumnType represents the semantic type of a board column.
@@ -282,7 +283,7 @@ type YearFocusFile struct {
 type PersonalVision struct {
 	Mission   string `json:"mission"`
 	Vision    string `json:"vision"`
-	UpdatedAt string `json:"updatedAt,omitempty"`
+	UpdatedAt utilities.Timestamp `json:"updatedAt,omitempty"`
 }
 
 // NavigationContext stores the user's navigation state for persistence.
@@ -291,7 +292,7 @@ type NavigationContext struct {
 	CurrentItem    string   `json:"currentItem"`
 	FilterThemeID  string   `json:"filterThemeId"`              // deprecated: kept for backward compat
 	FilterThemeIDs []string `json:"filterThemeIds,omitempty"`   // multi-theme filter
-	LastAccessed   string   `json:"lastAccessed"`
+	LastAccessed   utilities.Timestamp `json:"lastAccessed"`
 	ShowCompleted  bool     `json:"showCompleted,omitempty"`
 	ShowArchived      bool     `json:"showArchived,omitempty"`
 	ShowArchivedTasks bool     `json:"showArchivedTasks,omitempty"`
@@ -301,7 +302,7 @@ type NavigationContext struct {
 	TagFocusActive    *bool    `json:"tagFocusActive,omitempty"`
 	CollapsedSections            []string `json:"collapsedSections,omitempty"`
 	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
-	CalendarDayEditorDate        string   `json:"calendarDayEditorDate,omitempty"`
+	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitempty"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 }

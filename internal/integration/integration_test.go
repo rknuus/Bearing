@@ -159,7 +159,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 
 	// Step 2: Assign January 15th to theme "Health"
 	dayFocus := managers.DayFocus{
-		Date:     "2026-01-15",
+		Date:     utilities.MustParseCalendarDate("2026-01-15"),
 		ThemeIDs: []string{theme.ID},
 		Notes:    "Focus on health today",
 	}
@@ -174,7 +174,7 @@ func TestIntegration_FullLinkingChain(t *testing.T) {
 	}
 	var savedDayFocus *managers.DayFocus
 	for i := range yearEntries {
-		if yearEntries[i].Date == "2026-01-15" {
+		if yearEntries[i].Date.String() == "2026-01-15" {
 			savedDayFocus = &yearEntries[i]
 			break
 		}
@@ -481,8 +481,8 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	_, _ = intCreateObjective(manager1,theme1.ID, "Fitness Goals")
 	_, _ = intCreateObjective(manager1,theme2.ID, "Career Growth")
 
-	_ = manager1.SaveDayFocus(managers.DayFocus{Date: "2026-01-15", ThemeIDs: []string{theme1.ID}, Notes: "Health day"})
-	_ = manager1.SaveDayFocus(managers.DayFocus{Date: "2026-01-16", ThemeIDs: []string{theme2.ID}, Notes: "Career day"})
+	_ = manager1.SaveDayFocus(managers.DayFocus{Date: utilities.MustParseCalendarDate("2026-01-15"), ThemeIDs: []string{theme1.ID}, Notes: "Health day"})
+	_ = manager1.SaveDayFocus(managers.DayFocus{Date: utilities.MustParseCalendarDate("2026-01-16"), ThemeIDs: []string{theme2.ID}, Notes: "Career day"})
 
 	// Create all tasks in the same theme to avoid task ID collision issue
 	// (Task IDs are unique within a theme, but MoveTask searches across all themes)
@@ -497,7 +497,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	navCtx := managers.NavigationContext{
 		CurrentView:   "calendar",
 		FilterThemeID: theme1.ID,
-		LastAccessed:  "2026-01-31T10:00:00Z",
+		LastAccessed:  utilities.MustParseTimestamp("2026-01-31T10:00:00Z"),
 	}
 	_ = manager1.SaveNavigationContext(navCtx)
 
@@ -611,7 +611,7 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 		CurrentView:    "eisenkan",
 		CurrentItem:    "task-123",
 		FilterThemeID:  theme.ID,
-		LastAccessed:   time.Now().Format(time.RFC3339),
+		LastAccessed:   utilities.Now(),
 		ExpandedOkrIds: []string{"TST", "TST-O1", "TST-O2"},
 	}
 	if err := manager1.SaveNavigationContext(ctx); err != nil {
@@ -824,7 +824,7 @@ func TestIntegration_CalendarYearCoverage(t *testing.T) {
 	totalDays := 0
 	for _, m := range months {
 		for day := 1; day <= m.days; day++ {
-			date := time.Date(2026, time.Month(m.month), day, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
+			date := utilities.NewCalendarDate(time.Date(2026, time.Month(m.month), day, 0, 0, 0, 0, time.UTC))
 			_ = manager.SaveDayFocus(managers.DayFocus{
 				Date:     date,
 				ThemeIDs: []string{theme.ID},

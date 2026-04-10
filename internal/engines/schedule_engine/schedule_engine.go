@@ -3,6 +3,8 @@ package schedule_engine
 import (
 	"sort"
 	"time"
+
+	"github.com/rkn/bearing/internal/utilities"
 )
 
 // IScheduleEngine computes routine occurrences from repeat patterns.
@@ -20,14 +22,18 @@ func NewScheduleEngine() *ScheduleEngine {
 	return &ScheduleEngine{}
 }
 
-const dateFormat = "2006-01-02"
-
+// parseDate parses a "YYYY-MM-DD" string using the CalendarDate type.
 func parseDate(s string) (time.Time, error) {
-	return time.Parse(dateFormat, s)
+	d, err := utilities.ParseCalendarDate(s)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return d.Time(), nil
 }
 
+// formatDate formats a time.Time as "YYYY-MM-DD" using the CalendarDate type.
 func formatDate(t time.Time) string {
-	return t.Format(dateFormat)
+	return utilities.NewCalendarDate(t).String()
 }
 
 // effectiveInterval returns interval clamped to at least 1.
@@ -149,10 +155,10 @@ func (se *ScheduleEngine) ComputeOccurrences(pattern RepeatPattern, exceptions [
 	if err != nil {
 		return nil
 	}
-	anchor, err := parseDate(pattern.StartDate)
-	if err != nil {
+	if pattern.StartDate.IsZero() {
 		return nil
 	}
+	anchor := pattern.StartDate.Time()
 	if anchor.After(endDate) {
 		return nil
 	}
@@ -181,12 +187,11 @@ func (se *ScheduleEngine) ComputeOccurrences(pattern RepeatPattern, exceptions [
 	suppressed := make(map[string]bool)
 	var replacements []time.Time
 	for _, ex := range exceptions {
-		suppressed[ex.OriginalDate] = true
-		if ex.NewDate != "" {
-			if nd, err := parseDate(ex.NewDate); err == nil {
-				if !nd.Before(startDate) && !nd.After(endDate) {
-					replacements = append(replacements, nd)
-				}
+		suppressed[ex.OriginalDate.String()] = true
+		if !ex.NewDate.IsZero() {
+			nd := ex.NewDate.Time()
+			if !nd.Before(startDate) && !nd.After(endDate) {
+				replacements = append(replacements, nd)
 			}
 		}
 	}
@@ -219,7 +224,7 @@ func (se *ScheduleEngine) ComputeOverdue(pattern RepeatPattern, exceptions []Exc
 	}
 	dayBefore := formatDate(asOfDate.AddDate(0, 0, -1))
 
-	occurrences := se.ComputeOccurrences(pattern, exceptions, pattern.StartDate, dayBefore)
+	occurrences := se.ComputeOccurrences(pattern, exceptions, pattern.StartDate.String(), dayBefore)
 
 	completed := make(map[string]bool, len(completedDates))
 	for _, d := range completedDates {

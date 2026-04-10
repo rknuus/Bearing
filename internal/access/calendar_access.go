@@ -52,7 +52,7 @@ func (ca *CalendarAccess) yearFocusFilePath(year int) string {
 	return filepath.Join(ca.dataPath, "calendar", fmt.Sprintf("%d.json", year))
 }
 
-// extractYearFromDate extracts the year from a YYYY-MM-DD date string.
+// extractYearFromDate extracts the year from a CalendarDate or date string.
 func (ca *CalendarAccess) extractYearFromDate(date string) (int, error) {
 	if len(date) < 4 {
 		return 0, fmt.Errorf("date too short: %s", date)
@@ -64,6 +64,14 @@ func (ca *CalendarAccess) extractYearFromDate(date string) (int, error) {
 	}
 
 	return year, nil
+}
+
+// extractYearFromCalendarDate extracts the year from a CalendarDate.
+func (ca *CalendarAccess) extractYearFromCalendarDate(date utilities.CalendarDate) (int, error) {
+	if date.IsZero() {
+		return 0, fmt.Errorf("date is zero")
+	}
+	return date.Time().Year(), nil
 }
 
 // GetDayFocus returns the day focus for a specific date.
@@ -79,7 +87,7 @@ func (ca *CalendarAccess) GetDayFocus(date string) (*DayFocus, error) {
 	}
 
 	for _, entry := range entries {
-		if entry.Date == date {
+		if entry.Date.String() == date {
 			return &entry, nil
 		}
 	}
@@ -89,7 +97,7 @@ func (ca *CalendarAccess) GetDayFocus(date string) (*DayFocus, error) {
 
 // SaveDayFocus saves or updates a day focus entry.
 func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
-	year, err := ca.extractYearFromDate(day.Date)
+	year, err := ca.extractYearFromCalendarDate(day.Date)
 	if err != nil {
 		return fmt.Errorf("CalendarAccess.SaveDayFocus: invalid date format: %w", err)
 	}
@@ -102,7 +110,7 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 	// Find and update existing entry, or add new one
 	found := false
 	for i, e := range entries {
-		if e.Date == day.Date {
+		if e.Date.String() == day.Date.String() {
 			entries[i] = day
 			found = true
 			break
@@ -114,7 +122,7 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 
 	// Sort entries by date
 	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Date < entries[j].Date
+		return entries[i].Date.Time().Before(entries[j].Date.Time())
 	})
 
 	// Save to file
@@ -132,7 +140,7 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 	if !found {
 		action = "Add"
 	}
-	if err := commitFiles(ca.repo, []string{filePath}, fmt.Sprintf("%s day focus: %s", action, day.Date)); err != nil {
+	if err := commitFiles(ca.repo, []string{filePath}, fmt.Sprintf("%s day focus: %s", action, day.Date.String())); err != nil {
 		return fmt.Errorf("CalendarAccess.SaveDayFocus: %w", err)
 	}
 

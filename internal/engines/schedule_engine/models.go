@@ -3,19 +3,21 @@
 // on its own input/output DTOs, without importing access layer types.
 package schedule_engine
 
+import "github.com/rkn/bearing/internal/utilities"
+
 // RepeatPattern defines when a routine recurs.
 type RepeatPattern struct {
-	Frequency  string // "daily", "weekly", "monthly", "yearly"
-	Interval   int    // every N periods (default 1)
-	Weekdays   []int  // for weekly: 0=Sun..6=Sat (time.Weekday values)
-	DayOfMonth int    // for monthly: which day
-	StartDate  string // anchor date YYYY-MM-DD
+	Frequency  string                 // "daily", "weekly", "monthly", "yearly"
+	Interval   int                    // every N periods (default 1)
+	Weekdays   []int                  // for weekly: 0=Sun..6=Sat (time.Weekday values)
+	DayOfMonth int                    // for monthly: which day
+	StartDate  utilities.CalendarDate // anchor date YYYY-MM-DD
 }
 
 // Exception represents a rescheduled occurrence.
 type Exception struct {
-	OriginalDate string // suppressed date YYYY-MM-DD
-	NewDate      string // replacement date YYYY-MM-DD
+	OriginalDate utilities.CalendarDate // suppressed date YYYY-MM-DD
+	NewDate      utilities.CalendarDate // replacement date YYYY-MM-DD
 }
 
 // PeriodCompletion shows how many occurrences were completed in the current period.

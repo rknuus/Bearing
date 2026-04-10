@@ -18,6 +18,8 @@
   import { checkStateFromData } from '../lib/utils/state-check';
   import { renderMarkdown } from '../lib/utils/markdown';
   import { FEATURE_ROUTINES_ENABLED } from '../lib/constants/feature-flags';
+  import { today as todayDate, toTimestamp } from '../lib/utils/date-utils';
+  import { getNow } from '../lib/utils/clock';
 
   // Props for cross-view navigation
   interface Props {
@@ -447,7 +449,7 @@
   async function saveVision() {
     try {
       await getBindings().SavePersonalVision(editVisionMission, editVisionVision);
-      personalVision = { mission: editVisionMission, vision: editVisionVision, updatedAt: new Date().toISOString() };
+      personalVision = { mission: editVisionMission, vision: editVisionVision, updatedAt: toTimestamp(getNow()) };
       editingVision = false;
     } catch (e) {
       error = extractError(e);
@@ -745,7 +747,7 @@
   // Repeat pattern helpers
   function buildRepeatPattern(frequency: string, interval: number, weekdays: number[], monthDay: number, startDate: string): RepeatPattern | undefined {
     if (frequency === 'none') return undefined;
-    const pattern: RepeatPattern = { frequency, interval: Math.max(1, interval), startDate: startDate || new Date().toISOString().split('T')[0] };
+    const pattern: RepeatPattern = { frequency, interval: Math.max(1, interval), startDate: startDate || todayDate() };
     if (frequency === 'weekly' && weekdays.length > 0) {
       pattern.weekdays = weekdays.map(uiWeekdayToBackend).sort((a, b) => a - b);
     }
@@ -1013,7 +1015,7 @@
     // Fetch day focus tags
     let dayFocusTags: string[] = [];
     try {
-      const dayFocusEntries = await getBindings().GetYearFocus(new Date().getFullYear());
+      const dayFocusEntries = await getBindings().GetYearFocus(getNow().getFullYear());
       dayFocusTags = dayFocusEntries.flatMap(d => d.tags ?? []);
     } catch {
       // Ignore — use what we have
