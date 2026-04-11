@@ -121,7 +121,7 @@ export async function runTests() {
     reporter.startTest('Phase 1a: Create theme and verify files')
     try {
       await page.click('.nav-link:has-text("Long-term")')
-      await page.waitForSelector('.okr-header', { timeout: 10000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 10000 })
 
       await page.click('.btn-primary:has-text("+ Add Theme")')
       await page.waitForSelector('.theme-form', { timeout: 5000 })
@@ -255,7 +255,7 @@ export async function runTests() {
     reporter.startTest('Phase 2b: Create second theme for multi-theme test')
     try {
       await page.click('.nav-link:has-text("Long-term")')
-      await page.waitForSelector('.okr-header', { timeout: 10000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 10000 })
 
       await page.click('.btn-primary:has-text("+ Add Theme")')
       await page.waitForSelector('.theme-form', { timeout: 5000 })
@@ -1428,7 +1428,7 @@ export async function runTests() {
     try {
       // Create a theme for Phase 6 tasks (Phase 5d deleted the original)
       await page.click('.nav-link:has-text("Long-term")')
-      await page.waitForSelector('.okr-header', { timeout: 10000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 10000 })
       await page.click('.btn-primary:has-text("+ Add Theme")')
       await page.waitForSelector('.theme-form', { timeout: 5000 })
       await page.fill('.theme-form input[type="text"]', 'Column Test')

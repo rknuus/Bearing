@@ -102,7 +102,7 @@ describe('OKRView', () => {
   it('renders theme name and header', async () => {
     await renderView();
 
-    const header = container.querySelector('.okr-header h1');
+    const header = container.querySelector('.themes-section .section-header h1');
     expect(header?.textContent).toBe('Life Themes & OKRs');
 
     const themeName = container.querySelector('.tree-theme-item .theme-pill');
@@ -471,7 +471,7 @@ describe('OKRView', () => {
       await renderView();
 
       // Expand vision section
-      const visionHeader = container.querySelector<HTMLButtonElement>('.vision-header');
+      const visionHeader = container.querySelector<HTMLDivElement>('.vision-section .section-header');
       expect(visionHeader).toBeTruthy();
       visionHeader!.click();
       await tick();
@@ -494,7 +494,7 @@ describe('OKRView', () => {
       expect(visionBody).toBeNull();
 
       // Header should be present
-      const visionHeader = container.querySelector('.vision-header');
+      const visionHeader = container.querySelector('.vision-section .section-header');
       expect(visionHeader).toBeTruthy();
     });
   });

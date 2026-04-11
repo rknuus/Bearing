@@ -1264,36 +1264,11 @@
 
 <div class="okr-view" style="min-width: {advisorPanelOpen ? (MIN_OKR_CONTENT_PX + MIN_PANEL_PX) : MIN_OKR_CONTENT_PX}px">
   <div class="okr-content">
-  <header class="okr-header">
-    <h1>Life Themes & OKRs</h1>
-    <div class="header-controls">
-      <label class="toggle-label">
-        <input type="checkbox" bind:checked={showCompleted} /> Show completed
-      </label>
-      <label class="toggle-label">
-        <input type="checkbox" bind:checked={showArchived} /> Show archived
-      </label>
-      <Button
-        variant="primary"
-        onclick={() => { showNewThemeForm = true; }}
-      >
-        + Add Theme
-      </Button>
-      <Button variant={advisorPanelOpen ? "primary" : "secondary"} onclick={toggleAdvisorPanel}>
-        {advisorPanelOpen ? 'Close Advisor' : 'Advisor'}
-      </Button>
-    </div>
-  </header>
-
-  {#if error}
-    <ErrorBanner message={error} ondismiss={() => error = null} />
-  {/if}
-
   <!-- Vision & Mission Section -->
   <section class="vision-section">
-    <button class="vision-header" onclick={() => { visionCollapsed = !visionCollapsed; }}>
+    <button class="section-header section-header-toggle" onclick={() => { visionCollapsed = !visionCollapsed; }}>
       <span class="expand-icon">{visionCollapsed ? '\u25B6' : '\u25BC'}</span>
-      <span class="vision-title">Vision & Mission</span>
+      <h1>Vision & Mission</h1>
     </button>
     {#if !visionCollapsed}
       <div class="vision-body">
@@ -1301,7 +1276,7 @@
           <div class="vision-content">
             {#if personalVision.vision}
               <div class="vision-field">
-                <span class="vision-label">Vision</span>
+                <h2 class="vision-label">Vision</h2>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
                 <div class="vision-text markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(personalVision.vision)}</div>
@@ -1309,7 +1284,7 @@
             {/if}
             {#if personalVision.mission}
               <div class="vision-field">
-                <span class="vision-label">Mission</span>
+                <h2 class="vision-label">Mission</h2>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
                 <div class="vision-text markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(personalVision.mission)}</div>
@@ -1328,6 +1303,10 @@
       </div>
     {/if}
   </section>
+
+  {#if error}
+    <ErrorBanner message={error} ondismiss={() => error = null} />
+  {/if}
 
   <!-- Vision Edit Dialog -->
   {#if editingVision}
@@ -1372,6 +1351,29 @@
       </div>
     </div>
   {/if}
+
+  <!-- Life Themes & OKRs Section -->
+  <section class="themes-section">
+    <div class="section-header">
+      <h1>Life Themes & OKRs</h1>
+      <div class="header-controls">
+        <label class="toggle-label">
+          <input type="checkbox" bind:checked={showCompleted} /> Show completed
+        </label>
+        <label class="toggle-label">
+          <input type="checkbox" bind:checked={showArchived} /> Show archived
+        </label>
+        <Button
+          variant="primary"
+          onclick={() => { showNewThemeForm = true; }}
+        >
+          + Add Theme
+        </Button>
+        <Button variant={advisorPanelOpen ? "primary" : "secondary"} onclick={toggleAdvisorPanel}>
+          {advisorPanelOpen ? 'Close Advisor' : 'Advisor'}
+        </Button>
+      </div>
+    </div>
 
   {#if loading}
     <div class="loading">Loading themes...</div>
@@ -1699,12 +1701,24 @@
       {/snippet}
     </ThemeOKRTree>
 
+    {#if themes.length === 0 && !showNewThemeForm}
+      <div class="empty-state large">
+        <p>No life themes defined yet.</p>
+        <p>Create your first theme to start organizing your goals!</p>
+        <Button variant="primary" onclick={() => { showNewThemeForm = true; }}>
+          + Add Your First Theme
+        </Button>
+      </div>
+    {/if}
+  {/if}
+  </section>
+
     <!-- Standalone Routines Section -->
     <section class="routines-section">
-      <div class="routines-section-header">
-        <button class="vision-header" onclick={() => { routinesCollapsed = !routinesCollapsed; }}>
+      <div class="section-header">
+        <button class="section-header-toggle" onclick={() => { routinesCollapsed = !routinesCollapsed; }}>
           <span class="expand-icon">{routinesCollapsed ? '\u25B6' : '\u25BC'}</span>
-          <span class="vision-title">Routines</span>
+          <h1>Routines</h1>
         </button>
         {#if !routinesCollapsed}
           <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">+ Routine</Button>
@@ -1886,16 +1900,6 @@
       {/if}<!-- !routinesCollapsed -->
     </section>
 
-    {#if themes.length === 0 && !showNewThemeForm}
-      <div class="empty-state large">
-        <p>No life themes defined yet.</p>
-        <p>Create your first theme to start organizing your goals!</p>
-        <Button variant="primary" onclick={() => { showNewThemeForm = true; }}>
-          + Add Your First Theme
-        </Button>
-      </div>
-    {/if}
-  {/if}
   </div><!-- .okr-content -->
 
   {#if advisorEnabled}
@@ -2018,13 +2022,31 @@
     overflow-y: auto;
   }
 
-  .okr-header {
+  .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1.5rem;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .section-header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--color-gray-800);
+    margin: 0;
+  }
+
+  .section-header-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
   }
 
   .header-controls {
@@ -2046,13 +2068,6 @@
   .toggle-label input[type="checkbox"] {
     cursor: pointer;
     accent-color: var(--color-gray-500);
-  }
-
-  .okr-header h1 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--color-gray-800);
-    margin: 0;
   }
 
   .loading {
@@ -2422,28 +2437,11 @@
 
   /* Vision & Mission Section */
   .vision-section {
-    background-color: var(--color-gray-50);
-    border: 1px solid var(--color-gray-200);
-    border-radius: 8px;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
   }
 
-  .vision-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    width: 100%;
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .vision-title {
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: var(--color-gray-700);
+  .themes-section {
+    margin-bottom: 1.5rem;
   }
 
   .vision-body {
@@ -2463,9 +2461,9 @@
   }
 
   .vision-label {
-    font-size: 0.75rem;
+    font-size: 1.1rem;
     font-weight: 600;
-    color: var(--color-gray-500);
+    color: var(--color-gray-800);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -2649,23 +2647,7 @@
 
   /* Standalone Routines Section */
   .routines-section {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 2px solid var(--color-gray-200);
-  }
-
-  .routines-section-header {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .section-title {
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--color-gray-700);
-    margin: 0;
+    margin-bottom: 1.5rem;
   }
 
   .routine-card {
