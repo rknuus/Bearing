@@ -28,8 +28,8 @@ func TestUnit_NewRuleEngine(t *testing.T) {
 
 func TestUnit_DefaultRules(t *testing.T) {
 	rules := DefaultRules()
-	if len(rules) == 0 {
-		t.Fatal("expected default rules to be non-empty")
+	if len(rules) != 3 {
+		t.Fatalf("expected 3 default rules, got %d", len(rules))
 	}
 
 	// Verify all rules have IDs and are enabled
@@ -392,84 +392,29 @@ func TestUnit_AllowedTransitions_Archived(t *testing.T) {
 }
 
 // =============================================================================
-// Max Age Tests
+// Regression: Todo→Done for old tasks
 // =============================================================================
 
-func TestUnit_MaxAge(t *testing.T) {
-	rules := []Rule{
-		{
-			ID:          "max-age",
-			Name:        "Max Age in Doing",
-			Category:    "automation",
-			TriggerType: "all",
-			Conditions: map[string]interface{}{
-				"max_age_days": 7,
-				"column":       "doing",
-			},
-			Enabled:  true,
-			Priority: 50,
+func TestUnit_TodoToDone_OldTask_AllowedWithDefaultRules(t *testing.T) {
+	engine := NewRuleEngine(DefaultRules())
+
+	event := TaskEvent{
+		Type: EventTaskMove,
+		Task: &TaskData{
+			ID:        "T-old",
+			Title:     "Old Task",
+			CreatedAt: time.Now().Add(-60 * 24 * time.Hour).Format(time.RFC3339),
 		},
+		OldStatus: "todo",
+		NewStatus: "done",
 	}
-	engine := NewRuleEngine(rules)
-
-	t.Run("no violation for recent task", func(t *testing.T) {
-		event := TaskEvent{
-			Type: EventTaskMove,
-			Task: &TaskData{
-				ID:        "T-T1",
-				Title:     "Recent Task",
-				CreatedAt: time.Now().Add(-24 * time.Hour).Format(time.RFC3339),
-			},
-			OldStatus: "todo",
-			NewStatus: "doing",
-		}
-		result, err := engine.EvaluateTaskChange(event)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !result.Allowed {
-			t.Errorf("expected allowed for recent task, got violations: %v", result.Violations)
-		}
-	})
-
-	t.Run("violation for old task", func(t *testing.T) {
-		event := TaskEvent{
-			Type: EventTaskMove,
-			Task: &TaskData{
-				ID:        "T-T1",
-				Title:     "Old Task",
-				CreatedAt: time.Now().Add(-10 * 24 * time.Hour).Format(time.RFC3339),
-			},
-			OldStatus: "todo",
-			NewStatus: "doing",
-		}
-		result, err := engine.EvaluateTaskChange(event)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if result.Allowed {
-			t.Error("expected violation for old task")
-		}
-	})
-
-	t.Run("no violation when createdAt is empty", func(t *testing.T) {
-		event := TaskEvent{
-			Type: EventTaskMove,
-			Task: &TaskData{
-				ID:    "T-T1",
-				Title: "Task",
-			},
-			OldStatus: "todo",
-			NewStatus: "doing",
-		}
-		result, err := engine.EvaluateTaskChange(event)
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if !result.Allowed {
-			t.Errorf("expected allowed when no createdAt, got violations: %v", result.Violations)
-		}
-	})
+	result, err := engine.EvaluateTaskChange(event)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Allowed {
+		t.Errorf("expected old task to move todo→done, got violations: %v", result.Violations)
+	}
 }
 
 // =============================================================================
