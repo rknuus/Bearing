@@ -28,6 +28,7 @@
   let todayFocusThemeIds = $state<string[]>([]);
   let tagFocusActive = $state(true);
   let todayFocusTags = $state<string[]>([]);
+  let todayFocusEdited = $state(false);
 
   // Advisor session state — lives here so it survives view switches
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- typed inside AdvisorChat
@@ -195,12 +196,21 @@
     todayFocusThemeIds = focus.themeIds;
     todayFocusTags = focus.tags;
 
-    // Only apply today's focus as filter if user hasn't overridden it
-    if (options?.themeId === undefined && todayFocusActive) {
+    // If today's focus was just edited in Calendar, force-activate the filter
+    if (todayFocusEdited) {
+      todayFocusEdited = false;
+      todayFocusActive = true;
+      tagFocusActive = true;
       filterThemeIds = todayFocusThemeIds.length > 0 ? [...todayFocusThemeIds] : [];
-    }
-    if (tagFocusActive) {
       filterTagIds = todayFocusTags.length > 0 ? [...todayFocusTags] : [];
+    } else {
+      // Only apply today's focus as filter if user hasn't overridden it
+      if (options?.themeId === undefined && todayFocusActive) {
+        filterThemeIds = todayFocusThemeIds.length > 0 ? [...todayFocusThemeIds] : [];
+      }
+      if (tagFocusActive) {
+        filterTagIds = todayFocusTags.length > 0 ? [...todayFocusTags] : [];
+      }
     }
     navigateTo('eisenkan', options);
   }
@@ -232,6 +242,10 @@
   // Cross-view navigation handlers (exposed for child components)
   function handleNavigateToTheme(themeId: string) {
     navigateToOKR({ itemId: themeId });
+  }
+
+  function handleTodayFocusEdited() {
+    todayFocusEdited = true;
   }
 
   // Theme filter handlers for ThemeFilterBar
@@ -523,6 +537,7 @@
       <CalendarView
         onNavigateToTheme={handleNavigateToTheme}
         onNavigateToTasks={handleNavigateToTasks}
+        onTodayFocusEdited={handleTodayFocusEdited}
         {filterThemeIds}
         {currentDate}
       />
