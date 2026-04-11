@@ -1266,13 +1266,10 @@
   <div class="okr-content">
   <!-- Vision & Mission Section -->
   <section class="vision-section">
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="section-header" onclick={() => { visionCollapsed = !visionCollapsed; }}>
-      <div class="section-header-toggle">
-        <span class="expand-icon">{visionCollapsed ? '\u25B6' : '\u25BC'}</span>
-        <h1>Vision & Mission</h1>
-      </div>
-    </div>
+    <button class="section-header section-header-toggle" onclick={() => { visionCollapsed = !visionCollapsed; }}>
+      <span class="expand-icon">{visionCollapsed ? '\u25B6' : '\u25BC'}</span>
+      <h1>Vision & Mission</h1>
+    </button>
     {#if !visionCollapsed}
       <div class="vision-body">
         {#if personalVision.mission || personalVision.vision}
@@ -1719,11 +1716,10 @@
     <!-- Standalone Routines Section -->
     <section class="routines-section">
       <div class="section-header">
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div class="section-header-toggle" onclick={() => { routinesCollapsed = !routinesCollapsed; }}>
+        <button class="section-header-toggle" onclick={() => { routinesCollapsed = !routinesCollapsed; }}>
           <span class="expand-icon">{routinesCollapsed ? '\u25B6' : '\u25BC'}</span>
           <h1>Routines</h1>
-        </div>
+        </button>
         {#if !routinesCollapsed}
           <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">+ Routine</Button>
         {/if}
@@ -2047,6 +2043,10 @@
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
   }
 
   .header-controls {
