@@ -1721,7 +1721,7 @@
           <h1>Routines</h1>
         </button>
         {#if !routinesCollapsed}
-          <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">+ Routine</Button>
+          <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">➕Routine</Button>
         {/if}
       </div>
 
