@@ -103,7 +103,7 @@ export async function runTests() {
     let themeId
     try {
       await page.click('.nav-link:has-text("Long-term")')
-      await page.waitForSelector('.okr-header', { timeout: 10000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 10000 })
 
       await page.click('.btn-primary:has-text("+ Add Theme")')
       await page.waitForSelector('.theme-form', { timeout: 5000 })

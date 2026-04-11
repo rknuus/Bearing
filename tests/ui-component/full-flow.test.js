@@ -67,7 +67,7 @@ export async function runTests() {
     try {
       // Navigate to OKRs
       await page.click('.nav-link:has-text("Long-term")')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       // Create theme "E2E Flow" with orange color
       await page.click('.btn-primary:has-text("+ Add Theme")')
@@ -321,7 +321,7 @@ export async function runTests() {
     try {
       // Click theme name on a task card to navigate to OKR view
       await page.click('.theme-badge:has-text("E2E Flow")')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       const okrNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
       if (okrNav !== 'Long-term') {
@@ -466,7 +466,7 @@ export async function runTests() {
     try {
       // Navigate to OKRs
       await page.keyboard.press('Control+1')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       // Expand theme if collapsed
       const themeExpanded = await page.$('.tree-theme-edit:last-child .tree-objective-edit')
@@ -678,7 +678,7 @@ export async function runTests() {
     try {
       // Navigate to OKRs
       await page.keyboard.press('Control+1')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       // Navigate back to Tasks
       await page.keyboard.press('Control+3')

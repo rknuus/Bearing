@@ -308,7 +308,7 @@ export async function runTests() {
 
       // Navigate away and back to refresh
       await page.keyboard.press('Control+1')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
       await page.keyboard.press('Control+2')
       await page.waitForSelector('.calendar-view', { timeout: 5000 })
 
@@ -546,7 +546,7 @@ export async function runTests() {
     reporter.startTest('204a: Inline edit theme name')
     try {
       await page.keyboard.press('Control+1')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       // Find PF theme by evaluating DOM text content
       const pfThemeSelector = await page.evaluate(() => {
@@ -742,7 +742,7 @@ export async function runTests() {
 
       // Refresh the view by navigating away and back
       await page.keyboard.press('Control+1')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
@@ -773,7 +773,7 @@ export async function runTests() {
       await page.click('.theme-badge:has-text("Career Growth")')
 
       // Verify we navigated to OKR view
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
       const activeNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
       if (activeNav !== 'Long-term') {
         throw new Error(`Expected OKRs active after theme click, got "${activeNav}"`)
@@ -788,7 +788,7 @@ export async function runTests() {
     reporter.startTest('205d: Keyboard shortcuts preserve view context')
     try {
       // Start on OKRs (from previous test)
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       // Switch to Calendar
       await page.keyboard.press('Control+2')
@@ -808,7 +808,7 @@ export async function runTests() {
 
       // Switch back to OKRs
       await page.keyboard.press('Control+1')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
       const okrNav = await page.$eval('.nav-link.active', el => el.textContent.trim())
       if (okrNav !== 'Long-term') {
         throw new Error(`Expected OKRs active, got "${okrNav}"`)

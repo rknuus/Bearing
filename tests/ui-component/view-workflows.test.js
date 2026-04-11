@@ -52,9 +52,9 @@ export async function runTests() {
       await page.waitForSelector('.scrollable-view', { timeout: 5000 })
 
       // Wait for OKR content to load (should show themes from mock data)
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
-      const headerText = await page.$eval('.okr-header h1', el => el.textContent.trim())
+      const headerText = await page.$eval('.themes-section .section-header h1', el => el.textContent.trim())
       if (headerText !== 'Life Themes & OKRs') {
         throw new Error(`Expected OKR header "Life Themes & OKRs", got "${headerText}"`)
       }
@@ -205,7 +205,7 @@ export async function runTests() {
     try {
       // Navigate to OKR view
       await page.click('.nav-link:has-text("Long-term")')
-      await page.waitForSelector('.okr-header', { timeout: 5000 })
+      await page.waitForSelector('.themes-section .section-header', { timeout: 5000 })
 
       // Find the first theme and click its expand button
       const firstTheme = await page.waitForSelector('.tree-theme-edit', { timeout: 5000 })
