@@ -1279,7 +1279,7 @@
           <div class="vision-content">
             {#if personalVision.vision}
               <div class="vision-field">
-                <span class="vision-label">Vision</span>
+                <h2 class="vision-label">Vision</h2>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
                 <div class="vision-text markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(personalVision.vision)}</div>
@@ -1287,7 +1287,7 @@
             {/if}
             {#if personalVision.mission}
               <div class="vision-field">
-                <span class="vision-label">Mission</span>
+                <h2 class="vision-label">Mission</h2>
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -- sanitized by DOMPurify -->
                 <div class="vision-text markdown-content" onclick={handleVisionLinkClick}>{@html renderMarkdown(personalVision.mission)}</div>
@@ -2466,6 +2466,7 @@
     color: var(--color-gray-500);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    margin: 0;
   }
 
   .vision-text {
