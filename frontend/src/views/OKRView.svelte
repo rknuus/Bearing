@@ -2461,12 +2461,11 @@
   }
 
   .vision-label {
-    font-size: 0.75rem;
+    font-size: 1.1rem;
     font-weight: 600;
     color: var(--color-gray-500);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin: 0;
   }
 
   .vision-text {
