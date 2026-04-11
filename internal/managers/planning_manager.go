@@ -44,6 +44,7 @@ type NavigationContext struct {
 	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitempty"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
+	RoutinesCollapsed            *bool    `json:"routinesCollapsed,omitempty"`
 }
 
 // IGoalStructure defines behavioral operations for managing the OKR hierarchy.
@@ -2335,6 +2336,7 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		CalendarDayEditorDate:        ctx.CalendarDayEditorDate,
 		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
 		VisionCollapsed:              ctx.VisionCollapsed,
+		RoutinesCollapsed:            ctx.RoutinesCollapsed,
 	}, nil
 }
 
@@ -2358,6 +2360,7 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		CalendarDayEditorDate:        ctx.CalendarDayEditorDate,
 		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
 		VisionCollapsed:              ctx.VisionCollapsed,
+		RoutinesCollapsed:            ctx.RoutinesCollapsed,
 	}
 
 	if err := m.uiStateAccess.SaveNavigationContext(accessCtx); err != nil {

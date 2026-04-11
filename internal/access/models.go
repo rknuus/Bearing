@@ -309,4 +309,5 @@ type NavigationContext struct {
 	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitempty"`
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
+	RoutinesCollapsed            *bool    `json:"routinesCollapsed,omitempty"`
 }

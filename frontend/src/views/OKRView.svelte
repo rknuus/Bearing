@@ -198,6 +198,7 @@
 
   let personalVision = $state<PersonalVision>({ mission: '', vision: '' });
   let visionCollapsed = $state(true);
+  let routinesCollapsed = $state(true);
   let editingVision = $state(false);
   let editVisionMission = $state('');
   let editVisionVision = $state('');
@@ -1188,6 +1189,7 @@
         showCompleted = navCtx.showCompleted ?? false;
         showArchived = navCtx.showArchived ?? false;
         visionCollapsed = navCtx.visionCollapsed ?? true;
+        routinesCollapsed = navCtx.routinesCollapsed ?? true;
         if (navCtx.expandedOkrIds?.length) {
           for (const id of navCtx.expandedOkrIds) {
             expandedIds.add(id);
@@ -1219,11 +1221,12 @@
     const sc = showCompleted;
     const sa = showArchived;
     const vc = visionCollapsed;
+    const rc = routinesCollapsed;
     if (!contextLoaded) return;
     untrack(() => {
       getBindings().LoadNavigationContext().then((ctx) => {
         if (ctx) {
-          getBindings().SaveNavigationContext({ ...ctx, showCompleted: sc, showArchived: sa, visionCollapsed: vc });
+          getBindings().SaveNavigationContext({ ...ctx, showCompleted: sc, showArchived: sa, visionCollapsed: vc, routinesCollapsed: rc });
         }
       }).catch(() => { /* ignore */ });
     });
@@ -1699,9 +1702,16 @@
     <!-- Standalone Routines Section -->
     <section class="routines-section">
       <div class="routines-section-header">
-        <h2 class="section-title">Routines</h2>
-        <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">+ Routine</Button>
+        <button class="vision-header" onclick={() => { routinesCollapsed = !routinesCollapsed; }}>
+          <span class="expand-icon">{routinesCollapsed ? '\u25B6' : '\u25BC'}</span>
+          <span class="vision-title">Routines</span>
+        </button>
+        {#if !routinesCollapsed}
+          <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">+ Routine</Button>
+        {/if}
       </div>
+
+      {#if !routinesCollapsed}
 
       {#if addingRoutine}
         <div class="new-item-form routine-form">
@@ -1872,6 +1882,8 @@
           <button class="link-button" onclick={() => { addingRoutine = true; }}>Add a routine</button>
         </div>
       {/if}
+
+      {/if}<!-- !routinesCollapsed -->
     </section>
 
     {#if themes.length === 0 && !showNewThemeForm}

@@ -227,6 +227,7 @@ export interface NavigationContext {
   calendarDayEditorDate?: string;
   calendarDayEditorExpandedIds?: string[];
   visionCollapsed?: boolean;
+  routinesCollapsed?: boolean;
 }
 
 // Type declarations for extended Window properties

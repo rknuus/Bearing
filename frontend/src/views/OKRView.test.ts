@@ -995,6 +995,7 @@ describe('OKRView', () => {
         { id: 'R1', description: 'Exercise per week' },
       ];
       mockBindings.GetRoutines.mockResolvedValue(routinesMock);
+      mockBindings.LoadNavigationContext.mockResolvedValue({ currentView: 'okr', currentItem: '', filterThemeId: '', lastAccessed: '', routinesCollapsed: false });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
       await renderView();
@@ -1014,6 +1015,7 @@ describe('OKRView', () => {
 
     it('shows empty state when no routines exist', async () => {
       mockBindings.GetRoutines.mockResolvedValue([]);
+      mockBindings.LoadNavigationContext.mockResolvedValue({ currentView: 'okr', currentItem: '', filterThemeId: '', lastAccessed: '', routinesCollapsed: false });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (window as any).go = { main: { App: mockBindings } };
       await renderView();
