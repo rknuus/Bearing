@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { LifeTheme, DayFocus, RoutineOccurrence, RoutineTaskInfo } from '../lib/wails-mock';
-import { parseCalendarDate } from '../lib/utils/date-utils';
+import { parseCalendarDate, type CalendarDate } from '../lib/utils/date-utils';
 import CalendarView from './CalendarView.svelte';
 import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
 
@@ -83,7 +83,7 @@ describe('CalendarView', () => {
     delete (window as any).go;
   });
 
-  async function renderView(props: { year?: number } = {}) {
+  async function renderView(props: { year?: number; currentDate?: CalendarDate; onTodayFocusEdited?: () => void } = {}) {
     const result = render(CalendarView, {
       target: container,
       props: { year: 2025, ...props },
@@ -1590,6 +1590,66 @@ describe('CalendarView', () => {
         const prevChecks = call[2] as string[];
         expect(prevChecks).toEqual(['R1']);
       });
+    });
+  });
+
+  describe('onTodayFocusEdited callback', () => {
+    it('calls onTodayFocusEdited when saving today\'s focus', async () => {
+      const todayStr = parseCalendarDate('2025-01-15');
+      const onTodayFocusEdited = vi.fn();
+      await renderView({ currentDate: todayStr, onTodayFocusEdited });
+
+      // Double-click the Jan 15 cell (which matches currentDate)
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const jan15Cell = Array.from(dayCells).find(cell => cell.textContent?.trim() === '15');
+      jan15Cell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Select a theme and save
+      const themeCheckboxes = container.querySelectorAll<HTMLInputElement>('.tree-theme-item .tree-checkbox-label input[type="checkbox"]');
+      themeCheckboxes[0].click();
+      await tick();
+
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+      });
+      expect(onTodayFocusEdited).toHaveBeenCalledOnce();
+    });
+
+    it('does not call onTodayFocusEdited when saving a non-today focus', async () => {
+      const todayStr = parseCalendarDate('2025-01-20');
+      const onTodayFocusEdited = vi.fn();
+      await renderView({ currentDate: todayStr, onTodayFocusEdited });
+
+      // Double-click Jan 15 cell (not today)
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const jan15Cell = Array.from(dayCells).find(cell => cell.textContent?.trim() === '15');
+      jan15Cell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Select a theme and save
+      const themeCheckboxes = container.querySelectorAll<HTMLInputElement>('.tree-theme-item .tree-checkbox-label input[type="checkbox"]');
+      themeCheckboxes[0].click();
+      await tick();
+
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+      });
+      expect(onTodayFocusEdited).not.toHaveBeenCalled();
     });
   });
 });

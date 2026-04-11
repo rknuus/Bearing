@@ -21,11 +21,12 @@
     year?: number;
     onNavigateToTheme?: (themeId: string) => void;
     onNavigateToTasks?: (options?: { themeId?: string; date?: string }) => void;
+    onTodayFocusEdited?: () => void;
     filterThemeIds?: string[];
     currentDate?: CalendarDate;
   }
 
-  let { year = getNow().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, filterThemeIds = [], currentDate }: Props = $props();
+  let { year = getNow().getFullYear(), onNavigateToTheme, onNavigateToTasks: _onNavigateToTasks, onTodayFocusEdited, filterThemeIds = [], currentDate }: Props = $props();
 
   // State
   let themes = $state<LifeTheme[]>([]);
@@ -460,8 +461,13 @@
       previousRoutineChecks = [...editRoutineChecks];
       yearFocus.set(editingDay.date, dayFocus);
 
-      // Recompute routine maps after check changes
+      // Signal that today's focus was edited so EisenKan can auto-activate the filter
       const todayStr = currentDate || todayCalendarDate();
+      if (editingDay.date === todayStr) {
+        onTodayFocusEdited?.();
+      }
+
+      // Recompute routine maps after check changes
       try {
         const allRoutines = await bindings.GetRoutines();
         const routineMaps = computeRoutineMaps(allRoutines, yearFocus, year, todayStr);
@@ -592,6 +598,12 @@
 
         await bindings.SaveDayFocus(dayFocus);
         yearFocus.set(dateStr, dayFocus);
+
+        // Signal if today's focus was pasted over
+        const todayStr = currentDate || todayCalendarDate();
+        if (dateStr === todayStr) {
+          onTodayFocusEdited?.();
+        }
       }
 
       await verifyCalendarState();
