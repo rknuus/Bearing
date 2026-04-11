@@ -644,22 +644,17 @@ func (r *repository) GetHistoryStream() <-chan CommitInfo {
 		}
 
 		err = commitIter.ForEach(func(c *object.Commit) error {
-			select {
-			case ch <- CommitInfo{
+			ch <- CommitInfo{
 				ID:        c.Hash.String(),
 				Author:    c.Author.Name,
 				Email:     c.Author.Email,
 				Timestamp: c.Author.When,
 				Message:   c.Message,
-			}:
-			default:
-				// Channel closed, stop iteration
-				return fmt.Errorf("channel closed")
 			}
 			return nil
 		})
 
-		if err != nil && err.Error() != "channel closed" {
+		if err != nil {
 			r.logger.Error("Repository error",
 				"operation", "GetHistoryStream",
 				"path", r.path,
@@ -752,21 +747,17 @@ func (r *repository) GetFileHistoryStream(filePath string) <-chan CommitInfo {
 		}
 
 		err = commitIter.ForEach(func(c *object.Commit) error {
-			select {
-			case ch <- CommitInfo{
+			ch <- CommitInfo{
 				ID:        c.Hash.String(),
 				Author:    c.Author.Name,
 				Email:     c.Author.Email,
 				Timestamp: c.Author.When,
 				Message:   c.Message,
-			}:
-			default:
-				return fmt.Errorf("channel closed")
 			}
 			return nil
 		})
 
-		if err != nil && err.Error() != "channel closed" {
+		if err != nil {
 			r.logger.Error("Repository error",
 				"operation", "GetFileHistoryStream",
 				"path", r.path,
