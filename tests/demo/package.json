@@ -1,0 +1,8 @@
+{
+  "name": "bearing-demo-video",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@playwright/test": "^1.56.1"
+  }
+}
