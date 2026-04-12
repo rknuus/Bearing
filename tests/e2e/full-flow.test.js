@@ -1229,6 +1229,105 @@ export async function runTests() {
     }
 
     // ================================================================
+    // Phase 4v: Routine Task Creation via Daily Focus
+    // ================================================================
+
+    reporter.startTest('Phase 4v: Create routine and verify files')
+    try {
+      await page.evaluate(async () => {
+        const app = window.go.main.App
+        await app.Establish({ goalType: 'routine', description: 'E2E Routine' })
+      })
+
+      const routines = readRoutines(DATA_DIR)
+      const routine = routines.find(r => r.description === 'E2E Routine')
+      if (!routine) throw new Error('Routine "E2E Routine" not found in routines.json')
+
+      expectedCommits++
+      assertCommitCount('after create routine')
+
+      reporter.pass(`Routine created: id=${routine.id}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    reporter.startTest('Phase 4w: Check routine in day focus and verify task created')
+    try {
+      const routines = readRoutines(DATA_DIR)
+      const routine = routines.find(r => r.description === 'E2E Routine')
+      if (!routine) throw new Error('Routine not found')
+
+      // Use the first day entry from Phase 2 (has a theme assigned)
+      const year = new Date().getFullYear()
+      const calData = readJSON(DATA_DIR, `calendar/${year}.json`)
+      const entries = calData.entries || calData
+      const dayEntry = (Array.isArray(entries) ? entries : []).find(
+        e => e.themeIds && e.themeIds.length > 0
+      )
+      if (!dayEntry) throw new Error('No day entry with themes found')
+
+      // Save day focus with routine checked
+      await page.evaluate(async ({ day, routineInfo }) => {
+        const app = window.go.main.App
+        const dayFocus = {
+          date: day.date,
+          themeIds: day.themeIds,
+          notes: day.notes || '',
+          text: day.text || '',
+          routineChecks: [routineInfo.id],
+        }
+        await app.SaveDayFocusWithRoutines(
+          dayFocus,
+          [{ routineId: routineInfo.id, description: routineInfo.description, isOverdue: false }],
+          []
+        )
+      }, { day: dayEntry, routineInfo: { id: routine.id, description: routine.description } })
+
+      // Verify a routine task was created on disk
+      const todoFiles = getTaskFiles(DATA_DIR, 'todo')
+      const routineTaskFile = todoFiles.find(f => {
+        const task = readJSON(DATA_DIR, `tasks/todo/${f}`)
+        return task.tags && task.tags.includes('Routine') && task.description && task.description.includes(routine.id)
+      })
+      if (!routineTaskFile) throw new Error('No routine task file found in tasks/todo/')
+
+      const routineTask = readJSON(DATA_DIR, `tasks/todo/${routineTaskFile}`)
+      if (routineTask.themeId !== '') throw new Error(`Expected empty themeId, got "${routineTask.themeId}"`)
+      if (!routineTask.tags.includes('Routine')) throw new Error('Expected "Routine" tag')
+
+      // task creation + day focus save = 2 commits
+      expectedCommits += 2
+      assertCommitCount('after routine check in day focus')
+
+      reporter.pass(`Routine task created: id=${routineTask.id}, file=${routineTaskFile}`)
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    reporter.startTest('Phase 4x: Routine task visible in EisenKan despite theme filter')
+    try {
+      // Navigate to EisenKan via nav link (more reliable than keyboard shortcut after backend-only calls)
+      await page.click('.nav-link:has-text("Short-term")')
+      await page.waitForSelector('.eisenkan-container', { timeout: 10000 })
+      await page.waitForSelector('.task-card', { timeout: 10000 })
+
+      const routineCard = await page.locator('.task-card:has-text("E2E Routine")').first()
+      const isVisible = await routineCard.isVisible().catch(() => false)
+      if (!isVisible) {
+        throw new Error('Routine task card not visible in EisenKan (theme filter may be excluding it)')
+      }
+
+      const tagText = await routineCard.locator('.tag-badge').allTextContents()
+      if (!tagText.some(t => t.includes('Routine'))) {
+        throw new Error(`Expected "Routine" tag badge, got: ${JSON.stringify(tagText)}`)
+      }
+
+      reporter.pass('Routine task visible in EisenKan with Routine tag')
+    } catch (err) {
+      reporter.fail(err)
+    }
+
+    // ================================================================
     // Phase 5: Cleanup
     // ================================================================
 
