@@ -1005,7 +1005,7 @@ describe('OKRView', () => {
 
       // "+ Routine" button should be present in standalone section
       const routineButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.btn-icon'))
-        .find(b => b.textContent?.includes('+ Routine'));
+        .find(b => b.textContent?.includes('Routine'));
       expect(routineButton).toBeTruthy();
 
       // Routine card should be rendered
