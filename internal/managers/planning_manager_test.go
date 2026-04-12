@@ -180,6 +180,12 @@ func (m *mockTaskAccess) WriteTask(task access.Task) error {
 func (m *mockTaskAccess) SaveTask(task access.Task) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+
+	// Match real TaskAccess validation: empty themeID requires Routine tag
+	if task.ThemeID == "" && !slices.Contains(task.Tags, "Routine") {
+		return fmt.Errorf("mockTaskAccess.SaveTask: themeID cannot be empty")
+	}
+
 	status := "todo"
 	for s, tasks := range m.tasks {
 		for i, t := range tasks {
@@ -191,7 +197,11 @@ func (m *mockTaskAccess) SaveTask(task access.Task) error {
 	}
 	if task.ID == "" {
 		m.nextTaskNum++
-		task.ID = fmt.Sprintf("%s-T%d", task.ThemeID, m.nextTaskNum)
+		if task.ThemeID == "" {
+			task.ID = fmt.Sprintf("T%d", m.nextTaskNum)
+		} else {
+			task.ID = fmt.Sprintf("%s-T%d", task.ThemeID, m.nextTaskNum)
+		}
 	}
 	m.tasks[status] = append(m.tasks[status], task)
 	return nil
@@ -4217,5 +4227,49 @@ func TestUnit_SaveDayFocusWithRoutines_RemovesRoutineTagWhenAllUnchecked(t *test
 	}
 	if slices.Contains(saved.Tags, "Routine") {
 		t.Errorf("expected 'Routine' tag to be removed, got %v", saved.Tags)
+	}
+}
+
+func TestUnit_SaveDayFocusWithRoutines_CreatesTaskWithEmptyThemeID(t *testing.T) {
+	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+
+	day := DayFocus{
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
+		RoutineChecks: []string{"R1"},
+	}
+	infos := []RoutineTaskInfo{
+		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
+	}
+
+	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	todoTasks := mockTasks.tasks["todo"]
+	if len(todoTasks) != 1 {
+		t.Fatalf("expected 1 todo task, got %d", len(todoTasks))
+	}
+	task := todoTasks[0]
+	if task.ThemeID != "" {
+		t.Errorf("expected empty themeID for routine task, got %q", task.ThemeID)
+	}
+	if task.ID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+	if strings.HasPrefix(task.ID, "-") {
+		t.Errorf("expected task ID without leading dash, got %q", task.ID)
+	}
+}
+
+func TestUnit_CreateTask_FailsWithEmptyThemeIDNoRoutineTag(t *testing.T) {
+	manager, _, _ := newMockManager()
+
+	_, err := manager.CreateTask("Some task", "", "important-urgent", "", "", "")
+	if err == nil {
+		t.Fatal("expected error for empty themeID without Routine tag, got nil")
+	}
+	if !strings.Contains(err.Error(), "themeID cannot be empty") {
+		t.Errorf("expected error about empty themeID, got: %v", err)
 	}
 }

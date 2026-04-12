@@ -511,6 +511,31 @@ describe('App', () => {
       // ProcessPriorityPromotions should NOT have been called
       expect(mockBindings.ProcessPriorityPromotions).not.toHaveBeenCalled();
     });
+
+    it('shows toast when priority promotions fail on day change', async () => {
+      // Clock at 100ms before midnight on March 29
+      setClockForTesting(() => new Date(2026, 2, 29, 23, 59, 59, 900));
+
+      // Suppress expected console.error from the caught rejection
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      mockBindings.ProcessPriorityPromotions.mockRejectedValueOnce(new Error('backend unavailable'));
+
+      await renderAppWithFakeTimers();
+
+      // Shift clock past midnight
+      setClockForTesting(() => new Date(2026, 2, 30, 12, 0, 0, 0));
+
+      // Advance timers to fire the midnight timeout
+      await vi.advanceTimersByTimeAsync(200);
+      await flush();
+
+      // Toast should show the error message
+      const toast = container.querySelector('.toast');
+      expect(toast).toBeTruthy();
+      expect(toast!.textContent).toContain('Priority promotions failed');
+      expect(toast!.textContent).toContain('backend unavailable');
+    });
   });
 
 });

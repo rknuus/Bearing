@@ -1652,4 +1652,114 @@ describe('CalendarView', () => {
       expect(onTodayFocusEdited).not.toHaveBeenCalled();
     });
   });
+
+  describe('save error handling', () => {
+    it('shows ErrorBanner inside the dialog when save fails', async () => {
+      // Suppress expected console.error from the catch block
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockBindings.SaveDayFocusWithRoutines.mockRejectedValueOnce(new Error('network timeout'));
+      await renderView();
+
+      // Double-click Jan 15 cell to open editor dialog
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const jan15Cell = Array.from(dayCells).find(cell => cell.textContent?.trim() === '15');
+      jan15Cell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Click save
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      // ErrorBanner should appear inside the dialog with the error message
+      await vi.waitFor(() => {
+        const dialog = container.querySelector('.dialog');
+        const alert = dialog!.querySelector('[role="alert"]');
+        expect(alert).toBeTruthy();
+        expect(alert!.textContent).toContain('network timeout');
+      });
+
+      // Dialog should remain open so user can retry
+      expect(container.querySelector('.dialog')).toBeTruthy();
+    });
+
+    it('clears ErrorBanner when save is retried', async () => {
+      // Suppress expected console.error from the catch block
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockBindings.SaveDayFocusWithRoutines.mockRejectedValueOnce(new Error('network timeout'));
+      await renderView();
+
+      // Double-click Jan 15 cell to open editor dialog
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const jan15Cell = Array.from(dayCells).find(cell => cell.textContent?.trim() === '15');
+      jan15Cell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // First save attempt fails
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        const dialog = container.querySelector('.dialog');
+        expect(dialog!.querySelector('[role="alert"]')).toBeTruthy();
+      });
+
+      // Second save attempt succeeds — error should be cleared
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledTimes(2);
+      });
+
+      // After successful save, dialog closes and no error banner on page
+      await vi.waitFor(() => {
+        expect(container.querySelector('.dialog')).toBeNull();
+      });
+    });
+
+    it('clears ErrorBanner when dismiss is clicked', async () => {
+      // Suppress expected console.error from the catch block
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      mockBindings.SaveDayFocusWithRoutines.mockRejectedValueOnce(new Error('server error'));
+      await renderView();
+
+      // Double-click Jan 15 cell to open editor dialog
+      const dayCells = container.querySelectorAll<HTMLButtonElement>('.day-num');
+      const jan15Cell = Array.from(dayCells).find(cell => cell.textContent?.trim() === '15');
+      jan15Cell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+
+      // Save fails
+      const saveButton = container.querySelector<HTMLButtonElement>('.btn-primary');
+      saveButton!.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        const dialog = container.querySelector('.dialog');
+        expect(dialog!.querySelector('[role="alert"]')).toBeTruthy();
+      });
+
+      // Click dismiss button on the error banner
+      const dialog = container.querySelector('.dialog');
+      const dismissButton = dialog!.querySelector('[role="alert"] button');
+      expect(dismissButton).toBeTruthy();
+      await fireEvent.click(dismissButton!);
+      await tick();
+
+      // Error banner should be gone, dialog still open
+      expect(dialog!.querySelector('[role="alert"]')).toBeNull();
+      expect(container.querySelector('.dialog')).toBeTruthy();
+    });
+  });
 });

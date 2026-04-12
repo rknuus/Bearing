@@ -120,6 +120,7 @@
       await getBindings().ProcessPriorityPromotions();
     } catch (e) {
       console.error('Failed to process priority promotions on day change:', e);
+      toastMessage = 'Priority promotions failed: ' + extractError(e);
     }
   }
 

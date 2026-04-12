@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -268,7 +269,7 @@ func (ta *TaskAccess) GetTasksByStatus(status string) ([]Task, error) {
 // saveTaskFile writes a task to disk without committing.
 // Returns the file path and whether the task is new.
 func (ta *TaskAccess) saveTaskFile(task *Task) ([]string, bool, error) {
-	if task.ThemeID == "" {
+	if task.ThemeID == "" && !slices.Contains(task.Tags, "Routine") {
 		return nil, false, fmt.Errorf("TaskAccess.saveTaskFile: themeID cannot be empty")
 	}
 
@@ -834,9 +835,17 @@ func (ta *TaskAccess) CommitAll(message string) error {
 // generateTaskID generates a new theme-scoped task ID by scanning filenames
 // across all status directories (including archived). This is resilient to
 // data inconsistencies where a file's name doesn't match its internal themeId.
+// When themeAbbr is empty (e.g. for routine tasks), IDs use the format "T{n}"
+// instead of "{themeAbbr}-T{n}".
 func (ta *TaskAccess) generateTaskID(themeAbbr string) string {
 	maxNum := 0
-	re := regexp.MustCompile(`^` + regexp.QuoteMeta(themeAbbr) + `-T(\d+)\.json$`)
+
+	var re *regexp.Regexp
+	if themeAbbr == "" {
+		re = regexp.MustCompile(`^T(\d+)\.json$`)
+	} else {
+		re = regexp.MustCompile(`^` + regexp.QuoteMeta(themeAbbr) + `-T(\d+)\.json$`)
+	}
 
 	for _, status := range ta.allStatusSlugs() {
 		entries, err := os.ReadDir(ta.taskDirPath(status))
@@ -854,5 +863,8 @@ func (ta *TaskAccess) generateTaskID(themeAbbr string) string {
 		}
 	}
 
+	if themeAbbr == "" {
+		return fmt.Sprintf("T%d", maxNum+1)
+	}
 	return fmt.Sprintf("%s-T%d", themeAbbr, maxNum+1)
 }

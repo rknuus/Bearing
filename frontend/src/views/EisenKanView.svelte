@@ -1279,9 +1279,11 @@
         style="left: {contextMenuPosition.x}px; top: {contextMenuPosition.y}px;"
         role="menu"
       >
-        <button type="button" class="context-menu-item" onclick={handleGoToTheme}>
-          Go to Theme: {getTheme(themes, contextMenuTask.themeId)?.name ?? 'Unknown'}
-        </button>
+        {#if contextMenuTask.themeId}
+          <button type="button" class="context-menu-item" onclick={handleGoToTheme}>
+            Go to Theme: {getTheme(themes, contextMenuTask.themeId)?.name ?? 'Unknown'}
+          </button>
+        {/if}
       </div>
     </div>
   {/if}

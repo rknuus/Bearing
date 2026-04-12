@@ -40,6 +40,7 @@
   let editText = $state('');
   let editOkrIds = $state<string[]>([]);
   let editTags = $state<string[]>([]);
+  let saveError = $state<string | null>(null);
   let prevDerivedText = $state('');
   let availableTags = $state<string[]>([]);
   let tagSectionOpen = $state(false);
@@ -412,7 +413,10 @@
         tasks => [...new Set(tasks.flatMap(t => t.tags ?? []))].sort(),
         () => [] as string[],
       ),
-      bindings.GetRoutinesForDate(dateStr).catch(() => [] as RoutineOccurrence[]),
+      bindings.GetRoutinesForDate(dateStr).catch((err) => {
+        console.warn('CalendarView: Failed to load routines for date', dateStr, err);
+        return [] as RoutineOccurrence[];
+      }),
     ]);
     availableTags = tagsResult;
     routineOccurrences = occurrences;
@@ -437,6 +441,7 @@
 
   async function saveDayFocus() {
     if (!editingDay) return;
+    saveError = null;
 
     try {
       const bindings = getBindings();
@@ -493,7 +498,7 @@
       editingDay = null;
     } catch (e) {
       console.error('CalendarView: Failed to save day focus', e);
-      alert('Failed to save: ' + extractError(e));
+      saveError = extractError(e);
     }
   }
 
@@ -511,6 +516,7 @@
       }).catch(() => { /* ignore */ });
     }
     editingDay = null;
+    saveError = null;
   }
 
   // --- Selection helpers ---
@@ -779,6 +785,9 @@
   <!-- Day Editor Dialog -->
   {#if editingDay}
     <Dialog title={displayDate(editingDay.month, editingDay.day)} id="dialog-title" maxWidth="700px" onclose={cancelEdit}>
+      {#if saveError}
+        <ErrorBanner message={saveError} ondismiss={() => { saveError = null; }} />
+      {/if}
       <div class="form-group">
         <span class="form-label">Theme & OKR References</span>
         <ThemeOKRTree
