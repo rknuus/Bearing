@@ -274,3 +274,7 @@ release-test: ## Validate release pipeline locally (YAML syntax, build, tests)
 .PHONY: trigger-test-release
 trigger-test-release: ## Push a test tag to trigger release pipeline on GitHub, then clean up
 	@bash scripts/trigger-test-release.sh
+
+.PHONY: demo-video
+demo-video: ## Record automated demo video
+	@bash scripts/run-demo-video.sh

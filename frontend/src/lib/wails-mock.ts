@@ -395,7 +395,10 @@ function suggestAbbreviation(name: string, existingThemes: LifeTheme[]): string 
 }
 
 // Mock data storage for browser testing
-let mockThemes: LifeTheme[] = [
+// When sessionStorage 'bearing-demo-mode' is set, start with empty data (for demo video)
+const _demoMode = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bearing-demo-mode') === 'true';
+
+let mockThemes: LifeTheme[] = _demoMode ? [] : [
   {
     id: 'HF',
     name: 'Health & Fitness',
@@ -457,7 +460,7 @@ let mockThemes: LifeTheme[] = [
   { id: 'R', name: 'Relationships', color: '#ec4899', objectives: [] },
 ];
 
-const mockRoutines: Routine[] = [
+const mockRoutines: Routine[] = _demoMode ? [] : [
   {
     id: 'R1',
     description: 'Exercise sessions',
@@ -474,7 +477,7 @@ const mockRoutines: Routine[] = [
 const mockYearFocus: Map<number, DayFocus[]> = new Map();
 
 // Mock tasks storage
-let mockTasks: TaskWithStatus[] = [
+let mockTasks: TaskWithStatus[] = _demoMode ? [] : [
   { id: 'CG-T1', title: 'Complete project proposal', themeId: 'CG', priority: 'important-urgent', status: 'todo', tags: ['backend', 'api'], createdAt: '2026-01-31T08:00:00Z' as Timestamp, updatedAt: '2026-01-31T08:00:00Z' as Timestamp },
   { id: 'HF-T1', title: 'Review quarterly goals', themeId: 'HF', priority: 'important-not-urgent', status: 'todo', createdAt: '2026-01-31T08:00:00Z' as Timestamp, updatedAt: '2026-01-31T08:00:00Z' as Timestamp },
   { id: 'CG-T2', title: 'Respond to emails', themeId: 'CG', priority: 'not-important-urgent', status: 'doing', tags: ['urgent', 'review'], createdAt: '2026-01-31T09:00:00Z' as Timestamp, updatedAt: '2026-01-31T10:00:00Z' as Timestamp },
@@ -747,8 +750,32 @@ export const mockAppBindings = {
     mockYearFocus.set(year, entries);
   },
 
-  SaveDayFocusWithRoutines: async (day: DayFocus, _routineInfos: RoutineTaskInfo[], _previousChecks: string[]): Promise<void> => {
-    // In mock mode, delegate to plain SaveDayFocus (task creation is backend-only)
+  SaveDayFocusWithRoutines: async (day: DayFocus, routineInfos: RoutineTaskInfo[], previousChecks: string[]): Promise<void> => {
+    // Determine newly checked routines
+    const prevSet = new Set(previousChecks);
+    const newlyChecked = (day.routineChecks ?? []).filter(id => !prevSet.has(id));
+
+    // Create tasks for newly checked routines (mirrors Go backend logic)
+    for (const routineId of newlyChecked) {
+      const info = routineInfos.find(r => r.routineId === routineId);
+      if (!info) continue;
+      const ref = `routine:${routineId}:${day.date}`;
+      // Idempotency: skip if task with this description already exists
+      const exists = mockTasks.some(t => t.description === ref);
+      if (exists) continue;
+      const priority = info.isOverdue ? 'important-urgent' : 'important-not-urgent';
+      await mockAppBindings.CreateTask(info.description, '', priority, ref, 'Routine');
+    }
+
+    // Determine newly unchecked routines — delete their tasks if still in todo/doing
+    const currentSet = new Set(day.routineChecks ?? []);
+    for (const routineId of previousChecks) {
+      if (currentSet.has(routineId)) continue;
+      const ref = `routine:${routineId}:${day.date}`;
+      const idx = mockTasks.findIndex(t => t.description === ref && (t.status === 'todo' || t.status === 'doing'));
+      if (idx >= 0) mockTasks.splice(idx, 1);
+    }
+
     return mockAppBindings.SaveDayFocus(day);
   },
 
@@ -1394,6 +1421,22 @@ export const mockAppBindings = {
   },
 
   SetMinWindowSize: async (_width: number, _height: number): Promise<void> => {},
+
+  ResetAllData: async (): Promise<void> => {
+    // Set demo mode flag so module re-init after reload starts empty
+    sessionStorage.setItem('bearing-demo-mode', 'true');
+    mockThemes.length = 0;
+    mockTasks.length = 0;
+    mockRoutines.length = 0;
+    mockYearFocus.clear();
+    mockTaskDrafts = '{}';
+    mockPersonalVision = { mission: '', vision: '' };
+    mockNavigationContext = { currentView: 'okr', currentItem: '', filterThemeId: '', lastAccessed: '' };
+    // Reset board config to default
+    Object.assign(mockBoardConfig, JSON.parse(JSON.stringify(defaultBoardConfiguration)));
+    // Clear task ordering
+    for (const key in taskPositions) delete taskPositions[key];
+  },
 };
 
 // Mock runtime bindings

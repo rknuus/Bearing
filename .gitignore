@@ -30,6 +30,10 @@ frontend/coverage/
 tests/ui-component/node_modules/
 tests/ui-component/test-results/
 tests/ui-component/playwright-report/
+tests/demo/node_modules/
+
+# Demo video outputs (project-root only, not tests/demo/)
+/demo/
 
 # Project management
 .ccpm/
