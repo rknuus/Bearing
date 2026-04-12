@@ -149,7 +149,7 @@
   const filteredTasks = $derived.by(() => {
     let result = [...tasks];
     if (filterThemeIds.length > 0) {
-      result = result.filter(t => filterThemeIds.includes(t.themeId));
+      result = result.filter(t => !t.themeId || filterThemeIds.includes(t.themeId));
     }
     if (tagFocusActive && todayFocusTags && todayFocusTags.length > 0) {
       result = result.filter(t => t.tags?.some(tag => todayFocusTags.includes(tag)));

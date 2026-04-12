@@ -302,6 +302,21 @@ describe('EisenKanView', () => {
     expect(titles).toContain('Done task');
   });
 
+  it('shows routine tasks (empty themeId) even when theme filter is active', async () => {
+    currentTasks = [
+      ...makeTestTasks(),
+      { id: 'T5', title: 'Morning run', themeId: '', priority: 'important-not-urgent', status: 'todo', tags: ['Routine'] },
+    ];
+    await renderView({ filterThemeIds: ['HF'] });
+
+    // HF tasks + routine task (no theme) should be visible
+    const cards = container.querySelectorAll('.task-card');
+    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
+    expect(titles).toContain('Exercise');
+    expect(titles).toContain('Done task');
+    expect(titles).toContain('Morning run');
+  });
+
   it('shows empty column placeholder when column has no tasks', async () => {
     // Provide tasks only for todo column
     currentTasks = [
