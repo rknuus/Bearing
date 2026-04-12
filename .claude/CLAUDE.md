@@ -159,6 +159,11 @@ Follow existing patterns in the codebase.
 - In Svelte 5 `$effect` blocks, never read and write the same `$state` variable. Use `untrack()` for state the effect modifies but should not depend on
 - Task state modifications in the frontend must verify state consistency with backends at the end
 - No business logic in client code
-- Avoid code duplication
+- Write production-grade code
+- Avoid repeating code patterns, factor out common code
+- Use state of the art coding patterns, idioms, and approaches
+- Write state of the art tests
+- Use state of the art tooling
+- Ensure high code quality
 - Do not pollute production code with test code, e.g. no testid in frontend code
 - Always use strongly typed internal representation of values (e.g. dates) and take care of validation immediately after parsing input and format only immediately before output/display
