@@ -313,14 +313,15 @@ export async function caption(page, text, durationMs = DEMO_CONFIG.PAUSE_READ) {
         transform: 'translateX(-50%)',
         background: 'rgba(0,0,0,0.8)',
         color: 'white',
-        padding: '12px 32px',
+        padding: '12px 24px',
         borderRadius: '8px',
         fontSize: '22px',
         fontWeight: '500',
         zIndex: '99999',
         transition: 'opacity 0.3s',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        maxWidth: '100%',
+        width: 'max-content',
+        maxWidth: 'calc(100vw - 24px)',
         textAlign: 'center',
       });
       document.body.appendChild(el);

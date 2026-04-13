@@ -187,6 +187,7 @@ async function runDemo() {
     await setDailyFocus(page, 'Learning');
     await saveDayDialog(page);
     await caption(page, 'Theme colors help spot imbalances');
+    await caption(page, 'So how are mid- and short-term plans linked?');
 
     await screenshot(page, 'calendar-themes-distributed');
 
@@ -196,13 +197,15 @@ async function runDemo() {
     console.log('Scene 6: Task execution');
 
     await navigateTo(page, 'short-term');
+    await caption(page, 'By assigning each task to a theme and relevant tags');
 
-    await caption(page, 'Checking a routine auto-creates a task as Important & Not Urgent', SHOW_CAPTION_DURATION);
-    await caption(page, 'Overdue routines promote to Important & Urgent', SHOW_CAPTION_DURATION);
+    // FIXME: move to a reasonable location
+    // await caption(page, 'Checking a routine auto-creates a task as Important & Not Urgent', SHOW_CAPTION_DURATION);
+    // await caption(page, 'Overdue routines promote to Important & Urgent', SHOW_CAPTION_DURATION);
 
     // await caption(page, 'Eisenhower matrix + Kanban board = EisenKan');
     // FIXME: show this caption after opening the edit dialog
-    await caption(page, 'Break goals into prioritized tasks', SHOW_CAPTION_DURATION);
+    await caption(page, 'Let\'s create a task', SHOW_CAPTION_DURATION);
 
     // FIXME: I want to separate entering task from prioritizing/staging tasks, so that I can set the caption below inbetween
     await createTask(page, 'Plan running schedule', { theme: 'Health', priority: 'iu', tags: ['fit'] });
@@ -219,7 +222,7 @@ async function runDemo() {
     // ================================================================
     console.log("Scene 7: Today's Focus filter");
 
-    await caption(page, "Today's Focus filters tasks to your daily theme");
+    await caption(page, "Today's Focus shows only tasks of your daily themes");
     await screenshot(page, 'today-focus-active');
 
     await toggleTodayFocus(page);
@@ -246,28 +249,21 @@ async function runDemo() {
     await moveTask(page, 'Morning run', 'done');
 
     // ================================================================
-    // Scene 9 — Cross-view navigation
+    // Scene 9 — Track progress
     // ================================================================
-    console.log('Scene 9: Cross-view navigation');
+    console.log('Scene 9: Track progress');
 
-    await clickThemeBadge(page, 'Health');
-    await caption(page, 'Everything connected \u2014 goals to action and back');
-    await screenshot(page, 'cross-view-navigation');
-
-    // ================================================================
-    // Scene 10 — Track progress
-    // ================================================================
-    console.log('Scene 10: Track progress');
-
-    await caption(page, 'Track progress on your key results');
+    await caption(page, 'On a regular basis, e.g. at the end of a day...');
+    await navigateTo(page, 'long-term');
+    await caption(page, '...track progress on your key results');
     await updateKeyResultProgress(page, 'Weeks with running distance', 1);
     await moveCursorAway(page);
     await screenshot(page, 'kr-progress');
 
     // ================================================================
-    // Scene 11 — Closing
+    // Scene 10 — Closing
     // ================================================================
-    console.log('Scene 11: Closing');
+    console.log('Scene 10: Closing');
 
     await caption(page, 'Plan long-term. Focus daily. Execute now.', SHOW_CAPTION_DURATION);
     await caption(page, 'Bearing', SHOW_CAPTION_DURATION);
