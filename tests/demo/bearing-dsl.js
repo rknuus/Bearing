@@ -320,7 +320,7 @@ export async function caption(page, text, durationMs = DEMO_CONFIG.PAUSE_READ) {
         zIndex: '99999',
         transition: 'opacity 0.3s',
         fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
-        maxWidth: '80%',
+        maxWidth: '100%',
         textAlign: 'center',
       });
       document.body.appendChild(el);

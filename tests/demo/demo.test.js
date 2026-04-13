@@ -57,9 +57,9 @@ async function runDemo() {
     // ================================================================
     console.log('Scene 1: Opening');
 
-    await caption(page, 'Bearing \u2014 Connect your goals to daily action.', SHOW_CAPTION_DURATION);
+    await caption(page, 'Bearing \u2014 helps you to connect your goals to daily action.', SHOW_CAPTION_DURATION);
 
-    await caption(page, 'Three planning horizons, one connected system:', SHOW_CAPTION_DURATION);
+    await caption(page, 'Bearing offers 3 planning horizons:', SHOW_CAPTION_DURATION);
 
     await caption(page, '1) Long-term \u2014 set strategic goals with OKRs and routines.', SHOW_CAPTION_DURATION);
 
@@ -67,7 +67,7 @@ async function runDemo() {
     await caption(page, '2) Mid-term \u2014 balance your themes across the calendar.', SHOW_CAPTION_DURATION);
 
     await navigateTo(page, 'short-term');
-    await caption(page, '3) Short-term \u2014 focus on the tasks of your daily theme.', SHOW_CAPTION_DURATION);
+    await caption(page, '3) Short-term \u2014 focus on the tasks of your daily themes.', SHOW_CAPTION_DURATION);
 
     await navigateTo(page, 'long-term');
 
@@ -76,7 +76,7 @@ async function runDemo() {
     // ================================================================
     console.log('Scene 2: Vision & Mission');
 
-    await caption(page, 'Define your personal vision and mission', SHOW_CAPTION_DURATION);
+    await caption(page, 'Begin by defining your personal vision and mission', SHOW_CAPTION_DURATION);
     await editVisionMission(page, {
       // FIXME: replace by vision/mission to properly plan life/priorities
       vision: 'Live a healthy, balanced, and fulfilling life.',
@@ -90,11 +90,11 @@ async function runDemo() {
     // ================================================================
     console.log('Scene 3: Long-term goals');
 
-    await caption(page, 'Life themes drive your goals');
+    await caption(page, 'Next set life themes, which drive your goals');
     await createTheme(page, 'Health', { color: 4 });
     await caption(page, 'Add objectives to each life theme');
     await addObjective(page, 'Health', 'Run a half marathon by autumn 2026');
-    await caption(page, 'Add key results and sub-objectives to each objective');
+    await caption(page, 'And key results to each objective');
     await addKeyResult(page, 'Run a half marathon by autumn 2026', {
       name: 'Weeks with running distance \u226550km',
       target: 20,
@@ -104,6 +104,7 @@ async function runDemo() {
     await caption(page, 'Themes \u2192 Objectives \u2192 Key Results');
 
     await createTheme(page, 'Learning', { color: 7 });
+    await caption(page, 'Each life theme gets its own color');
     await addObjective(page, 'Learning', 'Try new programming languages in 2026');
     await addKeyResult(page, 'Try new programming languages in 2026', {
       name: 'Use different languages for Advent of Code',
@@ -137,7 +138,7 @@ async function runDemo() {
 
     await openAdvisor(page);
     await caption(page, 'Ask the AI based goal advisor to review or suggest goals', SHOW_CAPTION_DURATION);
-    await caption(page, '\u26A0 Beware: sends data to AI provider', SHOW_CAPTION_DURATION);
+    await caption(page, '\u26A0 Beware: sends theme & OKR data to AI provider', SHOW_CAPTION_DURATION);
     await caption(page, '\u26A0 Beware: requires Claude CLI setup', SHOW_CAPTION_DURATION);
     await screenshot(page, 'advisor-panel');
 
@@ -148,8 +149,9 @@ async function runDemo() {
     // ================================================================
     console.log('Scene 5: Daily focus');
 
+    await caption(page, "How are long- and mid-term levels connected?", SHOW_CAPTION_DURATION);
     await navigateTo(page, 'mid-term');
-    await caption(page, "Assign today's focus to a theme", SHOW_CAPTION_DURATION);
+    await caption(page, "By assigning daily focus to a theme", SHOW_CAPTION_DURATION);
     await caption(page, "Double-click a day to edit it");
 
     await openDayDialog(page);
@@ -163,9 +165,11 @@ async function runDemo() {
     await caption(page, 'Edit the day again to add more focus areas');
     await openDayDialog(page);
     await selectDayOKR(page, 'Use different languages for Advent of Code');
-    await caption(page, 'Check the routines you plan to do today');
+    await caption(page, 'Select the routines you plan to do today');
+    await caption(page, 'This automatically creates one task per routine on the short-term plan');
     await checkRoutine(page, 'Morning run');
-    await setDayText(page, 'Legs day, ');
+    // FIXME: adding another fitness tag is lame
+    await setDayText(page, 'Legs, ');
     await saveDayDialog(page);
     await screenshot(page, 'calendar-today');
 
@@ -238,6 +242,8 @@ async function runDemo() {
 
     await moveTask(page, 'Plan running schedule', 'done');
     await caption(page, 'Doing \u2192 Done');
+
+    await moveTask(page, 'Morning run', 'done');
 
     // ================================================================
     // Scene 9 — Cross-view navigation
