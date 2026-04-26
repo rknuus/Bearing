@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 )
 
 // IRuleEngine defines the interface for rule evaluation operations.
@@ -59,18 +58,6 @@ func DefaultRules() []Rule {
 			},
 			Enabled:  true,
 			Priority: 90,
-		},
-		{
-			ID:          "max-age-doing",
-			Name:        "Max Age in Doing Column",
-			Category:    "automation",
-			TriggerType: "all",
-			Conditions: map[string]interface{}{
-				"max_age_days": 30,
-				"column":       "doing",
-			},
-			Enabled:  true,
-			Priority: 50,
 		},
 		{
 			ID:          "required-fields-create",
@@ -134,8 +121,6 @@ func (re *RuleEngine) evaluateRule(rule Rule, event TaskEvent) []RuleViolation {
 		return re.evaluateValidationRule(rule, event)
 	case "workflow":
 		return re.evaluateWorkflowRule(rule, event)
-	case "automation":
-		return re.evaluateAutomationRule(rule, event)
 	default:
 		return nil
 	}
@@ -168,16 +153,6 @@ func (re *RuleEngine) evaluateWorkflowRule(rule Rule, event TaskEvent) []RuleVio
 	}
 	if transitions, ok := rule.Conditions["allowed_transitions"]; ok {
 		if v := re.checkAllowedTransition(rule, event, transitions); v != nil {
-			return []RuleViolation{*v}
-		}
-	}
-	return nil
-}
-
-// evaluateAutomationRule evaluates automation rules (max age warnings).
-func (re *RuleEngine) evaluateAutomationRule(rule Rule, event TaskEvent) []RuleViolation {
-	if maxAgeDays, ok := rule.Conditions["max_age_days"]; ok {
-		if v := re.checkMaxAge(rule, event, maxAgeDays); v != nil {
 			return []RuleViolation{*v}
 		}
 	}
@@ -306,37 +281,6 @@ func (re *RuleEngine) checkAllowedTransition(rule Rule, event TaskEvent, transit
 		Message:  fmt.Sprintf("Transition from %q to %q is not allowed", event.OldStatus, event.NewStatus),
 		Category: rule.Category,
 	}
-}
-
-// checkMaxAge warns if a task has been in a column too long.
-func (re *RuleEngine) checkMaxAge(rule Rule, event TaskEvent, maxAgeDaysRaw interface{}) *RuleViolation {
-	maxAgeDays, ok := toInt(maxAgeDaysRaw)
-	if !ok {
-		return nil
-	}
-
-	column, _ := rule.Conditions["column"].(string)
-	if event.Task.CreatedAt == "" {
-		return nil
-	}
-
-	createdAt, err := time.Parse(time.RFC3339, event.Task.CreatedAt)
-	if err != nil {
-		return nil
-	}
-
-	age := time.Since(createdAt)
-	maxAge := time.Duration(maxAgeDays) * 24 * time.Hour
-
-	if age > maxAge {
-		return &RuleViolation{
-			RuleID:   rule.ID,
-			Priority: rule.Priority,
-			Message:  fmt.Sprintf("Task has exceeded max age: %.0f days in column %q (limit: %d days)", age.Hours()/24, column, maxAgeDays),
-			Category: rule.Category,
-		}
-	}
-	return nil
 }
 
 // toInt converts an interface{} value to int.
