@@ -16,9 +16,9 @@ sequenceDiagram
     C->>C: Parse drafts, populate priority quadrants
     C->>C: Migrate legacy string tags to string[]
 
-    Note over C,R: Stage tasks (client-only, no backend calls)
+    Note over C,R: Prioritize tasks (client-only, no backend calls)
     C->>C: User fills title, theme, description, tags
-    C->>C: User clicks "Stage to ⬇" button (1 of 3 quadrants)
+    C->>C: User clicks "Prioritize to ⬇" button (1 of 3 quadrants)
     C->>C: Task added to selected priority quadrant
     C->>C: Input fields cleared, title input re-focused
 

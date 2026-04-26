@@ -690,7 +690,7 @@ describe('CreateTaskDialog', () => {
   });
 
   describe('tags round-trip', () => {
-    it('tags survive edit round-trip (stage -> click -> edit -> save)', async () => {
+    it('tags survive edit round-trip (prioritize -> click -> edit -> save)', async () => {
       mockDraftsData = JSON.stringify({
         'important-urgent': [{ id: 'pending-1', title: 'Tagged task', tags: ['bug', 'urgent'] }],
       });
@@ -752,7 +752,7 @@ describe('CreateTaskDialog', () => {
       expect(document.activeElement).toBe(titleInput);
     });
 
-    it('refocuses the title input after staging a task', async () => {
+    it('refocuses the title input after prioritizing a task', async () => {
       await renderDialog();
 
       await addTask('Buy groceries');

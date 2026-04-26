@@ -1240,7 +1240,7 @@ describe('EisenKanView', () => {
       await tick();
       await tick(); // Wait for LoadTaskDrafts async resolution
 
-      // Type task title and click first staging button to add directly to Q1
+      // Type task title and click first prioritize button to add directly to Q1
       const titleInput = container.querySelector<HTMLInputElement>('#new-task-title');
       expect(titleInput).toBeTruthy();
       await fireEvent.input(titleInput!, { target: { value: 'New task' } });

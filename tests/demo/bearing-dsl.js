@@ -825,7 +825,7 @@ export async function createTask(page, title, { theme, priority, tags }) {
 }
 
 /**
- * Commit all staged tasks by clicking "Commit to Todo".
+ * Commit all prioritized tasks by clicking "Commit to Todo".
  *
  * @param {import('@playwright/test').Page} page
  */

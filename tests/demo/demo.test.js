@@ -207,7 +207,7 @@ async function runDemo() {
     // FIXME: show this caption after opening the edit dialog
     await caption(page, 'Let\'s create a task', SHOW_CAPTION_DURATION);
 
-    // FIXME: I want to separate entering task from prioritizing/staging tasks, so that I can set the caption below inbetween
+    // FIXME: I want to separate entering task from prioritizing tasks, so that I can set the caption below inbetween
     await createTask(page, 'Plan running schedule', { theme: 'Health', priority: 'iu', tags: ['fit'] });
     await caption(page, 'Before committing, prioritize with the Eisenhower matrix');
     await createTask(page, 'Research running shoes', { theme: 'Health', priority: 'inu', tags: ['fit'] });

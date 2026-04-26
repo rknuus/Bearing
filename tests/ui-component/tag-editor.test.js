@@ -106,14 +106,14 @@ export async function runTests() {
       } catch { /* best effort */ }
     }
 
-    // ---- Test 2: CreateTaskDialog — new tag via blur (click Stage button) ----
-    reporter.startTest('CreateTaskDialog: new tag via blur on Stage button click')
+    // ---- Test 2: CreateTaskDialog — new tag via blur (click Prioritize button) ----
+    reporter.startTest('CreateTaskDialog: new tag via blur on Prioritize button click')
     try {
       // Open create dialog
       await page.click('#create-task-btn')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
-      // Fill in a task title so the Stage button is enabled
+      // Fill in a task title so the Prioritize button is enabled
       await page.fill('#new-task-title', 'Blur Tag Test Task')
 
       // Type "blurtag" in the tag input (no comma, no Enter)
@@ -121,8 +121,8 @@ export async function runTests() {
       await tagInput.focus()
       await page.keyboard.type('blurtag')
 
-      // Click a Stage button — this blurs the input, triggering tag creation,
-      // then the click handler stages the task with the committed tag
+      // Click a Prioritize button — this blurs the input, triggering tag creation,
+      // then the click handler prioritizes the task with the committed tag
       await page.click('.btn-add >> nth=0')
 
       // Verify the pending task was created
@@ -151,7 +151,7 @@ export async function runTests() {
       await page.click('.btn-secondary:has-text("Close")')
       await page.waitForSelector('.dialog', { state: 'detached', timeout: 5000 })
 
-      reporter.pass('Blur on Stage button commits tag in CreateTaskDialog')
+      reporter.pass('Blur on Prioritize button commits tag in CreateTaskDialog')
     } catch (err) {
       reporter.fail(err)
       try {
