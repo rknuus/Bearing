@@ -1,7 +1,7 @@
 /**
  * UI Component Tests for View Interactions
  * Tests: filter workflows, calendar features, section/column folding,
- * OKR inline editing, staging buttons, and cross-view navigation.
+ * OKR inline editing, prioritize buttons, and cross-view navigation.
  *
  * Runs against Vite dev server (localhost:5173) with mock Wails bindings.
  * State accumulates across sub-tests (shared browser session).
@@ -690,10 +690,10 @@ export async function runTests() {
       } catch { /* best effort */ }
     }
 
-    // ---- Task 205: Staging buttons and cross-view navigation ----
+    // ---- Task 205: Prioritize buttons and cross-view navigation ----
 
-    // Sub-test 19: Create dialog has 3 staging buttons with short labels
-    reporter.startTest('205a: Create dialog shows 3 staging buttons with short labels')
+    // Sub-test 19: Create dialog has 3 prioritize buttons with short labels
+    reporter.startTest('205a: Create dialog shows 3 prioritize buttons with short labels')
     try {
       await page.keyboard.press('Control+3')
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
@@ -702,38 +702,38 @@ export async function runTests() {
       await page.click('#create-task-btn')
       await page.waitForSelector('.dialog', { timeout: 5000 })
 
-      // Verify 3 staging buttons
+      // Verify 3 prioritize buttons
       const addButtons = await page.$$('.btn-add')
       if (addButtons.length !== 3) {
-        throw new Error(`Expected 3 staging buttons, got ${addButtons.length}`)
+        throw new Error(`Expected 3 prioritize buttons, got ${addButtons.length}`)
       }
 
-      // Verify all buttons have the short label "Stage to ⬇"
+      // Verify all buttons have the short label "Prioritize to ⬇"
       const buttonTexts = await page.$$eval('.btn-add', els => els.map(el => el.textContent.trim()))
       for (const text of buttonTexts) {
-        if (text !== 'Stage to ⬇') {
-          throw new Error(`Expected button text "Stage to ⬇", got "${text}"`)
+        if (text !== 'Prioritize to ⬇') {
+          throw new Error(`Expected button text "Prioritize to ⬇", got "${text}"`)
         }
       }
 
-      reporter.pass('Create dialog has 3 staging buttons with "Stage to ⬇" label')
+      reporter.pass('Create dialog has 3 prioritize buttons with "Prioritize to ⬇" label')
     } catch (err) {
       reporter.fail(err)
     }
 
-    // Sub-test 20: Stage a task via button and verify
-    reporter.startTest('205b: Stage task via button and commit')
+    // Sub-test 20: Prioritize a task via button and verify
+    reporter.startTest('205b: Prioritize task via button and commit')
     try {
       // Fill in task title
-      await page.fill('#new-task-title', 'Staged Test Task')
+      await page.fill('#new-task-title', 'Prioritized Test Task')
 
-      // Click the first "Stage to" button (Important & Urgent)
+      // Click the first "Prioritize to" button (Important & Urgent)
       await page.click('.btn-add >> nth=0')
 
       // Verify task appears in the Important & Urgent quadrant as a pending task
       await page.waitForFunction(() => {
         const titles = document.querySelectorAll('.pending-task .task-title')
-        return Array.from(titles).some(el => el.textContent.trim() === 'Staged Test Task')
+        return Array.from(titles).some(el => el.textContent.trim() === 'Prioritized Test Task')
       }, { timeout: 5000 })
 
       // Commit the task
@@ -747,9 +747,9 @@ export async function runTests() {
       await page.waitForSelector('.kanban-board', { timeout: 5000 })
 
       // Verify task appears in Important & Urgent section
-      await page.waitForSelector('.section-important-urgent .task-title:has-text("Staged Test Task")', { timeout: 5000 })
+      await page.waitForSelector('.section-important-urgent .task-title:has-text("Prioritized Test Task")', { timeout: 5000 })
 
-      reporter.pass('Task staged and committed to correct quadrant')
+      reporter.pass('Task prioritized and committed to correct quadrant')
     } catch (err) {
       reporter.fail(err)
       // Close dialog if still open
@@ -828,7 +828,7 @@ export async function runTests() {
       await page.evaluate(async () => {
         const app = window.go.main.App
         const tasks = await app.GetTasks()
-        const testTask = tasks.find(t => t.title === 'Staged Test Task')
+        const testTask = tasks.find(t => t.title === 'Prioritized Test Task')
         if (testTask) await app.DeleteTask(testTask.id)
       })
 

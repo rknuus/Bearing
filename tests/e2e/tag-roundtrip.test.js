@@ -157,7 +157,7 @@ export async function runTests() {
         throw new Error(`Expected tag input to be cleared after comma, got "${inputValue}"`)
       }
 
-      // Stage task to Important & Urgent quadrant
+      // Prioritize task to Important & Urgent quadrant
       await page.click('.btn-add >> nth=0')
 
       // Verify task appears in the quadrant

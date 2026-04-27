@@ -352,7 +352,7 @@
             style="background-color: {q.color};"
             onclick={() => handleAddTask(q.id)}
             disabled={isSubmitting || !newTaskTitle.trim()}
-          >Stage to ⬇</button>
+          >Prioritize to ⬇</button>
         {/each}
       </div>
     </fieldset>
