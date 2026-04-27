@@ -215,8 +215,11 @@ func (se *ScheduleEngine) ComputeOccurrences(pattern RepeatPattern, exceptions [
 	return out
 }
 
-// ComputeOverdue returns occurrence dates before asOf that are not in
-// completedDates.
+// ComputeOverdue returns occurrence dates strictly before asOf that remain
+// open. The absorption rule applies: when completedDates is non-empty, any
+// occurrence on or before max(completedDates) is treated as absorbed by that
+// most-recent check and is excluded from the result. When completedDates is
+// empty, every uncompleted occurrence before asOf is returned.
 func (se *ScheduleEngine) ComputeOverdue(pattern RepeatPattern, exceptions []Exception, completedDates []string, asOf string) []string {
 	asOfDate, err := parseDate(asOf)
 	if err != nil {
@@ -227,15 +230,25 @@ func (se *ScheduleEngine) ComputeOverdue(pattern RepeatPattern, exceptions []Exc
 	occurrences := se.ComputeOccurrences(pattern, exceptions, pattern.StartDate.String(), dayBefore)
 
 	completed := make(map[string]bool, len(completedDates))
+	var maxCompleted string
 	for _, d := range completedDates {
 		completed[d] = true
+		// Lexicographic compare on YYYY-MM-DD is equivalent to chronological order.
+		if d > maxCompleted {
+			maxCompleted = d
+		}
 	}
 
 	var overdue []string
 	for _, d := range occurrences {
-		if !completed[d] {
-			overdue = append(overdue, d)
+		if completed[d] {
+			continue
 		}
+		// Absorption: a check on day N clears all occurrences on or before N.
+		if maxCompleted != "" && d <= maxCompleted {
+			continue
+		}
+		overdue = append(overdue, d)
 	}
 	return overdue
 }

@@ -198,8 +198,10 @@ func TestUnit_ComputeOverdueMixedCompletedAndMissed(t *testing.T) {
 		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
 	}, nil, []string{"2025-01-01", "2025-01-03"}, "2025-01-05")
 
-	// Occurrences before Jan 5: 1,2,3,4. Completed: 1,3. Overdue: 2,4.
-	want := []string{"2025-01-02", "2025-01-04"}
+	// Occurrences before Jan 5: 1,2,3,4. Completed: 1,3.
+	// Absorption rule: max(completed) = Jan 3 absorbs Jan 2 (and Jan 1 itself).
+	// Only Jan 4 remains overdue.
+	want := []string{"2025-01-04"}
 	if !reflect.DeepEqual(result, want) {
 		t.Errorf("got %v, want %v", result, want)
 	}
@@ -377,6 +379,93 @@ func TestUnit_IntervalZeroTreatedAsOne(t *testing.T) {
 	}, nil, "2025-01-01", "2025-01-03")
 
 	want := []string{"2025-01-01", "2025-01-02", "2025-01-03"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueDailyAbsorption(t *testing.T) {
+	se := NewScheduleEngine()
+	// Daily routine starting Jan 1; asOf Jan 10. Single check on Jan 7
+	// absorbs all earlier overdue (Jan 1..6). Only Jan 8, Jan 9 remain.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
+	}, nil, []string{"2025-01-07"}, "2025-01-10")
+
+	want := []string{"2025-01-08", "2025-01-09"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueWeeklyAbsorption(t *testing.T) {
+	se := NewScheduleEngine()
+	// Weekly Mon/Wed/Fri starting Mon Jan 6, 2025. asOf Mon Jan 20.
+	// Occurrences before Jan 20: Jan 6, 8, 10, 13, 15, 17.
+	// Check on Jan 13 (Mon). Absorption drops Jan 6, 8, 10, 13 (all <= 13).
+	// Remaining overdue: Jan 15, Jan 17.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "weekly",
+		Interval:  1,
+		Weekdays:  []int{1, 3, 5},
+		StartDate: utilities.MustParseCalendarDate("2025-01-06"),
+	}, nil, []string{"2025-01-13"}, "2025-01-20")
+
+	want := []string{"2025-01-15", "2025-01-17"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueMonthlyAbsorption(t *testing.T) {
+	se := NewScheduleEngine()
+	// Monthly on the 15th starting Jan 15, 2025. asOf May 1.
+	// Occurrences before May 1: Jan 15, Feb 15, Mar 15, Apr 15.
+	// Check on Mar 15 absorbs Jan 15, Feb 15, Mar 15.
+	// Remaining overdue: Apr 15.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency:  "monthly",
+		Interval:   1,
+		DayOfMonth: 15,
+		StartDate:  utilities.MustParseCalendarDate("2025-01-15"),
+	}, nil, []string{"2025-03-15"}, "2025-05-01")
+
+	want := []string{"2025-04-15"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueAbsorptionBoundarySameDay(t *testing.T) {
+	se := NewScheduleEngine()
+	// Daily routine starting Jan 1; asOf Jan 5. Occurrences before asOf: 1,2,3,4.
+	// Check on Jan 3 absorbs occurrences <= Jan 3 (Jan 1, 2, 3 itself).
+	// Later occurrence (Jan 4) must NOT be absorbed.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
+	}, nil, []string{"2025-01-03"}, "2025-01-05")
+
+	want := []string{"2025-01-04"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueAbsorptionUsesMaxCompletion(t *testing.T) {
+	se := NewScheduleEngine()
+	// Daily, asOf Jan 10. Multiple unordered checks: only the latest one matters.
+	// max(checks) = Jan 6 absorbs Jan 1..6. Remaining: Jan 7, 8, 9.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
+	}, nil, []string{"2025-01-02", "2025-01-06", "2025-01-04"}, "2025-01-10")
+
+	want := []string{"2025-01-07", "2025-01-08", "2025-01-09"}
 	if !reflect.DeepEqual(result, want) {
 		t.Errorf("got %v, want %v", result, want)
 	}
