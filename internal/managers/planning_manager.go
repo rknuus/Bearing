@@ -27,24 +27,24 @@ type TaskWithStatus struct {
 
 // NavigationContext stores the user's navigation state for persistence.
 type NavigationContext struct {
-	CurrentView                  string              `json:"currentView"`
-	CurrentItem                  string              `json:"currentItem"`
-	FilterThemeID                string              `json:"filterThemeId"`
-	FilterThemeIDs               []string            `json:"filterThemeIds,omitempty"`
-	LastAccessed                 utilities.Timestamp  `json:"lastAccessed"`
-	ShowCompleted                bool                `json:"showCompleted,omitempty"`
-	ShowArchived                 bool     `json:"showArchived,omitempty"`
-	ShowArchivedTasks            bool     `json:"showArchivedTasks,omitempty"`
-	ExpandedOkrIds               []string `json:"expandedOkrIds,omitempty"`
-	FilterTagIDs                 []string `json:"filterTagIds,omitempty"`
-	TodayFocusActive             *bool    `json:"todayFocusActive,omitempty"`
-	TagFocusActive               *bool    `json:"tagFocusActive,omitempty"`
-	CollapsedSections            []string `json:"collapsedSections,omitempty"`
-	CollapsedColumns             []string `json:"collapsedColumns,omitempty"`
+	CurrentView                  string                 `json:"currentView"`
+	CurrentItem                  string                 `json:"currentItem"`
+	FilterThemeID                string                 `json:"filterThemeId"`
+	FilterThemeIDs               []string               `json:"filterThemeIds,omitempty"`
+	LastAccessed                 utilities.Timestamp    `json:"lastAccessed"`
+	ShowCompleted                bool                   `json:"showCompleted,omitempty"`
+	ShowArchived                 bool                   `json:"showArchived,omitempty"`
+	ShowArchivedTasks            bool                   `json:"showArchivedTasks,omitempty"`
+	ExpandedOkrIds               []string               `json:"expandedOkrIds,omitempty"`
+	FilterTagIDs                 []string               `json:"filterTagIds,omitempty"`
+	TodayFocusActive             *bool                  `json:"todayFocusActive,omitempty"`
+	TagFocusActive               *bool                  `json:"tagFocusActive,omitempty"`
+	CollapsedSections            []string               `json:"collapsedSections,omitempty"`
+	CollapsedColumns             []string               `json:"collapsedColumns,omitempty"`
 	CalendarDayEditorDate        utilities.CalendarDate `json:"calendarDayEditorDate,omitempty"`
-	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
-	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
-	RoutinesCollapsed            *bool    `json:"routinesCollapsed,omitempty"`
+	CalendarDayEditorExpandedIds []string               `json:"calendarDayEditorExpandedIds,omitempty"`
+	VisionCollapsed              *bool                  `json:"visionCollapsed,omitempty"`
+	RoutinesCollapsed            *bool                  `json:"routinesCollapsed,omitempty"`
 }
 
 // IGoalStructure defines behavioral operations for managing the OKR hierarchy.
@@ -162,12 +162,12 @@ type ThemeProgress struct {
 
 // Task represents a task in the Manager layer's public interface.
 type Task struct {
-	ID            string                `json:"id"`
-	Title         string                `json:"title"`
-	Description   string                `json:"description,omitempty"`
-	ThemeID       string                `json:"themeId"`
-	Priority      string                `json:"priority"`
-	Tags          []string              `json:"tags,omitempty"`
+	ID            string                 `json:"id"`
+	Title         string                 `json:"title"`
+	Description   string                 `json:"description,omitempty"`
+	ThemeID       string                 `json:"themeId"`
+	Priority      string                 `json:"priority"`
+	Tags          []string               `json:"tags,omitempty"`
 	PromotionDate utilities.CalendarDate `json:"promotionDate,omitempty"`
 	CreatedAt     utilities.Timestamp    `json:"createdAt,omitempty"`
 	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitempty"`
@@ -201,10 +201,10 @@ type Objective struct {
 
 // RepeatPattern defines a recurrence schedule for a routine in the Manager layer.
 type RepeatPattern struct {
-	Frequency  string                `json:"frequency"`
-	Interval   int                   `json:"interval"`
-	Weekdays   []int                 `json:"weekdays,omitempty"`
-	DayOfMonth int                   `json:"dayOfMonth,omitempty"`
+	Frequency  string                 `json:"frequency"`
+	Interval   int                    `json:"interval"`
+	Weekdays   []int                  `json:"weekdays,omitempty"`
+	DayOfMonth int                    `json:"dayOfMonth,omitempty"`
 	StartDate  utilities.CalendarDate `json:"startDate"`
 }
 
@@ -271,12 +271,17 @@ type PersonalVision struct {
 }
 
 // RoutineOccurrence represents a routine due on a specific date.
+//
+// MissedCount is only meaningful for "overdue" entries: it contains the total
+// number of missed occurrences absorbed into this single collapsed entry. The
+// field is omitted from JSON when zero so non-overdue entries round-trip cleanly.
 type RoutineOccurrence struct {
 	RoutineID   string `json:"routineId"`
 	Description string `json:"description"`
 	Date        string `json:"date"`
 	Status      string `json:"status"` // "scheduled", "overdue", "sporadic"
 	Checked     bool   `json:"checked"`
+	MissedCount int    `json:"missedCount,omitempty"`
 }
 
 // RoutinePeriodProgress represents period-based completion for a routine.
@@ -2470,6 +2475,7 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 
 	result := []RoutineOccurrence{}
 	todayChecks := checkedByDate[date]
+	today := utilities.Today().String()
 
 	for _, routine := range routines {
 		enginePattern := toEngineRepeatPattern(routine.RepeatPattern)
@@ -2501,7 +2507,14 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 			})
 		}
 
-		// Check for overdue occurrences
+		// Overdue is a "today only" view: viewing past or future dates must
+		// only show occurrences scheduled for that date itself, never the
+		// catch-up backlog.
+		if date != today {
+			continue
+		}
+
+		// Collect all completed dates for this routine across the year.
 		var completedDates []string
 		for d, checks := range checkedByDate {
 			if checks[routine.ID] {
@@ -2509,16 +2522,28 @@ func (m *PlanningManager) GetRoutinesForDate(date string) ([]RoutineOccurrence, 
 			}
 		}
 
+		// Collapse the engine-returned overdue dates into a single entry per
+		// routine: MissedCount is the total count, Date is the most recent
+		// missed date. Emit nothing when the routine has no missed occurrences.
 		overdueDates := m.scheduleEngine.ComputeOverdue(*enginePattern, engineExceptions, completedDates, date)
-		for _, od := range overdueDates {
-			result = append(result, RoutineOccurrence{
-				RoutineID:   routine.ID,
-				Description: routine.Description,
-				Date:        od,
-				Status:      "overdue",
-				Checked:     false,
-			})
+		if len(overdueDates) == 0 {
+			continue
 		}
+		maxOverdue := overdueDates[0]
+		for _, d := range overdueDates[1:] {
+			// Lexicographic compare on YYYY-MM-DD is equivalent to chronological order.
+			if d > maxOverdue {
+				maxOverdue = d
+			}
+		}
+		result = append(result, RoutineOccurrence{
+			RoutineID:   routine.ID,
+			Description: routine.Description,
+			Date:        maxOverdue,
+			Status:      "overdue",
+			Checked:     false,
+			MissedCount: len(overdueDates),
+		})
 	}
 
 	return result, nil
