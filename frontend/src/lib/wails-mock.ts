@@ -63,6 +63,7 @@ export interface RoutineOccurrence {
   date: CalendarDate;
   status: string; // "scheduled", "overdue", "sporadic"
   checked: boolean;
+  missedCount?: number; // Only set on "overdue" entries: total count of missed occurrences absorbed into this single entry.
 }
 
 export interface RoutinePeriodProgress {
@@ -599,7 +600,17 @@ function computeMockOverdue(pattern: RepeatPattern, exceptions: ScheduleExceptio
   if (yesterdayStr < pattern.startDate) return [];
   const occurrences = computeMockOccurrences(pattern, exceptions, pattern.startDate, yesterdayStr);
   const completedSet = new Set(completedDates);
-  return occurrences.filter(d => !completedSet.has(d));
+  // Absorption rule: when completions exist, a check on day N clears all occurrences on or before N.
+  // Lexicographic compare on YYYY-MM-DD is equivalent to chronological order.
+  let maxCompleted = '';
+  for (const d of completedDates) {
+    if (d > maxCompleted) maxCompleted = d;
+  }
+  return occurrences.filter(d => {
+    if (completedSet.has(d)) return false;
+    if (maxCompleted !== '' && d <= maxCompleted) return false;
+    return true;
+  });
 }
 
 function computePeriodBounds(frequency: string, date: string): { start: string; end: string } {
@@ -833,7 +844,13 @@ export const mockAppBindings = {
         });
       }
 
-      // Compute overdue
+      // Today-gate: overdue entries only emitted when viewing today.
+      // Past/future date editors must show no overdue entries (they are not actionable elsewhere).
+      if (date !== today) {
+        continue;
+      }
+
+      // Compute overdue (with absorption applied inside computeMockOverdue)
       const allCheckedDates: string[] = [];
       for (const [, yearEntries] of mockYearFocus) {
         for (const entry of yearEntries) {
@@ -843,13 +860,21 @@ export const mockAppBindings = {
         }
       }
       const overdue = computeMockOverdue(routine.repeatPattern, routine.exceptions || [], allCheckedDates, date);
-      for (const od of overdue) {
+      // Collapse: emit at most one overdue entry per routine, with date = max(overdue)
+      // and missedCount = overdue.length.
+      if (overdue.length > 0) {
+        // Lexicographic max on YYYY-MM-DD is equivalent to chronological max.
+        let maxOverdue = overdue[0];
+        for (const d of overdue) {
+          if (d > maxOverdue) maxOverdue = d;
+        }
         result.push({
           routineId: routine.id,
           description: routine.description,
-          date: parseCalendarDate(od),
+          date: parseCalendarDate(maxOverdue),
           status: 'overdue',
           checked: false,
+          missedCount: overdue.length,
         });
       }
     }
