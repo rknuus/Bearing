@@ -1591,6 +1591,70 @@ describe('CalendarView', () => {
         expect(prevChecks).toEqual(['R1']);
       });
     });
+
+    it('renders overdue routine without suffix when missedCount is undefined', async () => {
+      const routines: RoutineOccurrence[] = [
+        {
+          routineId: 'R-OVD',
+          description: 'Evening stretch',
+          date: parseCalendarDate('2024-12-30'),
+          status: 'overdue',
+          checked: false,
+        },
+      ];
+      await openDialogWithRoutines(routines);
+
+      const overdueRow = container.querySelector<HTMLElement>('.routine-row.overdue');
+      expect(overdueRow).toBeTruthy();
+      const desc = overdueRow!.querySelector<HTMLElement>('.routine-desc');
+      expect(desc).toBeTruthy();
+      expect(desc!.textContent).toContain('Evening stretch');
+      expect(desc!.textContent).not.toContain('missed');
+    });
+
+    it('renders overdue routine without suffix when missedCount is 1', async () => {
+      const routines: RoutineOccurrence[] = [
+        {
+          routineId: 'R-OVD',
+          description: 'Evening stretch',
+          date: parseCalendarDate('2024-12-30'),
+          status: 'overdue',
+          checked: false,
+          missedCount: 1,
+        },
+      ];
+      await openDialogWithRoutines(routines);
+
+      const overdueRow = container.querySelector<HTMLElement>('.routine-row.overdue');
+      expect(overdueRow).toBeTruthy();
+      const desc = overdueRow!.querySelector<HTMLElement>('.routine-desc');
+      expect(desc).toBeTruthy();
+      expect(desc!.textContent).toContain('Evening stretch');
+      expect(desc!.textContent).not.toContain('missed');
+    });
+
+    it('renders overdue routine with suffix when missedCount is 5 and preserves overdue class', async () => {
+      const routines: RoutineOccurrence[] = [
+        {
+          routineId: 'R-OVD',
+          description: 'Evening stretch',
+          date: parseCalendarDate('2024-12-30'),
+          status: 'overdue',
+          checked: false,
+          missedCount: 5,
+        },
+      ];
+      await openDialogWithRoutines(routines);
+
+      const overdueRow = container.querySelector<HTMLElement>('.routine-row.overdue');
+      expect(overdueRow).toBeTruthy();
+      // Existing styling is unchanged — the .overdue class is still applied.
+      expect(overdueRow!.classList.contains('overdue')).toBe(true);
+      const desc = overdueRow!.querySelector<HTMLElement>('.routine-desc');
+      expect(desc).toBeTruthy();
+      expect(desc!.textContent).toContain('Evening stretch');
+      expect(desc!.textContent).toContain('5 missed');
+    });
   });
 
   describe('onTodayFocusEdited callback', () => {
