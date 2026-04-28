@@ -12,6 +12,7 @@ import { isServerReady, TEST_CONFIG } from './test-helpers.js'
 const TEST_SUITES = [
   { name: 'Full Flow (E2E)', file: 'full-flow.test.js', enabled: true },
   { name: 'Tag Round-Trip (E2E)', file: 'tag-roundtrip.test.js', enabled: true },
+  { name: 'Overdue Routines Collapse + Absorption (E2E)', file: 'overdue-routines-collapse-and-absorb.test.js', enabled: true },
 ]
 
 const enabledSuites = TEST_SUITES.filter(suite => suite.enabled)

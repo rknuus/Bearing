@@ -174,6 +174,134 @@ export function isWorkingTreeClean(dataDir) {
   }
 }
 
+// --- Date helpers (used by routine-overdue tests) ---
+
+/**
+ * Return an ISO YYYY-MM-DD date `delta` calendar days from `iso`.
+ * Uses local-midnight Date construction to avoid UTC timezone shifts.
+ */
+export function addDaysISO(iso, delta) {
+  const [y, m, d] = iso.split('-').map(Number)
+  const date = new Date(y, m - 1, d + delta)
+  const yy = date.getFullYear()
+  const mm = String(date.getMonth() + 1).padStart(2, '0')
+  const dd = String(date.getDate()).padStart(2, '0')
+  return `${yy}-${mm}-${dd}`
+}
+
+// --- Calendar / focus-editor navigation helpers ---
+
+/**
+ * Read the currently displayed calendar year (as a string) from the
+ * `.year-title` element. Returns `null` if not present.
+ */
+export async function getYearTitle(page) {
+  const title = await page.locator('.calendar-view .year-title').first()
+  if ((await title.count()) === 0) return null
+  return ((await title.textContent()) ?? '').trim()
+}
+
+/**
+ * Navigate the calendar to the requested year by clicking the year nav
+ * buttons until the displayed year matches. Assumes the calendar view is
+ * already mounted (`.calendar-view` is visible).
+ */
+export async function navigateCalendarToYear(page, targetYear) {
+  // Bound the loop defensively; we never expect more than a few clicks in tests.
+  for (let i = 0; i < 6; i++) {
+    const current = await getYearTitle(page)
+    if (current === null) {
+      throw new Error('Calendar year title not found — is .calendar-view mounted?')
+    }
+    const currentYear = parseInt(current, 10)
+    if (currentYear === targetYear) return
+    if (targetYear < currentYear) {
+      await page.click('.calendar-view .nav-button[aria-label="Previous year"]')
+    } else {
+      await page.click('.calendar-view .nav-button[aria-label="Next year"]')
+    }
+    // Small wait for the year-title to update (it is synchronous svelte state).
+    await page.waitForFunction(
+      (year) => {
+        const el = document.querySelector('.calendar-view .year-title')
+        return el ? el.textContent.trim() === String(year) : false
+      },
+      targetYear,
+      { timeout: 5000 },
+    )
+  }
+  const final = await getYearTitle(page)
+  if (parseInt(final ?? '0', 10) !== targetYear) {
+    throw new Error(`Failed to navigate calendar to year ${targetYear}; current = ${final}`)
+  }
+}
+
+/**
+ * Open the day-focus editor dialog for the given ISO date (`YYYY-MM-DD`)
+ * by navigating the CalendarView year if necessary and double-clicking the
+ * matching `.day-num` button.
+ *
+ * Day cells are not labelled with `data-testid`. We disambiguate the cell
+ * by reading each `.day-num` button's inline `grid-column` value
+ * (`2 + 3 * monthIdx`) plus its day-number text. Browsers may normalise the
+ * inline `style` attribute (`grid-column: 11;` → `grid-column: 11 / auto;`
+ * etc.), so a substring CSS selector is unreliable — we read the rendered
+ * `style.gridColumnStart` instead, which is browser-canonical.
+ */
+export async function openDayFocusEditor(page, iso) {
+  const [yearStr, monthStr, dayStr] = iso.split('-')
+  const targetYear = parseInt(yearStr, 10)
+  const monthIdx = parseInt(monthStr, 10) - 1 // 0-based
+  const dayNum = parseInt(dayStr, 10)
+
+  await navigateCalendarToYear(page, targetYear)
+
+  // Find the matching `.day-num` button via a single page.evaluate so we can
+  // read the canonical `gridColumnStart` (independent of inline-style
+  // normalisation quirks). We mark the matching button with a transient
+  // attribute so Playwright can drive the dblclick through its real-event
+  // pipeline (preserving event sequencing the app relies on).
+  const expectedCol = 2 + 3 * monthIdx
+  const found = await page.evaluate(
+    ({ expectedCol, dayNum }) => {
+      const buttons = Array.from(
+        document.querySelectorAll('.calendar-view button.day-num'),
+      )
+      const target = buttons.find((b) => {
+        if ((b.textContent || '').trim() !== String(dayNum)) return false
+        const col = parseInt(b.style.gridColumnStart || '', 10)
+        return col === expectedCol
+      })
+      if (!target) return false
+      // Clear any previous marker to keep selectors single-match.
+      document
+        .querySelectorAll('[data-e2e-day-target]')
+        .forEach((el) => el.removeAttribute('data-e2e-day-target'))
+      target.setAttribute('data-e2e-day-target', '1')
+      return true
+    },
+    { expectedCol, dayNum },
+  )
+
+  if (!found) {
+    throw new Error(
+      `Could not find .day-num cell for ${iso} (monthIdx=${monthIdx}, day=${dayNum}, expectedCol=${expectedCol})`,
+    )
+  }
+
+  const target = page.locator('.calendar-view button.day-num[data-e2e-day-target="1"]')
+  await target.scrollIntoViewIfNeeded()
+  await target.dblclick()
+  await page.waitForSelector('.dialog', { state: 'visible', timeout: 5000 })
+
+  // Clean up the marker — kept transient to avoid leaking test-only state.
+  await page.evaluate(() => {
+    document
+      .querySelectorAll('[data-e2e-day-target]')
+      .forEach((el) => el.removeAttribute('data-e2e-day-target'))
+  })
+}
+
 /**
  * Test reporter for consistent output
  */
