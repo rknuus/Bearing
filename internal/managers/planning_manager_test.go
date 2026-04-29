@@ -2369,6 +2369,109 @@ func TestGetRoutinesForDate_PartialCompletionsCollapsedCorrectly(t *testing.T) {
 	}
 }
 
+func TestGetRoutinesForDate_CrossRoutineIsolation(t *testing.T) {
+	// Two routines with different completion histories must produce
+	// independent collapsed entries. A's completions must not absorb B's
+	// overdue, and B's MissedCount must reflect only B's missed occurrences.
+	// This pins per-routine state isolation in the collapse loop.
+	pm, ra, ca := newRoutinesForDateManager(t)
+	today := utilities.Today()
+
+	// Routine A: daily, started 5 days ago, with one completion 2 days ago.
+	// Engine absorption uses max(completed) = daysAgo(2) → only daysAgo(1)
+	// remains overdue (everything <= daysAgo(2) is absorbed or completed).
+	seedRoutine(t, ra, "R-A", "Routine A", &access.RepeatPattern{
+		Frequency: "daily", Interval: 1, StartDate: daysAgo(5),
+	})
+	seedCheck(t, ca, daysAgo(2), "R-A")
+
+	// Routine B: daily, started 3 days ago, no completions. All three days
+	// (daysAgo(3), daysAgo(2), daysAgo(1)) remain overdue.
+	seedRoutine(t, ra, "R-B", "Routine B", &access.RepeatPattern{
+		Frequency: "daily", Interval: 1, StartDate: daysAgo(3),
+	})
+
+	occurrences, err := pm.GetRoutinesForDate(today.String())
+	if err != nil {
+		t.Fatalf("GetRoutinesForDate: %v", err)
+	}
+
+	overdueA := findOccurrence(occurrences, "R-A", "overdue")
+	if overdueA == nil {
+		t.Fatalf("expected one overdue entry for R-A, got %+v", occurrences)
+	}
+	if c := countOccurrences(occurrences, "R-A", "overdue"); c != 1 {
+		t.Errorf("expected exactly 1 overdue entry for R-A, got %d", c)
+	}
+	if overdueA.MissedCount != 1 {
+		t.Errorf("R-A: expected MissedCount=1 (only daysAgo(1) after absorption), got %d", overdueA.MissedCount)
+	}
+	if overdueA.Date != daysAgo(1).String() {
+		t.Errorf("R-A: expected Date=%s, got %s", daysAgo(1), overdueA.Date)
+	}
+
+	overdueB := findOccurrence(occurrences, "R-B", "overdue")
+	if overdueB == nil {
+		t.Fatalf("expected one overdue entry for R-B, got %+v", occurrences)
+	}
+	if c := countOccurrences(occurrences, "R-B", "overdue"); c != 1 {
+		t.Errorf("expected exactly 1 overdue entry for R-B, got %d", c)
+	}
+	// Critical isolation check: B's count must be 3, not 1. If A's
+	// completion on daysAgo(2) leaked into B's completedDates, B would
+	// absorb daysAgo(3) and daysAgo(2), leaving only daysAgo(1) → MissedCount=1.
+	// MissedCount=3 confirms per-routine state isolation in the collapse loop.
+	if overdueB.MissedCount != 3 {
+		t.Errorf("R-B: expected MissedCount=3 (no completions, all 3 days missed); got %d — A's completion may have leaked into B", overdueB.MissedCount)
+	}
+	if overdueB.Date != daysAgo(1).String() {
+		t.Errorf("R-B: expected most recent missed Date=%s, got %s", daysAgo(1), overdueB.Date)
+	}
+}
+
+func TestGetRoutinesForDate_MissedCountOne(t *testing.T) {
+	// A daily routine missed on exactly one scheduled occurrence yields one
+	// collapsed overdue entry with MissedCount=1 and Date equal to that
+	// single missed date. The existing tests cover counts 0, 2, 3, and 5;
+	// single-missed is the most common real-world state.
+	pm, ra, ca := newRoutinesForDateManager(t)
+	today := utilities.Today()
+
+	// Daily routine starting yesterday. The only scheduled occurrence
+	// strictly before today is yesterday — exactly one missed day.
+	seedRoutine(t, ra, "R1", "Daily run", &access.RepeatPattern{
+		Frequency: "daily", Interval: 1, StartDate: daysAgo(1),
+	})
+
+	occurrences, err := pm.GetRoutinesForDate(today.String())
+	if err != nil {
+		t.Fatalf("GetRoutinesForDate: %v", err)
+	}
+
+	if c := countOccurrences(occurrences, "R1", "overdue"); c != 1 {
+		t.Fatalf("expected exactly 1 overdue entry, got %d (occurrences=%+v)", c, occurrences)
+	}
+	overdue := findOccurrence(occurrences, "R1", "overdue")
+	if overdue.MissedCount != 1 {
+		t.Errorf("expected MissedCount=1, got %d", overdue.MissedCount)
+	}
+	if overdue.Date != daysAgo(1).String() {
+		t.Errorf("expected Date=%s (yesterday), got %s", daysAgo(1), overdue.Date)
+	}
+
+	// Contrast: with one completion on yesterday, absorption clears the
+	// only missed occurrence, so no overdue entry is emitted (MissedCount=0
+	// path emits nothing, distinguishable from MissedCount=1).
+	seedCheck(t, ca, daysAgo(1), "R1")
+	occurrencesAfter, err := pm.GetRoutinesForDate(today.String())
+	if err != nil {
+		t.Fatalf("GetRoutinesForDate (after check): %v", err)
+	}
+	if c := countOccurrences(occurrencesAfter, "R1", "overdue"); c != 0 {
+		t.Errorf("expected 0 overdue entries after completion absorbs the only missed day, got %d", c)
+	}
+}
+
 // =============================================================================
 // Task Tests (unchanged signatures)
 // =============================================================================
