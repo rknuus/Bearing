@@ -470,3 +470,85 @@ func TestUnit_ComputeOverdueAbsorptionUsesMaxCompletion(t *testing.T) {
 		t.Errorf("got %v, want %v", result, want)
 	}
 }
+
+func TestUnit_ComputeOverdueExceptionSuppressWithAbsorption(t *testing.T) {
+	se := NewScheduleEngine()
+	// Daily routine starting Jan 1; asOf Jan 7. Occurrences before asOf: 1..6.
+	// Exception suppresses Jan 5 (the second-to-last) with a replacement date
+	// before pattern start so the replacement does not appear in the range.
+	// Completion on Jan 1 -> max(completed) = Jan 1, absorbing only Jan 1.
+	//
+	// Regression detection:
+	//   - If exception-suppress regressed, Jan 5 would reappear in the output.
+	//   - If absorption regressed, Jan 1 would not be filtered out.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
+	}, []Exception{
+		{
+			OriginalDate: utilities.MustParseCalendarDate("2025-01-05"),
+			NewDate:      utilities.MustParseCalendarDate("2024-12-15"),
+		},
+	}, []string{"2025-01-01"}, "2025-01-07")
+
+	want := []string{"2025-01-02", "2025-01-03", "2025-01-04", "2025-01-06"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueExceptionReplacementIsMaxCompletion(t *testing.T) {
+	se := NewScheduleEngine()
+	// Daily routine starting Jan 1; asOf Jan 8. The user moved the Jan 4
+	// occurrence to Jan 6 and then checked it on Jan 6.
+	// Occurrences before Jan 8: 1,2,3,4,5,6,7. With Jan 4 suppressed and Jan 6
+	// added as a replacement (Jan 6 also exists as a regular daily occurrence):
+	// effective occurrence list = 1,2,3,5,6,6,7.
+	// completedDates = [Jan 6]; both Jan 6 entries are filtered as completed.
+	// Absorption uses max(completed) = Jan 6, sweeping the earlier originals
+	// Jan 1, Jan 2, Jan 3, Jan 5. Only Jan 7 remains overdue.
+	//
+	// Confirms that absorption is computed against the replacement date when
+	// the user moved the occurrence into the future and completed it there.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
+	}, []Exception{
+		{
+			OriginalDate: utilities.MustParseCalendarDate("2025-01-04"),
+			NewDate:      utilities.MustParseCalendarDate("2025-01-06"),
+		},
+	}, []string{"2025-01-06"}, "2025-01-08")
+
+	want := []string{"2025-01-07"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
+
+func TestUnit_ComputeOverdueExceptionReplacementIntoFutureWithAbsorption(t *testing.T) {
+	se := NewScheduleEngine()
+	// Daily routine starting Jan 1; asOf Jan 6 -> ComputeOccurrences range
+	// ends at Jan 5. Exception moves Jan 3 to Jan 20, which is beyond the
+	// query horizon, so neither Jan 3 (suppressed) nor Jan 20 (out of range)
+	// appear. Effective occurrence list = 1, 2, 4, 5.
+	// completedDates = [Jan 2]; max(completed) = Jan 2 absorbs Jan 1 and Jan 2.
+	// Remaining overdue: Jan 4, Jan 5.
+	result := se.ComputeOverdue(RepeatPattern{
+		Frequency: "daily",
+		Interval:  1,
+		StartDate: utilities.MustParseCalendarDate("2025-01-01"),
+	}, []Exception{
+		{
+			OriginalDate: utilities.MustParseCalendarDate("2025-01-03"),
+			NewDate:      utilities.MustParseCalendarDate("2025-01-20"),
+		},
+	}, []string{"2025-01-02"}, "2025-01-06")
+
+	want := []string{"2025-01-04", "2025-01-05"}
+	if !reflect.DeepEqual(result, want) {
+		t.Errorf("got %v, want %v", result, want)
+	}
+}
