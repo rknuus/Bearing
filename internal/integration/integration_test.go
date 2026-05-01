@@ -1197,21 +1197,22 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	//   AddColumn = IBoard.AddColumn (appends 'Review' at end) (1) + IBoard.ReorderColumns (move to interior position) (1) +
 	//   CreateTask*2(2) +
 	//   MoveTask*2(batched=2) +
-	//   RenameColumn = IBoard.RenameColumn (1) + CommitAll restage of moved task files (1) +
+	//   RenameColumn = IBoard.RenameColumn (1, now stages moved task files itself) +
 	//   ReorderColumns (1) +
 	//   MoveTask*2(batched=2) +
 	//   RemoveColumn (1)
-	// = 14. The three extra commits over baseline (default seed,
-	// append-then-reorder for AddColumn, restage-after-rename) are
-	// transitional artifacts of the IBoard facet decomposition and will
-	// collapse back to 11 once: defaults move into bootstrap, AddColumn
-	// gains a position argument, and IBoard.RenameColumn discovers and
-	// stages the renamed task files itself.
+	// = 13. The two extra commits over baseline (default seed and
+	// append-then-reorder for AddColumn) are transitional artifacts of
+	// the IBoard facet decomposition and will collapse back to 11 once
+	// defaults move into bootstrap and AddColumn gains a position argument.
+	// (The previous restage-after-rename commit was eliminated by task 99,
+	// which taught IBoard.RenameColumn to discover and stage moved task
+	// files inside the verb itself.)
 	history, err := repo.GetHistory(0)
 	if err != nil {
 		t.Fatalf("Failed to get git history: %v", err)
 	}
-	expectedCommits := 14
+	expectedCommits := 13
 	if len(history) != expectedCommits {
 		t.Errorf("Expected %d commits, got %d", expectedCommits, len(history))
 		for i, c := range history {

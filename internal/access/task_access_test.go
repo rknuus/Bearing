@@ -79,8 +79,8 @@ func TestUnit_WriteArchivedOrder_CreatesFile(t *testing.T) {
 	beforeCount := len(beforeHistory)
 
 	order := []string{"H-T2", "H-T1"}
-	if err := env.tasks.WriteArchivedOrder(order); err != nil {
-		t.Fatalf("WriteArchivedOrder failed: %v", err)
+	if err := env.tasks.writeArchivedOrder(order); err != nil {
+		t.Fatalf("writeArchivedOrder failed: %v", err)
 	}
 
 	filePath := filepath.Join(tmpDir, "data", "archived_order.json")
@@ -115,7 +115,7 @@ func TestUnit_SaveTaskFile_RoutineTagAllowsEmptyThemeID(t *testing.T) {
 		Title: "Morning routine task",
 		Tags:  []string{"Routine"},
 	}
-	err := env.tasks.WriteTask(task)
+	_, _, err := env.tasks.saveTaskFile(&task)
 	if err != nil {
 		t.Fatalf("Expected no error for Routine-tagged task with empty themeID, got: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestUnit_SaveTaskFile_EmptyThemeIDWithoutRoutineTagFails(t *testing.T) {
 	task := Task{
 		Title: "Regular task without theme",
 	}
-	err := env.tasks.WriteTask(task)
+	_, _, err := env.tasks.saveTaskFile(&task)
 	if err == nil {
 		t.Fatal("Expected error for non-Routine task with empty themeID, got nil")
 	}
@@ -143,9 +143,9 @@ func TestUnit_GenerateTaskID_RoutineTaskFormat(t *testing.T) {
 		Title: "First routine task",
 		Tags:  []string{"Routine"},
 	}
-	err := env.tasks.WriteTask(task1)
+	_, _, err := env.tasks.saveTaskFile(&task1)
 	if err != nil {
-		t.Fatalf("WriteTask failed: %v", err)
+		t.Fatalf("saveTaskFile failed: %v", err)
 	}
 
 	// Verify the file was created with the expected ID pattern
@@ -165,9 +165,9 @@ func TestUnit_GenerateTaskID_RoutineTaskFormat(t *testing.T) {
 		Title: "Second routine task",
 		Tags:  []string{"Routine"},
 	}
-	err = env.tasks.WriteTask(task2)
+	_, _, err = env.tasks.saveTaskFile(&task2)
 	if err != nil {
-		t.Fatalf("WriteTask failed: %v", err)
+		t.Fatalf("saveTaskFile failed: %v", err)
 	}
 
 	tasks, err = env.tasks.GetTasksByStatus("todo")
@@ -198,9 +198,9 @@ func TestUnit_GenerateTaskID_ThemeTaskFormatUnchanged(t *testing.T) {
 		Title:   "Theme task",
 		ThemeID: "H",
 	}
-	err := env.tasks.WriteTask(task)
+	_, _, err := env.tasks.saveTaskFile(&task)
 	if err != nil {
-		t.Fatalf("WriteTask failed: %v", err)
+		t.Fatalf("saveTaskFile failed: %v", err)
 	}
 
 	tasks, err := env.tasks.GetTasksByStatus("todo")
@@ -212,49 +212,6 @@ func TestUnit_GenerateTaskID_ThemeTaskFormatUnchanged(t *testing.T) {
 	}
 	if tasks[0].ID != "H-T1" {
 		t.Errorf("Expected theme task ID 'H-T1', got '%s'", tasks[0].ID)
-	}
-}
-
-func TestUnit_SaveArchivedOrder_CommitsToGit(t *testing.T) {
-	env, tmpDir, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	order := []string{"H-T3", "H-T2", "H-T1"}
-	if err := env.tasks.SaveArchivedOrder(order); err != nil {
-		t.Fatalf("SaveArchivedOrder failed: %v", err)
-	}
-
-	// Verify content round-trips
-	loaded, err := env.tasks.LoadArchivedOrder()
-	if err != nil {
-		t.Fatalf("LoadArchivedOrder failed: %v", err)
-	}
-	if len(loaded) != 3 {
-		t.Fatalf("Expected 3 entries, got %d", len(loaded))
-	}
-	if loaded[0] != "H-T3" || loaded[1] != "H-T2" || loaded[2] != "H-T1" {
-		t.Errorf("Unexpected loaded order: %v", loaded)
-	}
-
-	// Verify a git commit was created
-	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
-	repo, _ := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
-	defer repo.Close()
-
-	history, err := repo.GetHistory(10)
-	if err != nil {
-		t.Fatalf("GetHistory failed: %v", err)
-	}
-
-	found := false
-	for _, c := range history {
-		if c.Message == "Update archived order" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected a git commit with message 'Update archived order'")
 	}
 }
 

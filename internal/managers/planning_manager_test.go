@@ -125,17 +125,17 @@ func (m *mockThemeAccess) WriteDeleteTheme(id string) error {
 	return m.DeleteTheme(id)
 }
 
-// mockTaskAccess implements access.ITaskAccess plus the new ITask and
-// IBatch facet interfaces for testing.
+// mockTaskAccess implements access.ITaskAccess plus the new ITask, IBatch,
+// and IBoard facet interfaces for testing.
 type mockTaskAccess struct {
-	mu              sync.Mutex
-	tasks           map[string][]access.Task
-	taskOrder       map[string][]string
-	archivedOrder   []string
-	nextTaskNum     int
-	boardConfig     *access.BoardConfiguration
-	writeTaskErr    error // when set, WriteTask returns this error (atomicity tests)
-	commitAllCount  int   // number of CommitAll invocations
+	mu             sync.Mutex
+	tasks          map[string][]access.Task
+	taskOrder      map[string][]string
+	archivedOrder  []string
+	nextTaskNum    int
+	boardConfig    *access.BoardConfiguration
+	writeTaskErr   error // when set, ITask.Move returns this error (atomicity tests)
+	commitAllCount int   // number of synthetic per-verb commit ticks (Save/Move/Promote/...)
 }
 
 func newMockTaskAccess() *mockTaskAccess {
@@ -184,24 +184,17 @@ func (m *mockTaskAccess) GetTasksByStatus(status string) ([]access.Task, error) 
 	return []access.Task{}, nil
 }
 
-func (m *mockTaskAccess) WriteTask(task access.Task) error {
-	m.mu.Lock()
-	if m.writeTaskErr != nil {
-		err := m.writeTaskErr
-		m.mu.Unlock()
-		return err
-	}
-	m.mu.Unlock()
-	return m.SaveTask(task)
-}
-
-func (m *mockTaskAccess) SaveTask(task access.Task) error {
+// saveTaskInternal is the mock's per-task write primitive used by the new
+// ITask/IBatch facet implementations below. It is unexported because the
+// real TaskAccess no longer exposes a SaveTask verb; only the facet verbs
+// remain on the public surface.
+func (m *mockTaskAccess) saveTaskInternal(task access.Task) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	// Match real TaskAccess validation: empty themeID requires Routine tag
 	if task.ThemeID == "" && !slices.Contains(task.Tags, "Routine") {
-		return fmt.Errorf("mockTaskAccess.SaveTask: themeID cannot be empty")
+		return fmt.Errorf("mockTaskAccess.saveTaskInternal: themeID cannot be empty")
 	}
 
 	status := "todo"
@@ -225,8 +218,10 @@ func (m *mockTaskAccess) SaveTask(task access.Task) error {
 	return nil
 }
 
-func (m *mockTaskAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*access.Task, error) {
-	if err := m.SaveTask(task); err != nil {
+// saveTaskWithOrderInternal is the mock's per-task create-with-order
+// primitive used by ITask.Create and IBatch.Commit. Unexported.
+func (m *mockTaskAccess) saveTaskWithOrderInternal(task access.Task, dropZone string) (*access.Task, error) {
+	if err := m.saveTaskInternal(task); err != nil {
 		return nil, err
 	}
 	m.mu.Lock()
@@ -240,29 +235,9 @@ func (m *mockTaskAccess) SaveTaskWithOrder(task access.Task, dropZone string) (*
 	return &saved, nil
 }
 
-func (m *mockTaskAccess) UpdateTaskWithOrderMove(task access.Task, oldZone, newZone string) error {
-	if err := m.SaveTask(task); err != nil {
-		return err
-	}
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.taskOrder == nil {
-		m.taskOrder = make(map[string][]string)
-	}
-	if ids, ok := m.taskOrder[oldZone]; ok {
-		filtered := make([]string, 0, len(ids))
-		for _, id := range ids {
-			if id != task.ID {
-				filtered = append(filtered, id)
-			}
-		}
-		m.taskOrder[oldZone] = filtered
-	}
-	m.taskOrder[newZone] = append(m.taskOrder[newZone], task.ID)
-	return nil
-}
-
-func (m *mockTaskAccess) MoveTask(taskID, newStatus string) error {
+// moveTaskInternal is the mock's per-task move primitive used by
+// ITask.Move/Archive/Restore. Unexported.
+func (m *mockTaskAccess) moveTaskInternal(taskID, newStatus string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for status, tasks := range m.tasks {
@@ -277,27 +252,9 @@ func (m *mockTaskAccess) MoveTask(taskID, newStatus string) error {
 	return nil
 }
 
-func (m *mockTaskAccess) WriteMoveTask(taskID, newStatus string) ([]string, error) {
-	return nil, m.MoveTask(taskID, newStatus)
-}
-
-func (m *mockTaskAccess) ArchiveTask(taskID string) error {
-	return m.MoveTask(taskID, string(access.TaskStatusArchived))
-}
-
-func (m *mockTaskAccess) WriteArchiveTask(taskID string) ([]string, error) {
-	return nil, m.ArchiveTask(taskID)
-}
-
-func (m *mockTaskAccess) RestoreTask(taskID string) error {
-	return m.MoveTask(taskID, string(access.TaskStatusDone))
-}
-
-func (m *mockTaskAccess) WriteRestoreTask(taskID string) ([]string, error) {
-	return nil, m.RestoreTask(taskID)
-}
-
-func (m *mockTaskAccess) DeleteTask(taskID string) error {
+// deleteTaskInternal is the mock's per-task delete primitive used by
+// ITask.Delete and IBatch.Commit. Unexported.
+func (m *mockTaskAccess) deleteTaskInternal(taskID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	for status, tasks := range m.tasks {
@@ -311,8 +268,10 @@ func (m *mockTaskAccess) DeleteTask(taskID string) error {
 	return nil
 }
 
-func (m *mockTaskAccess) DeleteTaskWithOrder(taskID string) error {
-	if err := m.DeleteTask(taskID); err != nil {
+// deleteTaskWithOrderInternal is the mock's per-task delete-with-order
+// primitive used by IBatch.Commit. Unexported.
+func (m *mockTaskAccess) deleteTaskWithOrderInternal(taskID string) error {
+	if err := m.deleteTaskInternal(taskID); err != nil {
 		return err
 	}
 	m.mu.Lock()
@@ -516,29 +475,13 @@ func (m *mockTaskAccess) ReorderColumns(slugs []string) (access.BoardConfigurati
 	return *m.boardConfig, nil
 }
 
-func (m *mockTaskAccess) EnsureStatusDirectory(slug string) error             { return nil }
-func (m *mockTaskAccess) RemoveStatusDirectory(slug string) error             { return nil }
-func (m *mockTaskAccess) RenameStatusDirectory(oldSlug, newSlug string) error { return nil }
-func (m *mockTaskAccess) UpdateTaskStatusField(dirSlug, newStatus string) ([]string, error) {
-	return nil, nil
-}
-func (m *mockTaskAccess) WriteTaskOrder(order map[string][]string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.taskOrder = order
-	return nil
-}
-func (m *mockTaskAccess) BoardConfigFilePath() string                      { return "board_config.json" }
-func (m *mockTaskAccess) TaskOrderFilePath() string                        { return "task_order.json" }
-func (m *mockTaskAccess) TaskDirPath(status string) string                 { return status }
-func (m *mockTaskAccess) CommitFiles(paths []string, message string) error { return nil }
+func (m *mockTaskAccess) EnsureStatusDirectory(slug string) error { return nil }
 func (m *mockTaskAccess) CommitAll(message string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.commitAllCount++
 	return nil
 }
-func (m *mockTaskAccess) ArchivedOrderFilePath() string                    { return "archived_order.json" }
 func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -546,18 +489,6 @@ func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) {
 		return []string{}, nil
 	}
 	return append([]string{}, m.archivedOrder...), nil
-}
-func (m *mockTaskAccess) WriteArchivedOrder(order []string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.archivedOrder = append([]string{}, order...)
-	return nil
-}
-func (m *mockTaskAccess) SaveArchivedOrder(order []string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.archivedOrder = append([]string{}, order...)
-	return nil
 }
 
 // =============================================================================
@@ -593,7 +524,7 @@ func (m *mockTaskAccess) Find(filter access.TaskFilter) ([]access.Task, error) {
 }
 
 func (m *mockTaskAccess) Create(task access.Task, zone string) (access.Task, error) {
-	saved, err := m.SaveTaskWithOrder(task, zone)
+	saved, err := m.saveTaskWithOrderInternal(task, zone)
 	if err != nil {
 		return access.Task{}, err
 	}
@@ -604,7 +535,7 @@ func (m *mockTaskAccess) Create(task access.Task, zone string) (access.Task, err
 }
 
 func (m *mockTaskAccess) Save(task access.Task) error {
-	if err := m.SaveTask(task); err != nil {
+	if err := m.saveTaskInternal(task); err != nil {
 		return err
 	}
 	m.mu.Lock()
@@ -720,7 +651,7 @@ func (m *mockTaskAccess) Move(req access.MoveRequest) (access.MoveOutcome, error
 }
 
 func (m *mockTaskAccess) Archive(taskID string) error {
-	if err := m.ArchiveTask(taskID); err != nil {
+	if err := m.moveTaskInternal(taskID, string(access.TaskStatusArchived)); err != nil {
 		return err
 	}
 	m.mu.Lock()
@@ -755,7 +686,7 @@ func (m *mockTaskAccess) Restore(taskID string) error {
 	m.mu.Unlock()
 	_ = priority // priority would matter only for board-config-aware zone routing
 
-	if err := m.RestoreTask(taskID); err != nil {
+	if err := m.moveTaskInternal(taskID, string(access.TaskStatusDone)); err != nil {
 		return err
 	}
 
@@ -781,7 +712,7 @@ func (m *mockTaskAccess) Restore(taskID string) error {
 }
 
 func (m *mockTaskAccess) Delete(taskID string) error {
-	if err := m.DeleteTaskWithOrder(taskID); err != nil {
+	if err := m.deleteTaskWithOrderInternal(taskID); err != nil {
 		return err
 	}
 	m.mu.Lock()
@@ -886,14 +817,14 @@ func (m *mockTaskAccess) Commit(req access.BatchRequest) (access.BatchOutcome, e
 		create := req.Creates[i]
 		taskCopy := create.Task
 		taskCopy.ID = ""
-		saved, err := m.SaveTaskWithOrder(taskCopy, create.DropZone)
+		saved, err := m.saveTaskWithOrderInternal(taskCopy, create.DropZone)
 		if err != nil {
 			return access.BatchOutcome{}, err
 		}
 		outcome.CreatedIDs = append(outcome.CreatedIDs, saved.ID)
 	}
 	for _, taskID := range req.Deletes {
-		if err := m.DeleteTaskWithOrder(taskID); err != nil {
+		if err := m.deleteTaskWithOrderInternal(taskID); err != nil {
 			return access.BatchOutcome{}, err
 		}
 		outcome.DeletedIDs = append(outcome.DeletedIDs, taskID)

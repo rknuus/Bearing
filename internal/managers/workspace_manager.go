@@ -19,12 +19,17 @@ type IWorkspaceManager interface {
 }
 
 // workspaceAccess combines the IBoard facet (the new atomic column verbs)
-// with the small subset of the legacy ITaskAccess surface that the
-// manager still uses for one-time default seeding. The seeding helpers
+// with the small subset of the legacy TaskAccess surface that the manager
+// still uses for one-time default seeding. The seeding helpers
 // (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) materialise
 // the in-memory default board on first mutation so subsequent IBoard
 // verbs see a non-empty on-disk configuration; once the bootstrap layer
 // owns default-seeding, this interface collapses to access.IBoard.
+//
+// CommitAll remains here only for default-seeding; the IBoard.RenameColumn
+// staging defect that previously forced a follow-up CommitAll has been
+// fixed (task 99 — RenameColumn now discovers and stages the moved task
+// files itself).
 type workspaceAccess interface {
 	access.IBoard
 	SaveBoardConfiguration(config *access.BoardConfiguration) error
@@ -70,10 +75,9 @@ var reservedSlugs = map[string]bool{
 // and lose the default todo/doing/done bookends.
 //
 // The method is idempotent: when the on-disk configuration already has
-// columns, it returns immediately. It calls legacy helpers
-// (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) that will
-// be removed by task 99 once default-seeding moves into the bootstrap
-// layer.
+// columns, it returns immediately. It calls retained legacy helpers
+// (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) that should
+// move into the bootstrap layer in a future iteration.
 func (m *WorkspaceManager) ensureBoardSeeded() (*access.BoardConfiguration, error) {
 	config, err := m.access.Get()
 	if err != nil {
@@ -281,16 +285,6 @@ func (m *WorkspaceManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigu
 
 	updated, err := m.access.RenameColumn(oldSlug, newSlug, trimmedTitle)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-	// IBoard.RenameColumn renames the status directory but its commitFiles
-	// call only stages board_config.json + task_order.json — task files
-	// inside the renamed directory therefore move on disk without being
-	// staged, leaving the working tree dirty. Until task 96's verb is
-	// taught to discover and stage those files itself, follow up with a
-	// CommitAll so the rename surfaces as a single coherent end-state in
-	// git history. The follow-up is a no-op when no task files moved.
-	if err := m.access.CommitAll(fmt.Sprintf("Restage task files after column rename: %s -> %s", oldSlug, newSlug)); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 	return toManagerBoardConfig(&updated), nil

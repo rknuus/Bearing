@@ -534,164 +534,9 @@ func TestGetYearFocus_EmptyYear(t *testing.T) {
 
 // Task Tests
 
-func TestSaveTask_NewTask(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create a theme first
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Save task
-	task := Task{
-		Title:    "Morning run",
-		ThemeID:  "H",
-		Priority: string(PriorityImportantUrgent),
-	}
-
-	err := env.tasks.SaveTask(task)
-	if err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Retrieve and verify
-	tasks, err := env.tasks.GetTasksByTheme("H")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-
-	if len(tasks) != 1 {
-		t.Fatalf("Expected 1 task, got %d", len(tasks))
-	}
-
-	saved := tasks[0]
-	if saved.ID != "H-T1" {
-		t.Errorf("Expected ID H-T1, got %s", saved.ID)
-	}
-	if saved.Title != "Morning run" {
-		t.Errorf("Expected title 'Morning run', got %s", saved.Title)
-	}
-}
-
-func TestSaveTask_ThemeChange(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create two themes
-	if err := env.themes.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#0000FF"}); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-	if err := env.themes.SaveTheme(LifeTheme{ID: "L", Name: "Learning", Color: "#00FF00"}); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create task under Work theme
-	task := Task{
-		Title:    "Study Go",
-		ThemeID:  "W",
-		Priority: string(PriorityImportantUrgent),
-	}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Verify task exists under Work
-	workTasks, err := env.tasks.GetTasksByTheme("W")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-	if len(workTasks) != 1 {
-		t.Fatalf("Expected 1 task under W, got %d", len(workTasks))
-	}
-
-	// Move task to Learning theme by updating themeId
-	movedTask := workTasks[0]
-	movedTask.ThemeID = "L"
-	if err := env.tasks.SaveTask(movedTask); err != nil {
-		t.Fatalf("SaveTask (theme change) failed: %v", err)
-	}
-
-	// Old theme should have no tasks
-	workTasks, err = env.tasks.GetTasksByTheme("W")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-	if len(workTasks) != 0 {
-		t.Errorf("Expected 0 tasks under W after theme change, got %d", len(workTasks))
-	}
-
-	// New theme should have the task
-	learnTasks, err := env.tasks.GetTasksByTheme("L")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-	if len(learnTasks) != 1 {
-		t.Fatalf("Expected 1 task under L, got %d", len(learnTasks))
-	}
-	if learnTasks[0].ID != movedTask.ID {
-		t.Errorf("Expected task ID %s, got %s", movedTask.ID, learnTasks[0].ID)
-	}
-	if learnTasks[0].ThemeID != "L" {
-		t.Errorf("Expected themeID L, got %s", learnTasks[0].ThemeID)
-	}
-}
-
-func TestSaveTask_EmptyThemeID(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	task := Task{
-		Title: "Test task",
-	}
-
-	err := env.tasks.SaveTask(task)
-	if err == nil {
-		t.Error("Expected error for empty themeID")
-	}
-}
-
-func TestGetTasksByStatus(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Save task (defaults to todo)
-	task := Task{
-		Title:   "Morning run",
-		ThemeID: "H",
-	}
-
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Get tasks by status
-	todoTasks, err := env.tasks.GetTasksByStatus("todo")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-
-	if len(todoTasks) != 1 {
-		t.Errorf("Expected 1 todo task, got %d", len(todoTasks))
-	}
-
-	// No doing tasks
-	doingTasks, err := env.tasks.GetTasksByStatus("doing")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-
-	if len(doingTasks) != 0 {
-		t.Errorf("Expected 0 doing tasks, got %d", len(doingTasks))
-	}
-}
+// TestSaveTask_NewTask, TestSaveTask_ThemeChange, TestSaveTask_EmptyThemeID,
+// and TestGetTasksByStatus removed by task 99: their behaviour is now
+// covered by ITask facet tests (Create/Save/Find) in task_access_test.go.
 
 func TestGetTasksByStatus_UnknownStatus_ReturnsEmpty(t *testing.T) {
 	env, _, cleanup := setupTestPlanAccess(t)
@@ -706,140 +551,8 @@ func TestGetTasksByStatus_UnknownStatus_ReturnsEmpty(t *testing.T) {
 	}
 }
 
-func TestMoveTask(t *testing.T) {
-	env, tmpDir, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Save task
-	task := Task{
-		Title:   "Morning run",
-		ThemeID: "H",
-	}
-
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Move to doing
-	err := env.tasks.MoveTask("H-T1", "doing")
-	if err != nil {
-		t.Fatalf("MoveTask failed: %v", err)
-	}
-
-	// Verify task moved
-	todoTasks, _ := env.tasks.GetTasksByStatus("todo")
-	doingTasks, _ := env.tasks.GetTasksByStatus("doing")
-
-	if len(todoTasks) != 0 {
-		t.Errorf("Expected 0 todo tasks, got %d", len(todoTasks))
-	}
-	if len(doingTasks) != 1 {
-		t.Errorf("Expected 1 doing task, got %d", len(doingTasks))
-	}
-
-	// Verify file exists in new location
-	newPath := filepath.Join(tmpDir, "data", "tasks", "doing", "H-T1.json")
-	if _, err := os.Stat(newPath); os.IsNotExist(err) {
-		t.Error("Task file not found in new location")
-	}
-
-	// Verify file removed from old location
-	oldPath := filepath.Join(tmpDir, "data", "tasks", "todo", "H-T1.json")
-	if _, err := os.Stat(oldPath); !os.IsNotExist(err) {
-		t.Error("Task file should not exist in old location")
-	}
-}
-
-func TestMoveTask_InvalidStatus(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	err := env.tasks.MoveTask("H-T1", "invalid")
-	if err == nil {
-		t.Error("Expected error for invalid status")
-	}
-}
-
-func TestMoveTask_NotFound(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme to have something searchable
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	err := env.tasks.MoveTask("H-T999", "doing")
-	if err == nil {
-		t.Error("Expected error for non-existent task")
-	}
-}
-
-func TestDeleteTask(t *testing.T) {
-	env, tmpDir, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Save task
-	task := Task{
-		Title:   "Morning run",
-		ThemeID: "H",
-	}
-
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Delete task
-	err := env.tasks.DeleteTask("H-T1")
-	if err != nil {
-		t.Fatalf("DeleteTask failed: %v", err)
-	}
-
-	// Verify deletion
-	tasks, err := env.tasks.GetTasksByTheme("H")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-
-	if len(tasks) != 0 {
-		t.Errorf("Expected 0 tasks, got %d", len(tasks))
-	}
-
-	// Verify file removed
-	taskPath := filepath.Join(tmpDir, "data", "tasks", "todo", "H-T1.json")
-	if _, err := os.Stat(taskPath); !os.IsNotExist(err) {
-		t.Error("Task file should not exist after deletion")
-	}
-}
-
-func TestDeleteTask_NotFound(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	err := env.tasks.DeleteTask("H-T999")
-	if err == nil {
-		t.Error("Expected error for non-existent task")
-	}
-}
+// TestMoveTask*, TestDeleteTask* removed by task 99: ITask.Move and
+// ITask.Delete tests in task_access_test.go cover the same scenarios.
 
 // Flat ID Generation Tests
 
@@ -922,49 +635,9 @@ func TestFlatIDGeneration(t *testing.T) {
 
 // Task ID Generation Tests
 
-func TestTaskIDGeneration(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create multiple tasks
-	for i := 0; i < 5; i++ {
-		task := Task{
-			Title:   "Task",
-			ThemeID: "H",
-		}
-		if err := env.tasks.SaveTask(task); err != nil {
-			t.Fatalf("SaveTask failed: %v", err)
-		}
-	}
-
-	tasks, err := env.tasks.GetTasksByTheme("H")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-
-	if len(tasks) != 5 {
-		t.Fatalf("Expected 5 tasks, got %d", len(tasks))
-	}
-
-	// Verify sequential IDs
-	expectedIDs := []string{"H-T1", "H-T2", "H-T3", "H-T4", "H-T5"}
-	idMap := make(map[string]bool)
-	for _, task := range tasks {
-		idMap[task.ID] = true
-	}
-
-	for _, expected := range expectedIDs {
-		if !idMap[expected] {
-			t.Errorf("Expected task ID %s to exist", expected)
-		}
-	}
-}
+// TestTaskIDGeneration removed by task 99: ITask.Create's ID-allocation
+// behaviour is verified by TestUnit_ITask_Create_AssignsUniqueIDsConcurrently
+// in task_access_test.go.
 
 // File Structure Tests
 
@@ -1025,9 +698,8 @@ func TestFileStructure(t *testing.T) {
 	}
 
 	// Save task and verify task structure
-	task := Task{Title: "Test task", ThemeID: "H"}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
+	if _, err := env.tasks.Create(Task{Title: "Test task", ThemeID: "H"}, "important-not-urgent"); err != nil {
+		t.Fatalf("Create failed: %v", err)
 	}
 
 	taskPath := filepath.Join(dataDir, "tasks", "todo", "H-T1.json")
@@ -1075,48 +747,8 @@ func TestGitVersioning_ThemeCommit(t *testing.T) {
 	}
 }
 
-func TestGitVersioning_MoveTaskUsesGitMv(t *testing.T) {
-	env, tmpDir, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme and task
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	task := Task{Title: "Test task", ThemeID: "H"}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Move task
-	if err := env.tasks.MoveTask("H-T1", "doing"); err != nil {
-		t.Fatalf("MoveTask failed: %v", err)
-	}
-
-	// Check git history for move commit
-	gitConfig := &utilities.AuthorConfiguration{User: "Test", Email: "test@example.com"}
-	repo, _ := utilities.InitializeRepositoryWithConfig(tmpDir, gitConfig)
-	defer repo.Close()
-
-	history, err := repo.GetHistory(10)
-	if err != nil {
-		t.Fatalf("GetHistory failed: %v", err)
-	}
-
-	// Find move commit
-	found := false
-	for _, commit := range history {
-		if commit.Message == "Move task Test task: todo -> doing" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Error("Expected commit message for move operation")
-	}
-}
+// TestGitVersioning_MoveTaskUsesGitMv removed by task 99: ITask.Move's
+// commit-message format is verified by TestUnit_ITask_Move_*.
 
 // Recursive Flat ID Generation Tests
 
@@ -1577,217 +1209,9 @@ func TestUnit_EnsureDirectoryStructure_CreatesGitignore(t *testing.T) {
 	}
 }
 
-func TestSaveTaskWithOrder(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create a theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	task := Task{
-		Title:    "Morning run",
-		ThemeID:  "H",
-		Priority: string(PriorityImportantUrgent),
-	}
-
-	saved, err := env.tasks.SaveTaskWithOrder(task, "important-urgent")
-	if err != nil {
-		t.Fatalf("SaveTaskWithOrder failed: %v", err)
-	}
-
-	if saved.ID != "H-T1" {
-		t.Errorf("Expected ID H-T1, got %s", saved.ID)
-	}
-
-	// Verify task was saved
-	tasks, err := env.tasks.GetTasksByTheme("H")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-	if len(tasks) != 1 {
-		t.Fatalf("Expected 1 task, got %d", len(tasks))
-	}
-
-	// Verify task order was updated
-	order, err := env.tasks.LoadTaskOrder()
-	if err != nil {
-		t.Fatalf("LoadTaskOrder failed: %v", err)
-	}
-	if len(order["important-urgent"]) != 1 || order["important-urgent"][0] != "H-T1" {
-		t.Errorf("Expected order [H-T1], got %v", order["important-urgent"])
-	}
-}
-
-func TestSaveTaskWithOrder_Multiple(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create multiple tasks sequentially
-	for i := 0; i < 5; i++ {
-		task := Task{
-			Title:    "Task",
-			ThemeID:  "H",
-			Priority: string(PriorityImportantUrgent),
-		}
-		_, err := env.tasks.SaveTaskWithOrder(task, "important-urgent")
-		if err != nil {
-			t.Fatalf("SaveTaskWithOrder #%d failed: %v", i+1, err)
-		}
-	}
-
-	// Verify all 5 tasks exist
-	tasks, err := env.tasks.GetTasksByTheme("H")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-	if len(tasks) != 5 {
-		t.Fatalf("Expected 5 tasks, got %d", len(tasks))
-	}
-
-	// Verify task order contains all 5
-	order, err := env.tasks.LoadTaskOrder()
-	if err != nil {
-		t.Fatalf("LoadTaskOrder failed: %v", err)
-	}
-	if len(order["important-urgent"]) != 5 {
-		t.Errorf("Expected 5 tasks in order, got %d", len(order["important-urgent"]))
-	}
-}
-
-func TestDeleteTaskWithOrder(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create a theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create tasks with order
-	task1 := Task{Title: "Task 1", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	saved1, err := env.tasks.SaveTaskWithOrder(task1, "important-urgent")
-	if err != nil {
-		t.Fatalf("SaveTaskWithOrder failed: %v", err)
-	}
-
-	task2 := Task{Title: "Task 2", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	_, err = env.tasks.SaveTaskWithOrder(task2, "important-urgent")
-	if err != nil {
-		t.Fatalf("SaveTaskWithOrder failed: %v", err)
-	}
-
-	// Delete first task
-	if err := env.tasks.DeleteTaskWithOrder(saved1.ID); err != nil {
-		t.Fatalf("DeleteTaskWithOrder failed: %v", err)
-	}
-
-	// Verify task was deleted
-	tasks, err := env.tasks.GetTasksByTheme("H")
-	if err != nil {
-		t.Fatalf("GetTasksByTheme failed: %v", err)
-	}
-	if len(tasks) != 1 {
-		t.Fatalf("Expected 1 task after delete, got %d", len(tasks))
-	}
-
-	// Verify task order was updated
-	order, err := env.tasks.LoadTaskOrder()
-	if err != nil {
-		t.Fatalf("LoadTaskOrder failed: %v", err)
-	}
-	if len(order["important-urgent"]) != 1 {
-		t.Errorf("Expected 1 task in order after delete, got %d", len(order["important-urgent"]))
-	}
-	if order["important-urgent"][0] != "H-T2" {
-		t.Errorf("Expected remaining task H-T2, got %s", order["important-urgent"][0])
-	}
-}
-
-func TestUpdateTaskWithOrderMove(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create task in important-urgent zone
-	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	saved, err := env.tasks.SaveTaskWithOrder(task, "important-urgent")
-	if err != nil {
-		t.Fatalf("SaveTaskWithOrder failed: %v", err)
-	}
-
-	// Verify initial zone
-	order, _ := env.tasks.LoadTaskOrder()
-	if len(order["important-urgent"]) != 1 || order["important-urgent"][0] != saved.ID {
-		t.Fatalf("Expected task in important-urgent zone, got %v", order)
-	}
-
-	// Move to important-not-urgent zone
-	saved.Priority = string(PriorityImportantNotUrgent)
-	if err := env.tasks.UpdateTaskWithOrderMove(*saved, "important-urgent", "important-not-urgent"); err != nil {
-		t.Fatalf("UpdateTaskWithOrderMove failed: %v", err)
-	}
-
-	// Verify task file updated
-	tasks, _ := env.tasks.GetTasksByStatus("todo")
-	if len(tasks) != 1 {
-		t.Fatalf("Expected 1 task, got %d", len(tasks))
-	}
-	if tasks[0].Priority != string(PriorityImportantNotUrgent) {
-		t.Errorf("Expected priority important-not-urgent, got %s", tasks[0].Priority)
-	}
-
-	// Verify zone moved in task_order.json
-	orderAfter, _ := env.tasks.LoadTaskOrder()
-	if len(orderAfter["important-urgent"]) != 0 {
-		t.Errorf("Expected empty important-urgent zone, got %v", orderAfter["important-urgent"])
-	}
-	if len(orderAfter["important-not-urgent"]) != 1 || orderAfter["important-not-urgent"][0] != saved.ID {
-		t.Errorf("Expected task in important-not-urgent zone, got %v", orderAfter["important-not-urgent"])
-	}
-}
-
-func TestUpdateTaskWithOrderMove_MissingFromOldZone(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create task but DON'T add to order (simulating stale state)
-	task := Task{Title: "Orphan task", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	tasks, _ := env.tasks.GetTasksByStatus("todo")
-	savedTask := tasks[0]
-
-	// Move from a zone the task isn't in — should still append to new zone
-	savedTask.Priority = string(PriorityImportantNotUrgent)
-	if err := env.tasks.UpdateTaskWithOrderMove(savedTask, "important-urgent", "important-not-urgent"); err != nil {
-		t.Fatalf("UpdateTaskWithOrderMove failed: %v", err)
-	}
-
-	order, _ := env.tasks.LoadTaskOrder()
-	if len(order["important-not-urgent"]) != 1 || order["important-not-urgent"][0] != savedTask.ID {
-		t.Errorf("Expected task in important-not-urgent zone, got %v", order)
-	}
-}
+// TestSaveTaskWithOrder*, TestDeleteTaskWithOrder, TestUpdateTaskWithOrderMove*
+// removed by task 99: ITask.Create / ITask.Delete / ITask.Move tests in
+// task_access_test.go cover the same atomic-with-order behaviour.
 
 func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) {
 	env, _, cleanup := setupTestPlanAccess(t)
@@ -1816,201 +1240,9 @@ func TestUnit_EnsureDirectoryStructure_PreservesExistingGitignore(t *testing.T) 
 
 // --- Archive / Restore tests ---
 
-func TestArchiveTask(t *testing.T) {
-	env, tmpDir, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Move to done first, then archive
-	if err := env.tasks.MoveTask("H-T1", "done"); err != nil {
-		t.Fatalf("MoveTask failed: %v", err)
-	}
-
-	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
-		t.Fatalf("ArchiveTask failed: %v", err)
-	}
-
-	// Verify task is in archived
-	archivedTasks, err := env.tasks.GetTasksByStatus("archived")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-	if len(archivedTasks) != 1 {
-		t.Errorf("Expected 1 archived task, got %d", len(archivedTasks))
-	}
-
-	// Verify removed from done
-	doneTasks, _ := env.tasks.GetTasksByStatus("done")
-	if len(doneTasks) != 0 {
-		t.Errorf("Expected 0 done tasks, got %d", len(doneTasks))
-	}
-
-	// Verify file location
-	newPath := filepath.Join(tmpDir, "data", "tasks", "archived", "H-T1.json")
-	if _, err := os.Stat(newPath); os.IsNotExist(err) {
-		t.Error("Task file not found in archived location")
-	}
-}
-
-func TestArchiveTask_AlreadyArchived(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	task := Task{Title: "Test", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
-		t.Fatalf("ArchiveTask failed: %v", err)
-	}
-
-	// Archiving again should be a no-op
-	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
-		t.Errorf("ArchiveTask on already archived task should not error, got: %v", err)
-	}
-}
-
-func TestArchiveTask_NotFound(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	err := env.tasks.ArchiveTask("H-T999")
-	if err == nil {
-		t.Error("Expected error for non-existent task")
-	}
-}
-
-func TestRestoreTask(t *testing.T) {
-	env, tmpDir, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	task := Task{Title: "Morning run", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
-		t.Fatalf("ArchiveTask failed: %v", err)
-	}
-
-	if err := env.tasks.RestoreTask("H-T1"); err != nil {
-		t.Fatalf("RestoreTask failed: %v", err)
-	}
-
-	// Verify task is in done
-	doneTasks, err := env.tasks.GetTasksByStatus("done")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-	if len(doneTasks) != 1 {
-		t.Errorf("Expected 1 done task, got %d", len(doneTasks))
-	}
-
-	// Verify removed from archived
-	archivedTasks, _ := env.tasks.GetTasksByStatus("archived")
-	if len(archivedTasks) != 0 {
-		t.Errorf("Expected 0 archived tasks, got %d", len(archivedTasks))
-	}
-
-	// Verify file location
-	donePath := filepath.Join(tmpDir, "data", "tasks", "done", "H-T1.json")
-	if _, err := os.Stat(donePath); os.IsNotExist(err) {
-		t.Error("Task file not found in done location")
-	}
-}
-
-func TestRestoreTask_NotArchived(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	task := Task{Title: "Test", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	err := env.tasks.RestoreTask("H-T1")
-	if err == nil {
-		t.Error("Expected error when restoring non-archived task")
-	}
-}
-
-func TestRestoreTask_NotFound(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	err := env.tasks.RestoreTask("H-T999")
-	if err == nil {
-		t.Error("Expected error for non-existent task")
-	}
-}
-
-func TestGetTasksByStatus_Archived(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create two tasks, archive one
-	t1 := Task{Title: "Task 1", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	t2 := Task{Title: "Task 2", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(t1); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-	if err := env.tasks.SaveTask(t2); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
-		t.Fatalf("ArchiveTask failed: %v", err)
-	}
-
-	// Should find only the archived task
-	archivedTasks, err := env.tasks.GetTasksByStatus("archived")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-	if len(archivedTasks) != 1 {
-		t.Errorf("Expected 1 archived task, got %d", len(archivedTasks))
-	}
-	if archivedTasks[0].ID != "H-T1" {
-		t.Errorf("Expected archived task H-T1, got %s", archivedTasks[0].ID)
-	}
-}
+// TestArchiveTask*, TestRestoreTask*, TestGetTasksByStatus_Archived removed
+// by task 99: ITask.Archive and ITask.Restore tests in task_access_test.go
+// cover the same scenarios.
 
 func TestAllTaskStatuses_IncludesArchived(t *testing.T) {
 	statuses := AllTaskStatuses()
@@ -2026,151 +1258,10 @@ func TestAllTaskStatuses_IncludesArchived(t *testing.T) {
 	}
 }
 
-func TestGetTasksByTheme_IncludesArchivedForIDGeneration(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create two tasks: H-T1 and H-T2
-	task1 := Task{Title: "Task one", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task1); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-	task2 := Task{Title: "Task two", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task2); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Archive both tasks
-	if err := env.tasks.ArchiveTask("H-T1"); err != nil {
-		t.Fatalf("ArchiveTask H-T1 failed: %v", err)
-	}
-	if err := env.tasks.ArchiveTask("H-T2"); err != nil {
-		t.Fatalf("ArchiveTask H-T2 failed: %v", err)
-	}
-
-	// Create a new task — should get H-T3, not H-T1 (collision with archived)
-	task3 := Task{Title: "Task three", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task3); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Verify new task got H-T3
-	todoTasks, err := env.tasks.GetTasksByStatus("todo")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-	if len(todoTasks) != 1 {
-		t.Fatalf("Expected 1 todo task, got %d", len(todoTasks))
-	}
-	if todoTasks[0].ID != "H-T3" {
-		t.Errorf("Expected new task ID H-T3, got %s (ID collision with archived task)", todoTasks[0].ID)
-	}
-}
-
-func TestUnit_SaveTaskFile_RejectsDuplicateID(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create theme
-	theme := LifeTheme{ID: "H", Name: "Health", Color: "#00FF00"}
-	if err := env.themes.SaveTheme(theme); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Create a task normally — gets H-T1
-	task1 := Task{Title: "Task one", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task1); err != nil {
-		t.Fatalf("SaveTask failed: %v", err)
-	}
-
-	// Manually place a rogue file at H-T2 in archived (simulating corruption)
-	archivedDir := env.tasks.taskDirPath("archived")
-	if err := os.MkdirAll(archivedDir, 0755); err != nil {
-		t.Fatalf("MkdirAll failed: %v", err)
-	}
-	rogueTask := Task{ID: "H-T2", Title: "Rogue", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	rogueData, _ := json.Marshal(rogueTask)
-	roguePath := env.tasks.taskFilePath("archived", "H-T2")
-	if err := os.WriteFile(roguePath, rogueData, 0644); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	// generateTaskID scans filenames on disk, so it sees H-T1 in todo and
-	// H-T2 in archived — even if H-T2's internal themeId doesn't match.
-	// It generates H-T3 (max=2, next=3).
-	task2 := Task{Title: "Task two", ThemeID: "H", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(task2); err != nil {
-		t.Fatalf("SaveTask should succeed (generateTaskID returns H-T3, no conflict): %v", err)
-	}
-
-	// Verify H-T3 was created (H-T2 was seen in archived, so max=2, next=3)
-	todoTasks, err := env.tasks.GetTasksByStatus("todo")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-	found := false
-	for _, task := range todoTasks {
-		if task.ID == "H-T3" {
-			found = true
-		}
-	}
-	if !found {
-		t.Error("Expected H-T3 in todo tasks")
-	}
-}
-
-func TestGenerateTaskIDMismatchedThemeInFile(t *testing.T) {
-	env, _, cleanup := setupTestPlanAccess(t)
-	defer cleanup()
-
-	// Create two themes
-	if err := env.themes.SaveTheme(LifeTheme{ID: "W", Name: "Work", Color: "#FF0000"}); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-	if err := env.themes.SaveTheme(LifeTheme{ID: "L", Name: "Life", Color: "#00FF00"}); err != nil {
-		t.Fatalf("SaveTheme failed: %v", err)
-	}
-
-	// Place a file named W-T1.json in archived with themeId "L" (data inconsistency)
-	archivedDir := env.tasks.taskDirPath("archived")
-	if err := os.MkdirAll(archivedDir, 0755); err != nil {
-		t.Fatalf("MkdirAll failed: %v", err)
-	}
-	rogueTask := Task{ID: "W-T1", Title: "Mismatched", ThemeID: "L", Priority: string(PriorityImportantUrgent)}
-	rogueData, _ := json.Marshal(rogueTask)
-	if err := os.WriteFile(env.tasks.taskFilePath("archived", "W-T1"), rogueData, 0644); err != nil {
-		t.Fatalf("WriteFile failed: %v", err)
-	}
-
-	// Creating a new W task should skip W-T1 and produce W-T2
-	newTask := Task{Title: "New work task", ThemeID: "W", Priority: string(PriorityImportantUrgent)}
-	if err := env.tasks.SaveTask(newTask); err != nil {
-		t.Fatalf("SaveTask should succeed but got: %v", err)
-	}
-
-	todoTasks, err := env.tasks.GetTasksByStatus("todo")
-	if err != nil {
-		t.Fatalf("GetTasksByStatus failed: %v", err)
-	}
-	found := false
-	for _, task := range todoTasks {
-		if task.ID == "W-T2" {
-			found = true
-		}
-	}
-	if !found {
-		ids := make([]string, len(todoTasks))
-		for i, task := range todoTasks {
-			ids[i] = task.ID
-		}
-		t.Errorf("Expected W-T2 in todo tasks, got: %v", ids)
-	}
-}
+// TestGetTasksByTheme_IncludesArchivedForIDGeneration,
+// TestUnit_SaveTaskFile_RejectsDuplicateID, TestGenerateTaskIDMismatchedThemeInFile
+// removed by task 99: ITask.Create's ID-allocation behaviour (including the
+// archived-directory collision avoidance) is verified by ITask facet tests.
 
 func TestIsAnyTaskStatus(t *testing.T) {
 	if !IsAnyTaskStatus("archived") {
@@ -2300,8 +1391,8 @@ func TestUnit_RemoveStatusDirectory(t *testing.T) {
 	if err := env.tasks.EnsureStatusDirectory("empty-col"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
-	if err := env.tasks.RemoveStatusDirectory("empty-col"); err != nil {
-		t.Fatalf("RemoveStatusDirectory on empty dir failed: %v", err)
+	if err := env.tasks.removeStatusDirectory("empty-col"); err != nil {
+		t.Fatalf("removeStatusDirectory on empty dir failed: %v", err)
 	}
 	dirPath := filepath.Join(tmpDir, "data", "tasks", "empty-col")
 	if _, err := os.Stat(dirPath); !os.IsNotExist(err) {
@@ -2315,7 +1406,7 @@ func TestUnit_RemoveStatusDirectory(t *testing.T) {
 	if err := os.WriteFile(filePath, []byte("{}"), 0644); err != nil {
 		t.Fatalf("Failed to create file in directory: %v", err)
 	}
-	if err := env.tasks.RemoveStatusDirectory("non-empty"); err == nil {
+	if err := env.tasks.removeStatusDirectory("non-empty"); err == nil {
 		t.Error("Expected error when removing non-empty directory")
 	}
 }
@@ -2332,8 +1423,8 @@ func TestUnit_RenameStatusDirectory(t *testing.T) {
 		t.Fatalf("Failed to create file: %v", err)
 	}
 
-	if err := env.tasks.RenameStatusDirectory("old-name", "new-name"); err != nil {
-		t.Fatalf("RenameStatusDirectory failed: %v", err)
+	if err := env.tasks.renameStatusDirectory("old-name", "new-name"); err != nil {
+		t.Fatalf("renameStatusDirectory failed: %v", err)
 	}
 
 	oldPath := filepath.Join(tmpDir, "data", "tasks", "old-name")
@@ -2416,8 +1507,8 @@ func TestUnit_WriteTaskOrder(t *testing.T) {
 	beforeCount := len(beforeHistory)
 
 	order := map[string][]string{"todo": {"H-T1", "H-T2"}}
-	if err := env.tasks.WriteTaskOrder(order); err != nil {
-		t.Fatalf("WriteTaskOrder failed: %v", err)
+	if err := env.tasks.writeTaskOrder(order); err != nil {
+		t.Fatalf("writeTaskOrder failed: %v", err)
 	}
 
 	filePath := filepath.Join(tmpDir, "data", "task_order.json")

@@ -109,7 +109,7 @@ func (ta *TaskAccess) AddColumn(slug, title string) (BoardConfiguration, error) 
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
 	}
 
-	if err := commitFiles(ta.repo, []string{ta.BoardConfigFilePath()}, fmt.Sprintf("Add column: %s", title)); err != nil {
+	if err := commitFiles(ta.repo, []string{ta.boardConfigFilePath()}, fmt.Sprintf("Add column: %s", title)); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
 	}
 
@@ -148,13 +148,13 @@ func (ta *TaskAccess) RemoveColumn(slug string) (BoardConfiguration, error) {
 
 	// Remove the (empty) status directory. Failure here aborts before any
 	// config rewrite so the on-disk state stays self-consistent.
-	if err := ta.RemoveStatusDirectory(slug); err != nil {
+	if err := ta.removeStatusDirectory(slug); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RemoveColumn: %w", err)
 	}
 
 	// Drop the slug from task_order.json under the same lock that ITask
 	// orders take.
-	commitPaths := []string{ta.BoardConfigFilePath()}
+	commitPaths := []string{ta.boardConfigFilePath()}
 	orderMap, loadErr := ta.LoadTaskOrder()
 	if loadErr == nil {
 		if _, exists := orderMap[slug]; exists {
@@ -202,11 +202,34 @@ func (ta *TaskAccess) RenameColumn(oldSlug, newSlug, newTitle string) (BoardConf
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RenameColumn: column %q not found", oldSlug)
 	}
 
-	commitPaths := []string{ta.BoardConfigFilePath()}
+	commitPaths := []string{ta.boardConfigFilePath()}
 
 	if oldSlug != newSlug {
-		if err := ta.RenameStatusDirectory(oldSlug, newSlug); err != nil {
+		// Capture task filenames BEFORE the rename so we can stage their old
+		// paths (now removed) AND new paths (now present) — without this,
+		// the moved task files would surface as untracked working-tree
+		// changes after RenameColumn returns.
+		var movedFilenames []string
+		if entries, err := os.ReadDir(ta.taskDirPath(oldSlug)); err == nil {
+			for _, entry := range entries {
+				if entry.IsDir() {
+					continue
+				}
+				movedFilenames = append(movedFilenames, entry.Name())
+			}
+		}
+
+		if err := ta.renameStatusDirectory(oldSlug, newSlug); err != nil {
 			return BoardConfiguration{}, fmt.Errorf("TaskAccess.RenameColumn: %w", err)
+		}
+
+		// Stage both the (now-missing) old paths and the (now-present) new
+		// paths so git records the rename as a single coherent change.
+		for _, name := range movedFilenames {
+			commitPaths = append(commitPaths,
+				ta.taskDirPath(oldSlug)+string(os.PathSeparator)+name,
+				ta.taskDirPath(newSlug)+string(os.PathSeparator)+name,
+			)
 		}
 
 		orderMap, loadErr := ta.LoadTaskOrder()
@@ -267,7 +290,7 @@ func (ta *TaskAccess) RetitleColumn(slug, newTitle string) (BoardConfiguration, 
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RetitleColumn: %w", err)
 	}
 
-	if err := commitFiles(ta.repo, []string{ta.BoardConfigFilePath()}, fmt.Sprintf("Rename column title: %s", newTitle)); err != nil {
+	if err := commitFiles(ta.repo, []string{ta.boardConfigFilePath()}, fmt.Sprintf("Rename column title: %s", newTitle)); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RetitleColumn: %w", err)
 	}
 
@@ -316,7 +339,7 @@ func (ta *TaskAccess) ReorderColumns(slugs []string) (BoardConfiguration, error)
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.ReorderColumns: %w", err)
 	}
 
-	if err := commitFiles(ta.repo, []string{ta.BoardConfigFilePath()}, "Reorder columns"); err != nil {
+	if err := commitFiles(ta.repo, []string{ta.boardConfigFilePath()}, "Reorder columns"); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.ReorderColumns: %w", err)
 	}
 

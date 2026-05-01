@@ -398,13 +398,12 @@ func defaultAccessBoardConfiguration() *access.BoardConfiguration {
 	}
 }
 
-// taskAccessFacets composes the legacy ITaskAccess surface with the new
-// ITask and IBatch facet interfaces introduced by the access-atomicity
-// initiative. The Manager interacts exclusively through this composite so
-// it can call the new atomic verbs (Create/Save/Move/Archive/Restore/
-// Delete/Reorder, Promote/Commit) while a few legacy read-only helpers
-// (GetTasksByStatus, FindTasksByTag, LoadTaskOrder, ...) are still in use
-// pending task 99's removal of the legacy surface.
+// taskAccessFacets composes the new ITask + IBatch facet interfaces with
+// the few read-mostly helpers from access.ITaskAccess that the Manager
+// still depends on (GetTasksByStatus, GetBoardConfiguration,
+// FindTasksByTag, LoadTaskOrder/SaveTaskOrder, LoadArchivedOrder). Once
+// those helpers move into facet form (e.g. ITask.Find for the read paths),
+// this composite collapses to interface { access.ITask; access.IBatch }.
 type taskAccessFacets interface {
 	access.ITaskAccess
 	access.ITask

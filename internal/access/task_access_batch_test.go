@@ -39,7 +39,7 @@ func makeTaskInTodo(t *testing.T, env *testEnv, id, themeID, priority string) {
 		t.Fatalf("load task order: %v", err)
 	}
 	orderMap[priority] = append(orderMap[priority], id)
-	if err := env.tasks.WriteTaskOrder(orderMap); err != nil {
+	if err := env.tasks.writeTaskOrder(orderMap); err != nil {
 		t.Fatalf("write task order: %v", err)
 	}
 
