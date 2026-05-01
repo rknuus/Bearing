@@ -188,6 +188,20 @@
     tasksByQuadrant['not-important-urgent'].length
   );
 
+  // Session-effective tag list: union of the parent-supplied availableTags with every
+  // tag currently in flight inside this dialog (new-task draft, the row being edited,
+  // and every staged task across all three quadrants). Per-open lifetime; no state is
+  // pushed back to the parent.
+  const effectiveAvailableTags = $derived.by<string[]>(() => {
+    const stagedTags: string[] = [];
+    for (const tasks of Object.values(tasksByQuadrant)) {
+      for (const task of tasks) {
+        if (task.tags) stagedTags.push(...task.tags);
+      }
+    }
+    return [...new Set<string>([...availableTags, ...newTaskTags, ...editTags, ...stagedTags])];
+  });
+
   function handleAddTask(quadrantId: QuadrantId) {
     const title = newTaskTitle.trim();
     if (!title) return;
@@ -340,7 +354,7 @@
         <label for="new-task-tags">Tags</label>
         <TagEditor
           tags={newTaskTags}
-          {availableTags}
+          availableTags={effectiveAvailableTags}
           onTagsChange={(t) => newTaskTags = t}
         />
       </div>
@@ -389,7 +403,7 @@
           <label for="edit-pending-tags">Tags</label>
           <TagEditor
             tags={editTags}
-            {availableTags}
+            availableTags={effectiveAvailableTags}
             onTagsChange={(t) => { editTags = t; }}
           />
         </div>

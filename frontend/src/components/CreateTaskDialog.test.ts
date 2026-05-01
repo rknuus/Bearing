@@ -54,6 +54,7 @@ describe('CreateTaskDialog', () => {
   async function renderDialog(props: Partial<{
     open: boolean;
     themes: LifeTheme[];
+    availableTags: string[];
     onDone: () => void;
     onClose: () => void;
     createTask: (title: string, themeId: string, priority: string, description: string, tags: string) => Promise<Task>;
@@ -774,6 +775,60 @@ describe('CreateTaskDialog', () => {
 
       const editTitleInput = container.querySelector<HTMLInputElement>('#edit-pending-title');
       expect(document.activeElement).toBe(editTitleInput);
+    });
+  });
+
+  describe('session-effective available tags', () => {
+    it('inner edit dialog suggests a tag introduced in the new-task form during this session', async () => {
+      await renderDialog({ availableTags: ['focus'] });
+
+      // Set the title so the Prioritize button enables
+      const titleInput = container.querySelector<HTMLInputElement>('#new-task-title');
+      await fireEvent.input(titleInput!, { target: { value: 'deep work session' } });
+      await tick();
+
+      // Type a brand-new tag into the new-task TagEditor and commit it with Enter.
+      // Scope to the new-task form's TagEditor (the first `.tag-editor` in the DOM).
+      const newTaskTagEditor = container.querySelector('.task-entry .tag-editor');
+      expect(newTaskTagEditor).toBeTruthy();
+      const newTaskTagInput = newTaskTagEditor!.querySelector<HTMLInputElement>('.tag-input');
+      await fireEvent.input(newTaskTagInput!, { target: { value: 'deep-work' } });
+      await tick();
+      await fireEvent.keyDown(newTaskTagInput!, { key: 'Enter' });
+      await tick();
+
+      // Stage the task to the first (Important & Urgent) quadrant.
+      const addBtn = container.querySelector<HTMLButtonElement>('.btn-add');
+      await fireEvent.click(addBtn!);
+      await tick();
+
+      // Verify the task landed with the tag attached.
+      const q1 = container.querySelector('[data-testid="quadrant-important-urgent"]');
+      expect(q1!.querySelectorAll('.task-title').length).toBe(1);
+      const stagedBadges = q1!.querySelectorAll('.tag-badge');
+      const stagedBadgeTexts = Array.from(stagedBadges).map(b => b.textContent);
+      expect(stagedBadgeTexts).toContain('#deep-work');
+
+      // Double-click the staged task to open the inner edit dialog.
+      const stagedCard = q1!.querySelector('.pending-task');
+      expect(stagedCard).toBeTruthy();
+      await fireEvent.dblClick(stagedCard!);
+      await tick();
+
+      // Inner edit dialog opens.
+      const editDialogTitle = container.querySelector('#edit-pending-dialog-title');
+      expect(editDialogTitle).toBeTruthy();
+
+      // The edit-dialog's TagEditor should render 'deep-work' as a known pill.
+      // TagEditor renders one .tag-pill per known available tag.
+      const editTagEditor = container.querySelector<HTMLElement>('#edit-pending-dialog-title')!
+        .closest('.dialog')!
+        .querySelector<HTMLElement>('.tag-editor');
+      expect(editTagEditor).toBeTruthy();
+      const pillTexts = Array.from(editTagEditor!.querySelectorAll('.tag-pill'))
+        .map(p => p.textContent?.trim());
+      expect(pillTexts).toContain('deep-work');
+      expect(pillTexts).toContain('focus');
     });
   });
 
