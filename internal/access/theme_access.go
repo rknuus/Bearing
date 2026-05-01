@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"sync"
 
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -20,9 +21,20 @@ type IThemeAccess interface {
 }
 
 // ThemeAccess implements IThemeAccess with file-based storage and git versioning.
+//
+// Concurrency: mu serialises the full read-modify-write cycle on themes.json
+// (GetThemes -> mutate -> writeJSON -> commitFiles). Without it, two goroutines
+// could each read the same baseline, mutate independent copies, and have one
+// SaveTheme/DeleteTheme overwrite the other's changes.
+//
+// Lock ordering invariant: ThemeAccess.mu is always acquired BEFORE any
+// Repository lock taken inside commitFiles. No code path acquires the repo
+// lock and then ThemeAccess.mu, which would invert this ordering and risk a
+// deadlock with another path holding mu while waiting on the repo lock.
 type ThemeAccess struct {
 	dataPath string
 	repo     utilities.IRepository
+	mu       sync.Mutex
 }
 
 // NewThemeAccess creates a new ThemeAccess instance.
@@ -54,6 +66,15 @@ func (ta *ThemeAccess) themesFilePath() string {
 
 // GetThemes returns all life themes.
 func (ta *ThemeAccess) GetThemes() ([]LifeTheme, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+	return ta.getThemesLocked()
+}
+
+// getThemesLocked reads themes.json and returns its contents. Callers must
+// already hold ta.mu. This exists so RMW methods (SaveTheme, DeleteTheme) can
+// reuse the read step without re-entering ta.mu (sync.Mutex is not reentrant).
+func (ta *ThemeAccess) getThemesLocked() ([]LifeTheme, error) {
 	filePath := ta.themesFilePath()
 
 	data, err := os.ReadFile(filePath)
@@ -74,12 +95,20 @@ func (ta *ThemeAccess) GetThemes() ([]LifeTheme, error) {
 
 // SaveTheme saves or updates a life theme.
 // The theme ID must be set by the caller.
+//
+// Holds ta.mu for the full read-modify-write cycle so concurrent SaveTheme /
+// DeleteTheme calls cannot lose each other's edits. See the lock-ordering
+// note on ThemeAccess: mu is acquired BEFORE the repo lock used by
+// commitFiles.
 func (ta *ThemeAccess) SaveTheme(theme LifeTheme) error {
 	if theme.ID == "" {
 		return fmt.Errorf("ThemeAccess.SaveTheme: theme ID cannot be empty")
 	}
 
-	themes, err := ta.GetThemes()
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	themes, err := ta.getThemesLocked()
 	if err != nil {
 		return fmt.Errorf("ThemeAccess.SaveTheme: failed to get existing themes: %w", err)
 	}
@@ -123,8 +152,14 @@ func (ta *ThemeAccess) SaveTheme(theme LifeTheme) error {
 }
 
 // DeleteTheme deletes a life theme by ID.
+//
+// Holds ta.mu for the full read-modify-write cycle so a concurrent SaveTheme
+// cannot resurrect a deleted theme (or vice versa).
 func (ta *ThemeAccess) DeleteTheme(id string) error {
-	themes, err := ta.GetThemes()
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	themes, err := ta.getThemesLocked()
 	if err != nil {
 		return fmt.Errorf("ThemeAccess.DeleteTheme: failed to get existing themes: %w", err)
 	}
