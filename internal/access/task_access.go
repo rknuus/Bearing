@@ -547,8 +547,9 @@ func removeFromArchivedOrder(order []string, taskID string) ([]string, bool) {
 }
 
 // Find returns tasks matching the supplied filter. All filter fields are
-// optional and combine with AND. RoutineRef is reserved for Epic 3 (task
-// 102) when Task gains the matching field; for now it is a no-op.
+// optional and combine with AND. A non-nil RoutineRef matches only
+// tasks whose Task.RoutineRef is also non-nil and equal on both
+// RoutineID and Date.
 func (ta *TaskAccess) Find(filter TaskFilter) ([]Task, error) {
 	ta.mu.Lock()
 	defer ta.mu.Unlock()
@@ -575,7 +576,13 @@ func (ta *TaskAccess) Find(filter TaskFilter) ([]Task, error) {
 					continue
 				}
 			}
-			// TODO(task 102): wire RoutineRef filter when Task gains the field.
+			if filter.RoutineRef != nil {
+				if t.RoutineRef == nil ||
+					t.RoutineRef.RoutineID != filter.RoutineRef.RoutineID ||
+					t.RoutineRef.Date != filter.RoutineRef.Date {
+					continue
+				}
+			}
 			result = append(result, t)
 		}
 	}

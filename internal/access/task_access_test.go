@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -649,3 +650,201 @@ func TestUnit_ITask_ConcurrentMoveVsArchive_NoRace(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// =============================================================================
+// RoutineRef serialisation + Find filter (task 102)
+// =============================================================================
+
+// TestUnit_Task_RoutineRef_Serialisation_OmitsFieldWhenNil verifies that a
+// task without a RoutineRef serialises without the routineRef key, so
+// existing on-disk data remains byte-stable.
+func TestUnit_Task_RoutineRef_Serialisation_OmitsFieldWhenNil(t *testing.T) {
+	task := Task{
+		ID:       "H-T1",
+		Title:    "Plain task",
+		ThemeID:  "H",
+		Priority: "important-not-urgent",
+	}
+	data, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+	if strings.Contains(string(data), "routineRef") {
+		t.Errorf("Expected routineRef key to be omitted for nil RoutineRef, got: %s", string(data))
+	}
+
+	// Round-trip: unmarshal back and verify RoutineRef is nil.
+	var round Task
+	if err := json.Unmarshal(data, &round); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if round.RoutineRef != nil {
+		t.Errorf("Expected RoutineRef to be nil after round-trip, got %+v", round.RoutineRef)
+	}
+}
+
+// TestUnit_Task_RoutineRef_Serialisation_RoundTrips verifies that a task
+// with a populated RoutineRef serialises and deserialises losslessly.
+func TestUnit_Task_RoutineRef_Serialisation_RoundTrips(t *testing.T) {
+	date := utilities.MustParseCalendarDate("2026-05-01")
+	task := Task{
+		ID:       "T1",
+		Title:    "Morning routine occurrence",
+		Priority: "important-not-urgent",
+		Tags:     []string{"Routine"},
+		RoutineRef: &RoutineRef{
+			RoutineID: "R1",
+			Date:      date,
+		},
+	}
+	data, err := json.Marshal(task)
+	if err != nil {
+		t.Fatalf("Marshal failed: %v", err)
+	}
+
+	var round Task
+	if err := json.Unmarshal(data, &round); err != nil {
+		t.Fatalf("Unmarshal failed: %v", err)
+	}
+	if round.RoutineRef == nil {
+		t.Fatalf("Expected RoutineRef to round-trip non-nil, got nil")
+	}
+	if round.RoutineRef.RoutineID != "R1" {
+		t.Errorf("Expected RoutineID 'R1', got %q", round.RoutineRef.RoutineID)
+	}
+	if round.RoutineRef.Date != date {
+		t.Errorf("Expected Date %q, got %q", date, round.RoutineRef.Date)
+	}
+}
+
+// TestUnit_Task_RoutineRef_Deserialisation_LegacyDataKeepsFieldNil verifies
+// that on-disk JSON written before this field existed (i.e. without the
+// routineRef key) deserialises with RoutineRef == nil. This protects
+// backward compatibility for every existing task file in user data
+// directories.
+func TestUnit_Task_RoutineRef_Deserialisation_LegacyDataKeepsFieldNil(t *testing.T) {
+	legacy := []byte(`{"id":"H-T1","title":"Legacy task","themeId":"H","priority":"important-urgent"}`)
+	var task Task
+	if err := json.Unmarshal(legacy, &task); err != nil {
+		t.Fatalf("Unmarshal of legacy data failed: %v", err)
+	}
+	if task.RoutineRef != nil {
+		t.Errorf("Expected RoutineRef to be nil for legacy data, got %+v", task.RoutineRef)
+	}
+}
+
+// seedRoutineTask creates a routine-tagged task with a populated
+// RoutineRef in the todo zone and returns it.
+func seedRoutineTask(t *testing.T, env *testEnv, title, routineID string, date utilities.CalendarDate) Task {
+	t.Helper()
+	created, err := env.tasks.Create(Task{
+		Title:    title,
+		Priority: "important-not-urgent",
+		Tags:     []string{"Routine"},
+		RoutineRef: &RoutineRef{
+			RoutineID: routineID,
+			Date:      date,
+		},
+	}, "todo")
+	if err != nil {
+		t.Fatalf("Create routine task failed: %v", err)
+	}
+	return created
+}
+
+// TestUnit_ITask_Find_ByRoutineRef_ReturnsExactMatch verifies that the
+// RoutineRef filter dimension returns only the task whose RoutineRef
+// matches both RoutineID and Date.
+func TestUnit_ITask_Find_ByRoutineRef_ReturnsExactMatch(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	dateA := utilities.MustParseCalendarDate("2026-05-01")
+	dateB := utilities.MustParseCalendarDate("2026-05-02")
+
+	target := seedRoutineTask(t, env, "Today's R1", "R1", dateA)
+	_ = seedRoutineTask(t, env, "Tomorrow's R1", "R1", dateB)
+	_ = seedRoutineTask(t, env, "Today's R2", "R2", dateA)
+	_ = seedTaskInTodo(t, env, "H", "Plain non-routine task", nil)
+
+	got, err := env.tasks.Find(TaskFilter{RoutineRef: &RoutineRef{RoutineID: "R1", Date: dateA}})
+	if err != nil {
+		t.Fatalf("Find by RoutineRef failed: %v", err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("Expected exactly 1 task, got %d: %+v", len(got), got)
+	}
+	if got[0].ID != target.ID {
+		t.Errorf("Expected task %q, got %q", target.ID, got[0].ID)
+	}
+	if got[0].RoutineRef == nil ||
+		got[0].RoutineRef.RoutineID != "R1" ||
+		got[0].RoutineRef.Date != dateA {
+		t.Errorf("Expected matching RoutineRef on returned task, got %+v", got[0].RoutineRef)
+	}
+}
+
+// TestUnit_ITask_Find_ByRoutineRef_UnmatchedReturnsEmpty verifies that
+// querying for a RoutineRef no task carries returns an empty result
+// (not an error).
+func TestUnit_ITask_Find_ByRoutineRef_UnmatchedReturnsEmpty(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	dateA := utilities.MustParseCalendarDate("2026-05-01")
+	_ = seedRoutineTask(t, env, "R1 today", "R1", dateA)
+	_ = seedTaskInTodo(t, env, "H", "Plain task", nil)
+
+	dateB := utilities.MustParseCalendarDate("2026-05-02")
+	got, err := env.tasks.Find(TaskFilter{RoutineRef: &RoutineRef{RoutineID: "R1", Date: dateB}})
+	if err != nil {
+		t.Fatalf("Find by unmatched RoutineRef failed: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("Expected 0 tasks for unmatched RoutineRef, got %d: %+v", len(got), got)
+	}
+
+	// Different RoutineID, same date — also no match.
+	got, err = env.tasks.Find(TaskFilter{RoutineRef: &RoutineRef{RoutineID: "R-missing", Date: dateA}})
+	if err != nil {
+		t.Fatalf("Find by missing RoutineID failed: %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("Expected 0 tasks for unknown RoutineID, got %d: %+v", len(got), got)
+	}
+}
+
+// TestUnit_ITask_Find_NoFilter_DoesNotFilterOnRoutineRef verifies that an
+// empty TaskFilter returns every task regardless of whether their
+// RoutineRef is nil or populated. Guards against accidentally treating
+// a nil filter as "routineRef must be nil".
+func TestUnit_ITask_Find_NoFilter_DoesNotFilterOnRoutineRef(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	dateA := utilities.MustParseCalendarDate("2026-05-01")
+	_ = seedRoutineTask(t, env, "Routine occurrence", "R1", dateA)
+	_ = seedTaskInTodo(t, env, "H", "Plain task A", nil)
+	_ = seedTaskInTodo(t, env, "W", "Plain task B", nil)
+
+	got, err := env.tasks.Find(TaskFilter{})
+	if err != nil {
+		t.Fatalf("Find with empty filter failed: %v", err)
+	}
+	if len(got) != 3 {
+		t.Errorf("Expected 3 tasks (1 routine + 2 plain), got %d: %+v", len(got), got)
+	}
+
+	// Verify the routine task is among the results with its RoutineRef intact.
+	found := false
+	for _, ts := range got {
+		if ts.RoutineRef != nil && ts.RoutineRef.RoutineID == "R1" && ts.RoutineRef.Date == dateA {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Expected routine-tagged task with RoutineRef among Find({}) results, got %+v", got)
+	}
+}
+

@@ -1,5 +1,7 @@
 package access
 
+import "github.com/rkn/bearing/internal/utilities"
+
 // This file declares the new TaskAccess facet interfaces and their
 // request/outcome DTOs introduced by the access-atomicity initiative
 // (Epic 2: taskaccess-facet-refactor).
@@ -62,12 +64,14 @@ type IBoard interface {
 	ReorderColumns(slugs []string) (BoardConfiguration, error)
 }
 
-// RoutineRef identifies a particular occurrence of a routine. Used by
-// TaskFilter for routine-scoped task queries. The matching field on Task
-// is added by Epic 3 (task 102); declared here so the filter compiles.
+// RoutineRef identifies a particular occurrence of a routine. The
+// RoutineID identifies which routine, and Date pins the specific
+// occurrence (a routine can produce many tasks across dates). Used by
+// TaskFilter for routine-scoped task queries and by Task to link a
+// task back to its originating routine occurrence.
 type RoutineRef struct {
-	RoutineID string `json:"routineId"`
-	Date      string `json:"date"`
+	RoutineID string                 `json:"routineId"`
+	Date      utilities.CalendarDate `json:"date"`
 }
 
 // TaskFilter is the flexible filter passed to ITask.Find. All fields are

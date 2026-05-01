@@ -113,6 +113,7 @@ type Task struct {
 	PromotionDate utilities.CalendarDate `json:"promotionDate,omitempty"` // Date when priority should be promoted (YYYY-MM-DD)
 	CreatedAt     utilities.Timestamp    `json:"createdAt,omitempty"`     // ISO 8601 creation timestamp
 	UpdatedAt     utilities.Timestamp    `json:"updatedAt,omitempty"`     // ISO 8601 last-update timestamp
+	RoutineRef    *RoutineRef            `json:"routineRef,omitempty"`    // Optional link to the routine occurrence that created this task; nil for non-routine tasks
 }
 
 // ColumnType represents the semantic type of a board column.
