@@ -1518,16 +1518,14 @@ export async function runTests() {
 
       assertDirExists(DATA_DIR, 'tasks/e2e-review')
 
-      // The IBoard facet decomposition adds two transitional commits to
+      // The IBoard facet decomposition adds one transitional commit to
       // the AddColumn flow: WorkspaceManager seeds the default board
-      // configuration on its first mutation (1), IBoard.AddColumn appends
-      // the new column at the end (1), and IBoard.ReorderColumns then
-      // moves it to the requested interior position (1). The seed and
-      // reorder commits collapse away once defaults move into bootstrap
-      // and AddColumn gains a position argument.
-      expectedCommits += 3
+      // configuration on its first mutation (1), then IBoard.AddColumn
+      // performs insertion-in-place as a single atomic verb (1). The
+      // seed commit collapses away once defaults move into bootstrap.
+      expectedCommits += 2
       assertCommitCount('after add column')
-      assertLatestCommitContains('Reorder columns')
+      assertLatestCommitContains('Add column: E2E Review')
 
       reporter.pass('Column "e2e-review" added')
     } catch (err) {
@@ -1592,12 +1590,12 @@ export async function runTests() {
       await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
       await page.waitForSelector('h2:has-text("E2E Verify")', { timeout: 5000 })
 
-      // RenameColumn produces two transitional commits: IBoard.RenameColumn
-      // commits the board_config + task_order rewrite (1), then
-      // WorkspaceManager calls CommitAll to stage the renamed task files
-      // (1). The follow-up commit collapses away once IBoard.RenameColumn
-      // discovers and stages the renamed task files itself.
-      expectedCommits += 2
+      // RenameColumn is a single atomic commit: IBoard.RenameColumn
+      // discovers and stages the renamed task files itself, so the
+      // board_config rewrite, task_order rewrite, and moved task files
+      // all land in one commit (the previous CommitAll bridge in
+      // WorkspaceManager.RenameColumn was eliminated by task 99).
+      expectedCommits += 1
 
       // Verify task file migrated to new directory
       assertDirNotExists(DATA_DIR, 'tasks/e2e-review')

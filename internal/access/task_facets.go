@@ -41,9 +41,21 @@ type IBatch interface {
 // IBoard is the board-structure facet of TaskAccess. Each verb applies
 // the configuration change, the matching filesystem operation, and the
 // commit atomically.
+//
+// AddColumn inserts a new column at the position implied by afterSlug:
+//   - afterSlug == ""           : append at the end, but BEFORE the
+//                                 trailing done-type bookend column when
+//                                 one is present (preserves the "todo
+//                                 first, done last" invariant).
+//   - afterSlug == "<existing>" : insert immediately after that slug.
+//                                 Inserting after a done-type column is
+//                                 rejected because it would push the
+//                                 bookend out of last position.
+//   - afterSlug == "<missing>"  : returns an error and makes no on-disk
+//                                 changes.
 type IBoard interface {
 	Get() (BoardConfiguration, error)
-	AddColumn(slug, title string) (BoardConfiguration, error)
+	AddColumn(slug, title, afterSlug string) (BoardConfiguration, error)
 	RemoveColumn(slug string) (BoardConfiguration, error)
 	RenameColumn(oldSlug, newSlug, newTitle string) (BoardConfiguration, error)
 	RetitleColumn(slug, newTitle string) (BoardConfiguration, error)

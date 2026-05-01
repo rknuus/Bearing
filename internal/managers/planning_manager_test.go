@@ -339,7 +339,7 @@ func (m *mockTaskAccess) Get() (access.BoardConfiguration, error) {
 	return *m.boardConfig, nil
 }
 
-func (m *mockTaskAccess) AddColumn(slug, title string) (access.BoardConfiguration, error) {
+func (m *mockTaskAccess) AddColumn(slug, title, afterSlug string) (access.BoardConfiguration, error) {
 	if slug == "" {
 		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.AddColumn: slug cannot be empty")
 	}
@@ -351,11 +351,40 @@ func (m *mockTaskAccess) AddColumn(slug, title string) (access.BoardConfiguratio
 	if m.boardConfig == nil {
 		m.boardConfig = &access.BoardConfiguration{}
 	}
-	m.boardConfig.ColumnDefinitions = append(m.boardConfig.ColumnDefinitions, access.ColumnDefinition{
+	cols := m.boardConfig.ColumnDefinitions
+
+	insertIdx := len(cols)
+	if afterSlug == "" {
+		if insertIdx > 0 && cols[insertIdx-1].Type == access.ColumnTypeDone {
+			insertIdx--
+		}
+	} else {
+		idx := -1
+		for i, col := range cols {
+			if col.Name == afterSlug {
+				idx = i
+				break
+			}
+		}
+		if idx < 0 {
+			return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.AddColumn: column %q not found", afterSlug)
+		}
+		if cols[idx].Type == access.ColumnTypeDone {
+			return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.AddColumn: %w", access.ErrInsertAfterBookend)
+		}
+		insertIdx = idx + 1
+	}
+
+	newCol := access.ColumnDefinition{
 		Name:  slug,
 		Title: title,
 		Type:  access.ColumnTypeDoing,
-	})
+	}
+	updated := make([]access.ColumnDefinition, 0, len(cols)+1)
+	updated = append(updated, cols[:insertIdx]...)
+	updated = append(updated, newCol)
+	updated = append(updated, cols[insertIdx:]...)
+	m.boardConfig.ColumnDefinitions = updated
 	return *m.boardConfig, nil
 }
 

@@ -35,6 +35,11 @@ import (
 // message; access leaves the on-disk state untouched.
 var ErrColumnNotEmpty = errors.New("column not empty")
 
+// ErrInsertAfterBookend is returned by AddColumn when the requested
+// afterSlug is the trailing done-type bookend column — inserting after
+// it would violate the "done last" invariant.
+var ErrInsertAfterBookend = errors.New("cannot insert after the done bookend column")
+
 // findColumnIndex locates a column by slug in the supplied configuration.
 // Returns -1 when the slug is absent. The caller holds ta.mu.
 func findColumnIndex(config *BoardConfiguration, slug string) int {
@@ -74,12 +79,25 @@ func (ta *TaskAccess) Get() (BoardConfiguration, error) {
 	return *config, nil
 }
 
-// AddColumn appends a new column with the given slug and title to the
-// board configuration, creates its status directory, and commits both
-// changes in a single git commit. Caller-side policy (slug derivation,
-// reserved-slug rejection, slug uniqueness, insertion position) stays in
-// the manager; this verb only enforces non-empty inputs.
-func (ta *TaskAccess) AddColumn(slug, title string) (BoardConfiguration, error) {
+// AddColumn inserts a new doing-type column with the given slug and title
+// into the board configuration at the position implied by afterSlug,
+// creates its status directory, and commits both changes in a single git
+// commit. Caller-side policy (slug derivation, reserved-slug rejection,
+// slug uniqueness) stays in the manager; this verb only enforces
+// non-empty inputs and the bookend invariant local to insertion.
+//
+// Position semantics:
+//   - afterSlug == ""           : append at the end, but BEFORE a
+//                                 trailing done-type column when present
+//                                 so the "done last" bookend invariant
+//                                 is preserved.
+//   - afterSlug == "<existing>" : insert immediately after that slug.
+//                                 Rejected with ErrInsertAfterBookend
+//                                 when afterSlug names the trailing
+//                                 done-type bookend.
+//   - afterSlug == "<missing>"  : returns an error and makes no on-disk
+//                                 changes (config, directory untouched).
+func (ta *TaskAccess) AddColumn(slug, title, afterSlug string) (BoardConfiguration, error) {
 	if slug == "" {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: slug cannot be empty")
 	}
@@ -95,11 +113,24 @@ func (ta *TaskAccess) AddColumn(slug, title string) (BoardConfiguration, error) 
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
 	}
 
-	config.ColumnDefinitions = append(config.ColumnDefinitions, ColumnDefinition{
+	// Resolve target index without mutating the slice yet — that way an
+	// invalid afterSlug aborts before any filesystem or commit work.
+	insertIdx, err := resolveInsertIndex(config, afterSlug)
+	if err != nil {
+		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
+	}
+
+	newCol := ColumnDefinition{
 		Name:  slug,
 		Title: title,
 		Type:  ColumnTypeDoing,
-	})
+	}
+	cols := config.ColumnDefinitions
+	updated := make([]ColumnDefinition, 0, len(cols)+1)
+	updated = append(updated, cols[:insertIdx]...)
+	updated = append(updated, newCol)
+	updated = append(updated, cols[insertIdx:]...)
+	config.ColumnDefinitions = updated
 
 	if err := ta.EnsureStatusDirectory(slug); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
@@ -114,6 +145,32 @@ func (ta *TaskAccess) AddColumn(slug, title string) (BoardConfiguration, error) 
 	}
 
 	return *config, nil
+}
+
+// resolveInsertIndex maps the afterSlug semantics of AddColumn to the
+// concrete index at which the new column should be spliced into the
+// existing ColumnDefinitions slice. Caller holds ta.mu.
+func resolveInsertIndex(config *BoardConfiguration, afterSlug string) (int, error) {
+	cols := config.ColumnDefinitions
+
+	// Default-append position: end of slice, but before a trailing
+	// done-type bookend if one is present.
+	if afterSlug == "" {
+		idx := len(cols)
+		if idx > 0 && cols[idx-1].Type == ColumnTypeDone {
+			idx--
+		}
+		return idx, nil
+	}
+
+	idx := findColumnIndex(config, afterSlug)
+	if idx < 0 {
+		return 0, fmt.Errorf("column %q not found", afterSlug)
+	}
+	if cols[idx].Type == ColumnTypeDone {
+		return 0, ErrInsertAfterBookend
+	}
+	return idx + 1, nil
 }
 
 // RemoveColumn drops the named column from the board configuration. The

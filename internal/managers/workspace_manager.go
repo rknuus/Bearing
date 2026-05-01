@@ -128,10 +128,12 @@ func (m *WorkspaceManager) GetBoardConfiguration() (*BoardConfiguration, error) 
 }
 
 // AddColumn adds a new doing-type column after the specified column.
-// Slug derivation, reserved-slug rejection, slug uniqueness, and bookend
-// (insert-position) constraints are validated manager-side; the actual
-// directory creation, board-config write, and git commit happen atomically
-// inside access.IBoard.AddColumn under TaskAccess's mutex.
+// Slug derivation, reserved-slug rejection, slug uniqueness, and the
+// "cannot insert after done bookend" constraint are validated
+// manager-side; the actual insertion-in-place, status directory creation,
+// board-config write, and git commit happen atomically inside
+// access.IBoard.AddColumn under TaskAccess's mutex — a single verb, a
+// single git commit.
 func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, error) {
 	trimmedTitle := strings.TrimSpace(title)
 	slug := utilities.Slugify(trimmedTitle)
@@ -147,58 +149,28 @@ func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfi
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	// Validate slug uniqueness.
-	for _, col := range config.ColumnDefinitions {
+	// Validate slug uniqueness and resolve the insertion target so we can
+	// surface the user-facing "cannot insert after the last column"
+	// message before the access-layer call.
+	afterIdx := -1
+	for i, col := range config.ColumnDefinitions {
 		if col.Name == slug {
 			return nil, fmt.Errorf("column %q already exists", slug)
 		}
-	}
-
-	// Find insertion position.
-	insertIdx := -1
-	for i, col := range config.ColumnDefinitions {
 		if col.Name == insertAfterSlug {
-			insertIdx = i + 1
-			break
+			afterIdx = i
 		}
 	}
-	if insertIdx < 0 {
+	if afterIdx < 0 {
 		return nil, fmt.Errorf("column %q not found", insertAfterSlug)
 	}
-
-	// Validate: cannot insert before first (todo) or after last (done).
-	if insertIdx <= 0 {
-		return nil, fmt.Errorf("cannot insert before the first column")
-	}
-	if insertIdx >= len(config.ColumnDefinitions) && config.ColumnDefinitions[len(config.ColumnDefinitions)-1].Type == access.ColumnTypeDone {
+	if config.ColumnDefinitions[afterIdx].Type == access.ColumnTypeDone {
 		return nil, fmt.Errorf("cannot insert after the last column")
 	}
 
-	// IBoard.AddColumn appends the new column at the end. When the caller
-	// requested an interior position, follow up with IBoard.ReorderColumns
-	// to move the new column to its target index. Both calls are
-	// individually atomic and produce one git commit each.
-	updated, err := m.access.AddColumn(slug, trimmedTitle)
+	updated, err := m.access.AddColumn(slug, trimmedTitle, insertAfterSlug)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
-	}
-
-	if insertIdx != len(updated.ColumnDefinitions)-1 {
-		others := make([]string, 0, len(updated.ColumnDefinitions)-1)
-		for _, col := range updated.ColumnDefinitions {
-			if col.Name == slug {
-				continue
-			}
-			others = append(others, col.Name)
-		}
-		reordered := make([]string, 0, len(others)+1)
-		reordered = append(reordered, others[:insertIdx]...)
-		reordered = append(reordered, slug)
-		reordered = append(reordered, others[insertIdx:]...)
-		updated, err = m.access.ReorderColumns(reordered)
-		if err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
 	}
 
 	return toManagerBoardConfig(&updated), nil

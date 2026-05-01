@@ -70,19 +70,29 @@ func TestUnit_IBoard_Get_EmptyConfigWhenAbsent(t *testing.T) {
 	}
 }
 
-func TestUnit_IBoard_AddColumn_AppendsAndCreatesDir(t *testing.T) {
+func TestUnit_IBoard_AddColumn_AppendBeforeDoneBookend(t *testing.T) {
 	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
 	seedColumns(t, env)
 	beforeCommits := commitCount(t, env.repo)
 
-	got, err := env.tasks.AddColumn("blocked", "BLOCKED")
+	got, err := env.tasks.AddColumn("blocked", "BLOCKED", "")
 	if err != nil {
 		t.Fatalf("AddColumn failed: %v", err)
 	}
-	if got.ColumnDefinitions[len(got.ColumnDefinitions)-1].Name != "blocked" {
-		t.Errorf("Expected last column 'blocked', got %q", got.ColumnDefinitions[len(got.ColumnDefinitions)-1].Name)
+	// Append with afterSlug="" must land BEFORE the done bookend so the
+	// "todo first, done last" invariant survives.
+	last := got.ColumnDefinitions[len(got.ColumnDefinitions)-1]
+	if last.Name != "done" {
+		t.Errorf("Expected 'done' to remain last, got %q", last.Name)
+	}
+	penultimate := got.ColumnDefinitions[len(got.ColumnDefinitions)-2]
+	if penultimate.Name != "blocked" {
+		t.Errorf("Expected 'blocked' before 'done', got %q", penultimate.Name)
+	}
+	if got.ColumnDefinitions[0].Name != "todo" {
+		t.Errorf("Expected 'todo' to remain first, got %q", got.ColumnDefinitions[0].Name)
 	}
 	if !env.tasks.statusDirExists("blocked") {
 		t.Errorf("Expected status directory 'blocked' to exist")
@@ -92,14 +102,96 @@ func TestUnit_IBoard_AddColumn_AppendsAndCreatesDir(t *testing.T) {
 	}
 }
 
+func TestUnit_IBoard_AddColumn_InsertAfterExisting(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	seedColumns(t, env)
+	beforeCommits := commitCount(t, env.repo)
+
+	got, err := env.tasks.AddColumn("blocked", "BLOCKED", "doing")
+	if err != nil {
+		t.Fatalf("AddColumn failed: %v", err)
+	}
+	// Expected order: todo, doing, blocked, review, done.
+	want := []string{"todo", "doing", "blocked", "review", "done"}
+	if len(got.ColumnDefinitions) != len(want) {
+		t.Fatalf("Expected %d columns, got %d", len(want), len(got.ColumnDefinitions))
+	}
+	for i, name := range want {
+		if got.ColumnDefinitions[i].Name != name {
+			t.Errorf("Column[%d]: expected %q, got %q", i, name, got.ColumnDefinitions[i].Name)
+		}
+	}
+	if !env.tasks.statusDirExists("blocked") {
+		t.Errorf("Expected status directory 'blocked' to exist")
+	}
+	if afterCommits := commitCount(t, env.repo); afterCommits-beforeCommits != 1 {
+		t.Errorf("Expected exactly 1 new commit, got %d", afterCommits-beforeCommits)
+	}
+}
+
+func TestUnit_IBoard_AddColumn_InsertAfterNonexistentFailsCleanly(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	seedColumns(t, env)
+	beforeCommits := commitCount(t, env.repo)
+	beforeConfig, _ := env.tasks.Get()
+
+	if _, err := env.tasks.AddColumn("blocked", "BLOCKED", "ghost"); err == nil {
+		t.Fatal("Expected error for unknown afterSlug")
+	}
+
+	// State must be unchanged.
+	afterConfig, _ := env.tasks.Get()
+	if len(afterConfig.ColumnDefinitions) != len(beforeConfig.ColumnDefinitions) {
+		t.Errorf("Config column count changed after rejected AddColumn: before=%d after=%d", len(beforeConfig.ColumnDefinitions), len(afterConfig.ColumnDefinitions))
+	}
+	if env.tasks.statusDirExists("blocked") {
+		t.Error("Expected 'blocked' directory NOT to exist after rejected AddColumn")
+	}
+	if afterCommits := commitCount(t, env.repo); afterCommits-beforeCommits != 0 {
+		t.Errorf("Expected no new commits after rejected AddColumn, got %d", afterCommits-beforeCommits)
+	}
+}
+
+func TestUnit_IBoard_AddColumn_InsertAfterDoneBookendFails(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	seedColumns(t, env)
+	beforeCommits := commitCount(t, env.repo)
+	beforeConfig, _ := env.tasks.Get()
+
+	_, err := env.tasks.AddColumn("blocked", "BLOCKED", "done")
+	if err == nil {
+		t.Fatal("Expected error for inserting after done bookend")
+	}
+	if !errors.Is(err, ErrInsertAfterBookend) {
+		t.Errorf("Expected ErrInsertAfterBookend, got %v", err)
+	}
+
+	afterConfig, _ := env.tasks.Get()
+	if len(afterConfig.ColumnDefinitions) != len(beforeConfig.ColumnDefinitions) {
+		t.Errorf("Config column count changed after rejected AddColumn: before=%d after=%d", len(beforeConfig.ColumnDefinitions), len(afterConfig.ColumnDefinitions))
+	}
+	if env.tasks.statusDirExists("blocked") {
+		t.Error("Expected 'blocked' directory NOT to exist after rejected AddColumn")
+	}
+	if afterCommits := commitCount(t, env.repo); afterCommits-beforeCommits != 0 {
+		t.Errorf("Expected no new commits after rejected AddColumn, got %d", afterCommits-beforeCommits)
+	}
+}
+
 func TestUnit_IBoard_AddColumn_RejectsEmptyInput(t *testing.T) {
 	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	if _, err := env.tasks.AddColumn("", "Title"); err == nil {
+	if _, err := env.tasks.AddColumn("", "Title", ""); err == nil {
 		t.Error("Expected error for empty slug")
 	}
-	if _, err := env.tasks.AddColumn("slug", ""); err == nil {
+	if _, err := env.tasks.AddColumn("slug", "", ""); err == nil {
 		t.Error("Expected error for empty title")
 	}
 }
