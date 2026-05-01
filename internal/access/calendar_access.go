@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
+	"sync"
 
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -20,9 +21,23 @@ type ICalendarAccess interface {
 }
 
 // CalendarAccess implements ICalendarAccess with file-based storage and git versioning.
+//
+// mu serialises the full read-modify-write cycle on calendar/<year>.json. The
+// per-path mutex inside writeJSON only protects the atomic-write step itself;
+// without mu, two goroutines could each call GetYearFocus, mutate independent
+// in-memory copies, and race on SaveDayFocus — losing one set of edits.
+//
+// A single mutex covers all year files. Calendar writes are infrequent and
+// year files are small, so the loss of per-year parallelism is not a concern
+// and the simpler invariant is preferred.
+//
+// Lock-ordering invariant: acquire CalendarAccess.mu before invoking
+// commitFiles (which internally takes the repository transaction lock).
+// Never invert this order.
 type CalendarAccess struct {
 	dataPath string
 	repo     utilities.IRepository
+	mu       sync.Mutex
 }
 
 // NewCalendarAccess creates a new CalendarAccess instance.
@@ -81,7 +96,10 @@ func (ca *CalendarAccess) GetDayFocus(date string) (*DayFocus, error) {
 		return nil, fmt.Errorf("CalendarAccess.GetDayFocus: invalid date format: %w", err)
 	}
 
-	entries, err := ca.GetYearFocus(year)
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+
+	entries, err := ca.getYearFocusLocked(year)
 	if err != nil {
 		return nil, fmt.Errorf("CalendarAccess.GetDayFocus: failed to get year focus: %w", err)
 	}
@@ -102,7 +120,10 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 		return fmt.Errorf("CalendarAccess.SaveDayFocus: invalid date format: %w", err)
 	}
 
-	entries, err := ca.GetYearFocus(year)
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+
+	entries, err := ca.getYearFocusLocked(year)
 	if err != nil {
 		return fmt.Errorf("CalendarAccess.SaveDayFocus: failed to get year focus: %w", err)
 	}
@@ -149,6 +170,13 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 
 // GetYearFocus returns all day focus entries for a specific year.
 func (ca *CalendarAccess) GetYearFocus(year int) ([]DayFocus, error) {
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+	return ca.getYearFocusLocked(year)
+}
+
+// getYearFocusLocked reads and parses the year file. The caller must hold ca.mu.
+func (ca *CalendarAccess) getYearFocusLocked(year int) ([]DayFocus, error) {
 	filePath := ca.yearFocusFilePath(year)
 
 	data, err := os.ReadFile(filePath)
