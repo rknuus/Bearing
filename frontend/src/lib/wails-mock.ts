@@ -126,12 +126,6 @@ export interface DayFocus {
   routineChecks?: string[];
 }
 
-export interface RoutineTaskInfo {
-  routineId: string;
-  description: string;
-  isOverdue: boolean;
-}
-
 export const ROUTINE_COLOR = '#6b7280';
 
 export interface Task {
@@ -761,21 +755,36 @@ export const mockAppBindings = {
     mockYearFocus.set(year, entries);
   },
 
-  SaveDayFocusWithRoutines: async (day: DayFocus, routineInfos: RoutineTaskInfo[], previousChecks: string[]): Promise<void> => {
+  RecordRoutineCompletions: async (day: DayFocus, previousChecks: string[]): Promise<void> => {
     // Determine newly checked routines
     const prevSet = new Set(previousChecks);
     const newlyChecked = (day.routineChecks ?? []).filter(id => !prevSet.has(id));
 
-    // Create tasks for newly checked routines (mirrors Go backend logic)
+    // Server-side determination of description + overdue urgency from the
+    // routine catalogue (mirrors Go backend: ScheduleEngine.Plan).
+    const today = todayDate();
     for (const routineId of newlyChecked) {
-      const info = routineInfos.find(r => r.routineId === routineId);
-      if (!info) continue;
+      const routine = mockRoutines.find(r => r.id === routineId);
+      if (!routine) continue;
       const ref = `routine:${routineId}:${day.date}`;
       // Idempotency: skip if task with this description already exists
       const exists = mockTasks.some(t => t.description === ref);
       if (exists) continue;
-      const priority = info.isOverdue ? 'important-urgent' : 'important-not-urgent';
-      await mockAppBindings.CreateTask(info.description, '', priority, ref, 'Routine');
+      let isOverdue = false;
+      if (routine.repeatPattern) {
+        const allCheckedDates: string[] = [];
+        for (const [, yearEntries] of mockYearFocus) {
+          for (const entry of yearEntries) {
+            if (entry.routineChecks?.includes(routineId)) {
+              allCheckedDates.push(entry.date);
+            }
+          }
+        }
+        const overdue = computeMockOverdue(routine.repeatPattern, routine.exceptions || [], allCheckedDates, today);
+        isOverdue = overdue.length > 0 && day.date <= today;
+      }
+      const priority = isOverdue ? 'important-urgent' : 'important-not-urgent';
+      await mockAppBindings.CreateTask(routine.description, '', priority, ref, 'Routine');
     }
 
     // Determine newly unchecked routines — delete their tasks if still in todo/doing

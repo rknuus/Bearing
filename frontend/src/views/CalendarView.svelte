@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RoutineTaskInfo, type RepeatPattern, type Routine, ROUTINE_COLOR } from '../lib/wails-mock';
+  import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern, type Routine, ROUTINE_COLOR } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { checkStateFromData } from '../lib/utils/state-check';
@@ -457,12 +457,13 @@
         tags: editTags.length > 0 ? editTags : undefined,
         routineChecks: editRoutineChecks.length > 0 ? editRoutineChecks : undefined,
       };
-      const routineInfos: RoutineTaskInfo[] = routineOccurrences.map(o => ({
-        routineId: o.routineId,
-        description: o.description,
-        isOverdue: o.status === 'overdue',
-      }));
-      await bindings.SaveDayFocusWithRoutines(dayFocus, routineInfos, previousRoutineChecks);
+      try {
+        await bindings.RecordRoutineCompletions(dayFocus, previousRoutineChecks);
+      } catch (e) {
+        console.error('CalendarView: RecordRoutineCompletions failed', e);
+        saveError = `Internal state mismatch — your routine check could not be saved: ${extractError(e)}`;
+        return;
+      }
       previousRoutineChecks = [...editRoutineChecks];
       yearFocus.set(editingDay.date, dayFocus);
 

@@ -1279,11 +1279,7 @@ export async function runTests() {
           text: day.text || '',
           routineChecks: [routineInfo.id],
         }
-        await app.SaveDayFocusWithRoutines(
-          dayFocus,
-          [{ routineId: routineInfo.id, description: routineInfo.description, isOverdue: false }],
-          []
-        )
+        await app.RecordRoutineCompletions(dayFocus, [])
       }, { day: dayEntry, routineInfo: { id: routine.id, description: routine.description } })
 
       // Verify a routine task was created on disk
@@ -1298,8 +1294,9 @@ export async function runTests() {
       if (routineTask.themeId !== '') throw new Error(`Expected empty themeId, got "${routineTask.themeId}"`)
       if (!routineTask.tags.includes('Routine')) throw new Error('Expected "Routine" tag')
 
-      // task creation + day focus save = 2 commits
-      expectedCommits += 2
+      // RecordRoutineCompletions wraps task creation + day focus write
+      // in a single git transaction.
+      expectedCommits += 1
       assertCommitCount('after routine check in day focus')
 
       reporter.pass(`Routine task created: id=${routineTask.id}, file=${routineTaskFile}`)

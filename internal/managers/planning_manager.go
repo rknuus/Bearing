@@ -292,13 +292,6 @@ type RoutinePeriodProgress struct {
 	OnTrack   bool   `json:"onTrack"`
 }
 
-// RoutineTaskInfo carries the metadata needed to create a task for a checked routine.
-type RoutineTaskInfo struct {
-	RoutineID   string `json:"routineId"`
-	Description string `json:"description"`
-	IsOverdue   bool   `json:"isOverdue"`
-}
-
 // GoalType identifies the kind of goal node in the OKR hierarchy.
 type GoalType string
 
@@ -1072,17 +1065,6 @@ func (m *PlanningManager) SaveDayFocus(day DayFocus) error {
 		return fmt.Errorf("%w", err)
 	}
 	return nil
-}
-
-// SaveDayFocusWithRoutines is a transitional shim that forwards to
-// RecordRoutineCompletions. The routineInfos argument is ignored: the
-// new orchestration derives routine metadata (description, urgency)
-// from access.Routine + ScheduleEngine rather than from caller-supplied
-// hints. The shim exists only so the existing Wails binding in main.go
-// keeps compiling until task 105 retires it; new manager-level callers
-// must use RecordRoutineCompletions directly.
-func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, _ []RoutineTaskInfo, previousChecks []string) error {
-	return m.RecordRoutineCompletions(day, previousChecks)
 }
 
 // RecordRoutineCompletions atomically applies a day's routine-check

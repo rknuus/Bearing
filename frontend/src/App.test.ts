@@ -31,7 +31,7 @@ function makeMockBindings() {
     // CalendarView APIs
     GetYearFocus: vi.fn().mockResolvedValue([]),
     SaveDayFocus: vi.fn().mockResolvedValue(undefined),
-    SaveDayFocusWithRoutines: vi.fn().mockResolvedValue(undefined),
+    RecordRoutineCompletions: vi.fn().mockResolvedValue(undefined),
     ClearDayFocus: vi.fn().mockResolvedValue(undefined),
     GetRoutines: vi.fn().mockResolvedValue([]),
     GetRoutinesForDate: vi.fn().mockResolvedValue([]),

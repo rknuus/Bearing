@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import type { LifeTheme, DayFocus, RoutineOccurrence, RoutineTaskInfo } from '../lib/wails-mock';
+import type { LifeTheme, DayFocus, RoutineOccurrence } from '../lib/wails-mock';
 import { parseCalendarDate, type CalendarDate } from '../lib/utils/date-utils';
 import CalendarView from './CalendarView.svelte';
 import { formatDate as formatDateLocale, formatMonthName, formatWeekdayShort } from '../lib/utils/date-format';
@@ -44,7 +44,7 @@ describe('CalendarView', () => {
         if (idx >= 0) currentYearFocus[idx] = day;
         else currentYearFocus.push(day);
       }),
-      SaveDayFocusWithRoutines: vi.fn().mockImplementation(async (day: DayFocus) => {
+      RecordRoutineCompletions: vi.fn().mockImplementation(async (day: DayFocus) => {
         const idx = currentYearFocus.findIndex(e => e.date === day.date);
         if (idx >= 0) currentYearFocus[idx] = day;
         else currentYearFocus.push(day);
@@ -251,7 +251,7 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+      expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
     });
   });
 
@@ -300,13 +300,12 @@ describe('CalendarView', () => {
     await tick();
 
     await vi.waitFor(() => {
-      expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+      expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalledWith(
         expect.objectContaining({ date: '2025-01-01', text: '' }),
-        expect.any(Array),
         expect.any(Array),
       );
       // themeIds should be undefined (no themes selected)
-      const call = mockBindings.SaveDayFocusWithRoutines.mock.calls.find(
+      const call = mockBindings.RecordRoutineCompletions.mock.calls.find(
         (c: unknown[]) => (c[0] as DayFocus).date === '2025-01-01'
       );
       expect(call).toBeTruthy();
@@ -461,7 +460,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
       });
       await tick();
       await tick();
@@ -608,9 +607,8 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalledWith(
           expect.objectContaining({ okrIds: ['HF-O1'] }),
-          expect.any(Array),
           expect.any(Array),
         );
       });
@@ -634,8 +632,8 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
-        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
+        const call = mockBindings.RecordRoutineCompletions.mock.calls[0];
         expect((call[0] as DayFocus).themeIds).toBeUndefined();
       });
     });
@@ -735,9 +733,8 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledWith(
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalledWith(
           expect.objectContaining({ tags: ['review'] }),
-          expect.any(Array),
           expect.any(Array),
         );
       });
@@ -1150,7 +1147,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
       });
 
       // Wait for the async NavigationContext persistence
@@ -1506,8 +1503,8 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
-        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
+        const call = mockBindings.RecordRoutineCompletions.mock.calls[0];
         const savedDay = call[0] as DayFocus;
         expect(savedDay.tags).toContain('Routine');
         expect(savedDay.routineChecks).toContain('R1');
@@ -1538,15 +1535,15 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
-        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
+        const call = mockBindings.RecordRoutineCompletions.mock.calls[0];
         const savedDay = call[0] as DayFocus;
         // Tags should not contain Routine (either undefined or missing)
         expect(savedDay.tags ?? []).not.toContain('Routine');
       });
     });
 
-    it('calls SaveDayFocusWithRoutines with correct routine metadata and previous checks', async () => {
+    it('calls RecordRoutineCompletions with current day focus and previous checks snapshot', async () => {
       // Start with R1 already checked
       const routines = makeRoutineOccurrences();
       routines[0].checked = true;
@@ -1569,25 +1566,17 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
-        const call = mockBindings.SaveDayFocusWithRoutines.mock.calls[0];
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
+        const call = mockBindings.RecordRoutineCompletions.mock.calls[0];
 
-        // Arg 0: DayFocus
+        // Arg 0: DayFocus carries the new check set.
         const savedDay = call[0] as DayFocus;
         expect(savedDay.routineChecks).toEqual(expect.arrayContaining(['R1', 'R2']));
 
-        // Arg 1: routineInfos — includes all occurrences with correct overdue flag
-        const infos = call[1] as RoutineTaskInfo[];
-        expect(infos.length).toBe(2);
-        const r1Info = infos.find((i: RoutineTaskInfo) => i.routineId === 'R1');
-        const r2Info = infos.find((i: RoutineTaskInfo) => i.routineId === 'R2');
-        expect(r1Info).toBeTruthy();
-        expect(r1Info!.isOverdue).toBe(false);
-        expect(r2Info).toBeTruthy();
-        expect(r2Info!.isOverdue).toBe(true);
-
-        // Arg 2: previousChecks — the snapshot before edits
-        const prevChecks = call[2] as string[];
+        // Arg 1: previousChecks — the snapshot before edits. Backend
+        // derives overdue/description server-side; no client-supplied
+        // routine metadata is passed (atomicity initiative #105).
+        const prevChecks = call[1] as string[];
         expect(prevChecks).toEqual(['R1']);
       });
     });
@@ -1682,7 +1671,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
       });
       expect(onTodayFocusEdited).toHaveBeenCalledOnce();
     });
@@ -1711,7 +1700,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalled();
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalled();
       });
       expect(onTodayFocusEdited).not.toHaveBeenCalled();
     });
@@ -1721,7 +1710,7 @@ describe('CalendarView', () => {
     it('shows ErrorBanner inside the dialog when save fails', async () => {
       // Suppress expected console.error from the catch block
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockBindings.SaveDayFocusWithRoutines.mockRejectedValueOnce(new Error('network timeout'));
+      mockBindings.RecordRoutineCompletions.mockRejectedValueOnce(new Error('network timeout'));
       await renderView();
 
       // Double-click Jan 15 cell to open editor dialog
@@ -1738,11 +1727,13 @@ describe('CalendarView', () => {
       saveButton!.click();
       await tick();
 
-      // ErrorBanner should appear inside the dialog with the error message
+      // ErrorBanner should appear inside the dialog with the rollback
+      // message (prefixed) plus the underlying error detail.
       await vi.waitFor(() => {
         const dialog = container.querySelector('.dialog');
         const alert = dialog!.querySelector('[role="alert"]');
         expect(alert).toBeTruthy();
+        expect(alert!.textContent).toContain('Internal state mismatch');
         expect(alert!.textContent).toContain('network timeout');
       });
 
@@ -1753,7 +1744,7 @@ describe('CalendarView', () => {
     it('clears ErrorBanner when save is retried', async () => {
       // Suppress expected console.error from the catch block
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockBindings.SaveDayFocusWithRoutines.mockRejectedValueOnce(new Error('network timeout'));
+      mockBindings.RecordRoutineCompletions.mockRejectedValueOnce(new Error('network timeout'));
       await renderView();
 
       // Double-click Jan 15 cell to open editor dialog
@@ -1780,7 +1771,7 @@ describe('CalendarView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockBindings.SaveDayFocusWithRoutines).toHaveBeenCalledTimes(2);
+        expect(mockBindings.RecordRoutineCompletions).toHaveBeenCalledTimes(2);
       });
 
       // After successful save, dialog closes and no error banner on page
@@ -1792,7 +1783,7 @@ describe('CalendarView', () => {
     it('clears ErrorBanner when dismiss is clicked', async () => {
       // Suppress expected console.error from the catch block
       vi.spyOn(console, 'error').mockImplementation(() => {});
-      mockBindings.SaveDayFocusWithRoutines.mockRejectedValueOnce(new Error('server error'));
+      mockBindings.RecordRoutineCompletions.mockRejectedValueOnce(new Error('server error'));
       await renderView();
 
       // Double-click Jan 15 cell to open editor dialog
