@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -991,6 +992,23 @@ func (m *mockCalendarAccess) GetYearFocus(year int) ([]access.DayFocus, error) {
 
 func (m *mockCalendarAccess) WriteDayFocus(day access.DayFocus) error {
 	return m.SaveDayFocus(day)
+}
+
+// GetRoutineCompletions returns the dates on which routineID was checked
+// across all stored DayFocus entries. Mirrors the disk implementation
+// behavior (sorted ascending, empty slice when never checked).
+func (m *mockCalendarAccess) GetRoutineCompletions(routineID string) ([]string, error) {
+	var dates []string
+	for date, day := range m.days {
+		for _, rid := range day.RoutineChecks {
+			if rid == routineID {
+				dates = append(dates, date)
+				break
+			}
+		}
+	}
+	sort.Strings(dates)
+	return dates, nil
 }
 
 // mockVisionAccess implements access.IVisionAccess for testing.
@@ -5436,6 +5454,97 @@ func TestUnit_RecordRoutineCompletions_AutoAddsRoutineTagWhenChecked(t *testing.
 	}
 	if !slices.Contains(saved.Tags, "Routine") {
 		t.Errorf("expected auto-added 'Routine' tag, got %v", saved.Tags)
+	}
+}
+
+// TestUnit_RecordRoutineCompletions_OverduePromotesToUrgent exercises the
+// priority-promotion path that broke when RecordRoutineCompletions started
+// feeding empty CompletedDates into ScheduleEngine.Plan. A daily routine
+// whose StartDate is several days before today, with no prior checks,
+// must materialise today's check as important-urgent because past
+// occurrences are overdue.
+func TestUnit_RecordRoutineCompletions_OverduePromotesToUrgent(t *testing.T) {
+	pm, mockTasks, _, ra := newMockManagerWithRoutines()
+
+	today := utilities.Today()
+	startDate := utilities.NewCalendarDate(today.Time().AddDate(0, 0, -5))
+
+	periodic := access.Routine{
+		ID:          "R1",
+		Description: "Daily journal",
+		RepeatPattern: &access.RepeatPattern{
+			Frequency: "daily",
+			Interval:  1,
+			StartDate: startDate,
+		},
+	}
+	if err := ra.SaveRoutine(periodic); err != nil {
+		t.Fatalf("seed routine: %v", err)
+	}
+
+	day := DayFocus{
+		Date:          today,
+		RoutineChecks: []string{"R1"},
+	}
+	if err := pm.RecordRoutineCompletions(day, nil); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
+	}
+
+	todo := mockTasks.tasks["todo"]
+	if len(todo) != 1 {
+		t.Fatalf("expected 1 todo task, got %d", len(todo))
+	}
+	if got := todo[0].Priority; got != string(access.PriorityImportantUrgent) {
+		t.Errorf("priority = %q, want %q (overdue past occurrences should promote)", got, access.PriorityImportantUrgent)
+	}
+}
+
+// TestUnit_RecordRoutineCompletions_AllPriorDatesCompleted_NotUrgent is the
+// non-regression counterpart: when every prior daily occurrence is already
+// recorded as completed in the calendar, today's new check carries no
+// overdue catch-up and must materialise as important-not-urgent.
+func TestUnit_RecordRoutineCompletions_AllPriorDatesCompleted_NotUrgent(t *testing.T) {
+	pm, mockTasks, calMock, ra := newMockManagerWithRoutines()
+
+	today := utilities.Today()
+	startDate := utilities.NewCalendarDate(today.Time().AddDate(0, 0, -3))
+
+	periodic := access.Routine{
+		ID:          "R1",
+		Description: "Daily journal",
+		RepeatPattern: &access.RepeatPattern{
+			Frequency: "daily",
+			Interval:  1,
+			StartDate: startDate,
+		},
+	}
+	if err := ra.SaveRoutine(periodic); err != nil {
+		t.Fatalf("seed routine: %v", err)
+	}
+
+	// Pre-seed completion history for every past daily occurrence.
+	for offset := 3; offset >= 1; offset-- {
+		past := utilities.NewCalendarDate(today.Time().AddDate(0, 0, -offset))
+		calMock.days[past.String()] = access.DayFocus{
+			Date:          past,
+			RoutineChecks: []string{"R1"},
+		}
+	}
+
+	day := DayFocus{
+		Date:          today,
+		RoutineChecks: []string{"R1"},
+	}
+	if err := pm.RecordRoutineCompletions(day, nil); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
+	}
+
+	todo := mockTasks.tasks["todo"]
+	if len(todo) != 1 {
+		t.Fatalf("expected 1 todo task, got %d", len(todo))
+	}
+	if got := todo[0].Priority; got != string(access.PriorityImportantNotUrgent) {
+		t.Errorf("priority = %q, want %q (no overdue history → no urgent promotion)", got, access.PriorityImportantNotUrgent)
 	}
 }
 

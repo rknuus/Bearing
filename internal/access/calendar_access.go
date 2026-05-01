@@ -3,10 +3,12 @@ package access
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/rkn/bearing/internal/utilities"
@@ -24,6 +26,13 @@ type ICalendarAccess interface {
 	// utilities.RunTransaction so a single terminal commit covers writes
 	// spanning multiple Access components.
 	WriteDayFocus(day DayFocus) error
+
+	// GetRoutineCompletions returns every date on which routineID was
+	// checked, scanning all year files under calendar/. Dates are
+	// returned in YYYY-MM-DD form, sorted ascending. Used by the
+	// PlanningManager to feed ScheduleEngine.Plan's overdue-priority
+	// rule with real cross-day completion history.
+	GetRoutineCompletions(routineID string) ([]string, error)
 }
 
 // CalendarAccess implements ICalendarAccess with file-based storage and git versioning.
@@ -232,4 +241,65 @@ func (ca *CalendarAccess) getYearFocusLocked(year int) ([]DayFocus, error) {
 	}
 
 	return yearFile.Entries, nil
+}
+
+// GetRoutineCompletions returns every date on which routineID appears in
+// DayFocus.RoutineChecks, scanning every <year>.json file under calendar/.
+// Result is YYYY-MM-DD strings sorted ascending. Missing calendar/ directory
+// yields an empty slice without error. Malformed year files are logged and
+// skipped — a single corrupt file must not poison the whole query.
+//
+// Read-only path: takes ca.mu to keep the file-level snapshot consistent
+// with concurrent writers (RMW invariant).
+func (ca *CalendarAccess) GetRoutineCompletions(routineID string) ([]string, error) {
+	if routineID == "" {
+		return nil, fmt.Errorf("CalendarAccess.GetRoutineCompletions: routineID cannot be empty")
+	}
+
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+
+	calendarDir := filepath.Join(ca.dataPath, "calendar")
+	dirEntries, err := os.ReadDir(calendarDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []string{}, nil
+		}
+		return nil, fmt.Errorf("CalendarAccess.GetRoutineCompletions: failed to read calendar directory: %w", err)
+	}
+
+	var dates []string
+	for _, entry := range dirEntries {
+		if entry.IsDir() {
+			continue
+		}
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		yearStr := strings.TrimSuffix(name, ".json")
+		year, err := strconv.Atoi(yearStr)
+		if err != nil {
+			// Not a year file (e.g. a stray file). Skip silently.
+			continue
+		}
+
+		entries, err := ca.getYearFocusLocked(year)
+		if err != nil {
+			slog.Warn("CalendarAccess.GetRoutineCompletions: skipping malformed year file",
+				"year", year, "error", err)
+			continue
+		}
+		for _, df := range entries {
+			for _, rid := range df.RoutineChecks {
+				if rid == routineID {
+					dates = append(dates, df.Date.String())
+					break
+				}
+			}
+		}
+	}
+
+	sort.Strings(dates)
+	return dates, nil
 }

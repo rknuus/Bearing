@@ -24,11 +24,10 @@ import (
 )
 
 // seedRoutine writes a routine through RoutineAccess so PlanningManager's
-// RecordRoutineCompletions has catalogue metadata for the diff. We use
-// SAPORADIC routines (RepeatPattern == nil) so ScheduleEngine.Plan does
-// not consult ComputeOverdue (which currently has no CompletedDates feed —
-// see PlanningManager.toEngineRoutineInputs comment) and the materialised
-// task's priority is deterministic.
+// RecordRoutineCompletions has catalogue metadata for the diff. The default
+// (no RepeatPattern) is sporadic, which keeps materialised priority
+// deterministic regardless of completion history. Tests that exercise the
+// overdue-priority promotion path supply a daily RepeatPattern explicitly.
 func seedRoutine(t *testing.T, ra *access.RoutineAccess, id, description string) {
 	t.Helper()
 	if err := ra.SaveRoutine(access.Routine{ID: id, Description: description}); err != nil {
@@ -216,6 +215,128 @@ func TestIntegration_RecordRoutineCompletions_FaultRollback_NoCommit_NoFiles(t *
 		if df.Date.String() == "2026-04-11" {
 			t.Errorf("unexpected calendar entry persisted after rollback: %+v", df)
 		}
+	}
+}
+
+// TestIntegration_RecordRoutineCompletions_OverdueDailyRoutine_PromotesToUrgent
+// is the end-to-end behaviour-regression guard: a daily routine started five
+// days ago has no prior completions on disk, so checking it today must
+// materialise the resulting task at important-urgent priority. This crosses
+// the full pipeline (RoutineAccess + CalendarAccess.GetRoutineCompletions
+// + ScheduleEngine.Plan + TaskAccess.CommitNoTx) on real git plumbing.
+//
+// Closes the regression introduced when RecordRoutineCompletions replaced
+// SaveDayFocusWithRoutines: the manager fed empty CompletedDates into the
+// engine, which silently degraded the urgency rule to "always not urgent".
+func TestIntegration_RecordRoutineCompletions_OverdueDailyRoutine_PromotesToUrgent(t *testing.T) {
+	manager, taskAccess, repo, tmpDir, cleanup := setupIntegrationTest(t)
+	defer cleanup()
+
+	ra, _ := dataAccess(t, tmpDir, repo)
+
+	today := utilities.Today()
+	startDate := utilities.NewCalendarDate(today.Time().AddDate(0, 0, -5))
+
+	if err := ra.SaveRoutine(access.Routine{
+		ID:          "R1",
+		Description: "Daily journal",
+		RepeatPattern: &access.RepeatPattern{
+			Frequency: "daily",
+			Interval:  1,
+			StartDate: startDate,
+		},
+	}); err != nil {
+		t.Fatalf("seed routine: %v", err)
+	}
+
+	day := managers.DayFocus{
+		Date:          today,
+		RoutineChecks: []string{"R1"},
+	}
+	if err := manager.RecordRoutineCompletions(day, nil); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
+	}
+
+	todoTasks, err := taskAccess.GetTasksByStatus("todo")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus(todo): %v", err)
+	}
+	var routineTask *access.Task
+	for i := range todoTasks {
+		if todoTasks[i].RoutineRef != nil && todoTasks[i].RoutineRef.RoutineID == "R1" {
+			routineTask = &todoTasks[i]
+			break
+		}
+	}
+	if routineTask == nil {
+		t.Fatal("expected materialised task for R1, none found")
+	}
+	if got := routineTask.Priority; got != string(access.PriorityImportantUrgent) {
+		t.Errorf("priority = %q, want %q (overdue catch-up should promote to urgent)", got, access.PriorityImportantUrgent)
+	}
+}
+
+// TestIntegration_RecordRoutineCompletions_FullyCompletedDaily_StaysNotUrgent
+// is the non-regression counterpart on real git plumbing: a daily routine
+// with every past occurrence already recorded as a completion in the
+// calendar must materialise today's check at important-not-urgent.
+func TestIntegration_RecordRoutineCompletions_FullyCompletedDaily_StaysNotUrgent(t *testing.T) {
+	manager, taskAccess, repo, tmpDir, cleanup := setupIntegrationTest(t)
+	defer cleanup()
+
+	ra, ca := dataAccess(t, tmpDir, repo)
+
+	today := utilities.Today()
+	startDate := utilities.NewCalendarDate(today.Time().AddDate(0, 0, -3))
+
+	if err := ra.SaveRoutine(access.Routine{
+		ID:          "R1",
+		Description: "Daily journal",
+		RepeatPattern: &access.RepeatPattern{
+			Frequency: "daily",
+			Interval:  1,
+			StartDate: startDate,
+		},
+	}); err != nil {
+		t.Fatalf("seed routine: %v", err)
+	}
+
+	// Pre-seed completion history for every past daily occurrence so
+	// ComputeOverdue's absorption rule classifies the routine as caught up.
+	for offset := 3; offset >= 1; offset-- {
+		past := utilities.NewCalendarDate(today.Time().AddDate(0, 0, -offset))
+		if err := ca.SaveDayFocus(access.DayFocus{
+			Date:          past,
+			RoutineChecks: []string{"R1"},
+		}); err != nil {
+			t.Fatalf("seed completion %s: %v", past, err)
+		}
+	}
+
+	day := managers.DayFocus{
+		Date:          today,
+		RoutineChecks: []string{"R1"},
+	}
+	if err := manager.RecordRoutineCompletions(day, nil); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
+	}
+
+	todoTasks, err := taskAccess.GetTasksByStatus("todo")
+	if err != nil {
+		t.Fatalf("GetTasksByStatus(todo): %v", err)
+	}
+	var routineTask *access.Task
+	for i := range todoTasks {
+		if todoTasks[i].RoutineRef != nil && todoTasks[i].RoutineRef.RoutineID == "R1" {
+			routineTask = &todoTasks[i]
+			break
+		}
+	}
+	if routineTask == nil {
+		t.Fatal("expected materialised task for R1, none found")
+	}
+	if got := routineTask.Priority; got != string(access.PriorityImportantNotUrgent) {
+		t.Errorf("priority = %q, want %q (fully caught up → no urgent promotion)", got, access.PriorityImportantNotUrgent)
 	}
 }
 

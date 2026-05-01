@@ -163,6 +163,116 @@ func TestUnit_CalendarAccess_WriteDayFocus_PersistsWithoutCommit(t *testing.T) {
 	}
 }
 
+// TestUnit_CalendarAccess_GetRoutineCompletions_ScansAllYearFiles verifies
+// the cross-day completions query: seed multiple year files via WriteDayFocus
+// with mixed routine completions, then assert that GetRoutineCompletions
+// returns exactly the matching dates in ascending order.
+//
+// This closes the regression that caused PlanningManager.RecordRoutineCompletions
+// to feed empty CompletedDates into ScheduleEngine.Plan, which silently
+// degraded overdue-priority materialisation to important-not-urgent.
+func TestUnit_CalendarAccess_GetRoutineCompletions_ScansAllYearFiles(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	// Seed three year files (2024..2026) with R1 checked on selected
+	// dates and R2 on disjoint dates so we can verify per-routine
+	// filtering. R3 is never checked → must yield empty.
+	seeds := []struct {
+		date    string
+		checks  []string
+	}{
+		// Out-of-order on purpose to confirm sort.
+		{"2026-04-10", []string{"R1"}},
+		{"2025-07-15", []string{"R1", "R2"}},
+		{"2024-12-31", []string{"R2"}},
+		{"2026-01-02", []string{"R1"}},
+		{"2025-07-15", []string{"R1", "R2"}}, // duplicate write — should still yield single entry
+		{"2026-03-01", nil},                  // empty checks — must not pollute
+	}
+	for _, s := range seeds {
+		if err := env.calendar.WriteDayFocus(DayFocus{
+			Date:          utilities.MustParseCalendarDate(s.date),
+			RoutineChecks: s.checks,
+		}); err != nil {
+			t.Fatalf("seed %s: %v", s.date, err)
+		}
+	}
+
+	r1Dates, err := env.calendar.GetRoutineCompletions("R1")
+	if err != nil {
+		t.Fatalf("GetRoutineCompletions(R1): %v", err)
+	}
+	wantR1 := []string{"2025-07-15", "2026-01-02", "2026-04-10"}
+	if !slicesEqual(r1Dates, wantR1) {
+		t.Errorf("R1 completions: got %v, want %v", r1Dates, wantR1)
+	}
+
+	r2Dates, err := env.calendar.GetRoutineCompletions("R2")
+	if err != nil {
+		t.Fatalf("GetRoutineCompletions(R2): %v", err)
+	}
+	wantR2 := []string{"2024-12-31", "2025-07-15"}
+	if !slicesEqual(r2Dates, wantR2) {
+		t.Errorf("R2 completions: got %v, want %v", r2Dates, wantR2)
+	}
+
+	r3Dates, err := env.calendar.GetRoutineCompletions("R3")
+	if err != nil {
+		t.Fatalf("GetRoutineCompletions(R3): %v", err)
+	}
+	if len(r3Dates) != 0 {
+		t.Errorf("R3 completions: got %v, want empty", r3Dates)
+	}
+}
+
+// TestUnit_CalendarAccess_GetRoutineCompletions_NoCalendarDir verifies the
+// missing-directory edge case: a fresh CalendarAccess on a path without
+// calendar/ must yield an empty slice and no error. The constructor
+// always creates the directory, so we exercise the path by removing it.
+func TestUnit_CalendarAccess_GetRoutineCompletions_NoCalendarDir(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	if err := os.RemoveAll(filepath.Join(env.dataDir, "calendar")); err != nil {
+		t.Fatalf("remove calendar dir: %v", err)
+	}
+
+	dates, err := env.calendar.GetRoutineCompletions("R1")
+	if err != nil {
+		t.Fatalf("GetRoutineCompletions: %v", err)
+	}
+	if len(dates) != 0 {
+		t.Errorf("expected empty slice on missing calendar/, got %v", dates)
+	}
+}
+
+// TestUnit_CalendarAccess_GetRoutineCompletions_EmptyRoutineID rejects an
+// empty routine ID rather than silently returning a meaningless result.
+func TestUnit_CalendarAccess_GetRoutineCompletions_EmptyRoutineID(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	if _, err := env.calendar.GetRoutineCompletions(""); err == nil {
+		t.Error("expected error for empty routineID, got nil")
+	}
+}
+
+// slicesEqual is a tiny string-slice equality helper local to this test
+// file (the standard library's slices.Equal would also work; using a
+// local helper keeps imports minimal here).
+func slicesEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // TestUnit_CalendarAccess_SaveDayFocus_ProducesExactlyOneCommit guards
 // against a regression in the Write*/Save* refactor.
 func TestUnit_CalendarAccess_SaveDayFocus_ProducesExactlyOneCommit(t *testing.T) {

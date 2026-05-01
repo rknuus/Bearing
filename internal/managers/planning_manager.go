@@ -1123,7 +1123,11 @@ func (m *PlanningManager) RecordRoutineCompletions(day DayFocus, previousChecks 
 		NewlyUnchecked: newlyUnchecked,
 		ExistingTasks:  existingRefs,
 	}
-	plan := m.scheduleEngine.Plan(engineDiff, toEngineRoutineInputs(routines), utilities.Today())
+	engineRoutines, err := m.toEngineRoutineInputs(routines)
+	if err != nil {
+		return fmt.Errorf("RecordRoutineCompletions: %w", err)
+	}
+	plan := m.scheduleEngine.Plan(engineDiff, engineRoutines, utilities.Today())
 
 	// Translate engine TaskSpecs to access.TaskCreate, computing the
 	// drop zone via RuleEngine (same source-of-truth used by other
@@ -1238,27 +1242,33 @@ func (m *PlanningManager) findExistingRoutineTasks(routineIDs []string, date uti
 }
 
 // toEngineRoutineInputs translates access.Routine values to the engine's
-// RoutineInput DTO. CompletedDates is left empty: ScheduleEngine.Plan's
-// urgency rule for a newly-checked occurrence depends only on whether
-// the diff date is in the past (back-fill) or whether the routine has
-// outstanding overdue occurrences as of today, the latter computed from
-// completed-dates. The completed dates available at this call site are
-// the previous day's checks, which are insufficient for the rule; the
-// engine's urgency rule therefore degrades gracefully to "important-
-// not-urgent" for periodic routines without overdue history. Improving
-// this requires the calendar access exposing a cross-day completed-dates
-// query, which is out of scope for task 104.
-func toEngineRoutineInputs(routines []access.Routine) []schedule_engine.RoutineInput {
+// RoutineInput DTO, populating CompletedDates from the cross-day completion
+// history exposed by ICalendarAccess.GetRoutineCompletions. The engine's
+// urgency rule (ScheduleEngine.Plan -> ComputeOverdue) consumes these to
+// decide whether a newly-checked occurrence should materialise as
+// important-urgent (overdue catch-up) versus important-not-urgent.
+//
+// The query is read-only and runs outside utilities.RunTransaction; one
+// call per routine in the diff. Calendars are small and bounded, so a
+// per-routine scan is acceptable; if profiling later indicates a hotspot,
+// a batched GetAllRoutineCompletions can be introduced without touching
+// the engine's contract.
+func (m *PlanningManager) toEngineRoutineInputs(routines []access.Routine) ([]schedule_engine.RoutineInput, error) {
 	out := make([]schedule_engine.RoutineInput, len(routines))
 	for i, r := range routines {
+		completed, err := m.calendarAccess.GetRoutineCompletions(r.ID)
+		if err != nil {
+			return nil, fmt.Errorf("load completions for routine %s: %w", r.ID, err)
+		}
 		out[i] = schedule_engine.RoutineInput{
-			ID:            r.ID,
-			Description:   r.Description,
-			RepeatPattern: toEngineRepeatPattern(r.RepeatPattern),
-			Exceptions:    toEngineExceptions(r.Exceptions),
+			ID:             r.ID,
+			Description:    r.Description,
+			RepeatPattern:  toEngineRepeatPattern(r.RepeatPattern),
+			Exceptions:     toEngineExceptions(r.Exceptions),
+			CompletedDates: completed,
 		}
 	}
-	return out
+	return out, nil
 }
 
 // buildRoutineTaskCreates translates engine TaskSpecs to access.TaskCreate
