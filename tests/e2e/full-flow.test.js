@@ -1186,12 +1186,10 @@ export async function runTests() {
         throw new Error(`Task ${task2Id} should be in important-not-urgent zone after priority change`)
       }
 
-      // Task 97 (ITask facet migration) emits two commits when an
-      // UpdateTask call changes priority across todo zones: ITask.Save
-      // for the field rewrite, then ITask.Move for the zone migration.
-      // The split is intentional and documented; future facet additions
-      // can collapse it.
-      expectedCommits += 2
+      // UpdateTask is atomic: a single ITask.Move call rewrites the
+      // task file, migrates it across zones, and updates task_order in
+      // one git commit.
+      expectedCommits += 1
       assertCommitCount('after edit task priority')
 
       reporter.pass('Task priority updated')

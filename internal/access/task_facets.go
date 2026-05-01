@@ -84,11 +84,24 @@ type TaskFilter struct {
 // task's existing priority is preserved. Positions, when supplied, are
 // the client's view of the target ordering for the affected zones; the
 // access verb merges them with on-disk state under the lock.
+//
+// Task, when non-nil, carries an arbitrary in-place rewrite of the
+// task's content (title, description, priority, tags, ...). The access
+// verb performs the rewrite, the optional zone migration (status
+// change), and the order-map update under one critical section and
+// emits a single git commit. When Task is nil the verb falls back to
+// the legacy behaviour: it loads the on-disk task and applies only
+// NewPriority — used by drag-drop callers that have no field changes.
+//
+// When Task is non-nil, Task.ID must equal TaskID (the access verb
+// asserts this). NewPriority is ignored when Task is non-nil because
+// Task.Priority is authoritative.
 type MoveRequest struct {
 	TaskID      string              `json:"taskId"`
 	NewStatus   string              `json:"newStatus"`
 	NewPriority string              `json:"newPriority,omitempty"`
 	Positions   map[string][]string `json:"positions,omitempty"`
+	Task        *Task               `json:"task,omitempty"`
 }
 
 // MoveOutcome is the result of ITask.Move. Title is the moved task's

@@ -594,7 +594,14 @@ func (m *mockTaskAccess) Move(req access.MoveRequest) (access.MoveOutcome, error
 	}
 	taskCopy := *foundTask
 	statusChanged := req.NewStatus != "" && req.NewStatus != currentStatus
-	if req.NewPriority != "" && req.NewPriority != taskCopy.Priority {
+	if req.Task != nil {
+		updated := *req.Task
+		updated.ID = foundTask.ID
+		if updated.CreatedAt.IsZero() {
+			updated.CreatedAt = foundTask.CreatedAt
+		}
+		taskCopy = updated
+	} else if req.NewPriority != "" && req.NewPriority != taskCopy.Priority {
 		taskCopy.Priority = req.NewPriority
 	}
 	targetStatus := currentStatus
@@ -4681,11 +4688,23 @@ func TestUnit_UpdateTaskPriority_MovesZone(t *testing.T) {
 
 	assertTaskOrderConsistency(t, manager)
 
-	// 2. Update task priority to "not-important-urgent"
+	// 2. Update task priority to "not-important-urgent". The zone-change
+	// branch must produce exactly ONE commit (single ITask.Move call).
+	mockAccess.mu.Lock()
+	beforeCount := mockAccess.commitAllCount
+	mockAccess.mu.Unlock()
+
 	task.Priority = "not-important-urgent"
 	err = manager.UpdateTask(*task)
 	if err != nil {
 		t.Fatalf("UpdateTask failed: %v", err)
+	}
+
+	mockAccess.mu.Lock()
+	afterCount := mockAccess.commitAllCount
+	mockAccess.mu.Unlock()
+	if afterCount-beforeCount != 1 {
+		t.Errorf("UpdateTask zone change must emit exactly 1 commit, got %d", afterCount-beforeCount)
 	}
 
 	// 3. Verify task moved from old zone to new zone in task_order.json

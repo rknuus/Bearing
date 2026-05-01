@@ -1632,15 +1632,9 @@ func (m *PlanningManager) UpdateTask(task Task) error {
 		oldZone := m.ruleEngine.DropZoneForTask(oldStatus, oldPriority, todoSlug)
 		newZone := m.ruleEngine.DropZoneForTask(oldStatus, task.Priority, todoSlug)
 		if oldZone != newZone {
-			// Persist non-priority field changes first via Save (one
-			// commit). Move then handles the priority+zone migration in
-			// a second atomic commit. Splitting these is unavoidable
-			// without a dedicated facet verb; the zone-move case is
-			// rare (priority-only edits initiated from the task editor)
-			// and does not affect the audit's atomicity guarantees.
-			if err := m.taskAccess.Save(accessTask); err != nil {
-				return fmt.Errorf("failed to update task: %w", err)
-			}
+			// One atomic call: ITask.Move rewrites the task file with
+			// the updated content, performs the zone migration, and
+			// commits the order-map update in a single git commit.
 			currentOrder, err := m.taskAccess.LoadTaskOrder()
 			if err != nil {
 				return fmt.Errorf("failed to load task order: %w", err)
@@ -1648,10 +1642,10 @@ func (m *PlanningManager) UpdateTask(task Task) error {
 			newZoneOrder := append([]string(nil), currentOrder[newZone]...)
 			newZoneOrder = append(newZoneOrder, task.ID)
 			if _, err := m.taskAccess.Move(access.MoveRequest{
-				TaskID:      task.ID,
-				NewStatus:   oldStatus,
-				NewPriority: task.Priority,
-				Positions:   map[string][]string{newZone: newZoneOrder},
+				TaskID:    task.ID,
+				NewStatus: oldStatus,
+				Positions: map[string][]string{newZone: newZoneOrder},
+				Task:      &accessTask,
 			}); err != nil {
 				return fmt.Errorf("failed to update task with zone move: %w", err)
 			}

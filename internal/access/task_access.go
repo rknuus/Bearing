@@ -635,9 +635,17 @@ func (ta *TaskAccess) Save(task Task) error {
 }
 
 // Move atomically applies the requested status change, optional priority
-// change, and zone-position update for a task. File rename, task-file
-// rewrite, and order-map mutation all happen in a single critical section
-// followed by ONE git commit (closes audit finding #7).
+// change (or full field rewrite via req.Task), and zone-position update
+// for a task. File rename, task-file rewrite, and order-map mutation all
+// happen in a single critical section followed by ONE git commit (closes
+// audit finding #7).
+//
+// When req.Task is non-nil the access verb rewrites the entire task file
+// with that content (preserving CreatedAt/ID from the on-disk version if
+// they would otherwise be zero) and ignores req.NewPriority. This single-
+// commit path is used by PlanningManager.UpdateTask when a field edit
+// also moves the task across zones, replacing the legacy Save+Move
+// composition.
 func (ta *TaskAccess) Move(req MoveRequest) (MoveOutcome, error) {
 	ta.mu.Lock()
 	defer ta.mu.Unlock()
@@ -649,17 +657,28 @@ func (ta *TaskAccess) Move(req MoveRequest) (MoveOutcome, error) {
 	if foundTask == nil {
 		return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: task with ID %s not found", req.TaskID)
 	}
+	if req.Task != nil && req.Task.ID != "" && req.Task.ID != req.TaskID {
+		return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: req.Task.ID %q does not match req.TaskID %q", req.Task.ID, req.TaskID)
+	}
 
 	commitPaths := []string{}
 
-	// Decide priority and write the task file if priority changed or
-	// status changes (we always need to refresh UpdatedAt and the
-	// possibly-relocated path).
+	// Compose the task content to write. When req.Task is supplied it
+	// is the authoritative source for every field; otherwise we start
+	// from the on-disk task and apply the optional NewPriority.
 	taskCopy := *foundTask
-	priorityChanged := false
-	if req.NewPriority != "" && req.NewPriority != taskCopy.Priority {
+	contentChanged := false
+	if req.Task != nil {
+		updated := *req.Task
+		updated.ID = foundTask.ID
+		if updated.CreatedAt.IsZero() {
+			updated.CreatedAt = foundTask.CreatedAt
+		}
+		taskCopy = updated
+		contentChanged = true
+	} else if req.NewPriority != "" && req.NewPriority != taskCopy.Priority {
 		taskCopy.Priority = req.NewPriority
-		priorityChanged = true
+		contentChanged = true
 	}
 	taskCopy.UpdatedAt = utilities.Now()
 
@@ -678,7 +697,7 @@ func (ta *TaskAccess) Move(req MoveRequest) (MoveOutcome, error) {
 		commitPaths = append(commitPaths, oldPath, newPath)
 	}
 
-	if priorityChanged || statusChanged {
+	if contentChanged || statusChanged {
 		// Write the (potentially relocated) task file with refreshed
 		// fields so the on-disk content matches its directory.
 		filePath := ta.taskFilePath(targetStatus, req.TaskID)

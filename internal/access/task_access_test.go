@@ -404,6 +404,90 @@ func TestUnit_ITask_Move_StatusPriorityAndPositions_OneCommit(t *testing.T) {
 	}
 }
 
+// TestUnit_ITask_Move_TaskOverride_OneCommit verifies that when
+// MoveRequest.Task is supplied, the access verb rewrites the entire
+// task file (priority and content) AND performs the zone migration in
+// a single git commit. Closes the UpdateTask Save+Move workaround.
+func TestUnit_ITask_Move_TaskOverride_OneCommit(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	a := seedTaskInTodo(t, env, "H", "A", nil)
+
+	// Build the updated task: priority change AND description change.
+	updated := a
+	updated.Priority = "important-urgent"
+	updated.Description = "edited body"
+
+	beforeCommits := commitCount(t, env.repo)
+
+	out, err := env.tasks.Move(MoveRequest{
+		TaskID:    a.ID,
+		NewStatus: "todo",
+		Positions: map[string][]string{
+			"important-urgent": {a.ID},
+		},
+		Task: &updated,
+	})
+	if err != nil {
+		t.Fatalf("Move failed: %v", err)
+	}
+	afterCommits := commitCount(t, env.repo)
+	if afterCommits-beforeCommits != 1 {
+		t.Errorf("Expected exactly 1 new commit from Move, got %d", afterCommits-beforeCommits)
+	}
+	if out.Title != updated.Title {
+		t.Errorf("Expected outcome title %q, got %q", updated.Title, out.Title)
+	}
+
+	// Both field changes must be visible on disk.
+	todo, _ := env.tasks.GetTasksByStatus("todo")
+	if len(todo) != 1 || todo[0].ID != a.ID {
+		t.Fatalf("Expected task A in todo, got %+v", todo)
+	}
+	if todo[0].Priority != "important-urgent" {
+		t.Errorf("Expected priority 'important-urgent', got %q", todo[0].Priority)
+	}
+	if todo[0].Description != "edited body" {
+		t.Errorf("Expected description 'edited body', got %q", todo[0].Description)
+	}
+	// CreatedAt must be preserved from on-disk version.
+	if todo[0].CreatedAt.IsZero() {
+		t.Errorf("Expected CreatedAt to be preserved, got zero")
+	}
+}
+
+// TestUnit_ITask_Move_NoTaskOverride_PreservesContent verifies that the
+// pure drag-drop callsite (no Task in MoveRequest, no field updates)
+// still moves zones in one commit and preserves the on-disk task body.
+func TestUnit_ITask_Move_NoTaskOverride_PreservesContent(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	a := seedTaskInTodo(t, env, "H", "Original Title", nil)
+
+	beforeCommits := commitCount(t, env.repo)
+
+	if _, err := env.tasks.Move(MoveRequest{
+		TaskID:    a.ID,
+		NewStatus: "doing",
+	}); err != nil {
+		t.Fatalf("Move failed: %v", err)
+	}
+	afterCommits := commitCount(t, env.repo)
+	if afterCommits-beforeCommits != 1 {
+		t.Errorf("Expected exactly 1 new commit from Move, got %d", afterCommits-beforeCommits)
+	}
+
+	doing, _ := env.tasks.GetTasksByStatus("doing")
+	if len(doing) != 1 || doing[0].ID != a.ID {
+		t.Fatalf("Expected task A in doing, got %+v", doing)
+	}
+	if doing[0].Title != "Original Title" {
+		t.Errorf("Expected title preserved as 'Original Title', got %q", doing[0].Title)
+	}
+}
+
 func TestUnit_ITask_Archive_OneCommitMovesAndUpdatesOrders(t *testing.T) {
 	env, _, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
