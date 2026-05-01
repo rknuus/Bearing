@@ -220,10 +220,25 @@ func (ta *TaskAccess) CommitNoTx(req BatchRequest) (BatchOutcome, error) {
 	ta.mu.Lock()
 	defer ta.mu.Unlock()
 
-	outcome, _, _, _, err := ta.commitLocked(req)
+	outcome, _, _, rollback, err := ta.commitLocked(req)
 	if err != nil {
 		return BatchOutcome{}, err
 	}
+
+	// Test-only fault injection seam: see SetCommitNoTxFaultHookForTest.
+	// The hook fires AFTER the in-memory mutations succeed and BEFORE the
+	// caller's RunTransaction commits, mimicking a real per-element
+	// failure that survives commitLocked but should still trigger the
+	// outer transaction cancel.
+	if hook := ta.commitNoTxFaultHook; hook != nil {
+		if hookErr := hook(); hookErr != nil {
+			if rollback != nil {
+				rollback()
+			}
+			return BatchOutcome{}, fmt.Errorf("TaskAccess.CommitNoTx: %w", hookErr)
+		}
+	}
+
 	return outcome, nil
 }
 

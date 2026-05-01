@@ -65,6 +65,31 @@ type TaskAccess struct {
 	dataPath string
 	repo     utilities.IRepository
 	mu       sync.Mutex
+
+	// commitNoTxFaultHook is a test-only fault-injection seam. When non-nil
+	// and returning a non-nil error, CommitNoTx fails after applying its
+	// in-memory rollback so an integration test can verify that the
+	// surrounding RunTransaction cancels cleanly. The field is package-
+	// private and only set via SetCommitNoTxFaultHookForTest from within
+	// the access or integration test package; production callers can
+	// neither read nor write it. See task_access_batch.go for usage.
+	commitNoTxFaultHook func() error
+}
+
+// SetCommitNoTxFaultHookForTest installs a fault-injection hook that
+// causes the next CommitNoTx invocation to surface the supplied error
+// after rolling back its in-memory mutations. Pass nil to disarm.
+//
+// This is a TEST-ONLY API: production code must not call it. The
+// integration tests in internal/integration/ depend on this hook to
+// verify that RunTransaction's body-error path cancels the transaction
+// without producing a partial git commit. No alternative natural-failure
+// path exists once the manager has pre-validated its inputs, so the seam
+// is the minimum viable surface area for the integration assertion.
+func (ta *TaskAccess) SetCommitNoTxFaultHookForTest(hook func() error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+	ta.commitNoTxFaultHook = hook
 }
 
 // NewTaskAccess creates a new TaskAccess instance.
