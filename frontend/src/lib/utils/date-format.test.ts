@@ -6,26 +6,57 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   initLocale,
   formatDate,
-  formatDateLong,
   formatMonthName,
   formatShortMonthName,
   formatWeekdayShort,
 } from './date-format';
+
+describe('date-format canonical formatter — locale matrix', () => {
+  // 2026-05-01 is a Friday.
+  // Canonical options: { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }
+  // Intl punctuation/spacing varies slightly across Node ICU versions; assert
+  // language-rendered tokens with `toContain` rather than pinning the exact string.
+
+  it('renders Fri / May / 01 / 2026 tokens for en-CH', () => {
+    initLocale('en-CH');
+    const result = formatDate('2026-05-01');
+    expect(result).toContain('Fri');
+    expect(result).toContain('May');
+    expect(result).toContain('01');
+    expect(result).toContain('2026');
+  });
+
+  it('renders Fr. / Mai / 01 / 2026 tokens for de-CH', () => {
+    initLocale('de-CH');
+    const result = formatDate('2026-05-01');
+    // de-CH abbreviates Friday as "Fr." and May as "Mai"
+    expect(result).toMatch(/Fr\.?/);
+    expect(result).toContain('Mai');
+    expect(result).toContain('01');
+    expect(result).toContain('2026');
+  });
+
+  it('renders Fri / May / 01 / 2026 tokens for en-US', () => {
+    initLocale('en-US');
+    const result = formatDate('2026-05-01');
+    expect(result).toContain('Fri');
+    expect(result).toContain('May');
+    expect(result).toContain('01');
+    expect(result).toContain('2026');
+  });
+});
 
 describe('date-format with de-CH locale', () => {
   beforeEach(() => {
     initLocale('de-CH');
   });
 
-  it('formatDate produces short date in de-CH format', () => {
-    expect(formatDate('2025-01-15')).toBe('15.01.2025');
-  });
-
-  it('formatDateLong contains weekday and month for de-CH', () => {
-    const result = formatDateLong('2025-01-15');
-    // 2025-01-15 is a Wednesday = Mittwoch in German
-    expect(result).toContain('Mittwoch');
-    expect(result).toContain('Januar');
+  it('formatDate renders weekday + month tokens for de-CH', () => {
+    // 2025-01-15 is a Wednesday = Mittwoch (abbreviated "Mi.") in German
+    const result = formatDate('2025-01-15');
+    expect(result).toMatch(/Mi\.?/);
+    // Canonical formatter uses month: 'short' → "Jan." or similar in de-CH
+    expect(result).toMatch(/Jan/);
     expect(result).toContain('2025');
   });
 
@@ -53,24 +84,21 @@ describe('date-format with de-CH locale', () => {
 });
 
 describe('date-format fallback to en-US', () => {
-  it('uses en-US when initLocale has not been called', async () => {
-    // Re-import the module fresh to test the default state
-    const freshModule = await import('./date-format');
-
-    // Reset to default by re-initializing with en-US
-    freshModule.initLocale('en-US');
-
-    const result = freshModule.formatDate('2025-01-15');
-    expect(result).toBe('01/15/2025');
-  });
-
-  it('does not throw when formatting without explicit initLocale', () => {
-    // After the module has been loaded, formatters exist with fallback locale
+  it('does not throw when formatting after re-init with en-US', () => {
     initLocale('en-US');
     expect(() => formatDate('2025-06-30')).not.toThrow();
-    expect(() => formatDateLong('2025-06-30')).not.toThrow();
     expect(() => formatMonthName(5)).not.toThrow();
     expect(() => formatShortMonthName(5)).not.toThrow();
     expect(() => formatWeekdayShort(3)).not.toThrow();
+  });
+
+  it('produces output containing all canonical tokens for en-US', () => {
+    initLocale('en-US');
+    const result = formatDate('2025-01-15');
+    // 2025-01-15 is a Wednesday
+    expect(result).toContain('Wed');
+    expect(result).toContain('Jan');
+    expect(result).toContain('15');
+    expect(result).toContain('2025');
   });
 });

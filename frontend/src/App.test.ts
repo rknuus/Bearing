@@ -4,6 +4,7 @@ import { tick } from 'svelte';
 import App from './App.svelte';
 import { setClockForTesting, resetClock } from './lib/utils/clock';
 import { today as todayDate } from './lib/utils/date-utils';
+import { __setMockLocale } from './lib/wails-mock';
 
 /**
  * Build comprehensive mock bindings that satisfy all child views.
@@ -422,6 +423,8 @@ describe('App', () => {
   describe('day change detection', () => {
     beforeEach(() => {
       vi.useFakeTimers();
+      // Use a stable, well-known locale so toast assertions are deterministic.
+      __setMockLocale('en-US');
     });
 
     afterEach(() => {
@@ -459,7 +462,9 @@ describe('App', () => {
       // Toast should appear with the new date
       const toast = container.querySelector('.toast');
       expect(toast).toBeTruthy();
-      expect(toast!.textContent).toContain('March 30');
+      // Canonical formatter (en-US): "Mon, Mar 30, 2026" — assert on stable tokens
+      expect(toast!.textContent).toContain('Mar 30');
+      expect(toast!.textContent).toContain('2026');
 
       // ProcessPriorityPromotions should have been called
       expect(mockBindings.ProcessPriorityPromotions).toHaveBeenCalled();
@@ -483,7 +488,9 @@ describe('App', () => {
       // Toast should appear with the new date
       const toast = container.querySelector('.toast');
       expect(toast).toBeTruthy();
-      expect(toast!.textContent).toContain('March 30');
+      // Canonical formatter (en-US): "Mon, Mar 30, 2026" — assert on stable tokens
+      expect(toast!.textContent).toContain('Mar 30');
+      expect(toast!.textContent).toContain('2026');
 
       // ProcessPriorityPromotions should have been called
       expect(mockBindings.ProcessPriorityPromotions).toHaveBeenCalled();
@@ -535,6 +542,59 @@ describe('App', () => {
       expect(toast).toBeTruthy();
       expect(toast!.textContent).toContain('Priority promotions failed');
       expect(toast!.textContent).toContain('backend unavailable');
+    });
+
+    it('window.focus with new date triggers day change (suspend/resume path)', async () => {
+      // Clock on March 29 at noon
+      setClockForTesting(() => new Date(2026, 2, 29, 12, 0, 0));
+
+      await renderAppWithFakeTimers();
+
+      // Simulate overnight sleep: clock jumps to March 30 at noon
+      setClockForTesting(() => new Date(2026, 2, 30, 12, 0, 0));
+
+      // Simulate macOS resume firing window.focus (visibilitychange may not fire reliably)
+      window.dispatchEvent(new Event('focus'));
+      await flush();
+
+      const toast = container.querySelector('.toast');
+      expect(toast).toBeTruthy();
+      expect(toast!.textContent).toContain('Mar 30');
+      expect(toast!.textContent).toContain('2026');
+
+      expect(mockBindings.ProcessPriorityPromotions).toHaveBeenCalled();
+    });
+
+    it('repeated window.focus on the same day does not re-fire day change side-effects', async () => {
+      // Clock on March 29 at noon
+      setClockForTesting(() => new Date(2026, 2, 29, 12, 0, 0));
+
+      await renderAppWithFakeTimers();
+
+      // Cross midnight
+      setClockForTesting(() => new Date(2026, 2, 30, 12, 0, 0));
+
+      // First focus: should fire day change
+      window.dispatchEvent(new Event('focus'));
+      await flush();
+
+      const callsAfterFirstFocus = mockBindings.ProcessPriorityPromotions.mock.calls.length;
+      expect(callsAfterFirstFocus).toBeGreaterThan(0);
+
+      // Let the toast auto-dismiss (5s default duration)
+      await vi.advanceTimersByTimeAsync(5500);
+      await flush();
+      expect(container.querySelector('.toast')).toBeFalsy();
+
+      // Second + third focus on the same day: must be idempotent — no additional
+      // ProcessPriorityPromotions call and no new toast.
+      window.dispatchEvent(new Event('focus'));
+      await flush();
+      window.dispatchEvent(new Event('focus'));
+      await flush();
+
+      expect(mockBindings.ProcessPriorityPromotions.mock.calls.length).toBe(callsAfterFirstFocus);
+      expect(container.querySelector('.toast')).toBeFalsy();
     });
   });
 

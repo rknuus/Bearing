@@ -489,6 +489,18 @@ let mockPersonalVision: PersonalVision = { mission: '', vision: '' };
 // Mock advisor enabled state
 let mockAdvisorEnabled = true;
 
+// Mock locale — controllable from tests via __setMockLocale().
+// Defaults to navigator.language at module load (matches previous behaviour),
+// with a safe fallback for non-browser environments.
+let mockLocale: string = typeof navigator !== 'undefined' && navigator.language
+  ? navigator.language
+  : 'en-US';
+
+/** Test-only setter: override the locale returned by the mocked GetLocale binding. */
+export function __setMockLocale(locale: string): void {
+  mockLocale = locale;
+}
+
 // Mock navigation context storage
 let mockNavigationContext: NavigationContext = {
   currentView: 'okr',
@@ -642,7 +654,7 @@ export const mockAppBindings = {
   },
 
   GetLocale: async (): Promise<string> => {
-    return navigator.language;
+    return mockLocale;
   },
 
   SetObjectiveStatus: async (objectiveId: string, status: string): Promise<void> => {

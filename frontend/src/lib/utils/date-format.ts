@@ -7,24 +7,17 @@
 
 const FALLBACK_LOCALE = 'en-US';
 
-let currentLocale: string = FALLBACK_LOCALE;
-let shortDateFmt: Intl.DateTimeFormat;
-let longDateFmt: Intl.DateTimeFormat;
+let canonicalDateFmt: Intl.DateTimeFormat;
 let monthLongFmt: Intl.DateTimeFormat;
 let monthShortFmt: Intl.DateTimeFormat;
 let weekdayShortFmt: Intl.DateTimeFormat;
 
 function createFormatters(locale: string): void {
-  shortDateFmt = new Intl.DateTimeFormat(locale, {
-    year: 'numeric',
-    month: '2-digit',
+  canonicalDateFmt = new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
     day: '2-digit',
-  });
-  longDateFmt = new Intl.DateTimeFormat(locale, {
-    weekday: 'long',
+    month: 'short',
     year: 'numeric',
-    month: 'long',
-    day: 'numeric',
   });
   monthLongFmt = new Intl.DateTimeFormat(locale, { month: 'long' });
   monthShortFmt = new Intl.DateTimeFormat(locale, { month: 'short' });
@@ -38,8 +31,7 @@ createFormatters(FALLBACK_LOCALE);
  * Sets the locale and creates cached Intl.DateTimeFormat instances.
  */
 export function initLocale(locale: string): void {
-  currentLocale = locale;
-  createFormatters(currentLocale);
+  createFormatters(locale);
 }
 
 /**
@@ -52,18 +44,16 @@ function parseIsoDate(iso: string): Date {
 }
 
 /**
- * Formats an ISO date string as a short date (e.g. "15.01.2025" for de-CH).
+ * Formats an ISO date string as the canonical user-visible date.
+ *
+ * Uses `{ weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }`,
+ * locale-rendered by Intl.DateTimeFormat. Examples:
+ *   en-CH → "Fri, 01 May 2026"
+ *   de-CH → "Fr., 01. Mai 2026"
+ *   en-US → "Fri, May 01, 2026"
  */
 export function formatDate(iso: string): string {
-  return shortDateFmt.format(parseIsoDate(iso));
-}
-
-/**
- * Formats an ISO date string as a long date with weekday
- * (e.g. "Mittwoch, 15. Januar 2025" for de-CH).
- */
-export function formatDateLong(iso: string): string {
-  return longDateFmt.format(parseIsoDate(iso));
+  return canonicalDateFmt.format(parseIsoDate(iso));
 }
 
 /**

@@ -11,7 +11,6 @@ export {
 export {
   initLocale,
   formatDate,
-  formatDateLong,
   formatMonthName,
   formatShortMonthName,
   formatWeekdayShort,

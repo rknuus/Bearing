@@ -10,10 +10,9 @@
   import { getBindings } from './lib/utils/bindings';
   import { getNow } from './lib/utils/clock';
   import { today as todayDate, toTimestamp, type CalendarDate } from './lib/utils/date-utils';
-  import { initLocale } from './lib/utils/date-format';
+  import { initLocale, formatDate } from './lib/utils/date-format';
   import { handleWindowShortcut } from './lib/utils/window-commands';
   import { UNTAGGED_SENTINEL } from './lib/constants/filters';
-  import { formatDateLong } from './lib/utils/date-format';
   import Toast from './lib/components/Toast.svelte';
 
   // View types
@@ -112,7 +111,7 @@
     }
 
     // Show notification
-    toastMessage = `Good morning — it's ${formatDateLong(currentDate)}`;
+    toastMessage = `Good morning — it's ${formatDate(currentDate)}`;
 
     saveNavigationContext();
 
@@ -124,13 +123,32 @@
     }
   }
 
-  function handleVisibilityChange() {
-    if (document.hidden) return;
+  /**
+   * Re-checks whether the displayed day still matches the wall clock.
+   *
+   * Called from both `visibilitychange` (when the document becomes visible)
+   * and `window.focus` (which fires more reliably on macOS suspend/resume).
+   * If the day has rolled over, runs the day-change pipeline; in any case
+   * always reschedules the midnight timer (it may have expired silently
+   * during sleep). Idempotent: repeated calls on the same day do not
+   * re-fire the day-change side-effects, because `handleDayChange` only
+   * runs when `nowDate !== currentDate`.
+   */
+  function checkDayRollover() {
     const nowDate = todayDate();
     if (nowDate !== currentDate) {
       handleDayChange();
-      scheduleMidnightUpdate();
     }
+    scheduleMidnightUpdate();
+  }
+
+  function handleVisibilityChange() {
+    if (document.hidden) return;
+    checkDayRollover();
+  }
+
+  function handleWindowFocus() {
+    checkDayRollover();
   }
 
   // Derived single-theme ID for backward compat with child components (ThemeFilterBar, EisenKanView)
@@ -478,11 +496,15 @@
 
     // Detect day changes after sleep/wake via visibility API
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Complementary signal: macOS sleep/resume may not reliably fire
+    // visibilitychange but does fire window.focus on resume.
+    window.addEventListener('focus', handleWindowFocus);
   });
 
   onDestroy(() => {
     window.removeEventListener('keydown', handleKeyDown);
     document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.removeEventListener('focus', handleWindowFocus);
     clearTimeout(midnightTimer);
   });
 </script>

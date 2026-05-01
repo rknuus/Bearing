@@ -32,7 +32,7 @@
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { getTheme } from '../lib/utils/theme-helpers';
   import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
-  import { formatDateLong } from '../lib/utils/date-format';
+  import { formatDate } from '../lib/utils/date-format';
   import { today as todayDate, type CalendarDate } from '../lib/utils/date-utils';
   import { checkFullState } from '../lib/utils/state-check';
 
@@ -126,7 +126,7 @@
   let sectionItems = $state<Record<string, TaskWithStatus[]>>({});
 
   // Current day display (derived from centralized currentDate prop)
-  let today = $derived(formatDateLong(currentDate ?? todayDate()));
+  let today = $derived(formatDate(currentDate ?? todayDate()));
 
   // Context menu state for cross-view navigation
   let contextMenuTask = $state<TaskWithStatus | null>(null);
