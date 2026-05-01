@@ -125,7 +125,8 @@ func (m *mockThemeAccess) WriteDeleteTheme(id string) error {
 	return m.DeleteTheme(id)
 }
 
-// mockTaskAccess implements access.ITaskAccess for testing.
+// mockTaskAccess implements access.ITaskAccess plus the new ITask and
+// IBatch facet interfaces for testing.
 type mockTaskAccess struct {
 	mu              sync.Mutex
 	tasks           map[string][]access.Task
@@ -365,6 +366,156 @@ func (m *mockTaskAccess) SaveBoardConfiguration(config *access.BoardConfiguratio
 	return nil
 }
 
+// IBoard facet implementation. The mock's IBoard verbs operate against
+// the same in-memory boardConfig as GetBoardConfiguration/Save…, the
+// same in-memory tasks map as GetTasksByStatus, and the same taskOrder
+// map as LoadTaskOrder/WriteTaskOrder — guaranteeing identical visibility
+// semantics across the legacy and the new surfaces.
+func (m *mockTaskAccess) Get() (access.BoardConfiguration, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.boardConfig == nil {
+		return access.BoardConfiguration{}, nil
+	}
+	return *m.boardConfig, nil
+}
+
+func (m *mockTaskAccess) AddColumn(slug, title string) (access.BoardConfiguration, error) {
+	if slug == "" {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.AddColumn: slug cannot be empty")
+	}
+	if title == "" {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.AddColumn: title cannot be empty")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.boardConfig == nil {
+		m.boardConfig = &access.BoardConfiguration{}
+	}
+	m.boardConfig.ColumnDefinitions = append(m.boardConfig.ColumnDefinitions, access.ColumnDefinition{
+		Name:  slug,
+		Title: title,
+		Type:  access.ColumnTypeDoing,
+	})
+	return *m.boardConfig, nil
+}
+
+func (m *mockTaskAccess) RemoveColumn(slug string) (access.BoardConfiguration, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.boardConfig == nil {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RemoveColumn: column %q not found", slug)
+	}
+	idx := -1
+	for i, col := range m.boardConfig.ColumnDefinitions {
+		if col.Name == slug {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RemoveColumn: column %q not found", slug)
+	}
+	if tasks, ok := m.tasks[slug]; ok && len(tasks) > 0 {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RemoveColumn: %w (%d task(s))", access.ErrColumnNotEmpty, len(tasks))
+	}
+	delete(m.tasks, slug)
+	if m.taskOrder != nil {
+		delete(m.taskOrder, slug)
+	}
+	m.boardConfig.ColumnDefinitions = append(m.boardConfig.ColumnDefinitions[:idx], m.boardConfig.ColumnDefinitions[idx+1:]...)
+	return *m.boardConfig, nil
+}
+
+func (m *mockTaskAccess) RenameColumn(oldSlug, newSlug, newTitle string) (access.BoardConfiguration, error) {
+	if oldSlug == "" || newSlug == "" {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RenameColumn: slugs cannot be empty")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.boardConfig == nil {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RenameColumn: column %q not found", oldSlug)
+	}
+	idx := -1
+	for i, col := range m.boardConfig.ColumnDefinitions {
+		if col.Name == oldSlug {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RenameColumn: column %q not found", oldSlug)
+	}
+	if oldSlug != newSlug {
+		if tasks, ok := m.tasks[oldSlug]; ok {
+			m.tasks[newSlug] = tasks
+			delete(m.tasks, oldSlug)
+		}
+		if m.taskOrder != nil {
+			if ids, ok := m.taskOrder[oldSlug]; ok {
+				m.taskOrder[newSlug] = ids
+				delete(m.taskOrder, oldSlug)
+			}
+		}
+		m.boardConfig.ColumnDefinitions[idx].Name = newSlug
+	}
+	m.boardConfig.ColumnDefinitions[idx].Title = newTitle
+	return *m.boardConfig, nil
+}
+
+func (m *mockTaskAccess) RetitleColumn(slug, newTitle string) (access.BoardConfiguration, error) {
+	if slug == "" {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RetitleColumn: slug cannot be empty")
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.boardConfig == nil {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RetitleColumn: column %q not found", slug)
+	}
+	idx := -1
+	for i, col := range m.boardConfig.ColumnDefinitions {
+		if col.Name == slug {
+			idx = i
+			break
+		}
+	}
+	if idx < 0 {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.RetitleColumn: column %q not found", slug)
+	}
+	m.boardConfig.ColumnDefinitions[idx].Title = newTitle
+	return *m.boardConfig, nil
+}
+
+func (m *mockTaskAccess) ReorderColumns(slugs []string) (access.BoardConfiguration, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.boardConfig == nil {
+		m.boardConfig = &access.BoardConfiguration{}
+	}
+	if len(slugs) != len(m.boardConfig.ColumnDefinitions) {
+		return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.ReorderColumns: expected %d slugs, got %d", len(m.boardConfig.ColumnDefinitions), len(slugs))
+	}
+	colMap := make(map[string]access.ColumnDefinition, len(m.boardConfig.ColumnDefinitions))
+	for _, col := range m.boardConfig.ColumnDefinitions {
+		colMap[col.Name] = col
+	}
+	seen := make(map[string]bool, len(slugs))
+	reordered := make([]access.ColumnDefinition, 0, len(slugs))
+	for _, s := range slugs {
+		if seen[s] {
+			return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.ReorderColumns: duplicate slug %q", s)
+		}
+		seen[s] = true
+		col, ok := colMap[s]
+		if !ok {
+			return access.BoardConfiguration{}, fmt.Errorf("mockTaskAccess.ReorderColumns: unknown slug %q", s)
+		}
+		reordered = append(reordered, col)
+	}
+	m.boardConfig.ColumnDefinitions = reordered
+	return *m.boardConfig, nil
+}
+
 func (m *mockTaskAccess) EnsureStatusDirectory(slug string) error             { return nil }
 func (m *mockTaskAccess) RemoveStatusDirectory(slug string) error             { return nil }
 func (m *mockTaskAccess) RenameStatusDirectory(oldSlug, newSlug string) error { return nil }
@@ -407,6 +558,352 @@ func (m *mockTaskAccess) SaveArchivedOrder(order []string) error {
 	defer m.mu.Unlock()
 	m.archivedOrder = append([]string{}, order...)
 	return nil
+}
+
+// =============================================================================
+// ITask facet (task 94) — implemented in terms of the legacy mock storage.
+// =============================================================================
+
+func (m *mockTaskAccess) Find(filter access.TaskFilter) ([]access.Task, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	var result []access.Task
+	statuses := []string{}
+	if filter.Status != nil {
+		statuses = []string{*filter.Status}
+	} else {
+		for s := range m.tasks {
+			statuses = append(statuses, s)
+		}
+	}
+	for _, s := range statuses {
+		for _, t := range m.tasks[s] {
+			if filter.ThemeID != nil && t.ThemeID != *filter.ThemeID {
+				continue
+			}
+			if filter.Tag != nil {
+				if !slices.Contains(t.Tags, *filter.Tag) {
+					continue
+				}
+			}
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (m *mockTaskAccess) Create(task access.Task, zone string) (access.Task, error) {
+	saved, err := m.SaveTaskWithOrder(task, zone)
+	if err != nil {
+		return access.Task{}, err
+	}
+	m.mu.Lock()
+	m.commitAllCount++
+	m.mu.Unlock()
+	return *saved, nil
+}
+
+func (m *mockTaskAccess) Save(task access.Task) error {
+	if err := m.SaveTask(task); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	m.commitAllCount++
+	m.mu.Unlock()
+	return nil
+}
+
+func (m *mockTaskAccess) Move(req access.MoveRequest) (access.MoveOutcome, error) {
+	m.mu.Lock()
+	if m.writeTaskErr != nil {
+		err := m.writeTaskErr
+		m.mu.Unlock()
+		return access.MoveOutcome{}, err
+	}
+
+	// Locate the task and its current status.
+	var foundTask *access.Task
+	var currentStatus string
+	for s, tasks := range m.tasks {
+		for i := range tasks {
+			if tasks[i].ID == req.TaskID {
+				foundTask = &tasks[i]
+				currentStatus = s
+				break
+			}
+		}
+		if foundTask != nil {
+			break
+		}
+	}
+	if foundTask == nil {
+		m.mu.Unlock()
+		return access.MoveOutcome{}, fmt.Errorf("mockTaskAccess.Move: task %s not found", req.TaskID)
+	}
+	taskCopy := *foundTask
+	statusChanged := req.NewStatus != "" && req.NewStatus != currentStatus
+	if req.NewPriority != "" && req.NewPriority != taskCopy.Priority {
+		taskCopy.Priority = req.NewPriority
+	}
+	targetStatus := currentStatus
+	if statusChanged {
+		targetStatus = req.NewStatus
+	}
+
+	// Apply the move in mock storage.
+	if statusChanged {
+		// Remove from current status.
+		curList := m.tasks[currentStatus]
+		for i, t := range curList {
+			if t.ID == req.TaskID {
+				m.tasks[currentStatus] = append(curList[:i], curList[i+1:]...)
+				break
+			}
+		}
+		m.tasks[targetStatus] = append(m.tasks[targetStatus], taskCopy)
+	} else {
+		// Same status: rewrite in place.
+		curList := m.tasks[currentStatus]
+		for i := range curList {
+			if curList[i].ID == req.TaskID {
+				curList[i] = taskCopy
+				break
+			}
+		}
+	}
+
+	if m.taskOrder == nil {
+		m.taskOrder = make(map[string][]string)
+	}
+
+	if len(req.Positions) > 0 {
+		// Remove the task from every existing zone first.
+		for zone, ids := range m.taskOrder {
+			filtered := make([]string, 0, len(ids))
+			for _, id := range ids {
+				if id != req.TaskID {
+					filtered = append(filtered, id)
+				}
+			}
+			m.taskOrder[zone] = filtered
+		}
+		for zone, ids := range req.Positions {
+			m.taskOrder[zone] = append([]string(nil), ids...)
+		}
+	} else if statusChanged {
+		for zone, ids := range m.taskOrder {
+			filtered := make([]string, 0, len(ids))
+			for _, id := range ids {
+				if id != req.TaskID {
+					filtered = append(filtered, id)
+				}
+			}
+			m.taskOrder[zone] = filtered
+		}
+		m.taskOrder[targetStatus] = append(m.taskOrder[targetStatus], req.TaskID)
+	}
+
+	outcome := access.MoveOutcome{
+		Title:     taskCopy.Title,
+		Positions: map[string][]string{},
+	}
+	for zone := range req.Positions {
+		outcome.Positions[zone] = append([]string(nil), m.taskOrder[zone]...)
+	}
+	if statusChanged && len(req.Positions) == 0 {
+		outcome.Positions[targetStatus] = append([]string(nil), m.taskOrder[targetStatus]...)
+	}
+
+	m.commitAllCount++
+	m.mu.Unlock()
+	return outcome, nil
+}
+
+func (m *mockTaskAccess) Archive(taskID string) error {
+	if err := m.ArchiveTask(taskID); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Remove from task order.
+	for zone, ids := range m.taskOrder {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if id != taskID {
+				filtered = append(filtered, id)
+			}
+		}
+		m.taskOrder[zone] = filtered
+	}
+	// Prepend to archived order.
+	m.archivedOrder = append([]string{taskID}, m.archivedOrder...)
+	m.commitAllCount++
+	return nil
+}
+
+func (m *mockTaskAccess) Restore(taskID string) error {
+	// Locate the task to capture its priority before mutation.
+	m.mu.Lock()
+	var priority string
+	archivedTasks := m.tasks[string(access.TaskStatusArchived)]
+	for _, t := range archivedTasks {
+		if t.ID == taskID {
+			priority = t.Priority
+			break
+		}
+	}
+	m.mu.Unlock()
+	_ = priority // priority would matter only for board-config-aware zone routing
+
+	if err := m.RestoreTask(taskID); err != nil {
+		return err
+	}
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.taskOrder == nil {
+		m.taskOrder = make(map[string][]string)
+	}
+	doneZone := string(access.TaskStatusDone)
+	m.taskOrder[doneZone] = append(m.taskOrder[doneZone], taskID)
+
+	// Remove from archived order.
+	filtered := make([]string, 0, len(m.archivedOrder))
+	for _, id := range m.archivedOrder {
+		if id != taskID {
+			filtered = append(filtered, id)
+		}
+	}
+	m.archivedOrder = filtered
+
+	m.commitAllCount++
+	return nil
+}
+
+func (m *mockTaskAccess) Delete(taskID string) error {
+	if err := m.DeleteTaskWithOrder(taskID); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Also remove from archived order in case the task was archived.
+	filtered := make([]string, 0, len(m.archivedOrder))
+	for _, id := range m.archivedOrder {
+		if id != taskID {
+			filtered = append(filtered, id)
+		}
+	}
+	m.archivedOrder = filtered
+	m.commitAllCount++
+	return nil
+}
+
+func (m *mockTaskAccess) Reorder(positions map[string][]string) (access.ReorderOutcome, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.taskOrder == nil {
+		m.taskOrder = make(map[string][]string)
+	}
+	for zone, ids := range positions {
+		m.taskOrder[zone] = append([]string(nil), ids...)
+	}
+	outcome := access.ReorderOutcome{Positions: map[string][]string{}}
+	for zone := range positions {
+		outcome.Positions[zone] = append([]string(nil), m.taskOrder[zone]...)
+	}
+	m.commitAllCount++
+	return outcome, nil
+}
+
+// =============================================================================
+// IBatch facet (task 95) — implemented in terms of the legacy mock storage.
+// =============================================================================
+
+func (m *mockTaskAccess) Promote(req access.PromoteRequest) (access.PromoteOutcome, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	outcome := access.PromoteOutcome{}
+	if len(req.Promotions) == 0 {
+		return outcome, nil
+	}
+	expectedSource := string(access.PriorityImportantNotUrgent)
+	for _, promo := range req.Promotions {
+		// Locate the task across all status buckets.
+		var foundTask *access.Task
+		var foundStatus string
+		var foundIdx int
+		for s, tasks := range m.tasks {
+			for i := range tasks {
+				if tasks[i].ID == promo.TaskID {
+					foundTask = &tasks[i]
+					foundStatus = s
+					foundIdx = i
+					break
+				}
+			}
+			if foundTask != nil {
+				break
+			}
+		}
+		if foundTask == nil || foundTask.Priority != expectedSource {
+			outcome.Skipped = append(outcome.Skipped, promo.TaskID)
+			continue
+		}
+		oldPriority := foundTask.Priority
+		updated := *foundTask
+		updated.Priority = promo.NewPriority
+		if promo.ClearPromotionDate {
+			updated.PromotionDate = ""
+		}
+		m.tasks[foundStatus][foundIdx] = updated
+
+		if oldPriority != promo.NewPriority && m.taskOrder != nil {
+			if ids, ok := m.taskOrder[oldPriority]; ok {
+				idx := -1
+				for i, id := range ids {
+					if id == promo.TaskID {
+						idx = i
+						break
+					}
+				}
+				if idx >= 0 {
+					m.taskOrder[oldPriority] = append(ids[:idx], ids[idx+1:]...)
+					m.taskOrder[promo.NewPriority] = append(m.taskOrder[promo.NewPriority], promo.TaskID)
+				}
+			}
+		}
+		outcome.Count++
+	}
+	if outcome.Count > 0 {
+		m.commitAllCount++
+	}
+	return outcome, nil
+}
+
+func (m *mockTaskAccess) Commit(req access.BatchRequest) (access.BatchOutcome, error) {
+	outcome := access.BatchOutcome{}
+	for i := range req.Creates {
+		create := req.Creates[i]
+		taskCopy := create.Task
+		taskCopy.ID = ""
+		saved, err := m.SaveTaskWithOrder(taskCopy, create.DropZone)
+		if err != nil {
+			return access.BatchOutcome{}, err
+		}
+		outcome.CreatedIDs = append(outcome.CreatedIDs, saved.ID)
+	}
+	for _, taskID := range req.Deletes {
+		if err := m.DeleteTaskWithOrder(taskID); err != nil {
+			return access.BatchOutcome{}, err
+		}
+		outcome.DeletedIDs = append(outcome.DeletedIDs, taskID)
+	}
+	if len(outcome.CreatedIDs) > 0 || len(outcome.DeletedIDs) > 0 {
+		m.mu.Lock()
+		m.commitAllCount++
+		m.mu.Unlock()
+	}
+	return outcome, nil
 }
 
 // mockRoutineAccess implements access.IRoutineAccess for testing.

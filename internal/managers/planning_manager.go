@@ -10,7 +10,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/engines/progress_engine"
@@ -399,10 +398,23 @@ func defaultAccessBoardConfiguration() *access.BoardConfiguration {
 	}
 }
 
+// taskAccessFacets composes the legacy ITaskAccess surface with the new
+// ITask and IBatch facet interfaces introduced by the access-atomicity
+// initiative. The Manager interacts exclusively through this composite so
+// it can call the new atomic verbs (Create/Save/Move/Archive/Restore/
+// Delete/Reorder, Promote/Commit) while a few legacy read-only helpers
+// (GetTasksByStatus, FindTasksByTag, LoadTaskOrder, ...) are still in use
+// pending task 99's removal of the legacy surface.
+type taskAccessFacets interface {
+	access.ITaskAccess
+	access.ITask
+	access.IBatch
+}
+
 // PlanningManager implements IPlanningManager with business logic.
 type PlanningManager struct {
 	themeAccess    access.IThemeAccess
-	taskAccess     access.ITaskAccess
+	taskAccess     taskAccessFacets
 	calendarAccess access.ICalendarAccess
 	routineAccess  access.IRoutineAccess
 	visionAccess   access.IVisionAccess
@@ -410,7 +422,6 @@ type PlanningManager struct {
 	ruleEngine     rule_engine.IRuleEngine
 	progressEngine progress_engine.IProgressEngine
 	scheduleEngine schedule_engine.IScheduleEngine
-	taskOrderMu    sync.Mutex
 }
 
 // getAccessBoardConfig returns the access-layer board configuration,
@@ -429,7 +440,7 @@ func (m *PlanningManager) getAccessBoardConfig() (*access.BoardConfiguration, er
 // NewPlanningManager creates a new PlanningManager instance.
 func NewPlanningManager(
 	themeAccess access.IThemeAccess,
-	taskAccess access.ITaskAccess,
+	taskAccess taskAccessFacets,
 	calendarAccess access.ICalendarAccess,
 	routineAccess access.IRoutineAccess,
 	visionAccess access.IVisionAccess,
@@ -1469,12 +1480,12 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 	createConfig, _ := m.getAccessBoardConfig()
 	accessTask := toAccessTask(task)
 	zone := m.ruleEngine.DropZoneForTask(string(access.TaskStatusTodo), task.Priority, m.ruleEngine.TodoSlugFromColumns(toColumnInfos(createConfig.ColumnDefinitions)))
-	createdTask, err := m.taskAccess.SaveTaskWithOrder(accessTask, zone)
+	createdTask, err := m.taskAccess.Create(accessTask, zone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save task: %w", err)
 	}
 
-	result := toManagerTask(*createdTask)
+	result := toManagerTask(createdTask)
 	return &result, nil
 }
 
@@ -1582,55 +1593,20 @@ func (m *PlanningManager) MoveTask(taskId, newStatus, newPriority string, positi
 		}, nil
 	}
 
-	// Capture the pre-move priority so the source-zone derivation reflects the
-	// task's location before any priority update we may apply below.
-	oldPriority := movingTask.Priority
-
-	// Perform the move (write-only, no commit yet)
-	if _, err := m.taskAccess.WriteMoveTask(taskId, newStatus); err != nil {
+	// Delegate the move to the atomic Access verb. ITask.Move handles the
+	// file rename, optional priority rewrite, and order-map mutation in a
+	// single critical section followed by one git commit (audit finding #7).
+	outcome, err := m.taskAccess.Move(access.MoveRequest{
+		TaskID:      taskId,
+		NewStatus:   newStatus,
+		NewPriority: newPriority,
+		Positions:   positions,
+	})
+	if err != nil {
 		return nil, fmt.Errorf("failed to move task: %w", err)
 	}
 
-	// Apply priority change in the same uncommitted batch as the file move.
-	// The task file now lives at the new-status path; WriteTask writes the
-	// updated priority to that path. CommitAll below ties everything together.
-	if newPriority != "" && newPriority != movingTask.Priority {
-		movingTask.Priority = newPriority
-		if err := m.taskAccess.WriteTask(toAccessTask(*movingTask)); err != nil {
-			return nil, fmt.Errorf("failed to update task priority: %w", err)
-		}
-	}
-
-	// Update task order: remove from source drop zone, then apply positions or append to target
-	moveTodoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
-	sourceZone := m.ruleEngine.DropZoneForTask(oldStatus, oldPriority, moveTodoSlug)
-
-	m.taskOrderMu.Lock()
-	orderMap, err := m.taskAccess.LoadTaskOrder()
-	if err != nil {
-		m.taskOrderMu.Unlock()
-		return nil, fmt.Errorf("failed to load task order: %w", err)
-	}
-	orderMap[sourceZone] = removeFromSlice(orderMap[sourceZone], taskId)
-	if positions != nil {
-		for zone, ids := range positions {
-			orderMap[zone] = ids
-		}
-	} else {
-		targetZone := m.ruleEngine.DropZoneForTask(newStatus, movingTask.Priority, moveTodoSlug)
-		orderMap[targetZone] = append(orderMap[targetZone], taskId)
-	}
-	if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
-		m.taskOrderMu.Unlock()
-		return nil, fmt.Errorf("failed to write task order: %w", err)
-	}
-	m.taskOrderMu.Unlock()
-
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Move task '%s' to %s", movingTask.Title, newStatus)); err != nil {
-		return nil, fmt.Errorf("failed to commit move: %w", err)
-	}
-
-	return &MoveTaskResult{Success: true, Positions: orderMap}, nil
+	return &MoveTaskResult{Success: true, Positions: outcome.Positions}, nil
 }
 
 // UpdateTask updates an existing task.
@@ -1668,34 +1644,57 @@ func (m *PlanningManager) UpdateTask(task Task) error {
 
 	accessTask := toAccessTask(task)
 
-	// Check if priority change causes a zone change (only for todo tasks)
+	// Check if priority change causes a zone change (only for todo tasks).
+	// When the zone moves, route through ITask.Move with explicit
+	// Positions so the file rewrite and order-map migration commit
+	// atomically. Otherwise route through ITask.Save (in-place save with
+	// no zone touch).
 	if oldPriority != "" && oldPriority != task.Priority {
 		config, _ := m.getAccessBoardConfig()
 		todoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
 		oldZone := m.ruleEngine.DropZoneForTask(oldStatus, oldPriority, todoSlug)
 		newZone := m.ruleEngine.DropZoneForTask(oldStatus, task.Priority, todoSlug)
 		if oldZone != newZone {
-			m.taskOrderMu.Lock()
-			err := m.taskAccess.UpdateTaskWithOrderMove(accessTask, oldZone, newZone)
-			m.taskOrderMu.Unlock()
+			// Persist non-priority field changes first via Save (one
+			// commit). Move then handles the priority+zone migration in
+			// a second atomic commit. Splitting these is unavoidable
+			// without a dedicated facet verb; the zone-move case is
+			// rare (priority-only edits initiated from the task editor)
+			// and does not affect the audit's atomicity guarantees.
+			if err := m.taskAccess.Save(accessTask); err != nil {
+				return fmt.Errorf("failed to update task: %w", err)
+			}
+			currentOrder, err := m.taskAccess.LoadTaskOrder()
 			if err != nil {
+				return fmt.Errorf("failed to load task order: %w", err)
+			}
+			newZoneOrder := append([]string(nil), currentOrder[newZone]...)
+			newZoneOrder = append(newZoneOrder, task.ID)
+			if _, err := m.taskAccess.Move(access.MoveRequest{
+				TaskID:      task.ID,
+				NewStatus:   oldStatus,
+				NewPriority: task.Priority,
+				Positions:   map[string][]string{newZone: newZoneOrder},
+			}); err != nil {
 				return fmt.Errorf("failed to update task with zone move: %w", err)
 			}
 			return nil
 		}
 	}
 
-	if err := m.taskAccess.SaveTask(accessTask); err != nil {
+	if err := m.taskAccess.Save(accessTask); err != nil {
 		return fmt.Errorf("failed to update task: %w", err)
 	}
 
 	return nil
 }
 
-// ProcessPriorityPromotions promotes tasks whose PromotionDate has been reached.
-// Tasks with priority "important-not-urgent" are promoted to "important-urgent"
-// and their PromotionDate is cleared. The task_order.json is updated atomically
-// to move each promoted task from the old zone to the new zone.
+// ProcessPriorityPromotions promotes tasks whose PromotionDate has been
+// reached. Tasks with priority "important-not-urgent" are promoted to
+// "important-urgent" and their PromotionDate is cleared. The manager
+// pre-computes the eligible promotions list and delegates the atomic
+// rewrite to IBatch.Promote, which re-validates each entry under the
+// access lock and produces a single git commit.
 func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	allTasks, err := m.GetTasks()
 	if err != nil {
@@ -1703,18 +1702,12 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 	}
 
 	today := utilities.Today()
-	var promoted []PromotedTask
-	config, _ := m.getAccessBoardConfig()
-	todoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
-
-	m.taskOrderMu.Lock()
-	orderMap, orderErr := m.taskAccess.LoadTaskOrder()
-	if orderErr != nil {
-		m.taskOrderMu.Unlock()
-		return nil, fmt.Errorf("failed to load task order: %w", orderErr)
+	type candidate struct {
+		id          string
+		title       string
+		oldPriority string
 	}
-	orderChanged := false
-
+	var candidates []candidate
 	for _, t := range allTasks {
 		if t.PromotionDate.IsZero() {
 			continue
@@ -1725,55 +1718,48 @@ func (m *PlanningManager) ProcessPriorityPromotions() ([]PromotedTask, error) {
 		if t.PromotionDate.Time().After(today.Time()) {
 			continue
 		}
-
-		// Promote: important-not-urgent -> important-urgent
-		updatedTask := t.Task
-		oldPriority := updatedTask.Priority
-		updatedTask.Priority = string(access.PriorityImportantUrgent)
-		updatedTask.PromotionDate = "" // Clear after promotion
-
-		accessTask := toAccessTask(updatedTask)
-		if err := m.taskAccess.WriteTask(accessTask); err != nil {
-			m.taskOrderMu.Unlock()
-			return nil, fmt.Errorf("failed to write promoted task %s: %w", t.ID, err)
-		}
-
-		oldZone := m.ruleEngine.DropZoneForTask(t.Status, oldPriority, todoSlug)
-		newZone := m.ruleEngine.DropZoneForTask(t.Status, string(access.PriorityImportantUrgent), todoSlug)
-		if oldZone != newZone {
-			if ids, ok := orderMap[oldZone]; ok {
-				filtered := make([]string, 0, len(ids))
-				for _, id := range ids {
-					if id != t.ID {
-						filtered = append(filtered, id)
-					}
-				}
-				orderMap[oldZone] = filtered
-			}
-			orderMap[newZone] = append(orderMap[newZone], t.ID)
-			orderChanged = true
-		}
-
-		promoted = append(promoted, PromotedTask{
-			ID:          t.ID,
-			Title:       t.Title,
-			OldPriority: oldPriority,
-			NewPriority: string(access.PriorityImportantUrgent),
+		candidates = append(candidates, candidate{
+			id:          t.ID,
+			title:       t.Title,
+			oldPriority: t.Priority,
 		})
 	}
 
-	if orderChanged {
-		if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
-			m.taskOrderMu.Unlock()
-			return nil, fmt.Errorf("failed to write task order: %w", err)
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	req := access.PromoteRequest{
+		Promotions: make([]access.TaskPromotion, len(candidates)),
+	}
+	for i, c := range candidates {
+		req.Promotions[i] = access.TaskPromotion{
+			TaskID:             c.id,
+			NewPriority:        string(access.PriorityImportantUrgent),
+			ClearPromotionDate: true,
 		}
 	}
-	m.taskOrderMu.Unlock()
 
-	if len(promoted) > 0 {
-		if err := m.taskAccess.CommitAll(fmt.Sprintf("Promote %d tasks by priority date", len(promoted))); err != nil {
-			return nil, fmt.Errorf("failed to commit promotions: %w", err)
+	outcome, err := m.taskAccess.Promote(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to commit promotions: %w", err)
+	}
+
+	skipped := make(map[string]bool, len(outcome.Skipped))
+	for _, id := range outcome.Skipped {
+		skipped[id] = true
+	}
+	promoted := make([]PromotedTask, 0, outcome.Count)
+	for _, c := range candidates {
+		if skipped[c.id] {
+			continue
 		}
+		promoted = append(promoted, PromotedTask{
+			ID:          c.id,
+			Title:       c.title,
+			OldPriority: c.oldPriority,
+			NewPriority: string(access.PriorityImportantUrgent),
+		})
 	}
 
 	return promoted, nil
@@ -1785,8 +1771,8 @@ func (m *PlanningManager) DeleteTask(taskId string) error {
 		return fmt.Errorf("task ID cannot be empty")
 	}
 
-	// Delete task and update task order atomically in a single git commit
-	if err := m.taskAccess.DeleteTaskWithOrder(taskId); err != nil {
+	// Delete task file and clean up its order-map entry atomically.
+	if err := m.taskAccess.Delete(taskId); err != nil {
 		return fmt.Errorf("failed to delete task: %w", err)
 	}
 
@@ -1804,7 +1790,9 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
-	// Find the target task and verify it's done
+	// Find the target task and verify it's done. The status check is
+	// domain logic and stays in the manager; ITask.Archive performs the
+	// file move + order-map updates + commit atomically.
 	var targetTask *TaskWithStatus
 	for i := range allTasks {
 		if allTasks[i].ID == taskId {
@@ -1819,39 +1807,31 @@ func (m *PlanningManager) ArchiveTask(taskId string) error {
 		return fmt.Errorf("task can only be archived when done")
 	}
 
-	if _, err := m.taskAccess.WriteArchiveTask(taskId); err != nil {
+	if err := m.taskAccess.Archive(taskId); err != nil {
 		return fmt.Errorf("failed to archive task %s: %w", taskId, err)
-	}
-
-	if err := m.removeFromTaskOrder([]string{taskId}); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	// Prepend to archived order (newest archived first)
-	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
-	if err != nil {
-		return fmt.Errorf("failed to load archived order: %w", err)
-	}
-	archivedOrder = append([]string{taskId}, archivedOrder...)
-	if err := m.taskAccess.WriteArchivedOrder(archivedOrder); err != nil {
-		return fmt.Errorf("failed to write archived order: %w", err)
-	}
-
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Archive task: %s", targetTask.Title)); err != nil {
-		return fmt.Errorf("failed to commit archive: %w", err)
 	}
 
 	return nil
 }
 
 // ArchiveAllDoneTasks archives all done tasks.
+//
+// Each task is archived through a separate ITask.Archive call. This
+// produces N atomic git commits (one per task) instead of the previous
+// single batched commit; the migration trades batch-archive atomicity
+// for the per-call atomicity guarantees of the new facet. A future
+// IBatch verb could restore the single-commit behaviour without
+// reverting any of the audit-finding fixes.
 func (m *PlanningManager) ArchiveAllDoneTasks() error {
 	allTasks, err := m.GetTasks()
 	if err != nil {
 		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
-	// Collect done task IDs in their current display order
+	// Collect done task IDs in their current display order. Iterate from
+	// last-displayed to first-displayed so that the most-recently-displayed
+	// task ends up at the head of archived_order.json (each Archive call
+	// prepends to the archived list).
 	var doneIDs []string
 	for _, t := range allTasks {
 		if t.Status != string(access.TaskStatusDone) {
@@ -1863,28 +1843,11 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 		return nil
 	}
 
-	// Archive each task file (write-only, no commit per file)
-	for _, id := range doneIDs {
-		if _, err := m.taskAccess.WriteArchiveTask(id); err != nil {
+	for i := len(doneIDs) - 1; i >= 0; i-- {
+		id := doneIDs[i]
+		if err := m.taskAccess.Archive(id); err != nil {
 			return fmt.Errorf("failed to archive task %s: %w", id, err)
 		}
-	}
-	if err := m.removeFromTaskOrder(doneIDs); err != nil {
-		return fmt.Errorf("%w", err)
-	}
-
-	// Batch-prepend to archived order preserving their relative display order
-	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
-	if err != nil {
-		return fmt.Errorf("failed to load archived order: %w", err)
-	}
-	archivedOrder = append(doneIDs, archivedOrder...)
-	if err := m.taskAccess.WriteArchivedOrder(archivedOrder); err != nil {
-		return fmt.Errorf("failed to write archived order: %w", err)
-	}
-
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Archive all done tasks (%d tasks)", len(doneIDs))); err != nil {
-		return fmt.Errorf("failed to commit archive: %w", err)
 	}
 
 	return nil
@@ -1901,7 +1864,9 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("failed to get tasks: %w", err)
 	}
 
-	// Find the target task and verify it's archived
+	// Find the target task and verify it's archived. The status check is
+	// domain logic and stays in the manager; ITask.Restore performs the
+	// file move + order-map updates + commit atomically.
 	var targetTask *TaskWithStatus
 	for i := range allTasks {
 		if allTasks[i].ID == taskId {
@@ -1916,125 +1881,28 @@ func (m *PlanningManager) RestoreTask(taskId string) error {
 		return fmt.Errorf("task can only be restored from archive")
 	}
 
-	if _, err := m.taskAccess.WriteRestoreTask(taskId); err != nil {
+	if err := m.taskAccess.Restore(taskId); err != nil {
 		return fmt.Errorf("failed to restore task %s: %w", taskId, err)
-	}
-
-	// Add the restored task to the "done" zone in task_order.json
-	boardConfig, _ := m.getAccessBoardConfig()
-	if boardConfig == nil {
-		boardConfig = defaultAccessBoardConfiguration()
-	}
-	targetZone := m.ruleEngine.DropZoneForTask(string(access.TaskStatusDone), targetTask.Priority, m.ruleEngine.TodoSlugFromColumns(toColumnInfos(boardConfig.ColumnDefinitions)))
-	m.taskOrderMu.Lock()
-	orderMap, err := m.taskAccess.LoadTaskOrder()
-	if err != nil {
-		m.taskOrderMu.Unlock()
-		return fmt.Errorf("failed to load task order: %w", err)
-	}
-	orderMap[targetZone] = append(orderMap[targetZone], taskId)
-	if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
-		m.taskOrderMu.Unlock()
-		return fmt.Errorf("failed to write task order: %w", err)
-	}
-	m.taskOrderMu.Unlock()
-
-	// Remove from archived order
-	archivedOrder, err := m.taskAccess.LoadArchivedOrder()
-	if err != nil {
-		return fmt.Errorf("failed to load archived order: %w", err)
-	}
-	filtered := make([]string, 0, len(archivedOrder))
-	for _, id := range archivedOrder {
-		if id != taskId {
-			filtered = append(filtered, id)
-		}
-	}
-	if len(filtered) != len(archivedOrder) {
-		if err := m.taskAccess.WriteArchivedOrder(filtered); err != nil {
-			return fmt.Errorf("failed to write archived order: %w", err)
-		}
-	}
-
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Restore task: %s", targetTask.Title)); err != nil {
-		return fmt.Errorf("failed to commit restore: %w", err)
-	}
-
-	return nil
-}
-
-// removeFromTaskOrder removes the given task IDs from all drop zones in the task order.
-// Uses write-only method; caller is responsible for committing.
-func (m *PlanningManager) removeFromTaskOrder(taskIDs []string) error {
-	m.taskOrderMu.Lock()
-	defer m.taskOrderMu.Unlock()
-
-	orderMap, err := m.taskAccess.LoadTaskOrder()
-	if err != nil {
-		return fmt.Errorf("failed to load task order: %w", err)
-	}
-
-	idSet := make(map[string]bool, len(taskIDs))
-	for _, id := range taskIDs {
-		idSet[id] = true
-	}
-
-	changed := false
-	for zone, ids := range orderMap {
-		filtered := make([]string, 0, len(ids))
-		for _, id := range ids {
-			if !idSet[id] {
-				filtered = append(filtered, id)
-			}
-		}
-		if len(filtered) != len(ids) {
-			orderMap[zone] = filtered
-			changed = true
-		}
-	}
-
-	if changed {
-		if err := m.taskAccess.WriteTaskOrder(orderMap); err != nil {
-			return fmt.Errorf("failed to write task order: %w", err)
-		}
 	}
 
 	return nil
 }
 
 // ReorderTasks accepts proposed positions for one or more drop zones,
-// merges them into the full order map, persists, and returns authoritative positions.
+// delegates the atomic merge-and-persist to ITask.Reorder, then returns
+// the full authoritative order map (zones not touched by the caller are
+// preserved unchanged).
 func (m *PlanningManager) ReorderTasks(positions map[string][]string) (*ReorderResult, error) {
-	m.taskOrderMu.Lock()
+	if _, err := m.taskAccess.Reorder(positions); err != nil {
+		return nil, fmt.Errorf("failed to save task order: %w", err)
+	}
+
 	orderMap, err := m.taskAccess.LoadTaskOrder()
 	if err != nil {
-		m.taskOrderMu.Unlock()
 		return nil, fmt.Errorf("failed to load task order: %w", err)
 	}
 
-	// Merge proposed positions into the full order map
-	for zone, ids := range positions {
-		orderMap[zone] = ids
-	}
-
-	if err := m.taskAccess.SaveTaskOrder(orderMap); err != nil {
-		m.taskOrderMu.Unlock()
-		return nil, fmt.Errorf("failed to save task order: %w", err)
-	}
-	m.taskOrderMu.Unlock()
-
 	return &ReorderResult{Success: true, Positions: orderMap}, nil
-}
-
-// removeFromSlice returns a new slice with the first occurrence of val removed.
-func removeFromSlice(s []string, val string) []string {
-	result := make([]string, 0, len(s))
-	for _, v := range s {
-		if v != val {
-			result = append(result, v)
-		}
-	}
-	return result
 }
 
 // toEngineTaskData converts a Task to a rule_engine.TaskData
