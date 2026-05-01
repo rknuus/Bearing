@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -21,9 +22,19 @@ type IRoutineAccess interface {
 }
 
 // RoutineAccess implements IRoutineAccess with file-based storage and git versioning.
+//
+// mu serialises the full read-modify-write cycle on routines.json. The
+// per-path mutex inside writeJSON only protects the atomic-write step itself;
+// without mu, two goroutines could each call GetRoutines, mutate independent
+// in-memory copies, and race on SaveRoutine — losing one set of edits.
+//
+// Lock-ordering invariant: acquire RoutineAccess.mu before invoking
+// commitFiles (which internally takes the repository transaction lock).
+// Never invert this order.
 type RoutineAccess struct {
 	dataPath string
 	repo     utilities.IRepository
+	mu       sync.Mutex
 }
 
 // NewRoutineAccess creates a new RoutineAccess instance.
@@ -48,6 +59,13 @@ func (ra *RoutineAccess) routinesFilePath() string {
 
 // GetRoutines returns all routines.
 func (ra *RoutineAccess) GetRoutines() ([]Routine, error) {
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+	return ra.getRoutinesLocked()
+}
+
+// getRoutinesLocked reads and parses routines.json. The caller must hold ra.mu.
+func (ra *RoutineAccess) getRoutinesLocked() ([]Routine, error) {
 	filePath := ra.routinesFilePath()
 
 	data, err := os.ReadFile(filePath)
@@ -73,7 +91,10 @@ func (ra *RoutineAccess) SaveRoutine(routine Routine) error {
 		return fmt.Errorf("RoutineAccess.SaveRoutine: routine ID cannot be empty")
 	}
 
-	routines, err := ra.GetRoutines()
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+
+	routines, err := ra.getRoutinesLocked()
 	if err != nil {
 		return fmt.Errorf("RoutineAccess.SaveRoutine: failed to get existing routines: %w", err)
 	}
@@ -111,7 +132,10 @@ func (ra *RoutineAccess) SaveRoutine(routine Routine) error {
 
 // DeleteRoutine deletes a routine by ID.
 func (ra *RoutineAccess) DeleteRoutine(id string) error {
-	routines, err := ra.GetRoutines()
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+
+	routines, err := ra.getRoutinesLocked()
 	if err != nil {
 		return fmt.Errorf("RoutineAccess.DeleteRoutine: failed to get existing routines: %w", err)
 	}
@@ -147,6 +171,9 @@ func (ra *RoutineAccess) DeleteRoutine(id string) error {
 
 // SaveRoutines writes all routines at once and git-commits.
 func (ra *RoutineAccess) SaveRoutines(routines []Routine) error {
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+
 	filePath := ra.routinesFilePath()
 	if err := writeJSON(filePath, RoutinesFile{Routines: routines}); err != nil {
 		return fmt.Errorf("RoutineAccess.SaveRoutines: %w", err)

@@ -2,8 +2,11 @@ package access
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"sync"
 	"testing"
 
 	"github.com/rkn/bearing/internal/utilities"
@@ -335,6 +338,69 @@ func TestNextRoutineID_IgnoresNonMatchingIDs(t *testing.T) {
 	id := NextRoutineID(routines)
 	if id != "R4" {
 		t.Errorf("Expected R4, got %s", id)
+	}
+}
+
+// TestSaveRoutine_ConcurrentWriters verifies that the RoutineAccess RMW mutex
+// prevents lost updates when many goroutines call SaveRoutine in parallel for
+// distinct routines. Without the mutex, two goroutines could each read the
+// same baseline, mutate independent in-memory copies, and race on the write
+// step — losing one set of edits. Run under `go test -race` to additionally
+// surface any data race on shared internal state.
+func TestSaveRoutine_ConcurrentWriters(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	const n = 16
+
+	var wg sync.WaitGroup
+	errs := make(chan error, n)
+	wg.Add(n)
+	for i := 1; i <= n; i++ {
+		go func(idx int) {
+			defer wg.Done()
+			r := Routine{
+				ID:          fmt.Sprintf("R%d", idx),
+				Description: fmt.Sprintf("Routine %d", idx),
+			}
+			if err := env.routines.SaveRoutine(r); err != nil {
+				errs <- fmt.Errorf("SaveRoutine(R%d): %w", idx, err)
+			}
+		}(i)
+	}
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		t.Errorf("concurrent SaveRoutine failed: %v", err)
+	}
+
+	saved, err := env.routines.GetRoutines()
+	if err != nil {
+		t.Fatalf("GetRoutines failed: %v", err)
+	}
+
+	if len(saved) != n {
+		t.Fatalf("Expected %d routines after concurrent writes, got %d", n, len(saved))
+	}
+
+	ids := make([]string, len(saved))
+	for i, r := range saved {
+		ids[i] = r.ID
+	}
+	sort.Strings(ids)
+
+	expected := make([]string, n)
+	for i := 0; i < n; i++ {
+		expected[i] = fmt.Sprintf("R%d", i+1)
+	}
+	sort.Strings(expected)
+
+	for i, want := range expected {
+		if ids[i] != want {
+			t.Errorf("Missing routine after concurrent writes: want %v, got %v", expected, ids)
+			break
+		}
 	}
 }
 
