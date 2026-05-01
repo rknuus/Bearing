@@ -404,6 +404,130 @@ func TestSaveRoutine_ConcurrentWriters(t *testing.T) {
 	}
 }
 
+// TestUnit_RoutineAccess_WriteRoutine_PersistsWithoutCommit verifies that
+// WriteRoutine writes the routine to disk but produces no git commit.
+func TestUnit_RoutineAccess_WriteRoutine_PersistsWithoutCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	beforeHead := headCommitID(t, env.repo)
+
+	r := Routine{ID: "R1", Description: "Daily walk"}
+	if err := env.routines.WriteRoutine(r); err != nil {
+		t.Fatalf("WriteRoutine failed: %v", err)
+	}
+
+	saved, err := env.routines.GetRoutines()
+	if err != nil {
+		t.Fatalf("GetRoutines failed: %v", err)
+	}
+	if len(saved) != 1 || saved[0].ID != "R1" {
+		t.Fatalf("WriteRoutine did not persist correctly: got %#v", saved)
+	}
+
+	afterHead := headCommitID(t, env.repo)
+	if beforeHead != afterHead {
+		t.Errorf("WriteRoutine produced an unexpected commit: HEAD %q -> %q", beforeHead, afterHead)
+	}
+}
+
+// TestUnit_RoutineAccess_WriteSaveRoutines_PersistsWithoutCommit verifies the
+// bulk no-commit variant.
+func TestUnit_RoutineAccess_WriteSaveRoutines_PersistsWithoutCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	beforeHead := headCommitID(t, env.repo)
+
+	routines := []Routine{
+		{ID: "R1", Description: "First"},
+		{ID: "R2", Description: "Second"},
+	}
+	if err := env.routines.WriteSaveRoutines(routines); err != nil {
+		t.Fatalf("WriteSaveRoutines failed: %v", err)
+	}
+
+	saved, err := env.routines.GetRoutines()
+	if err != nil {
+		t.Fatalf("GetRoutines failed: %v", err)
+	}
+	if len(saved) != 2 {
+		t.Fatalf("Expected 2 routines, got %d", len(saved))
+	}
+
+	afterHead := headCommitID(t, env.repo)
+	if beforeHead != afterHead {
+		t.Errorf("WriteSaveRoutines produced an unexpected commit: HEAD %q -> %q", beforeHead, afterHead)
+	}
+}
+
+// TestUnit_RoutineAccess_WriteDeleteRoutine_RemovesWithoutCommit verifies the
+// no-commit delete variant.
+func TestUnit_RoutineAccess_WriteDeleteRoutine_RemovesWithoutCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	if err := env.routines.SaveRoutine(Routine{ID: "R1", Description: "Seed"}); err != nil {
+		t.Fatalf("seed SaveRoutine failed: %v", err)
+	}
+
+	beforeHead := headCommitID(t, env.repo)
+
+	if err := env.routines.WriteDeleteRoutine("R1"); err != nil {
+		t.Fatalf("WriteDeleteRoutine failed: %v", err)
+	}
+
+	saved, err := env.routines.GetRoutines()
+	if err != nil {
+		t.Fatalf("GetRoutines failed: %v", err)
+	}
+	if len(saved) != 0 {
+		t.Errorf("Expected 0 routines after WriteDeleteRoutine, got %d", len(saved))
+	}
+
+	afterHead := headCommitID(t, env.repo)
+	if beforeHead != afterHead {
+		t.Errorf("WriteDeleteRoutine produced an unexpected commit: HEAD %q -> %q", beforeHead, afterHead)
+	}
+}
+
+// TestUnit_RoutineAccess_CommittingMethods_ProduceExactlyOneCommit guards
+// against regressions in the Write*/Save* refactor.
+func TestUnit_RoutineAccess_CommittingMethods_ProduceExactlyOneCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	commitsBefore := func() int {
+		h, err := env.repo.GetHistory(100)
+		if err != nil {
+			return 0
+		}
+		return len(h)
+	}
+
+	checkOne := func(name string, fn func() error) {
+		t.Helper()
+		before := commitsBefore()
+		if err := fn(); err != nil {
+			t.Fatalf("%s failed: %v", name, err)
+		}
+		after := commitsBefore()
+		if after-before != 1 {
+			t.Errorf("%s: expected 1 new commit, got %d", name, after-before)
+		}
+	}
+
+	checkOne("SaveRoutine", func() error {
+		return env.routines.SaveRoutine(Routine{ID: "R1", Description: "A"})
+	})
+	checkOne("SaveRoutines", func() error {
+		return env.routines.SaveRoutines([]Routine{{ID: "R2", Description: "B"}})
+	})
+	checkOne("DeleteRoutine", func() error {
+		return env.routines.DeleteRoutine("R2")
+	})
+}
+
 func TestRoutineWithExceptions(t *testing.T) {
 	env, _, cleanup := setupTestEnv(t)
 	defer cleanup()

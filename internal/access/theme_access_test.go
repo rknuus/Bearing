@@ -5,7 +5,24 @@ import (
 	"sort"
 	"sync"
 	"testing"
+
+	"github.com/rkn/bearing/internal/utilities"
 )
+
+// headCommitID returns the current HEAD commit hash, or "" if the repository
+// has no commits yet. Used by Write* tests to assert the no-commit invariant.
+func headCommitID(t *testing.T, repo utilities.IRepository) string {
+	t.Helper()
+	history, err := repo.GetHistory(1)
+	if err != nil {
+		// Empty repo (no commits yet) is a normal state at test start.
+		return ""
+	}
+	if len(history) == 0 {
+		return ""
+	}
+	return history[0].ID
+}
 
 // TestUnit_ThemeAccess_ConcurrentSaveTheme_NoLostEdits verifies that the
 // read-modify-write cycle (GetThemes -> mutate -> SaveTheme) is serialised so
@@ -141,5 +158,122 @@ func TestUnit_ThemeAccess_ConcurrentSaveAndDelete_NoCorruption(t *testing.T) {
 		if th.ID[:1] == "S" {
 			t.Errorf("seed theme %q was not deleted", th.ID)
 		}
+	}
+}
+
+// TestUnit_ThemeAccess_WriteTheme_PersistsWithoutCommit verifies that
+// WriteTheme writes the theme to disk but produces no git commit. Managers
+// will use this variant inside utilities.RunTransaction so a single terminal
+// commit can cover writes spanning multiple Access components.
+func TestUnit_ThemeAccess_WriteTheme_PersistsWithoutCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	beforeHead := headCommitID(t, env.repo)
+
+	theme := LifeTheme{ID: "T1", Name: "Wellness", Color: "#00ff00"}
+	if err := env.themes.WriteTheme(theme); err != nil {
+		t.Fatalf("WriteTheme failed: %v", err)
+	}
+
+	// File contents reflect the write.
+	saved, err := env.themes.GetThemes()
+	if err != nil {
+		t.Fatalf("GetThemes failed: %v", err)
+	}
+	if len(saved) != 1 || saved[0].ID != "T1" || saved[0].Name != "Wellness" {
+		t.Fatalf("WriteTheme did not persist correctly: got %#v", saved)
+	}
+
+	// HEAD must be unchanged — WriteTheme must NOT commit.
+	afterHead := headCommitID(t, env.repo)
+	if beforeHead != afterHead {
+		t.Errorf("WriteTheme produced an unexpected commit: HEAD %q -> %q", beforeHead, afterHead)
+	}
+}
+
+// TestUnit_ThemeAccess_WriteDeleteTheme_RemovesWithoutCommit verifies that
+// WriteDeleteTheme removes the theme from disk without producing a commit.
+func TestUnit_ThemeAccess_WriteDeleteTheme_RemovesWithoutCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	// Seed a theme via the committing path.
+	if err := env.themes.SaveTheme(LifeTheme{ID: "T1", Name: "Seed", Color: "#000"}); err != nil {
+		t.Fatalf("seed SaveTheme failed: %v", err)
+	}
+
+	beforeHead := headCommitID(t, env.repo)
+
+	if err := env.themes.WriteDeleteTheme("T1"); err != nil {
+		t.Fatalf("WriteDeleteTheme failed: %v", err)
+	}
+
+	saved, err := env.themes.GetThemes()
+	if err != nil {
+		t.Fatalf("GetThemes failed: %v", err)
+	}
+	if len(saved) != 0 {
+		t.Errorf("Expected 0 themes after WriteDeleteTheme, got %d", len(saved))
+	}
+
+	afterHead := headCommitID(t, env.repo)
+	if beforeHead != afterHead {
+		t.Errorf("WriteDeleteTheme produced an unexpected commit: HEAD %q -> %q", beforeHead, afterHead)
+	}
+}
+
+// TestUnit_ThemeAccess_SaveTheme_ProducesExactlyOneCommit guards against a
+// regression where the Write*/Save* refactor accidentally commits twice or
+// not at all.
+func TestUnit_ThemeAccess_SaveTheme_ProducesExactlyOneCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	before, err := env.repo.GetHistory(100)
+	if err != nil {
+		before = nil // empty repo
+	}
+	beforeCount := len(before)
+
+	if err := env.themes.SaveTheme(LifeTheme{ID: "T1", Name: "X", Color: "#000"}); err != nil {
+		t.Fatalf("SaveTheme failed: %v", err)
+	}
+
+	after, err := env.repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	if got := len(after) - beforeCount; got != 1 {
+		t.Errorf("SaveTheme: expected exactly 1 new commit, got %d", got)
+	}
+}
+
+// TestUnit_ThemeAccess_DeleteTheme_ProducesExactlyOneCommit mirrors the
+// SaveTheme regression guard for the delete path.
+func TestUnit_ThemeAccess_DeleteTheme_ProducesExactlyOneCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	if err := env.themes.SaveTheme(LifeTheme{ID: "T1", Name: "X", Color: "#000"}); err != nil {
+		t.Fatalf("seed SaveTheme failed: %v", err)
+	}
+
+	before, err := env.repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	beforeCount := len(before)
+
+	if err := env.themes.DeleteTheme("T1"); err != nil {
+		t.Fatalf("DeleteTheme failed: %v", err)
+	}
+
+	after, err := env.repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	if got := len(after) - beforeCount; got != 1 {
+		t.Errorf("DeleteTheme: expected exactly 1 new commit, got %d", got)
 	}
 }

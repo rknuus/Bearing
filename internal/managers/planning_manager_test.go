@@ -117,6 +117,14 @@ func (m *mockThemeAccess) DeleteTheme(id string) error {
 	return nil
 }
 
+func (m *mockThemeAccess) WriteTheme(theme access.LifeTheme) error {
+	return m.SaveTheme(theme)
+}
+
+func (m *mockThemeAccess) WriteDeleteTheme(id string) error {
+	return m.DeleteTheme(id)
+}
+
 // mockTaskAccess implements access.ITaskAccess for testing.
 type mockTaskAccess struct {
 	mu              sync.Mutex
@@ -454,6 +462,18 @@ func (m *mockRoutineAccess) SaveRoutines(routines []access.Routine) error {
 	return nil
 }
 
+func (m *mockRoutineAccess) WriteRoutine(routine access.Routine) error {
+	return m.SaveRoutine(routine)
+}
+
+func (m *mockRoutineAccess) WriteSaveRoutines(routines []access.Routine) error {
+	return m.SaveRoutines(routines)
+}
+
+func (m *mockRoutineAccess) WriteDeleteRoutine(id string) error {
+	return m.DeleteRoutine(id)
+}
+
 // mockCalendarAccess implements access.ICalendarAccess for testing.
 // It stores day focus entries in memory so tests can verify saved data.
 type mockCalendarAccess struct {
@@ -485,6 +505,10 @@ func (m *mockCalendarAccess) GetYearFocus(year int) ([]access.DayFocus, error) {
 		}
 	}
 	return out, nil
+}
+
+func (m *mockCalendarAccess) WriteDayFocus(day access.DayFocus) error {
+	return m.SaveDayFocus(day)
 }
 
 // mockVisionAccess implements access.IVisionAccess for testing.

@@ -18,6 +18,14 @@ type IThemeAccess interface {
 	GetThemes() ([]LifeTheme, error)
 	SaveTheme(theme LifeTheme) error
 	DeleteTheme(id string) error
+
+	// WriteTheme persists a theme without git-committing. Intended for use
+	// inside a manager-orchestrated utilities.RunTransaction so a single
+	// terminal commit covers writes spanning multiple Access components.
+	WriteTheme(theme LifeTheme) error
+	// WriteDeleteTheme removes a theme without git-committing. Same usage
+	// rationale as WriteTheme.
+	WriteDeleteTheme(id string) error
 }
 
 // ThemeAccess implements IThemeAccess with file-based storage and git versioning.
@@ -108,9 +116,51 @@ func (ta *ThemeAccess) SaveTheme(theme LifeTheme) error {
 	ta.mu.Lock()
 	defer ta.mu.Unlock()
 
+	filePath, theme, found, err := ta.writeThemeLocked(theme)
+	if err != nil {
+		return fmt.Errorf("ThemeAccess.SaveTheme: %w", err)
+	}
+
+	// Commit with git
+	action := "Update"
+	if !found {
+		action = "Add"
+	}
+	if err := commitFiles(ta.repo, []string{filePath}, fmt.Sprintf("%s theme: %s", action, theme.Name)); err != nil {
+		return fmt.Errorf("ThemeAccess.SaveTheme: %w", err)
+	}
+
+	return nil
+}
+
+// WriteTheme writes a theme to disk without git-committing. The caller is
+// expected to coordinate the terminal commit (typically via
+// utilities.RunTransaction at the manager layer).
+//
+// Shares ta.mu with SaveTheme/DeleteTheme so the read-modify-write cycle
+// remains serialised across committing and non-committing variants.
+func (ta *ThemeAccess) WriteTheme(theme LifeTheme) error {
+	if theme.ID == "" {
+		return fmt.Errorf("ThemeAccess.WriteTheme: theme ID cannot be empty")
+	}
+
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	if _, _, _, err := ta.writeThemeLocked(theme); err != nil {
+		return fmt.Errorf("ThemeAccess.WriteTheme: %w", err)
+	}
+	return nil
+}
+
+// writeThemeLocked performs the in-memory upsert and disk write of a theme
+// without committing. Caller must hold ta.mu. Returns the file path written,
+// the theme (with any IDs populated by ensureThemeIDs), and whether the theme
+// already existed (false = newly added).
+func (ta *ThemeAccess) writeThemeLocked(theme LifeTheme) (string, LifeTheme, bool, error) {
 	themes, err := ta.getThemesLocked()
 	if err != nil {
-		return fmt.Errorf("ThemeAccess.SaveTheme: failed to get existing themes: %w", err)
+		return "", theme, false, fmt.Errorf("failed to get existing themes: %w", err)
 	}
 
 	// Ensure objective and key result IDs are generated
@@ -132,23 +182,14 @@ func (ta *ThemeAccess) SaveTheme(theme LifeTheme) error {
 	// Save to file with versioning
 	filePath := ta.themesFilePath()
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-		return fmt.Errorf("ThemeAccess.SaveTheme: failed to create themes directory: %w", err)
+		return "", theme, found, fmt.Errorf("failed to create themes directory: %w", err)
 	}
 
 	if err := writeJSON(filePath, ThemesFile{Themes: themes}); err != nil {
-		return fmt.Errorf("ThemeAccess.SaveTheme: %w", err)
+		return "", theme, found, err
 	}
 
-	// Commit with git
-	action := "Update"
-	if !found {
-		action = "Add"
-	}
-	if err := commitFiles(ta.repo, []string{filePath}, fmt.Sprintf("%s theme: %s", action, theme.Name)); err != nil {
-		return fmt.Errorf("ThemeAccess.SaveTheme: %w", err)
-	}
-
-	return nil
+	return filePath, theme, found, nil
 }
 
 // DeleteTheme deletes a life theme by ID.
@@ -159,9 +200,38 @@ func (ta *ThemeAccess) DeleteTheme(id string) error {
 	ta.mu.Lock()
 	defer ta.mu.Unlock()
 
+	filePath, deletedTheme, err := ta.deleteThemeLocked(id)
+	if err != nil {
+		return fmt.Errorf("ThemeAccess.DeleteTheme: %w", err)
+	}
+
+	// Commit with git
+	if err := commitFiles(ta.repo, []string{filePath}, fmt.Sprintf("Delete theme: %s", deletedTheme.Name)); err != nil {
+		return fmt.Errorf("ThemeAccess.DeleteTheme: %w", err)
+	}
+
+	return nil
+}
+
+// WriteDeleteTheme removes a theme from disk without git-committing. See
+// WriteTheme for usage rationale; shares ta.mu with the committing variant.
+func (ta *ThemeAccess) WriteDeleteTheme(id string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	if _, _, err := ta.deleteThemeLocked(id); err != nil {
+		return fmt.Errorf("ThemeAccess.WriteDeleteTheme: %w", err)
+	}
+	return nil
+}
+
+// deleteThemeLocked performs the in-memory removal and disk write of a theme
+// deletion without committing. Caller must hold ta.mu. Returns the file path
+// written and the deleted theme (for use in commit messages).
+func (ta *ThemeAccess) deleteThemeLocked(id string) (string, LifeTheme, error) {
 	themes, err := ta.getThemesLocked()
 	if err != nil {
-		return fmt.Errorf("ThemeAccess.DeleteTheme: failed to get existing themes: %w", err)
+		return "", LifeTheme{}, fmt.Errorf("failed to get existing themes: %w", err)
 	}
 
 	// Find and remove the theme
@@ -178,21 +248,16 @@ func (ta *ThemeAccess) DeleteTheme(id string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("ThemeAccess.DeleteTheme: theme with ID %s not found", id)
+		return "", LifeTheme{}, fmt.Errorf("theme with ID %s not found", id)
 	}
 
 	// Save updated themes
 	filePath := ta.themesFilePath()
 	if err := writeJSON(filePath, ThemesFile{Themes: newThemes}); err != nil {
-		return fmt.Errorf("ThemeAccess.DeleteTheme: %w", err)
+		return "", deletedTheme, err
 	}
 
-	// Commit with git
-	if err := commitFiles(ta.repo, []string{filePath}, fmt.Sprintf("Delete theme: %s", deletedTheme.Name)); err != nil {
-		return fmt.Errorf("ThemeAccess.DeleteTheme: %w", err)
-	}
-
-	return nil
+	return filePath, deletedTheme, nil
 }
 
 // ensureThemeIDs ensures all objectives and key results within a theme have proper IDs.

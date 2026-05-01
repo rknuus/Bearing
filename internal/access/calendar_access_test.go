@@ -130,3 +130,64 @@ func TestSaveDayFocus_ConcurrentSameYear(t *testing.T) {
 		t.Errorf("Expected %d entries in file, got %d", n, len(parsed.Entries))
 	}
 }
+
+// TestUnit_CalendarAccess_WriteDayFocus_PersistsWithoutCommit verifies that
+// WriteDayFocus writes the entry to disk but produces no git commit. Managers
+// will use this variant inside utilities.RunTransaction so a single terminal
+// commit can cover writes spanning multiple Access components.
+func TestUnit_CalendarAccess_WriteDayFocus_PersistsWithoutCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	beforeHead := headCommitID(t, env.repo)
+
+	day := DayFocus{
+		Date:  utilities.MustParseCalendarDate("2026-04-01"),
+		Notes: "April fools",
+	}
+	if err := env.calendar.WriteDayFocus(day); err != nil {
+		t.Fatalf("WriteDayFocus failed: %v", err)
+	}
+
+	got, err := env.calendar.GetDayFocus("2026-04-01")
+	if err != nil {
+		t.Fatalf("GetDayFocus failed: %v", err)
+	}
+	if got == nil || got.Notes != "April fools" {
+		t.Fatalf("WriteDayFocus did not persist correctly: got %#v", got)
+	}
+
+	afterHead := headCommitID(t, env.repo)
+	if beforeHead != afterHead {
+		t.Errorf("WriteDayFocus produced an unexpected commit: HEAD %q -> %q", beforeHead, afterHead)
+	}
+}
+
+// TestUnit_CalendarAccess_SaveDayFocus_ProducesExactlyOneCommit guards
+// against a regression in the Write*/Save* refactor.
+func TestUnit_CalendarAccess_SaveDayFocus_ProducesExactlyOneCommit(t *testing.T) {
+	env, _, cleanup := setupTestEnv(t)
+	defer cleanup()
+
+	before, err := env.repo.GetHistory(100)
+	if err != nil {
+		before = nil
+	}
+	beforeCount := len(before)
+
+	day := DayFocus{
+		Date:  utilities.MustParseCalendarDate("2026-05-10"),
+		Notes: "Test",
+	}
+	if err := env.calendar.SaveDayFocus(day); err != nil {
+		t.Fatalf("SaveDayFocus failed: %v", err)
+	}
+
+	after, err := env.repo.GetHistory(100)
+	if err != nil {
+		t.Fatalf("GetHistory failed: %v", err)
+	}
+	if got := len(after) - beforeCount; got != 1 {
+		t.Errorf("SaveDayFocus: expected exactly 1 new commit, got %d", got)
+	}
+}

@@ -16,6 +16,7 @@ type testEnv struct {
 	calendar *CalendarAccess
 	vision   *VisionAccess
 	routines *RoutineAccess
+	repo     utilities.IRepository
 	dataDir  string
 }
 
@@ -85,7 +86,7 @@ func setupTestEnv(t *testing.T) (*testEnv, string, func()) {
 		os.RemoveAll(tmpDir)
 	}
 
-	return &testEnv{themes: themes, tasks: tasks, calendar: cal, vision: vis, routines: rtn, dataDir: dataDir}, tmpDir, cleanup
+	return &testEnv{themes: themes, tasks: tasks, calendar: cal, vision: vis, routines: rtn, repo: repo, dataDir: dataDir}, tmpDir, cleanup
 }
 
 // setupTestPlanAccess is a backward-compatible helper that returns a TaskAccess

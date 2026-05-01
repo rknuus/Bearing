@@ -30,6 +30,14 @@ func (m *mockAdviceThemeAccess) DeleteTheme(_ string) error {
 	return nil
 }
 
+func (m *mockAdviceThemeAccess) WriteTheme(_ access.LifeTheme) error {
+	return nil
+}
+
+func (m *mockAdviceThemeAccess) WriteDeleteTheme(_ string) error {
+	return nil
+}
+
 // mockAdviceChatEngine implements chat_engine.IChatEngine for AdviceManager tests.
 type mockAdviceChatEngine struct {
 	assembledMessages []chat_engine.ChatMessage

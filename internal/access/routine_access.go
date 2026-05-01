@@ -19,6 +19,14 @@ type IRoutineAccess interface {
 	SaveRoutine(routine Routine) error
 	DeleteRoutine(id string) error
 	SaveRoutines(routines []Routine) error
+
+	// WriteRoutine, WriteSaveRoutines, and WriteDeleteRoutine persist
+	// changes without git-committing. They are intended for use inside a
+	// manager-orchestrated utilities.RunTransaction so a single terminal
+	// commit covers writes spanning multiple Access components.
+	WriteRoutine(routine Routine) error
+	WriteSaveRoutines(routines []Routine) error
+	WriteDeleteRoutine(id string) error
 }
 
 // RoutineAccess implements IRoutineAccess with file-based storage and git versioning.
@@ -94,9 +102,50 @@ func (ra *RoutineAccess) SaveRoutine(routine Routine) error {
 	ra.mu.Lock()
 	defer ra.mu.Unlock()
 
+	filePath, found, err := ra.writeRoutineLocked(routine)
+	if err != nil {
+		return fmt.Errorf("RoutineAccess.SaveRoutine: %w", err)
+	}
+
+	// Commit with git
+	action := "Update"
+	if !found {
+		action = "Add"
+	}
+	if err := commitFiles(ra.repo, []string{filePath}, fmt.Sprintf("%s routine: %s", action, routine.Description)); err != nil {
+		return fmt.Errorf("RoutineAccess.SaveRoutine: %w", err)
+	}
+
+	return nil
+}
+
+// WriteRoutine writes a routine to disk without git-committing. The caller is
+// expected to coordinate the terminal commit (typically via
+// utilities.RunTransaction at the manager layer).
+//
+// Shares ra.mu with SaveRoutine so the read-modify-write cycle remains
+// serialised across committing and non-committing variants.
+func (ra *RoutineAccess) WriteRoutine(routine Routine) error {
+	if routine.ID == "" {
+		return fmt.Errorf("RoutineAccess.WriteRoutine: routine ID cannot be empty")
+	}
+
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+
+	if _, _, err := ra.writeRoutineLocked(routine); err != nil {
+		return fmt.Errorf("RoutineAccess.WriteRoutine: %w", err)
+	}
+	return nil
+}
+
+// writeRoutineLocked performs the in-memory upsert and disk write without
+// committing. Caller must hold ra.mu. Returns the file path written and
+// whether the routine already existed (false = newly added).
+func (ra *RoutineAccess) writeRoutineLocked(routine Routine) (string, bool, error) {
 	routines, err := ra.getRoutinesLocked()
 	if err != nil {
-		return fmt.Errorf("RoutineAccess.SaveRoutine: failed to get existing routines: %w", err)
+		return "", false, fmt.Errorf("failed to get existing routines: %w", err)
 	}
 
 	// Find and update existing routine, or add new one
@@ -115,19 +164,10 @@ func (ra *RoutineAccess) SaveRoutine(routine Routine) error {
 	// Save to file
 	filePath := ra.routinesFilePath()
 	if err := writeJSON(filePath, RoutinesFile{Routines: routines}); err != nil {
-		return fmt.Errorf("RoutineAccess.SaveRoutine: %w", err)
+		return "", found, err
 	}
 
-	// Commit with git
-	action := "Update"
-	if !found {
-		action = "Add"
-	}
-	if err := commitFiles(ra.repo, []string{filePath}, fmt.Sprintf("%s routine: %s", action, routine.Description)); err != nil {
-		return fmt.Errorf("RoutineAccess.SaveRoutine: %w", err)
-	}
-
-	return nil
+	return filePath, found, nil
 }
 
 // DeleteRoutine deletes a routine by ID.
@@ -135,9 +175,37 @@ func (ra *RoutineAccess) DeleteRoutine(id string) error {
 	ra.mu.Lock()
 	defer ra.mu.Unlock()
 
+	filePath, err := ra.deleteRoutineLocked(id)
+	if err != nil {
+		return fmt.Errorf("RoutineAccess.DeleteRoutine: %w", err)
+	}
+
+	// Commit with git
+	if err := commitFiles(ra.repo, []string{filePath}, fmt.Sprintf("Delete routine: %s", id)); err != nil {
+		return fmt.Errorf("RoutineAccess.DeleteRoutine: %w", err)
+	}
+
+	return nil
+}
+
+// WriteDeleteRoutine removes a routine from disk without git-committing. See
+// WriteRoutine for usage rationale; shares ra.mu with the committing variant.
+func (ra *RoutineAccess) WriteDeleteRoutine(id string) error {
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+
+	if _, err := ra.deleteRoutineLocked(id); err != nil {
+		return fmt.Errorf("RoutineAccess.WriteDeleteRoutine: %w", err)
+	}
+	return nil
+}
+
+// deleteRoutineLocked performs the in-memory removal and disk write of a
+// routine deletion without committing. Caller must hold ra.mu.
+func (ra *RoutineAccess) deleteRoutineLocked(id string) (string, error) {
 	routines, err := ra.getRoutinesLocked()
 	if err != nil {
-		return fmt.Errorf("RoutineAccess.DeleteRoutine: failed to get existing routines: %w", err)
+		return "", fmt.Errorf("failed to get existing routines: %w", err)
 	}
 
 	// Find and remove the routine
@@ -152,21 +220,16 @@ func (ra *RoutineAccess) DeleteRoutine(id string) error {
 	}
 
 	if !found {
-		return fmt.Errorf("RoutineAccess.DeleteRoutine: routine with ID %s not found", id)
+		return "", fmt.Errorf("routine with ID %s not found", id)
 	}
 
 	// Save updated routines
 	filePath := ra.routinesFilePath()
 	if err := writeJSON(filePath, RoutinesFile{Routines: newRoutines}); err != nil {
-		return fmt.Errorf("RoutineAccess.DeleteRoutine: %w", err)
+		return "", err
 	}
 
-	// Commit with git
-	if err := commitFiles(ra.repo, []string{filePath}, fmt.Sprintf("Delete routine: %s", id)); err != nil {
-		return fmt.Errorf("RoutineAccess.DeleteRoutine: %w", err)
-	}
-
-	return nil
+	return filePath, nil
 }
 
 // SaveRoutines writes all routines at once and git-commits.
@@ -174,8 +237,8 @@ func (ra *RoutineAccess) SaveRoutines(routines []Routine) error {
 	ra.mu.Lock()
 	defer ra.mu.Unlock()
 
-	filePath := ra.routinesFilePath()
-	if err := writeJSON(filePath, RoutinesFile{Routines: routines}); err != nil {
+	filePath, err := ra.writeSaveRoutinesLocked(routines)
+	if err != nil {
 		return fmt.Errorf("RoutineAccess.SaveRoutines: %w", err)
 	}
 
@@ -184,6 +247,28 @@ func (ra *RoutineAccess) SaveRoutines(routines []Routine) error {
 	}
 
 	return nil
+}
+
+// WriteSaveRoutines replaces all routines on disk without git-committing. See
+// WriteRoutine for usage rationale; shares ra.mu with the committing variant.
+func (ra *RoutineAccess) WriteSaveRoutines(routines []Routine) error {
+	ra.mu.Lock()
+	defer ra.mu.Unlock()
+
+	if _, err := ra.writeSaveRoutinesLocked(routines); err != nil {
+		return fmt.Errorf("RoutineAccess.WriteSaveRoutines: %w", err)
+	}
+	return nil
+}
+
+// writeSaveRoutinesLocked replaces the entire routines file. Caller must hold
+// ra.mu.
+func (ra *RoutineAccess) writeSaveRoutinesLocked(routines []Routine) (string, error) {
+	filePath := ra.routinesFilePath()
+	if err := writeJSON(filePath, RoutinesFile{Routines: routines}); err != nil {
+		return "", err
+	}
+	return filePath, nil
 }
 
 // NextRoutineID scans existing routine IDs for the R{n} pattern and returns R{max+1}.

@@ -18,6 +18,12 @@ type ICalendarAccess interface {
 	GetDayFocus(date string) (*DayFocus, error)
 	SaveDayFocus(day DayFocus) error
 	GetYearFocus(year int) ([]DayFocus, error)
+
+	// WriteDayFocus persists a day focus entry without git-committing.
+	// Intended for use inside a manager-orchestrated
+	// utilities.RunTransaction so a single terminal commit covers writes
+	// spanning multiple Access components.
+	WriteDayFocus(day DayFocus) error
 }
 
 // CalendarAccess implements ICalendarAccess with file-based storage and git versioning.
@@ -123,9 +129,51 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 	ca.mu.Lock()
 	defer ca.mu.Unlock()
 
+	filePath, found, err := ca.writeDayFocusLocked(day, year)
+	if err != nil {
+		return fmt.Errorf("CalendarAccess.SaveDayFocus: %w", err)
+	}
+
+	// Commit with git
+	action := "Update"
+	if !found {
+		action = "Add"
+	}
+	if err := commitFiles(ca.repo, []string{filePath}, fmt.Sprintf("%s day focus: %s", action, day.Date.String())); err != nil {
+		return fmt.Errorf("CalendarAccess.SaveDayFocus: %w", err)
+	}
+
+	return nil
+}
+
+// WriteDayFocus persists a day focus entry without git-committing. The caller
+// is expected to coordinate the terminal commit (typically via
+// utilities.RunTransaction at the manager layer).
+//
+// Shares ca.mu with SaveDayFocus so the read-modify-write cycle remains
+// serialised across committing and non-committing variants.
+func (ca *CalendarAccess) WriteDayFocus(day DayFocus) error {
+	year, err := ca.extractYearFromCalendarDate(day.Date)
+	if err != nil {
+		return fmt.Errorf("CalendarAccess.WriteDayFocus: invalid date format: %w", err)
+	}
+
+	ca.mu.Lock()
+	defer ca.mu.Unlock()
+
+	if _, _, err := ca.writeDayFocusLocked(day, year); err != nil {
+		return fmt.Errorf("CalendarAccess.WriteDayFocus: %w", err)
+	}
+	return nil
+}
+
+// writeDayFocusLocked performs the in-memory upsert and disk write of a day
+// focus entry without committing. Caller must hold ca.mu. Returns the file
+// path written and whether the entry already existed (false = newly added).
+func (ca *CalendarAccess) writeDayFocusLocked(day DayFocus, year int) (string, bool, error) {
 	entries, err := ca.getYearFocusLocked(year)
 	if err != nil {
-		return fmt.Errorf("CalendarAccess.SaveDayFocus: failed to get year focus: %w", err)
+		return "", false, fmt.Errorf("failed to get year focus: %w", err)
 	}
 
 	// Find and update existing entry, or add new one
@@ -149,23 +197,14 @@ func (ca *CalendarAccess) SaveDayFocus(day DayFocus) error {
 	// Save to file
 	filePath := ca.yearFocusFilePath(year)
 	if err := os.MkdirAll(filepath.Dir(filePath), 0755); err != nil {
-		return fmt.Errorf("CalendarAccess.SaveDayFocus: failed to create calendar directory: %w", err)
+		return "", found, fmt.Errorf("failed to create calendar directory: %w", err)
 	}
 
 	if err := writeJSON(filePath, YearFocusFile{Year: year, Entries: entries}); err != nil {
-		return fmt.Errorf("CalendarAccess.SaveDayFocus: %w", err)
+		return "", found, err
 	}
 
-	// Commit with git
-	action := "Update"
-	if !found {
-		action = "Add"
-	}
-	if err := commitFiles(ca.repo, []string{filePath}, fmt.Sprintf("%s day focus: %s", action, day.Date.String())); err != nil {
-		return fmt.Errorf("CalendarAccess.SaveDayFocus: %w", err)
-	}
-
-	return nil
+	return filePath, found, nil
 }
 
 // GetYearFocus returns all day focus entries for a specific year.
