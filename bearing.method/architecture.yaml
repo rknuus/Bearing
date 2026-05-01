@@ -201,22 +201,29 @@ components:
     - id: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
       name: "App"
       description: "Wails binding gateway (main.go App struct). Exposes 40+ public methods as Wails bindings for the Svelte
-        frontend. Performs DTO conversion between Wails-serializable types and internal access-layer types
-        (convertObjective, convertObjectiveToAccess, convertBoardConfig). Handles startup initialization (data directory
-        resolution, logger setup, repository initialization, component wiring). Also contains GetLocale() with
-        OS-specific fallback and LogFrontend() for frontend error logging. Assessment notes: this is a God Gateway with
-        logic — DTO conversion and business decisions should not live here."
+        frontend. Performs DTO conversion between Wails-serializable types and internal access-layer types. App.startup
+        delegates startup orchestration to the bootstrap package (internal/bootstrap.Initialize), which resolves the
+        data directory, sets up logging, opens or initializes the git repository, creates all access components
+        (ThemeAccess, RoutineAccess, TaskAccess, CalendarAccess, VisionAccess, UIStateAccess, ModelAccess), instantiates
+        engines (RuleEngine, ProgressEngine, ScheduleEngine, ChatEngine), and wires all three managers (PlanningManager,
+        WorkspaceManager, AdviceManager). App stores the returned managers and exposes them through bindings. Also
+        provides GetLocale() with OS-specific fallback and LogFrontend() for frontend error logging. Assessment notes:
+        this is a Gateway with DTO conversion logic — that conversion is acceptable (boundary translation) but business
+        decisions must not creep in here."
   managers:
     - id: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
       name: "PlanningManager"
-      description: "Single Manager component (IPlanningManager) orchestrating ALL system operations. 2138 lines, 38 methods
-        spanning: theme CRUD, objective CRUD with tree-walk, key result CRUD, routine CRUD, task CRUD with rule
-        evaluation and zone assignment, task archive/restore, task reordering, board configuration
-        (add/remove/rename/reorder columns), calendar day focus, navigation context, task drafts, personal vision,
-        progress computation, priority promotions, and startup task order validation. Assessment notes: this is a God
-        Manager encapsulating at least 5 distinct volatility axes. Progress computation (computeKRProgress,
-        computeObjectiveProgress) is business logic that belongs in an Engine. validateTaskOrder() startup repair is
-        also misplaced Engine logic."
+      description: "Single Manager component orchestrating the OKR hierarchy, task board execution, calendar focus, routines,
+        personal vision, and UI state pass-through. Public API uses a behavioral quartet — Establish / Revise /
+        RecordProgress / Dismiss — that operates on themes, objectives, key results, and routines via goalType
+        discrimination, plus GetHierarchy, SuggestAbbreviation, status lifecycle (SetObjectiveStatus,
+        SetKeyResultStatus, CloseObjective, ReopenObjective), task ops (CreateTask, MoveTask, ArchiveTask, ReorderTasks,
+        ProcessPriorityPromotions), calendar focus (SaveDayFocus, GetYearFocus, GetRoutinesForDate), vision
+        (SavePersonalVision), and UI-state pass-through. Delegates progress computation to ProgressEngine, schedule
+        occurrence/overdue computation to ScheduleEngine, board rule evaluation and zone/order computation to
+        RuleEngine. Persists via ThemeAccess (themes), RoutineAccess (global routines), TaskAccess (tasks + board
+        config), CalendarAccess (day focus), VisionAccess (mission/vision), UIStateAccess (transient UI state). Routines
+        are global — RoutineAccess is the source of truth for routines.json."
     - id: "a9a09c9e-ab01-4820-b677-1a01364c0392"
       name: "WorkspaceManager"
       description: "Manager component (IWorkspaceManager) orchestrating workspace structure configuration. Encapsulates board
@@ -267,10 +274,12 @@ components:
   resource_access:
     - id: "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
       name: "UIStateAccess"
-      description: "Resource Access component (IUIStateAccess) for persisting transient UI state across sessions. Handles
-        navigation context (current view, filter state, collapsed sections, today focus flag) and task drafts (staged
-        tasks not yet committed). Writes plain JSON files without git versioning. Extracted from PlanAccess to separate
-        UI state persistence from business data persistence."
+      description: "Resource Access component (IUIStateAccess) for persisting transient UI state and per-user toggles across
+        sessions, without git versioning. Three concerns: (1) navigation context (current view, filter state, collapsed
+        sections, today focus flag, calendar editor state) via Save/LoadNavigationContext; (2) task drafts (staged tasks
+        not yet committed) via Save/LoadTaskDrafts; (3) advisor enabled flag (advisor on/off setting) via
+        Save/LoadAdvisorEnabled. Writes plain JSON files (navigation_context.json, tasks/drafts.json, advisor.json)
+        without git commit. Extracted from PlanAccess to separate transient UI state from versioned business data."
     - id: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
       name: "ThemeAccess"
       description: "Resource Access component (IThemeAccess) for persisting planning hierarchy data. Handles theme CRUD with
@@ -302,6 +311,13 @@ components:
         status. Initial implementation: ClaudeCLIModelAccess invokes the claude binary as a subprocess via claude
         --print with stdin/stdout piping, configurable timeout, and user-friendly error mapping. Interface supports
         future OllamaModelAccess (local) or other providers."
+    - id: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+      name: "RoutineAccess"
+      description: "Resource Access component (IRoutineAccess) for persisting global routines. Handles routine CRUD with
+        git-backed transactions via Repository. Manages routines.json — a top-level resource that is NOT theme-scoped
+        (routines were hoisted out of themes). Used by both PlanningManager (routine establish/revise/dismiss,
+        GetRoutinesForDate) and AdviceManager (load routines for OKR context). Operations: GetRoutines, SaveRoutine,
+        DeleteRoutine, SaveRoutines (bulk)."
   resources: []
   utilities:
     - id: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
@@ -320,6 +336,7 @@ topology:
         - "beed2b93-c608-4e01-a939-03483ae204a2"
         - "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
         - "f17c7d8f-5fe8-4112-95d2-b11817b68b2b"
+        - "9e7d8143-784f-44cd-bfa6-9226b03e6460"
     - name: "TaskBoard"
       components:
         - "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
@@ -334,84 +351,17 @@ topology:
     - name: "CrossCutting"
       components:
         - "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
+    - name: "Advisor"
+      description: "AI advisor subsystem rooted at AdviceManager. Encapsulates the model invocation pipeline (prompt assembly,
+        model invocation, suggestion parsing) and the cross-manager direct-apply path that mutates OKRs through
+        PlanningManager. Reads OKR context via ThemeAccess + RoutineAccess and the advisor on/off setting via
+        UIStateAccess."
+      components:
+        - "fdf81e59-7ef4-4e61-a130-e1bdab111497"
+        - "215536eb-e318-4662-8563-385bd966b502"
+        - "349b4d34-b6b2-4ee9-a662-65859068f8fa"
 use_cases:
   core:
-    - id: "uc-1"
-      name: "Manage OKR Hierarchy"
-      description: "User creates, updates, and deletes life themes, objectives (with recursive nesting), key results, and
-        routines. Includes status lifecycle management (activate, complete, close with notes, reopen) with cascading
-        effects on children. Derived from diagrams 01-04."
-      sequences:
-        - name: "Create Theme"
-          steps:
-            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
-              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              note: "CreateTheme(name, color)"
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              note: "CreateTheme(name, color)"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              note: "GetThemes(), SaveTheme(theme) — ThemeAccess generates ID via ensureThemeIDs()"
-            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
-              note: "Begin() -> Stage(themes.json) -> Commit('Add theme')"
-        - name: "Create Objective"
-          steps:
-            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
-              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              note: "CreateObjective(parentId, title)"
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              note: "CreateObjective(parentId, title)"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              note: "GetThemes() — Manager tree-walks to find parent, SaveTheme(modifiedTheme)"
-            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
-              note: "Begin() -> Stage() -> Commit()"
-        - name: "Close Objective with Cascading KR Close"
-          steps:
-            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
-              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              note: "CloseObjective(objectiveId, closingStatus, closingNotes)"
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              note: "CloseObjective(objectiveId, closingStatus, closingNotes)"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              note: "GetThemes() — Manager tree-walks, validates, sets status, auto-closes child KRs, SaveTheme()"
-            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
-              note: "Begin() -> Stage() -> Commit()"
-        - name: "Create Key Result"
-          steps:
-            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
-              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              note: "CreateKeyResult(parentObjId, description, startValue, targetValue)"
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              note: "CreateKeyResult(parentObjId, description, startValue, targetValue)"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              note: "GetThemes() — Manager validates, tree-walks, appends KR, SaveTheme()"
-            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
-              note: "Begin() -> Stage() -> Commit()"
-        - name: "Add Routine"
-          steps:
-            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
-              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              note: "AddRoutine(themeId, description, targetValue, targetType, unit)"
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              note: "AddRoutine(themeId, description, targetValue, targetType, unit)"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              note: "GetThemes() — Manager validates, finds theme, generates routine ID, SaveTheme()"
-            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
-              note: "Begin() -> Stage() -> Commit()"
     - id: "uc-2"
       name: "Manage Tasks"
       description: "User creates, updates, moves, deletes, archives, and restores tasks on the Eisenhower-Kanban board. Task
@@ -486,11 +436,138 @@ use_cases:
             - from: "df214ddd-50f0-46bf-9e31-0b752e46d174"
               to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
               note: "Begin() -> Stage(task + task_order.json) -> Commit()"
+    - id: "uc-1"
+      name: "Manage OKR Hierarchy"
+      description: "User creates, updates, records progress on, and dismisses life themes, objectives (with recursive
+        nesting), key results, and routines through a single behavioral API: Establish / Revise / RecordProgress /
+        Dismiss. Public surface also includes GetHierarchy, SuggestAbbreviation, status lifecycle (SetObjectiveStatus,
+        SetKeyResultStatus, CloseObjective, ReopenObjective). Themes/objectives/KRs persist via ThemeAccess; routines
+        persist globally via RoutineAccess (NOT theme-scoped). Includes cascading status effects (closing an objective
+        auto-closes child KRs)."
+      sequences:
+        - name: "Establish Theme"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "Establish({goalType: 'theme', name, color})"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "Establish(EstablishRequest) — discriminates on goalType, dispatches to createTheme(name, color)"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes(), SuggestAbbreviation(name, existing), SaveTheme(theme) — ThemeAccess generates final ID via
+                ensureThemeIDs()"
+            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(themes.json) -> Commit('Add theme NAME')"
+        - name: "Establish Objective"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "Establish({goalType: 'objective', parentId, title})"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "Establish(EstablishRequest) — dispatches to createObjective(parentId, title)"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes() — Manager tree-walks to find parent theme/objective, appends new objective, SaveTheme(modifiedTheme)"
+            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(themes.json) -> Commit('Update theme')"
+        - name: "Establish Key Result"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "Establish({goalType: 'key-result', parentObjId, description, startValue, targetValue})"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "Establish(EstablishRequest) — dispatches to createKeyResult(parentObjId, description, startValue, targetValue)"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes() — Manager validates, tree-walks to objective, appends KR, SaveTheme()"
+            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(themes.json) -> Commit()"
+        - name: "Establish Routine (global, not theme-scoped)"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "Establish({goalType: 'routine', description, repeatPattern})"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "Establish(EstablishRequest) — dispatches to addRoutine(description, repeatPattern)"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              note: "GetRoutines(), NextRoutineID(routines), SaveRoutine(routine) — routines stored in global routines.json, NOT
+                inside a theme"
+            - from: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(routines.json) -> Commit('Add or Update routine')"
+        - name: "Revise Goal (theme/objective/KR/routine)"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "Revise(ReviseRequest{goalId, ...fields})"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "Revise(req) — detectGoalType(goalId) -> theme | objective | key-result | routine"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes(), SaveTheme() — when goalId resolves to theme/objective/KR"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              note: "GetRoutines(), SaveRoutine() — when goalId resolves to a routine"
+        - name: "RecordProgress on Key Result"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "RecordProgress(goalId, value)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "RecordProgress(goalId, value) — updates the KR's CurrentValue"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes(), find KR via tree-walk, SaveTheme(updatedTheme)"
+            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(themes.json) -> Commit()"
+        - name: "Dismiss Goal (theme/objective/KR/routine)"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "Dismiss(goalId)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "Dismiss(goalId) — detectGoalType, removes from parent or top level"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes(), SaveTheme() — when goalId resolves to theme/objective/KR"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              note: "DeleteRoutine(id) — when goalId resolves to a routine"
+        - name: "Close Objective with Cascading KR Close"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "CloseObjective(objectiveId, closingStatus, closingNotes)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "CloseObjective(objectiveId, closingStatus, closingNotes) — validates transition, sets ClosedAt + ClosingNotes,
+                cascades close to child KRs"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "GetThemes(), SaveTheme(updatedTheme)"
+            - from: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(themes.json) -> Commit('Close objective')"
     - id: "uc-3"
       name: "Focus Daily Work"
       description: "User assigns themes, OKR IDs, and tags to calendar days to focus daily work. Calendar entries drive
         automatic task filtering on the EisenKan board. Includes copy-paste of focus entries within and across days
-        (single and multi-cell). Derived from diagrams 08, 13, 14, 17."
+        (single and multi-cell), routine occurrence resolution (scheduled, overdue, sporadic), and rescheduling
+        individual routine occurrences. Routines are loaded via RoutineAccess (global, not theme-scoped). Overdue
+        occurrences are collapsed to a single entry per routine with MissedCount, and only emitted when date == today.
+        Derived from diagrams 08, 13, 14, 17."
       sequences:
         - name: "Save Day Focus with OKR Tags"
           steps:
@@ -550,15 +627,33 @@ use_cases:
               to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
               note: "GetRoutinesForDate(date)"
             - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
-              note: "GetThemes() — loads all themes with routines, repeat patterns, and exceptions"
+              to: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              note: "GetRoutines() — loads ALL routines from global routines.json (NOT theme-scoped). Routine carries RepeatPattern +
+                Exceptions []ScheduleException"
             - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
               to: "9f3a34cd-bc21-48bd-9696-b0fc4b5e7680"
-              note: "GetYearFocus(year) — loads routineChecks for completion status"
+              note: "GetYearFocus(year) — loads RoutineChecks (completion data) for the requested year"
             - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
               to: "f1317b9d-0478-4cbb-b850-dc8139956050"
-              note: "ComputeOccurrences(pattern, exceptions, start, end) + ComputeOverdue(pattern, exceptions, completedDates, asOf) —
-                for each periodic routine"
+              note: "ComputeOccurrences(pattern, exceptions, date, date) per periodic routine. When date == today, also
+                ComputeOverdue(pattern, exceptions, completedDates, today); the manager collapses ALL missed occurrences
+                for a routine into a SINGLE entry with MissedCount = len(overdueDates). Overdue rows are only emitted
+                when date == today; for past/future dates, only scheduled occurrences are emitted."
+        - name: "Reschedule Routine Occurrence"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "RescheduleRoutineOccurrence(routineId, originalDate, newDate)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "RescheduleRoutineOccurrence(routineId, originalDate, newDate) — appends a ScheduleException to the routine
+                without altering its base RepeatPattern"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              note: "GetRoutines(), SaveRoutine(updated) — routine.Exceptions extended with the new {originalDate, newDate} entry"
+            - from: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(routines.json) -> Commit('Reschedule routine occurrence')"
   regular:
     - id: "uc-5"
       name: "Batch Create Tasks"
@@ -605,8 +700,9 @@ use_cases:
       name: "Compute Progress"
       description: "System computes progress for all themes by recursively calculating KR progress (from start/current/target
         values), objective progress (average of child KR progress), and theme progress (average of top-level objective
-        progress). Read-only computation with no persistence. Assessment notes this logic is misplaced in
-        PlanningManager and should be in an Engine. Derived from diagram 10."
+        progress). Read-only computation with no persistence. PlanningManager fetches themes via ThemeAccess and
+        delegates the entire computation to ProgressEngine — progress logic is no longer embedded in the manager.
+        Derived from diagram 10."
       sequences:
         - name: "Get All Theme Progress"
           steps:
@@ -795,40 +891,13 @@ use_cases:
             - from: "df214ddd-50f0-46bf-9e31-0b752e46d174"
               to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
               note: "Begin() -> Stage('.') -> Commit()"
-    - id: "uc-7"
-      name: "Initialize System"
-      description: "System starts up: resolves data directory, initializes logger, creates or opens git repository, creates
-        resource access components (ThemeAccess, TaskAccess, CalendarAccess, VisionAccess, UIStateAccess), creates
-        PlanningManager and WorkspaceManager, and validates/repairs task order against actual files. Derived from
-        diagram 12."
-      sequences:
-        - name: "Startup Sequence"
-          steps:
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
-              note: "InitializeRepositoryWithConfig(repoPath, gitConfig) — open or init git repo"
-            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              note: "NewPlanningManager(themeAccess, taskAccess, calendarAccess, visionAccess, uiStateAccess) — creates RuleEngine,
-                ProgressEngine, validates task order"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "59843c4a-d1d8-4663-abdf-6b4aa93e7099"
-              note: "NewRuleEngine(DefaultRules())"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "59843c4a-d1d8-4663-abdf-6b4aa93e7099"
-              note: "TodoSlugFromColumns(columns), DropZoneForTask(status, priority, todoSlug) per task,
-                ReconcileTaskOrder(existingOrder, actualZone) — stateless zone computation and order reconciliation"
-            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              to: "df214ddd-50f0-46bf-9e31-0b752e46d174"
-              note: "GetBoardConfiguration(), GetTasksByStatus() for each column, LoadTaskOrder() — gathers data for reconciliation.
-                Calls RuleEngine.TodoSlugFromColumns(), DropZoneForTask(), ReconcileTaskOrder() to compute correct zones
-                and repair order. SaveTaskOrder() if repair needed."
     - id: "uc-12"
       name: "Request Goal Advice"
       description: "User requests AI-powered advice on their OKR goals through a chat panel in the OKR View. The advisor can
         review existing goals for quality, suggest new objectives/key results/routines, and evaluate OKR balance.
         Responses may include structured suggestions that the user can accept (direct-apply) or decline. Acceptance
-        routes through AdviceManager to PlanningManager via async call."
+        routes through AdviceManager to PlanningManager via a SYNCHRONOUS direct method call (no queue, no goroutine).
+        The advisor on/off setting is stored via UIStateAccess."
       sequences:
         - name: "Request Advice (multi-turn conversation)"
           steps:
@@ -861,9 +930,9 @@ use_cases:
               note: "AcceptSuggestion(suggestion, parentContext) — validate and route to PlanningManager"
             - from: "fdf81e59-7ef4-4e61-a130-e1bdab111497"
               to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
-              async: true
-              note: "CreateObjective/CreateKeyResult/AddRoutine/UpdateObjective (async call — at most one per use case). Routes based
-                on suggestion.Type and suggestion.Action (create vs edit)."
+              sync: true
+              note: "Establish (create) or Revise (edit) — synchronous direct method call from AdviceManager.acceptCreate/acceptEdit
+                to PlanningManager.Establish/Revise. No queue, no message bus, no goroutine indirection."
             - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
               to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
               note: "GetThemes(), SaveTheme() — persist the new/updated OKR item"
@@ -882,3 +951,97 @@ use_cases:
               to: "349b4d34-b6b2-4ee9-a662-65859068f8fa"
               note: "GetAvailableModels() — checks claude binary on PATH, returns []ModelInfo with name, provider, type
                 (local/remote), availability"
+    - id: "uc-7"
+      name: "Initialize System"
+      description: "System starts up. App.startup delegates to the internal/bootstrap package (bootstrap.Initialize), which
+        resolves the data directory (BEARING_DATA_DIR or ~/.bearing), opens the log file, initializes the git
+        repository, creates all access components (ThemeAccess, RoutineAccess, TaskAccess, CalendarAccess, VisionAccess,
+        UIStateAccess, ModelAccess), instantiates engines (RuleEngine, ProgressEngine, ScheduleEngine, ChatEngine), and
+        wires all three managers (PlanningManager, WorkspaceManager, AdviceManager). PlanningManager validates and
+        repairs task order via RuleEngine zone reconciliation. Bootstrap returns the wired managers to App, which stores
+        them and exposes them via Wails bindings. Derived from diagram 12."
+      sequences:
+        - name: "Bootstrap Startup Sequence"
+          steps:
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "App.startup -> bootstrap.Initialize() -> InitializeRepositoryWithConfig(bearingDir, gitConfig) — resolves data
+                dir, opens log file, opens or git-inits repository"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "fc2702b2-2f1f-4ec7-93f0-6fb96373258b"
+              note: "bootstrap.Initialize() constructs NewThemeAccess(dir, repo)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "9e7d8143-784f-44cd-bfa6-9226b03e6460"
+              note: "bootstrap.Initialize() constructs NewRoutineAccess(dir, repo) — global routines.json"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "df214ddd-50f0-46bf-9e31-0b752e46d174"
+              note: "bootstrap.Initialize() constructs NewTaskAccess(dir, repo)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "9f3a34cd-bc21-48bd-9696-b0fc4b5e7680"
+              note: "bootstrap.Initialize() constructs NewCalendarAccess(dir, repo)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "f17c7d8f-5fe8-4112-95d2-b11817b68b2b"
+              note: "bootstrap.Initialize() constructs NewVisionAccess(dir, repo)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "e2deb89f-0bcb-45c0-a973-6cb7c11a6b5f"
+              note: "bootstrap.Initialize() constructs NewUIStateAccess(dir)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "349b4d34-b6b2-4ee9-a662-65859068f8fa"
+              note: "bootstrap.Initialize() constructs NewClaudeCLIModelAccess(timeout=0)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "bootstrap.Initialize() constructs NewPlanningManager(themeA, taskA, calA, routineA, visA, uiA) — PlanningManager
+                internally builds RuleEngine, ProgressEngine, ScheduleEngine and runs validateTaskOrder() startup
+                repair"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "59843c4a-d1d8-4663-abdf-6b4aa93e7099"
+              note: "NewRuleEngine(DefaultRules()); validateTaskOrder uses TodoSlugFromColumns + DropZoneForTask + ReconcileTaskOrder"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "df214ddd-50f0-46bf-9e31-0b752e46d174"
+              note: "GetBoardConfiguration(), GetTasksByStatus() per column, LoadTaskOrder() — SaveTaskOrder() if repair needed"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "a9a09c9e-ab01-4820-b677-1a01364c0392"
+              note: "bootstrap.Initialize() constructs NewWorkspaceManager(taskA)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "215536eb-e318-4662-8563-385bd966b502"
+              note: "bootstrap.Initialize() constructs NewChatEngine()"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "fdf81e59-7ef4-4e61-a130-e1bdab111497"
+              note: "bootstrap.Initialize() constructs NewAdviceManager(themeA, routineA, chatEngine, modelA, uiA, planningManager) —
+                returns Result{PlanningManager, WorkspaceManager, AdviceManager, LogFile} to App"
+decisions:
+  - id: "780ec0f2-4f65-4406-9b35-19374f10b2c2"
+    title: "Accept synchronous AdviceManager to PlanningManager call as documented architectural debt"
+    rationale: "The model must reflect code reality. The code performs a synchronous Manager-to-Manager call, violating
+      IDesign's rule that cross-subsystem Manager communication should be queued/pub-sub for temporal decoupling.
+      Surfacing this as a same-layer-call error makes it visible architectural debt to address later (introduce a
+      message bus for AcceptSuggestion, or relocate apply logic to a shared component). Hiding the violation behind a
+      false async=true is worse than acknowledging it; the model is now honest."
+    context: "After reconciling the .method model with the actual codebase, the validator surfaces a same-layer-call error
+      for uc-12 'Accept Suggestion': AdviceManager calls PlanningManager synchronously
+      (am.planningManager.Establish/Revise). The previous model hid this by marking the step async=true, which was
+      incorrect; there is no queue, no goroutine, no message bus."
+    related_findings:
+      - "same-layer-call"
+    related_components:
+      - "fdf81e59-7ef4-4e61-a130-e1bdab111497"
+      - "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+    status: "revisit"
+    created_at: "2026-05-01T11:24:02.190Z"
+  - id: "3806dfbb-98f5-4386-afd0-04e5d596866e"
+    title: "Accept App-as-bootstrapper client-orchestration finding for uc-7"
+    rationale: "Bootstrap (object construction at startup) is structurally different from runtime orchestration. The IDesign
+      closed-layer rules apply to runtime call chains, not to one-shot wiring. The internal/bootstrap package is a
+      Composition Root that App invokes once. We accept the validator findings as known-and-tolerated for uc-7 only;
+      they are not present in any runtime use case."
+    context: "uc-7 (Initialize System) shows App calling bootstrap.Initialize() which constructs every access component,
+      every engine, and all three managers. The validator flags this as 'Client must not orchestrate' (3 managers
+      called) and 'closed-layer-skip' (Client calls Resource Access and Engine layers). These findings reflect the
+      bootstrap pattern, not a runtime use case."
+    related_findings:
+      - "client-orchestration"
+      - "closed-layer-skip"
+    related_components:
+      - "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+    status: "active"
+    created_at: "2026-05-01T11:24:11.482Z"
