@@ -53,7 +53,7 @@ describe('Column CRUD', () => {
         const tasks = await mockAppBindings.GetTasks();
         for (const t of tasks) {
           if (t.status === col.name) {
-            await mockAppBindings.MoveTask(t.id, 'todo');
+            await mockAppBindings.MoveTask(t.id, 'todo', '');
           }
         }
         await mockAppBindings.RemoveColumn(col.name);
@@ -109,7 +109,7 @@ describe('Column CRUD', () => {
 
   it('RenameColumn updates title and slug, migrates task statuses', async () => {
     // Move a task to doing, then rename doing to in-progress
-    await mockAppBindings.MoveTask('CG-T2', 'doing');
+    await mockAppBindings.MoveTask('CG-T2', 'doing', '');
     const config = await mockAppBindings.RenameColumn('doing', 'In Progress');
     expect(config.columnDefinitions.map(c => c.name)).toEqual(['todo', 'in-progress', 'done']);
     const tasks = await mockAppBindings.GetTasks();

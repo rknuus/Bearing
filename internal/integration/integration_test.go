@@ -365,7 +365,7 @@ func TestIntegration_MoveTaskCreatesGitRename(t *testing.T) {
 	commitCountBefore := len(historyBefore)
 
 	// Move task to "doing"
-	moveResult, err := manager.MoveTask(task.ID, "doing", nil)
+	moveResult, err := manager.MoveTask(task.ID, "doing", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task: %v", err)
 	}
@@ -442,7 +442,7 @@ func TestIntegration_TaskMovePreservesContent(t *testing.T) {
 	// Move through all statuses
 	statuses := []string{"doing", "done", "todo", "doing"}
 	for _, status := range statuses {
-		moveResult, err := manager.MoveTask(task.ID, status, nil)
+		moveResult, err := manager.MoveTask(task.ID, status, "", nil)
 		if err != nil {
 			t.Fatalf("Failed to move task to %s: %v", status, err)
 		}
@@ -498,7 +498,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 	_, _ = manager1.CreateTask("Team meeting", theme1.ID, "not-important-urgent", "", "", "")
 
 	// Move one task to doing
-	_, _ = manager1.MoveTask(task2.ID, "doing", nil)
+	_, _ = manager1.MoveTask(task2.ID, "doing", "", nil)
 
 	// Save navigation context
 	navCtx := managers.NavigationContext{
@@ -780,7 +780,7 @@ func TestIntegration_GitHistoryIntegrity(t *testing.T) {
 	task, _ := manager.CreateTask("Test task", theme.ID, "important-urgent", "", "", "")
 
 	// Move task
-	_, _ = manager.MoveTask(task.ID, "doing", nil)
+	_, _ = manager.MoveTask(task.ID, "doing", "", nil)
 
 	// Update theme
 	newColor := "#00ff00"
@@ -881,7 +881,7 @@ func TestIntegration_TaskIDGenerationMismatchedArchive(t *testing.T) {
 		t.Fatalf("Expected task ID H-T1, got %s", task1.ID)
 	}
 
-	moveResult, err := manager.MoveTask(task1.ID, "done", nil)
+	moveResult, err := manager.MoveTask(task1.ID, "done", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task to done: %v", err)
 	}
@@ -957,7 +957,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to doing
-	_, _ = manager.MoveTask(task.ID, "doing", nil)
+	_, _ = manager.MoveTask(task.ID, "doing", "", nil)
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {
@@ -969,7 +969,7 @@ func TestIntegration_TaskWorkflowComplete(t *testing.T) {
 	}
 
 	// Move to done
-	_, _ = manager.MoveTask(task.ID, "done", nil)
+	_, _ = manager.MoveTask(task.ID, "done", "", nil)
 	tasks, _ = manager.GetTasks()
 	for i := range tasks {
 		if tasks[i].ID == task.ID {
@@ -1059,11 +1059,11 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 		t.Fatalf("Failed to create task2: %v", err)
 	}
 
-	_, err = manager.MoveTask(task1.ID, "review", nil)
+	_, err = manager.MoveTask(task1.ID, "review", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task1 to review: %v", err)
 	}
-	_, err = manager.MoveTask(task2.ID, "review", nil)
+	_, err = manager.MoveTask(task2.ID, "review", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task2 to review: %v", err)
 	}
@@ -1156,11 +1156,11 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	}
 
 	// Step 5: Move tasks out, then RemoveColumn
-	_, err = manager.MoveTask(task1.ID, "doing", nil)
+	_, err = manager.MoveTask(task1.ID, "doing", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task1 to doing: %v", err)
 	}
-	_, err = manager.MoveTask(task2.ID, "doing", nil)
+	_, err = manager.MoveTask(task2.ID, "doing", "", nil)
 	if err != nil {
 		t.Fatalf("Failed to move task2 to doing: %v", err)
 	}

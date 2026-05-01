@@ -963,11 +963,14 @@ export const mockAppBindings = {
     return newTask;
   },
 
-  MoveTask: async (taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> => {
+  MoveTask: async (taskId: string, newStatus: string, newPriority: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (task) {
       const oldZone = dropZoneForTask(task);
       task.status = newStatus;
+      if (newPriority !== '' && newPriority !== task.priority) {
+        task.priority = newPriority;
+      }
       task.updatedAt = toTimestamp(getNow());
       const newZone = dropZoneForTask(task);
       if (oldZone !== newZone) {

@@ -452,7 +452,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (taskId) => {
         const app = window.go.main.App
-        await app.MoveTask(taskId, 'doing', null)
+        await app.MoveTask(taskId, 'doing', '', null)
       }, task1Id)
 
       // Verify file moved
@@ -480,7 +480,7 @@ export async function runTests() {
     try {
       await page.evaluate(async (taskId) => {
         const app = window.go.main.App
-        await app.MoveTask(taskId, 'done', null)
+        await app.MoveTask(taskId, 'done', '', null)
       }, task1Id)
 
       assertFileNotExists(DATA_DIR, `tasks/doing/${task1Id}.json`)
@@ -1563,7 +1563,7 @@ export async function runTests() {
 
       await page.evaluate(async (taskId) => {
         const app = window.go.main.App
-        await app.MoveTask(taskId, 'e2e-review', null)
+        await app.MoveTask(taskId, 'e2e-review', '', null)
       }, colTaskId)
 
       expectedCommits += 1
@@ -1622,7 +1622,7 @@ export async function runTests() {
         const taskToMove = readJSON(DATA_DIR, `tasks/e2e-verify/${verifyFiles[0]}`)
         await page.evaluate(async (taskId) => {
           const app = window.go.main.App
-          await app.MoveTask(taskId, 'doing', null)
+          await app.MoveTask(taskId, 'doing', '', null)
         }, taskToMove.id)
         expectedCommits += 1
       }

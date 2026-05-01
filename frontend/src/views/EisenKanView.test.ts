@@ -115,8 +115,15 @@ describe('EisenKanView', () => {
       currentTasks = [...currentTasks, task];
       return task;
     });
-    mockMoveTask.mockImplementation(async (id: string, status: string, positions?: Record<string, string[]>) => {
-      currentTasks = currentTasks.map(t => t.id === id ? { ...t, status } : t);
+    mockMoveTask.mockImplementation(async (id: string, status: string, newPriority: string, positions?: Record<string, string[]>) => {
+      currentTasks = currentTasks.map(t => {
+        if (t.id !== id) return t;
+        const updated = { ...t, status };
+        if (newPriority !== '' && newPriority !== t.priority) {
+          updated.priority = newPriority;
+        }
+        return updated;
+      });
       if (positions) applyPositions(positions);
       return { success: true };
     });
@@ -418,7 +425,7 @@ describe('EisenKanView', () => {
     await renderView();
 
     // Verify mock is configured for failure
-    const result = await mockMoveTask('T1', 'doing');
+    const result = await mockMoveTask('T1', 'doing', '');
     expect(result.success).toBe(false);
     expect(result.violations[0].message).toBe('WIP limit exceeded');
   });
@@ -829,17 +836,18 @@ describe('EisenKanView', () => {
       await tick();
       await tick();
 
-      // MoveTask should include DONE-CG (hidden by filter) in the zone order
+      // MoveTask should include DONE-CG (hidden by filter) in the zone order.
+      // Cross-column drop into a non-sectioned column (Done) passes "" for newPriority.
       await vi.waitFor(() => {
         expect(mockMoveTask).toHaveBeenCalledWith(
-          'D1', 'done',
+          'D1', 'done', '',
           { done: expect.arrayContaining(['DONE-CG', 'D1', 'DONE-HF']) }
         );
       });
       // Verify exact order: DONE-CG (hidden) keeps its original position before visible tasks,
       // D1 takes the first visible slot, DONE-HF follows
       const callArgs = mockMoveTask.mock.calls[0];
-      expect(callArgs[2]).toEqual({ done: ['DONE-CG', 'D1', 'DONE-HF'] });
+      expect(callArgs[3]).toEqual({ done: ['DONE-CG', 'D1', 'DONE-HF'] });
     });
 
     it('cross-column drop from doing to sectioned todo column sends section positions', async () => {
@@ -866,14 +874,140 @@ describe('EisenKanView', () => {
       await tick();
       await tick();
 
-      // MoveTask should be called with section-level positions, NOT column-level
+      // MoveTask should be called with section-level positions AND the new
+      // priority threaded through as the third arg, so the backend rewrites
+      // priority atomically with the move.
       await vi.waitFor(() => {
         expect(mockMoveTask).toHaveBeenCalledWith(
-          'D1', 'todo',
+          'D1', 'todo', 'important-urgent',
           { 'important-urgent': ['D1', 'IU1', 'IU2'] }
         );
       });
     });
+
+    // Regression test for the original bug: dragging "Add day closing workflow"
+    // (a Doing task whose stale priority was important-not-urgent) into Todo's
+    // U&I section caused the task to land in I&NU at the wrong position with a
+    // [state-check] warning. This test reproduces the scenario and asserts the
+    // task lands in U&I at the dropped position with no state-check warning
+    // (the vitest setup fails any test that emits console.error/state-check).
+    it('Doing task with stale I&NU priority drops cleanly into U&I section', async () => {
+      currentTasks = [
+        // Two existing tasks in I&U so we can drop in the middle.
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
+        // The bug subject: in Doing, but its persisted priority is I&NU
+        // (carried over from a previous time it was in the I&NU section).
+        { id: 'L-T116', title: 'Add day closing workflow', themeId: 'HF', priority: 'important-not-urgent', status: 'doing' },
+      ];
+
+      await renderView();
+
+      const todoColumn = container.querySelector('.kanban-column');
+      const iuSection = todoColumn!.querySelector('.section-important-urgent .column-content')!;
+
+      // Drop L-T116 between IU1 and IU2 (position 1 in U&I).
+      const dndItems: TaskWithStatus[] = [
+        { id: 'IU1', title: 'Urgent One', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+        { id: 'L-T116', title: 'Add day closing workflow', themeId: 'HF', priority: 'important-not-urgent', status: 'doing' },
+        { id: 'IU2', title: 'Urgent Two', themeId: 'CG', priority: 'important-urgent', status: 'todo' },
+      ];
+
+      dispatchDndFinalize(iuSection, dndItems);
+      await tick();
+      await tick();
+
+      // 1) MoveTask was called with the destination priority and the section-zone
+      //    positions matching the drop position.
+      await vi.waitFor(() => {
+        expect(mockMoveTask).toHaveBeenCalledWith(
+          'L-T116', 'todo', 'important-urgent',
+          { 'important-urgent': ['IU1', 'L-T116', 'IU2'] }
+        );
+      });
+
+      // 2) The persisted task's priority was rewritten to U&I (mock mirrors the
+      //    backend's atomic priority+status update).
+      const persisted = currentTasks.find(t => t.id === 'L-T116');
+      expect(persisted?.priority).toBe('important-urgent');
+      expect(persisted?.status).toBe('todo');
+
+      // 3) The card is rendered inside the U&I section at the dropped position.
+      const urgentSection = container.querySelector('.section-important-urgent')!;
+      const urgentTitles = Array.from(urgentSection.querySelectorAll('.task-card'))
+        .map(c => c.querySelector('.task-title')?.textContent);
+      expect(urgentTitles).toEqual(['Urgent One', 'Add day closing workflow', 'Urgent Two']);
+
+      // 4) The card is NOT rendered inside any other section.
+      const inuSection = container.querySelector('.section-important-not-urgent')!;
+      const inuTitles = Array.from(inuSection.querySelectorAll('.task-card'))
+        .map(c => c.querySelector('.task-title')?.textContent);
+      expect(inuTitles).not.toContain('Add day closing workflow');
+
+      // 5) No [state-check] warning is emitted — guarded by the global vitest
+      //    setup which fails the test on any unexpected console.error.
+    });
+
+    // Matrix coverage (per audit.md): every (source-column × destination-Todo-
+    // section) combination that routes through the cross-column section branch
+    // must (a) call MoveTask with the destination section as newPriority,
+    // (b) leave the persisted task with the destination priority, (c) place
+    // the moved card inside the destination section, and (d) emit no
+    // [state-check] warning. Doing → U&I and the Done variants are covered by
+    // dedicated tests above and below; the entries here fill the remainder.
+    const sectionMatrix = [
+      { sourceStatus: 'doing', destSection: 'important-not-urgent', destLabel: 'I&NU' },
+      { sourceStatus: 'doing', destSection: 'not-important-urgent', destLabel: 'N-I&U' },
+      { sourceStatus: 'done', destSection: 'important-urgent', destLabel: 'U&I' },
+      { sourceStatus: 'done', destSection: 'important-not-urgent', destLabel: 'I&NU' },
+      { sourceStatus: 'done', destSection: 'not-important-urgent', destLabel: 'N-I&U' },
+    ] as const;
+
+    for (const { sourceStatus, destSection, destLabel } of sectionMatrix) {
+      it(`cross-column drop from ${sourceStatus} to Todo / ${destLabel} sets priority and lands in section`, async () => {
+        // Source task carries a stale priority that intentionally mismatches
+        // the destination section, mirroring the original bug shape.
+        const stalePriority = destSection === 'important-urgent' ? 'important-not-urgent' : 'important-urgent';
+        const subjectId = 'MT-S';
+
+        currentTasks = [
+          { id: 'A1', title: 'Anchor One', themeId: 'HF', priority: destSection, status: 'todo' },
+          { id: 'A2', title: 'Anchor Two', themeId: 'CG', priority: destSection, status: 'todo' },
+          { id: subjectId, title: 'Matrix Subject', themeId: 'HF', priority: stalePriority, status: sourceStatus },
+        ];
+
+        await renderView();
+
+        const sectionEl = container.querySelector(`.section-${destSection} .column-content`)!;
+        const dndItems: TaskWithStatus[] = [
+          { id: 'A1', title: 'Anchor One', themeId: 'HF', priority: destSection, status: 'todo' },
+          { id: subjectId, title: 'Matrix Subject', themeId: 'HF', priority: stalePriority, status: sourceStatus },
+          { id: 'A2', title: 'Anchor Two', themeId: 'CG', priority: destSection, status: 'todo' },
+        ];
+
+        dispatchDndFinalize(sectionEl, dndItems);
+        await tick();
+        await tick();
+
+        // (a) MoveTask called with newPriority = destSection.
+        await vi.waitFor(() => {
+          expect(mockMoveTask).toHaveBeenCalledWith(
+            subjectId, 'todo', destSection,
+            { [destSection]: ['A1', subjectId, 'A2'] }
+          );
+        });
+
+        // (b) Persisted task has the new priority.
+        const persisted = currentTasks.find(t => t.id === subjectId);
+        expect(persisted?.priority).toBe(destSection);
+        expect(persisted?.status).toBe('todo');
+
+        // (c) Card is rendered in the destination section at index 1.
+        const destTitles = Array.from(container.querySelectorAll(`.section-${destSection} .task-card .task-title`))
+          .map(c => c.textContent);
+        expect(destTitles).toEqual(['Anchor One', 'Matrix Subject', 'Anchor Two']);
+      });
+    }
   });
 
   describe('theme filtering', () => {

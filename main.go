@@ -181,8 +181,8 @@ func (a *App) UpdateTask(task managers.Task) error {
 	return a.planningManager.UpdateTask(task)
 }
 
-func (a *App) MoveTask(taskId, newStatus string, positions map[string][]string) (*managers.MoveTaskResult, error) {
-	return a.planningManager.MoveTask(taskId, newStatus, positions)
+func (a *App) MoveTask(taskId, newStatus, newPriority string, positions map[string][]string) (*managers.MoveTaskResult, error) {
+	return a.planningManager.MoveTask(taskId, newStatus, newPriority, positions)
 }
 
 func (a *App) DeleteTask(taskId string) error {

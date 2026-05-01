@@ -119,12 +119,14 @@ func (m *mockThemeAccess) DeleteTheme(id string) error {
 
 // mockTaskAccess implements access.ITaskAccess for testing.
 type mockTaskAccess struct {
-	mu            sync.Mutex
-	tasks         map[string][]access.Task
-	taskOrder     map[string][]string
-	archivedOrder []string
-	nextTaskNum   int
-	boardConfig   *access.BoardConfiguration
+	mu              sync.Mutex
+	tasks           map[string][]access.Task
+	taskOrder       map[string][]string
+	archivedOrder   []string
+	nextTaskNum     int
+	boardConfig     *access.BoardConfiguration
+	writeTaskErr    error // when set, WriteTask returns this error (atomicity tests)
+	commitAllCount  int   // number of CommitAll invocations
 }
 
 func newMockTaskAccess() *mockTaskAccess {
@@ -174,6 +176,13 @@ func (m *mockTaskAccess) GetTasksByStatus(status string) ([]access.Task, error) 
 }
 
 func (m *mockTaskAccess) WriteTask(task access.Task) error {
+	m.mu.Lock()
+	if m.writeTaskErr != nil {
+		err := m.writeTaskErr
+		m.mu.Unlock()
+		return err
+	}
+	m.mu.Unlock()
 	return m.SaveTask(task)
 }
 
@@ -364,7 +373,12 @@ func (m *mockTaskAccess) BoardConfigFilePath() string                      { ret
 func (m *mockTaskAccess) TaskOrderFilePath() string                        { return "task_order.json" }
 func (m *mockTaskAccess) TaskDirPath(status string) string                 { return status }
 func (m *mockTaskAccess) CommitFiles(paths []string, message string) error { return nil }
-func (m *mockTaskAccess) CommitAll(message string) error                   { return nil }
+func (m *mockTaskAccess) CommitAll(message string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.commitAllCount++
+	return nil
+}
 func (m *mockTaskAccess) ArchivedOrderFilePath() string                    { return "archived_order.json" }
 func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) {
 	m.mu.Lock()
@@ -2615,7 +2629,7 @@ func TestMoveTask(t *testing.T) {
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
 
 		// Move to doing
-		result, err := manager.MoveTask(task.ID, "doing", nil)
+		result, err := manager.MoveTask(task.ID, "doing", "", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -2629,7 +2643,7 @@ func TestMoveTask(t *testing.T) {
 	t.Run("rejects invalid status", func(t *testing.T) {
 		manager, _, _ := newMockManager()
 
-		_, err := manager.MoveTask("task-001", "invalid-status", nil)
+		_, err := manager.MoveTask("task-001", "invalid-status", "", nil)
 		if err == nil {
 			t.Fatal("expected error for invalid status")
 		}
@@ -2828,7 +2842,7 @@ func TestMoveTask_UpdatesOrder(t *testing.T) {
 
 		task, _ := manager.CreateTask("Test", "T", "important-urgent", "", "", "")
 
-		result, err := manager.MoveTask(task.ID, "doing", nil)
+		result, err := manager.MoveTask(task.ID, "doing", "", nil)
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -3020,7 +3034,7 @@ func TestArchiveTask(t *testing.T) {
 		manager, _, _ := newMockManager()
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
-		_, _ = manager.MoveTask(task.ID, "done", nil)
+		_, _ = manager.MoveTask(task.ID, "done", "", nil)
 
 		err := manager.ArchiveTask(task.ID)
 		if err != nil {
@@ -3070,8 +3084,8 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 		t2, _ := manager.CreateTask("Task 2", "T", "important-not-urgent", "", "", "")
 		_, _ = manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
 
-		_, _ = manager.MoveTask(t1.ID, "done", nil)
-		_, _ = manager.MoveTask(t2.ID, "done", nil)
+		_, _ = manager.MoveTask(t1.ID, "done", "", nil)
+		_, _ = manager.MoveTask(t2.ID, "done", "", nil)
 		// Task 3 stays in todo
 
 		err := manager.ArchiveAllDoneTasks()
@@ -3122,7 +3136,7 @@ func TestRestoreTask(t *testing.T) {
 		manager, _, _ := newMockManager()
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
-		_, _ = manager.MoveTask(task.ID, "done", nil)
+		_, _ = manager.MoveTask(task.ID, "done", "", nil)
 		_ = manager.ArchiveTask(task.ID)
 
 		err := manager.RestoreTask(task.ID)
@@ -3146,7 +3160,7 @@ func TestRestoreTask(t *testing.T) {
 		manager, _, mockAccess := newMockManager()
 
 		task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
-		_, _ = manager.MoveTask(task.ID, "done", nil)
+		_, _ = manager.MoveTask(task.ID, "done", "", nil)
 		_ = manager.ArchiveTask(task.ID)
 
 		// Verify task is removed from task_order after archive
@@ -3207,7 +3221,7 @@ func TestGetTasks_IncludesArchived(t *testing.T) {
 	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 	_, _ = manager.CreateTask("Task 2", "T", "important-not-urgent", "", "", "")
 
-	_, _ = manager.MoveTask(t1.ID, "done", nil)
+	_, _ = manager.MoveTask(t1.ID, "done", "", nil)
 	_ = manager.ArchiveTask(t1.ID)
 
 	tasks, err := manager.GetTasks()
@@ -3236,7 +3250,7 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 
 	// Create a task, move to done, then archive it
 	task1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
-	_, _ = manager.MoveTask(task1.ID, "done", nil)
+	_, _ = manager.MoveTask(task1.ID, "done", "", nil)
 	_ = manager.ArchiveTask(task1.ID)
 
 	// Create a new task (ID must not collide with the archived one)
@@ -3249,7 +3263,7 @@ func TestMoveTask_AfterArchiving(t *testing.T) {
 	}
 
 	// Move the new task from todo to doing — should succeed without rule violation
-	result, err := manager.MoveTask(task2.ID, "doing", nil)
+	result, err := manager.MoveTask(task2.ID, "doing", "", nil)
 	if err != nil {
 		t.Fatalf("expected no error moving task after archive, got %v", err)
 	}
@@ -3274,7 +3288,7 @@ func TestUnit_MoveTask_CustomColumn(t *testing.T) {
 	}
 
 	// Move to custom column
-	result, err := manager.MoveTask(task.ID, "review", nil)
+	result, err := manager.MoveTask(task.ID, "review", "", nil)
 	if err != nil {
 		t.Fatalf("MoveTask to custom column failed: %v", err)
 	}
@@ -3286,7 +3300,7 @@ func TestUnit_MoveTask_CustomColumn(t *testing.T) {
 func TestUnit_MoveTask_InvalidColumn(t *testing.T) {
 	manager, _, _ := newMockManager()
 
-	_, err := manager.MoveTask("T-T1", "nonexistent", nil)
+	_, err := manager.MoveTask("T-T1", "nonexistent", "", nil)
 	if err == nil {
 		t.Error("Expected error for invalid target column")
 	}
@@ -3320,7 +3334,7 @@ func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
 	}
 
 	// Move task1 to "doing" with positions for the doing zone (matches frontend behavior)
-	_, err = manager.MoveTask(task1.ID, "doing", map[string][]string{
+	_, err = manager.MoveTask(task1.ID, "doing", "", map[string][]string{
 		"doing": {task1.ID},
 	})
 	if err != nil {
@@ -3341,7 +3355,7 @@ func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
 
 	// Move task1 back to "todo" with explicit positions placing it at position 0
 	desiredOrder := []string{task1.ID, task2.ID, task3.ID}
-	result, err := manager.MoveTask(task1.ID, "todo", map[string][]string{
+	result, err := manager.MoveTask(task1.ID, "todo", "", map[string][]string{
 		"important-urgent": desiredOrder,
 	})
 	if err != nil {
@@ -3378,6 +3392,147 @@ func TestUnit_MoveTask_CrossColumnToSectionWithPositions(t *testing.T) {
 	assertTaskOrderConsistency(t, manager)
 }
 
+// TestUnit_MoveTask_UpdatesPriorityWhenProvided covers the cross-column-into-section
+// flow: a task in Doing whose stale priority is "important-not-urgent" is dragged
+// into Todo's "important-urgent" section. The fix requires the task's priority
+// field to be rewritten atomically with the status change so that the derived
+// drop zone matches the destination section.
+func TestUnit_MoveTask_UpdatesPriorityWhenProvided(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	// Seed: a task with stale priority "important-not-urgent" parked in Doing.
+	task, err := manager.CreateTask("Add day closing workflow", "T", "important-not-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+	if _, err := manager.MoveTask(task.ID, "doing", "", map[string][]string{
+		"doing": {task.ID},
+	}); err != nil {
+		t.Fatalf("MoveTask to doing failed: %v", err)
+	}
+
+	// Drag back into Todo's important-urgent section, requesting a priority change.
+	result, err := manager.MoveTask(task.ID, "todo", "important-urgent", map[string][]string{
+		"important-urgent": {task.ID},
+	})
+	if err != nil {
+		t.Fatalf("MoveTask back to todo with priority change failed: %v", err)
+	}
+	if !result.Success {
+		t.Fatalf("MoveTask not successful: %v", result.Violations)
+	}
+
+	// Task's persisted priority must be the destination section.
+	allTasks, err := manager.GetTasks()
+	if err != nil {
+		t.Fatalf("GetTasks failed: %v", err)
+	}
+	var found bool
+	for _, tt := range allTasks {
+		if tt.ID == task.ID {
+			found = true
+			if tt.Priority != "important-urgent" {
+				t.Errorf("task priority after move: got %q, want %q", tt.Priority, "important-urgent")
+			}
+			if tt.Status != "todo" {
+				t.Errorf("task status after move: got %q, want %q", tt.Status, "todo")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("moved task not found in GetTasks output")
+	}
+
+	// task_order.json must record the task in the new-priority zone, not the old one.
+	order, err := mockAccess.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder failed: %v", err)
+	}
+	if !slices.Contains(order["important-urgent"], task.ID) {
+		t.Errorf("task_order.json: task %s should be in important-urgent zone, got %v", task.ID, order["important-urgent"])
+	}
+	if slices.Contains(order["important-not-urgent"], task.ID) {
+		t.Errorf("task_order.json: task %s should NOT be in stale important-not-urgent zone, got %v", task.ID, order["important-not-urgent"])
+	}
+	if slices.Contains(order["doing"], task.ID) {
+		t.Errorf("task_order.json: task %s should NOT be in doing zone, got %v", task.ID, order["doing"])
+	}
+
+	assertTaskOrderConsistency(t, manager)
+}
+
+// TestUnit_MoveTask_PreservesPriorityWhenEmpty verifies that passing newPriority=""
+// is backwards-compatible: the task's priority is left untouched.
+func TestUnit_MoveTask_PreservesPriorityWhenEmpty(t *testing.T) {
+	manager, _, _ := newMockManager()
+
+	task, err := manager.CreateTask("Task X", "T", "important-not-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+
+	if _, err := manager.MoveTask(task.ID, "doing", "", nil); err != nil {
+		t.Fatalf("MoveTask to doing failed: %v", err)
+	}
+
+	allTasks, _ := manager.GetTasks()
+	for _, tt := range allTasks {
+		if tt.ID == task.ID && tt.Priority != "important-not-urgent" {
+			t.Errorf("priority should be preserved: got %q, want %q", tt.Priority, "important-not-urgent")
+		}
+	}
+}
+
+// TestUnit_MoveTask_RejectsInvalidPriority guards the new validation branch.
+func TestUnit_MoveTask_RejectsInvalidPriority(t *testing.T) {
+	manager, _, _ := newMockManager()
+
+	task, err := manager.CreateTask("Task X", "T", "important-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+
+	if _, err := manager.MoveTask(task.ID, "doing", "definitely-not-a-priority", nil); err == nil {
+		t.Fatal("expected error for invalid priority, got nil")
+	}
+}
+
+// TestUnit_MoveTask_AtomicityOnPriorityWriteFailure verifies that when the
+// priority write fails, the move is not committed: no CommitAll runs after the
+// failure, so a subsequent restart's reconciliation can recover from the
+// half-renamed file rather than from a corrupt commit.
+func TestUnit_MoveTask_AtomicityOnPriorityWriteFailure(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+
+	task, err := manager.CreateTask("Task X", "T", "important-not-urgent", "", "", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+	if _, err := manager.MoveTask(task.ID, "doing", "", nil); err != nil {
+		t.Fatalf("seed MoveTask failed: %v", err)
+	}
+
+	// Capture commit count after the seed move.
+	mockAccess.mu.Lock()
+	beforeCount := mockAccess.commitAllCount
+	mockAccess.writeTaskErr = fmt.Errorf("simulated priority write failure")
+	mockAccess.mu.Unlock()
+
+	_, err = manager.MoveTask(task.ID, "todo", "important-urgent", map[string][]string{
+		"important-urgent": {task.ID},
+	})
+	if err == nil {
+		t.Fatal("expected MoveTask to return error when WriteTask fails")
+	}
+
+	mockAccess.mu.Lock()
+	afterCount := mockAccess.commitAllCount
+	mockAccess.mu.Unlock()
+	if afterCount != beforeCount {
+		t.Errorf("CommitAll should not have run after WriteTask failure: before=%d, after=%d", beforeCount, afterCount)
+	}
+}
+
 func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
 	manager, _, mockAccess := newMockManager()
 
@@ -3396,7 +3551,7 @@ func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CreateTask doing failed: %v", err)
 	}
-	_, err = manager.MoveTask(doingTask.ID, "doing", map[string][]string{
+	_, err = manager.MoveTask(doingTask.ID, "doing", "", map[string][]string{
 		"doing": {doingTask.ID},
 	})
 	if err != nil {
@@ -3412,7 +3567,7 @@ func TestUnit_MoveTask_ConcurrentWithReorder(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		// Move doingTask back to todo/I&U, placing it first
-		_, moveErr = manager.MoveTask(doingTask.ID, "todo", map[string][]string{
+		_, moveErr = manager.MoveTask(doingTask.ID, "todo", "", map[string][]string{
 			"important-urgent": {doingTask.ID, task1.ID, task2.ID},
 		})
 	}()
@@ -4080,7 +4235,7 @@ func TestUnit_UpdateTaskPriority_NoZoneChangeForNonTodo(t *testing.T) {
 
 	// Create task, move to doing
 	task, _ := manager.CreateTask("Test Task", "T", "important-urgent", "", "", "")
-	_, _ = manager.MoveTask(task.ID, "doing", nil)
+	_, _ = manager.MoveTask(task.ID, "doing", "", nil)
 
 	// Update priority on doing task — zone is status-based, not priority-based
 	task.Priority = "not-important-urgent"
@@ -4158,8 +4313,8 @@ func TestUnit_ArchiveTask_PrependsToArchivedOrder(t *testing.T) {
 	// Create 2 tasks and move them to done
 	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
-	_, _ = manager.MoveTask(t1.ID, "done", nil)
-	_, _ = manager.MoveTask(t2.ID, "done", nil)
+	_, _ = manager.MoveTask(t1.ID, "done", "", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", "", nil)
 
 	// Archive them one at a time
 	if err := manager.ArchiveTask(t1.ID); err != nil {
@@ -4189,9 +4344,9 @@ func TestUnit_ArchiveAllDoneTasks_PreservesRelativeOrder(t *testing.T) {
 	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
 	t3, _ := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
-	_, _ = manager.MoveTask(t1.ID, "done", nil)
-	_, _ = manager.MoveTask(t2.ID, "done", nil)
-	_, _ = manager.MoveTask(t3.ID, "done", nil)
+	_, _ = manager.MoveTask(t1.ID, "done", "", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", "", nil)
+	_, _ = manager.MoveTask(t3.ID, "done", "", nil)
 
 	// Set up a known display order in the done zone via task_order
 	_ = mockAccess.SaveTaskOrder(map[string][]string{
@@ -4200,7 +4355,7 @@ func TestUnit_ArchiveAllDoneTasks_PreservesRelativeOrder(t *testing.T) {
 
 	// Archive a task first to act as "previously archived"
 	priorTask, _ := manager.CreateTask("Prior", "T", "important-urgent", "", "", "")
-	_, _ = manager.MoveTask(priorTask.ID, "done", nil)
+	_, _ = manager.MoveTask(priorTask.ID, "done", "", nil)
 	_ = manager.ArchiveTask(priorTask.ID)
 
 	// Now archive all done tasks
@@ -4257,9 +4412,9 @@ func TestUnit_RestoreTask_RemovesFromArchivedOrder(t *testing.T) {
 	t1, _ := manager.CreateTask("Task 1", "T", "important-urgent", "", "", "")
 	t2, _ := manager.CreateTask("Task 2", "T", "important-urgent", "", "", "")
 	t3, _ := manager.CreateTask("Task 3", "T", "important-urgent", "", "", "")
-	_, _ = manager.MoveTask(t1.ID, "done", nil)
-	_, _ = manager.MoveTask(t2.ID, "done", nil)
-	_, _ = manager.MoveTask(t3.ID, "done", nil)
+	_, _ = manager.MoveTask(t1.ID, "done", "", nil)
+	_, _ = manager.MoveTask(t2.ID, "done", "", nil)
+	_, _ = manager.MoveTask(t3.ID, "done", "", nil)
 
 	_ = manager.ArchiveTask(t1.ID)
 	_ = manager.ArchiveTask(t2.ID)

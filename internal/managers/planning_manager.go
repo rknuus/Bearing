@@ -69,7 +69,7 @@ type IGoalLifecycle interface {
 type ITaskExecution interface {
 	GetTasks() ([]TaskWithStatus, error)
 	CreateTask(title, themeId, priority, description, tags, promotionDate string) (*Task, error)
-	MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error)
+	MoveTask(taskId, newStatus, newPriority string, positions map[string][]string) (*MoveTaskResult, error)
 	UpdateTask(task Task) error
 	DeleteTask(taskId string) error
 	ArchiveTask(taskId string) error
@@ -1478,11 +1478,20 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 	return &result, nil
 }
 
-// MoveTask moves a task to a new status (todo, doing, done).
-// When positions is non-nil, the provided drop zone ordering is applied atomically
-// with the move. When nil, the task is appended to the end of the target zone.
+// MoveTask moves a task to a new status (todo, doing, done) and optionally
+// updates its priority atomically with the move.
+//
+// When positions is non-nil, the provided drop zone ordering is applied
+// atomically with the move; when nil, the task is appended to the end of the
+// target zone (computed from the post-move priority).
+//
+// When newPriority is non-empty and differs from the task's current priority,
+// the task file's priority is rewritten in the same git commit as the status
+// change and the order-map update. Pass "" to leave the priority unchanged —
+// callers moving into non-sectioned columns (e.g., Doing, Done) should pass "".
+//
 // Returns a MoveTaskResult with violation details on rejection.
-func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[string][]string) (*MoveTaskResult, error) {
+func (m *PlanningManager) MoveTask(taskId, newStatus, newPriority string, positions map[string][]string) (*MoveTaskResult, error) {
 	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get board config: %w", err)
@@ -1496,6 +1505,9 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 	}
 	if !validStatus {
 		return nil, fmt.Errorf("invalid status %s", newStatus)
+	}
+	if newPriority != "" && !IsValidPriority(newPriority) {
+		return nil, fmt.Errorf("invalid priority %s", newPriority)
 	}
 
 	// Get all tasks to find the task being moved and build context
@@ -1570,14 +1582,28 @@ func (m *PlanningManager) MoveTask(taskId, newStatus string, positions map[strin
 		}, nil
 	}
 
+	// Capture the pre-move priority so the source-zone derivation reflects the
+	// task's location before any priority update we may apply below.
+	oldPriority := movingTask.Priority
+
 	// Perform the move (write-only, no commit yet)
 	if _, err := m.taskAccess.WriteMoveTask(taskId, newStatus); err != nil {
 		return nil, fmt.Errorf("failed to move task: %w", err)
 	}
 
+	// Apply priority change in the same uncommitted batch as the file move.
+	// The task file now lives at the new-status path; WriteTask writes the
+	// updated priority to that path. CommitAll below ties everything together.
+	if newPriority != "" && newPriority != movingTask.Priority {
+		movingTask.Priority = newPriority
+		if err := m.taskAccess.WriteTask(toAccessTask(*movingTask)); err != nil {
+			return nil, fmt.Errorf("failed to update task priority: %w", err)
+		}
+	}
+
 	// Update task order: remove from source drop zone, then apply positions or append to target
 	moveTodoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
-	sourceZone := m.ruleEngine.DropZoneForTask(oldStatus, movingTask.Priority, moveTodoSlug)
+	sourceZone := m.ruleEngine.DropZoneForTask(oldStatus, oldPriority, moveTodoSlug)
 
 	m.taskOrderMu.Lock()
 	orderMap, err := m.taskAccess.LoadTaskOrder()

@@ -186,7 +186,7 @@ func TestPerformance_TaskMoveOperation(t *testing.T) {
 
 	// Measure move time
 	start := time.Now()
-	moveResult, err := manager.MoveTask(task.ID, "doing", nil)
+	moveResult, err := manager.MoveTask(task.ID, "doing", "", nil)
 	elapsed := time.Since(start)
 
 	if err != nil {
@@ -343,7 +343,7 @@ func BenchmarkTaskMove(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, err := manager.MoveTask(taskIDs[i], statuses[statusIndex], nil)
+		_, err := manager.MoveTask(taskIDs[i], statuses[statusIndex], "", nil)
 		if err != nil {
 			b.Fatalf("MoveTask failed: %v", err)
 		}

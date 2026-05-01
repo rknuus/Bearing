@@ -288,8 +288,8 @@
     return getBindings().CreateTask(title, themeId, priority, description, tags, '');
   }
 
-  async function apiMoveTask(taskId: string, newStatus: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> {
-    return await getBindings().MoveTask(taskId, newStatus, positions);
+  async function apiMoveTask(taskId: string, newStatus: string, newPriority: string, positions?: Record<string, string[]>): Promise<MoveTaskResult> {
+    return await getBindings().MoveTask(taskId, newStatus, newPriority, positions);
   }
 
   async function apiDeleteTask(taskId: string): Promise<void> {
@@ -628,7 +628,7 @@
 
     isValidating = true;
     try {
-      const result = await apiMoveTask(taskId, status, { [status]: targetZoneIds });
+      const result = await apiMoveTask(taskId, status, '', { [status]: targetZoneIds });
       if (!result.success) {
         // Rule violation -- rollback
         isRollingBack = true;
@@ -712,13 +712,16 @@
     const targetZoneIds = fullZoneOrder(visibleTargetIds, sectionName);
 
     if (movedTask.status !== columnName) {
-      // Cross-column move: status change -- use MoveTask
-      tasks = repositionTask(tasks, taskId, { status: columnName }, targetZoneIds);
+      // Cross-column move into a sectioned column: status AND priority change.
+      // Update both fields on the optimistic task so dropZoneForTask resolves to
+      // the destination section immediately, and pass sectionName through to
+      // MoveTask so the backend rewrites priority atomically with the move.
+      tasks = repositionTask(tasks, taskId, { status: columnName, priority: sectionName }, targetZoneIds);
       tasks = reorderZone(tasks, targetZoneIds);
 
       isValidating = true;
       try {
-        const result = await apiMoveTask(taskId, columnName, { [sectionName]: targetZoneIds });
+        const result = await apiMoveTask(taskId, columnName, sectionName, { [sectionName]: targetZoneIds });
         if (!result.success) {
           isRollingBack = true;
           tasks = snapshotTasks;
