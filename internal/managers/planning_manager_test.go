@@ -135,6 +135,7 @@ type mockTaskAccess struct {
 	nextTaskNum    int
 	boardConfig    *access.BoardConfiguration
 	writeTaskErr   error // when set, ITask.Move returns this error (atomicity tests)
+	batchErr       error // when set, IBatch.CommitNoTx returns this error (atomicity tests)
 	commitAllCount int   // number of synthetic per-verb commit ticks (Save/Move/Promote/...)
 }
 
@@ -538,6 +539,13 @@ func (m *mockTaskAccess) Find(filter access.TaskFilter) ([]access.Task, error) {
 					continue
 				}
 			}
+			if filter.RoutineRef != nil {
+				if t.RoutineRef == nil ||
+					t.RoutineRef.RoutineID != filter.RoutineRef.RoutineID ||
+					t.RoutineRef.Date != filter.RoutineRef.Date {
+					continue
+				}
+			}
 			result = append(result, t)
 		}
 	}
@@ -840,6 +848,29 @@ func (m *mockTaskAccess) Promote(req access.PromoteRequest) (access.PromoteOutco
 }
 
 func (m *mockTaskAccess) Commit(req access.BatchRequest) (access.BatchOutcome, error) {
+	outcome, err := m.commitInternal(req)
+	if err != nil {
+		return access.BatchOutcome{}, err
+	}
+	if len(outcome.CreatedIDs) > 0 || len(outcome.DeletedIDs) > 0 {
+		m.mu.Lock()
+		m.commitAllCount++
+		m.mu.Unlock()
+	}
+	return outcome, nil
+}
+
+// CommitNoTx mirrors Commit's mutations but skips the per-call commit
+// tick — callers running inside utilities.RunTransaction expect a single
+// terminal commit they emit themselves.
+func (m *mockTaskAccess) CommitNoTx(req access.BatchRequest) (access.BatchOutcome, error) {
+	if m.batchErr != nil {
+		return access.BatchOutcome{}, m.batchErr
+	}
+	return m.commitInternal(req)
+}
+
+func (m *mockTaskAccess) commitInternal(req access.BatchRequest) (access.BatchOutcome, error) {
 	outcome := access.BatchOutcome{}
 	for i := range req.Creates {
 		create := req.Creates[i]
@@ -856,11 +887,6 @@ func (m *mockTaskAccess) Commit(req access.BatchRequest) (access.BatchOutcome, e
 			return access.BatchOutcome{}, err
 		}
 		outcome.DeletedIDs = append(outcome.DeletedIDs, taskID)
-	}
-	if len(outcome.CreatedIDs) > 0 || len(outcome.DeletedIDs) > 0 {
-		m.mu.Lock()
-		m.commitAllCount++
-		m.mu.Unlock()
 	}
 	return outcome, nil
 }
@@ -1015,17 +1041,95 @@ func (m *mockUIStateAccess) SaveAdvisorEnabled(enabled bool) error {
 func newMockManager() (*PlanningManager, *mockThemeAccess, *mockTaskAccess) {
 	ta := newMockThemeAccess()
 	ka := newMockTaskAccess()
-	pm, _ := NewPlanningManager(ta, ka, newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+	pm, _ := NewPlanningManager(ta, ka, newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
 	return pm, ta, ka
 }
 
-// newMockManagerWithCalendar creates a PlanningManager that also returns the calendar mock.
-func newMockManagerWithCalendar() (*PlanningManager, *mockThemeAccess, *mockTaskAccess, *mockCalendarAccess) {
+// newMockManagerWithRoutines creates a PlanningManager that also returns
+// the calendar and routine mocks. Used by RecordRoutineCompletions tests
+// which need to seed routines plus inspect calendar writes.
+func newMockManagerWithRoutines() (*PlanningManager, *mockTaskAccess, *mockCalendarAccess, *mockRoutineAccess) {
 	ta := newMockThemeAccess()
 	ka := newMockTaskAccess()
 	ca := newMockCalendarAccess()
-	pm, _ := NewPlanningManager(ta, ka, ca, newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
-	return pm, ta, ka, ca
+	ra := newMockRoutineAccess()
+	pm, _ := NewPlanningManager(ta, ka, ca, ra, &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
+	return pm, ka, ca, ra
+}
+
+// stubRepo is a minimal utilities.IRepository for manager tests that do
+// not exercise on-disk git semantics. utilities.RunTransaction calls
+// only Begin(); the returned stubTransaction records Stage/Commit/Cancel
+// invocations so tests can assert single-commit semantics without the
+// cost of a real git repository.
+type stubRepo struct {
+	tx *stubTransaction
+}
+
+type stubTransaction struct {
+	mu        sync.Mutex
+	staged    bool
+	commits   []string
+	cancelled bool
+}
+
+func newStubRepo() *stubRepo {
+	return &stubRepo{tx: &stubTransaction{}}
+}
+
+func (s *stubRepo) Path() string                                    { return "" }
+func (s *stubRepo) Status() (*utilities.RepositoryStatus, error)    { return nil, nil }
+func (s *stubRepo) Begin() (utilities.ITransaction, error)          { return s.tx, nil }
+func (s *stubRepo) GetHistory(_ int) ([]utilities.CommitInfo, error) {
+	return nil, nil
+}
+func (s *stubRepo) GetHistoryStream() <-chan utilities.CommitInfo { return nil }
+func (s *stubRepo) GetFileHistory(_ string, _ int) ([]utilities.CommitInfo, error) {
+	return nil, nil
+}
+func (s *stubRepo) GetFileHistoryStream(_ string) <-chan utilities.CommitInfo { return nil }
+func (s *stubRepo) GetFileDifferences(_, _ string) ([]byte, error)            { return nil, nil }
+func (s *stubRepo) ValidateRepositoryAndPaths(_ utilities.RepositoryValidationRequest) (*utilities.RepositoryValidationResult, error) {
+	return nil, nil
+}
+func (s *stubRepo) Close() error { return nil }
+
+func (t *stubTransaction) Stage(_ []string) error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.staged = true
+	return nil
+}
+
+func (t *stubTransaction) Commit(message string) (string, error) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.commits = append(t.commits, message)
+	return "", nil
+}
+
+func (t *stubTransaction) Cancel() error {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.cancelled = true
+	return nil
+}
+
+// commitCount returns the number of Commit calls observed by the stub.
+func (s *stubRepo) commitCount() int {
+	s.tx.mu.Lock()
+	defer s.tx.mu.Unlock()
+	return len(s.tx.commits)
+}
+
+// lastCommitMessage returns the most recent commit message (or "").
+func (s *stubRepo) lastCommitMessage() string {
+	s.tx.mu.Lock()
+	defer s.tx.mu.Unlock()
+	if len(s.tx.commits) == 0 {
+		return ""
+	}
+	return s.tx.commits[len(s.tx.commits)-1]
 }
 
 // --- Test helper wrappers around behavioral API ---
@@ -1202,7 +1306,7 @@ func findKeyResultByID(objectives []Objective, id string) *KeyResult {
 
 func TestNewPlanningManager(t *testing.T) {
 	t.Run("creates manager with valid access", func(t *testing.T) {
-		manager, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+		manager, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
 		if err != nil {
 			t.Fatalf("expected no error, got %v", err)
 		}
@@ -1212,23 +1316,30 @@ func TestNewPlanningManager(t *testing.T) {
 	})
 
 	t.Run("returns error with nil theme access", func(t *testing.T) {
-		_, err := NewPlanningManager(nil, newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+		_, err := NewPlanningManager(nil, newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
 		if err == nil {
 			t.Fatal("expected error for nil theme access")
 		}
 	})
 
 	t.Run("returns error with nil routine access", func(t *testing.T) {
-		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), nil, &mockVisionAccess{}, &mockUIStateAccess{})
+		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), nil, &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
 		if err == nil {
 			t.Fatal("expected error for nil routine access")
 		}
 	})
 
 	t.Run("returns error with nil ui state access", func(t *testing.T) {
-		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, nil)
+		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, nil, newStubRepo())
 		if err == nil {
 			t.Fatal("expected error for nil ui state access")
+		}
+	})
+
+	t.Run("returns error with nil repo", func(t *testing.T) {
+		_, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{}, nil)
+		if err == nil {
+			t.Fatal("expected error for nil repo")
 		}
 	})
 }
@@ -2549,7 +2660,7 @@ func newRoutinesForDateManager(t *testing.T) (*PlanningManager, *mockRoutineAcce
 	t.Helper()
 	ra := newMockRoutineAccess()
 	ca := newMockCalendarAccess()
-	pm, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), ca, ra, &mockVisionAccess{}, &mockUIStateAccess{})
+	pm, err := NewPlanningManager(newMockThemeAccess(), newMockTaskAccess(), ca, ra, &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
 	if err != nil {
 		t.Fatalf("NewPlanningManager: %v", err)
 	}
@@ -4104,7 +4215,7 @@ func TestUnit_ValidateTaskOrder_RepairsCorruptData(t *testing.T) {
 	}
 
 	// NewPlanningManager calls validateTaskOrder
-	manager, err := NewPlanningManager(newMockThemeAccess(), mockTasks, newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{})
+	manager, err := NewPlanningManager(newMockThemeAccess(), mockTasks, newMockCalendarAccess(), newMockRoutineAccess(), &mockVisionAccess{}, &mockUIStateAccess{}, newStubRepo())
 	if err != nil {
 		t.Fatalf("NewPlanningManager failed: %v", err)
 	}
@@ -5085,199 +5196,238 @@ func TestUnit_FindTasksByTag_ReturnsEmptyForNonMatchingTag(t *testing.T) {
 	}
 }
 
-// --- SaveDayFocusWithRoutines tests ---
+// --- RecordRoutineCompletions tests ---
+//
+// These verify the single-commit guarantee that closes audit finding #5
+// (the N+1 commits regression in SaveDayFocusWithRoutines): one user-
+// initiated routine-check change yields exactly one git commit covering
+// both the calendar update and any task creates/deletes.
 
-func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOnTimeRoutine(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+// seedRoutineForRecording inserts a routine into the mock catalogue so
+// ScheduleEngine.Plan has metadata to translate diffs into TaskSpecs.
+func seedRoutineForRecording(t *testing.T, ra *mockRoutineAccess, id, description string) {
+	t.Helper()
+	if err := ra.SaveRoutine(access.Routine{ID: id, Description: description}); err != nil {
+		t.Fatalf("seed routine %s: %v", id, err)
+	}
+}
+
+func TestUnit_RecordRoutineCompletions_ThreeRoutines_OneCommit(t *testing.T) {
+	pm, mockTasks, calMock, ra := newMockManagerWithRoutines()
+	seedRoutineForRecording(t, ra, "R1", "Morning run")
+	seedRoutineForRecording(t, ra, "R2", "Read 30 minutes")
+	seedRoutineForRecording(t, ra, "R3", "Meditation")
+
+	stub := pm.repo.(*stubRepo)
+	beforeCommits := stub.commitCount()
+	beforeBatchTicks := mockTasks.commitAllCount
+
+	day := DayFocus{
+		Date:          utilities.MustParseCalendarDate("2026-04-10"),
+		RoutineChecks: []string{"R1", "R2", "R3"},
+	}
+
+	if err := pm.RecordRoutineCompletions(day, nil); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
+	}
+
+	// Exactly one transaction commit: the work fans out across the
+	// taskAccess (3 creates) and the calendar (1 day-focus write) but
+	// surfaces as a single git commit per user event.
+	if got := stub.commitCount() - beforeCommits; got != 1 {
+		t.Fatalf("expected exactly 1 git commit, got %d", got)
+	}
+	// IBatch.CommitNoTx must NOT bump the per-verb tick — that counter
+	// represents independent commits, which is precisely what the
+	// transaction wrapper exists to avoid.
+	if delta := mockTasks.commitAllCount - beforeBatchTicks; delta != 0 {
+		t.Errorf("expected IBatch.CommitNoTx to skip per-verb commit tick, got delta=%d", delta)
+	}
+
+	if got := stub.lastCommitMessage(); got != "Record routine completions for 2026-04-10" {
+		t.Errorf("unexpected commit message: %q", got)
+	}
+
+	// Three tasks created in todo, each carrying the typed RoutineRef
+	// link rather than the legacy Description-encoded reference.
+	todo := mockTasks.tasks["todo"]
+	if len(todo) != 3 {
+		t.Fatalf("expected 3 todo tasks, got %d", len(todo))
+	}
+	seenRoutines := make(map[string]bool, 3)
+	for _, task := range todo {
+		if task.RoutineRef == nil {
+			t.Errorf("task %s missing RoutineRef", task.ID)
+			continue
+		}
+		if task.RoutineRef.Date.String() != "2026-04-10" {
+			t.Errorf("task %s RoutineRef.Date = %q, want 2026-04-10", task.ID, task.RoutineRef.Date)
+		}
+		seenRoutines[task.RoutineRef.RoutineID] = true
+	}
+	for _, id := range []string{"R1", "R2", "R3"} {
+		if !seenRoutines[id] {
+			t.Errorf("expected task for routine %s, missing", id)
+		}
+	}
+
+	// Calendar reflects the persisted day focus including the auto
+	// "Routine" tag.
+	saved, ok := calMock.days["2026-04-10"]
+	if !ok {
+		t.Fatal("expected calendar entry for 2026-04-10")
+	}
+	if !slices.Contains(saved.Tags, "Routine") {
+		t.Errorf("expected 'Routine' day tag, got %v", saved.Tags)
+	}
+}
+
+func TestUnit_RecordRoutineCompletions_BatchFailure_NoCommitNoState(t *testing.T) {
+	pm, mockTasks, calMock, ra := newMockManagerWithRoutines()
+	seedRoutineForRecording(t, ra, "R1", "Morning run")
+
+	stub := pm.repo.(*stubRepo)
+	beforeCommits := stub.commitCount()
+
+	// Inject a batch failure so RunTransaction's fn returns an error
+	// and the terminal commit is skipped.
+	mockTasks.batchErr = fmt.Errorf("simulated disk full")
 
 	day := DayFocus{
 		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
 	}
-	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
+
+	err := pm.RecordRoutineCompletions(day, nil)
+	if err == nil {
+		t.Fatal("expected error from injected batch failure, got nil")
 	}
 
-	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if got := stub.commitCount() - beforeCommits; got != 0 {
+		t.Errorf("expected 0 git commits on rollback, got %d", got)
+	}
+	if !stub.tx.cancelled {
+		t.Error("expected transaction to be cancelled on body failure")
 	}
 
-	// Verify a task was created in todo status
-	todoTasks := mockTasks.tasks["todo"]
-	if len(todoTasks) != 1 {
-		t.Fatalf("expected 1 todo task, got %d", len(todoTasks))
+	// No task created and no calendar entry persisted — the batch
+	// failure short-circuited before either write took effect.
+	if total := len(mockTasks.tasks["todo"]) + len(mockTasks.tasks["doing"]) + len(mockTasks.tasks["done"]); total != 0 {
+		t.Errorf("expected zero tasks after rollback, got %d", total)
 	}
-	task := todoTasks[0]
-	if task.Priority != string(access.PriorityImportantNotUrgent) {
-		t.Errorf("expected priority %s, got %s", access.PriorityImportantNotUrgent, task.Priority)
-	}
-	if !slices.Contains(task.Tags, "Routine") {
-		t.Errorf("expected task to have tag %q, got %v", "Routine", task.Tags)
-	}
-	expectedDesc := "routine:R1:2026-04-10"
-	if task.Description != expectedDesc {
-		t.Errorf("expected task description %q, got %q", expectedDesc, task.Description)
+	if _, ok := calMock.days["2026-04-10"]; ok {
+		t.Error("expected calendar entry to be absent after rollback")
 	}
 }
 
-func TestUnit_SaveDayFocusWithRoutines_CreatesTaskForOverdueRoutine(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+func TestUnit_RecordRoutineCompletions_UncheckAfterDone_PreservesTask(t *testing.T) {
+	pm, mockTasks, calMock, ra := newMockManagerWithRoutines()
+	seedRoutineForRecording(t, ra, "R1", "Morning run")
+
+	// Seed a routine task that already moved to done — completion
+	// history that uncheck must not erase.
+	date := utilities.MustParseCalendarDate("2026-04-10")
+	mockTasks.tasks["done"] = []access.Task{{
+		ID:         "T1",
+		Title:      "Morning run",
+		Priority:   string(access.PriorityImportantNotUrgent),
+		Tags:       []string{"Routine"},
+		RoutineRef: &access.RoutineRef{RoutineID: "R1", Date: date},
+	}}
 
 	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
-		RoutineChecks: []string{"R1"},
-	}
-	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Overdue run", IsOverdue: true},
-	}
-
-	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	todoTasks := mockTasks.tasks["todo"]
-	if len(todoTasks) != 1 {
-		t.Fatalf("expected 1 todo task, got %d", len(todoTasks))
-	}
-	if todoTasks[0].Priority != string(access.PriorityImportantUrgent) {
-		t.Errorf("expected priority %s, got %s", access.PriorityImportantUrgent, todoTasks[0].Priority)
-	}
-}
-
-func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInTodoOnUncheck(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
-
-	// Pre-create a task in todo with the Routine tag and routine ref in description
-	mockTasks.tasks["todo"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
-	}
-
-	// Uncheck R1: previousChecks had R1, current has none
-	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
+		Date:          date,
 		RoutineChecks: nil,
+		Tags:          []string{"Routine"},
 	}
-	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	// Task should be deleted
-	if len(mockTasks.tasks["todo"]) != 0 {
-		t.Errorf("expected todo tasks to be empty, got %d", len(mockTasks.tasks["todo"]))
-	}
-}
-
-func TestUnit_SaveDayFocusWithRoutines_DeletesTaskInDoingOnUncheck(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
-
-	mockTasks.tasks["doing"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
-	}
-
-	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
-		RoutineChecks: nil,
-	}
-	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if len(mockTasks.tasks["doing"]) != 0 {
-		t.Errorf("expected doing tasks to be empty, got %d", len(mockTasks.tasks["doing"]))
-	}
-}
-
-func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInDoneOnUncheck(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
-
-	mockTasks.tasks["done"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
-	}
-
-	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
-		RoutineChecks: nil,
-	}
-	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := pm.RecordRoutineCompletions(day, []string{"R1"}); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
 	}
 
 	if len(mockTasks.tasks["done"]) != 1 {
-		t.Errorf("expected done task to be preserved, got %d tasks", len(mockTasks.tasks["done"]))
+		t.Errorf("expected done task preserved, got %d", len(mockTasks.tasks["done"]))
+	}
+	saved, ok := calMock.days["2026-04-10"]
+	if !ok {
+		t.Fatal("expected calendar entry to be saved")
+	}
+	if len(saved.RoutineChecks) != 0 {
+		t.Errorf("expected empty RoutineChecks after uncheck, got %v", saved.RoutineChecks)
+	}
+	if slices.Contains(saved.Tags, "Routine") {
+		t.Errorf("expected 'Routine' day tag removed when no checks remain, got %v", saved.Tags)
 	}
 }
 
-func TestUnit_SaveDayFocusWithRoutines_PreservesTaskInArchivedOnUncheck(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+func TestUnit_RecordRoutineCompletions_UncheckTodoTask_DeletesIt(t *testing.T) {
+	pm, mockTasks, _, ra := newMockManagerWithRoutines()
+	seedRoutineForRecording(t, ra, "R1", "Morning run")
 
-	mockTasks.tasks["archived"] = []access.Task{
-		{ID: "T-T1", Title: "Morning run", ThemeID: "T", Priority: "important-not-urgent", Tags: []string{"Routine"}, Description: "routine:R1:2026-04-10"},
-	}
+	date := utilities.MustParseCalendarDate("2026-04-10")
+	mockTasks.tasks["todo"] = []access.Task{{
+		ID:         "T1",
+		Title:      "Morning run",
+		Priority:   string(access.PriorityImportantNotUrgent),
+		Tags:       []string{"Routine"},
+		RoutineRef: &access.RoutineRef{RoutineID: "R1", Date: date},
+	}}
 
 	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
+		Date:          date,
 		RoutineChecks: nil,
+		Tags:          []string{"Routine"},
 	}
-	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := pm.RecordRoutineCompletions(day, []string{"R1"}); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
 	}
 
-	if len(mockTasks.tasks["archived"]) != 1 {
-		t.Errorf("expected archived task to be preserved, got %d tasks", len(mockTasks.tasks["archived"]))
+	if len(mockTasks.tasks["todo"]) != 0 {
+		t.Errorf("expected todo task deleted, got %d remaining", len(mockTasks.tasks["todo"]))
 	}
 }
 
-func TestUnit_SaveDayFocusWithRoutines_Idempotent(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
+func TestUnit_RecordRoutineCompletions_NoOpDiff_FallsThroughToSaveDayFocus(t *testing.T) {
+	pm, mockTasks, calMock, ra := newMockManagerWithRoutines()
+	seedRoutineForRecording(t, ra, "R1", "Morning run")
 
+	stub := pm.repo.(*stubRepo)
+	beforeCommits := stub.commitCount()
+	beforeBatchTicks := mockTasks.commitAllCount
+
+	// Same checks before and after — no creates or deletes.
 	day := DayFocus{
 		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
+		Tags:          []string{"Routine"},
 	}
-	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
-	}
-
-	// First call creates the task
-	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
-	if err != nil {
-		t.Fatalf("first call failed: %v", err)
-	}
-	if len(mockTasks.tasks["todo"]) != 1 {
-		t.Fatalf("expected 1 todo task after first call, got %d", len(mockTasks.tasks["todo"]))
+	if err := pm.RecordRoutineCompletions(day, []string{"R1"}); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
 	}
 
-	// Second call with same checks — no new task should be created
-	err = manager.SaveDayFocusWithRoutines(day, infos, []string{"R1"})
-	if err != nil {
-		t.Fatalf("second call failed: %v", err)
+	// Fast path delegates to calendarAccess.SaveDayFocus directly: no
+	// transaction commit, no batch tick.
+	if got := stub.commitCount() - beforeCommits; got != 0 {
+		t.Errorf("expected fast path to skip RunTransaction, saw %d transaction commits", got)
 	}
-	if len(mockTasks.tasks["todo"]) != 1 {
-		t.Errorf("expected 1 todo task after second call (no duplicate), got %d", len(mockTasks.tasks["todo"]))
+	if delta := mockTasks.commitAllCount - beforeBatchTicks; delta != 0 {
+		t.Errorf("expected no batch tick on no-op diff, got delta=%d", delta)
+	}
+	if _, ok := calMock.days["2026-04-10"]; !ok {
+		t.Error("expected calendar entry to be saved on fast path")
 	}
 }
 
-func TestUnit_SaveDayFocusWithRoutines_AddsRoutineTagWhenChecked(t *testing.T) {
-	manager, _, _, calMock := newMockManagerWithCalendar()
+func TestUnit_RecordRoutineCompletions_AutoAddsRoutineTagWhenChecked(t *testing.T) {
+	pm, _, calMock, ra := newMockManagerWithRoutines()
+	seedRoutineForRecording(t, ra, "R1", "Morning run")
 
 	day := DayFocus{
 		Date:          utilities.MustParseCalendarDate("2026-04-10"),
 		RoutineChecks: []string{"R1"},
 		Tags:          nil,
 	}
-	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
-	}
-
-	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	if err := pm.RecordRoutineCompletions(day, nil); err != nil {
+		t.Fatalf("RecordRoutineCompletions: %v", err)
 	}
 
 	saved, ok := calMock.days["2026-04-10"]
@@ -5285,64 +5435,7 @@ func TestUnit_SaveDayFocusWithRoutines_AddsRoutineTagWhenChecked(t *testing.T) {
 		t.Fatal("expected day focus to be saved")
 	}
 	if !slices.Contains(saved.Tags, "Routine") {
-		t.Errorf("expected 'Routine' in tags, got %v", saved.Tags)
-	}
-}
-
-func TestUnit_SaveDayFocusWithRoutines_RemovesRoutineTagWhenAllUnchecked(t *testing.T) {
-	manager, _, _, calMock := newMockManagerWithCalendar()
-
-	// Start with one routine checked and "Routine" tag
-	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
-		RoutineChecks: nil,
-		Tags:          []string{"Routine"},
-	}
-
-	// Previously R1 was checked, now unchecked
-	err := manager.SaveDayFocusWithRoutines(day, nil, []string{"R1"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	saved, ok := calMock.days["2026-04-10"]
-	if !ok {
-		t.Fatal("expected day focus to be saved")
-	}
-	if slices.Contains(saved.Tags, "Routine") {
-		t.Errorf("expected 'Routine' tag to be removed, got %v", saved.Tags)
-	}
-}
-
-func TestUnit_SaveDayFocusWithRoutines_CreatesTaskWithEmptyThemeID(t *testing.T) {
-	manager, _, mockTasks, _ := newMockManagerWithCalendar()
-
-	day := DayFocus{
-		Date:          utilities.MustParseCalendarDate("2026-04-10"),
-		RoutineChecks: []string{"R1"},
-	}
-	infos := []RoutineTaskInfo{
-		{RoutineID: "R1", Description: "Morning run", IsOverdue: false},
-	}
-
-	err := manager.SaveDayFocusWithRoutines(day, infos, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	todoTasks := mockTasks.tasks["todo"]
-	if len(todoTasks) != 1 {
-		t.Fatalf("expected 1 todo task, got %d", len(todoTasks))
-	}
-	task := todoTasks[0]
-	if task.ThemeID != "" {
-		t.Errorf("expected empty themeID for routine task, got %q", task.ThemeID)
-	}
-	if task.ID == "" {
-		t.Fatal("expected non-empty task ID")
-	}
-	if strings.HasPrefix(task.ID, "-") {
-		t.Errorf("expected task ID without leading dash, got %q", task.ID)
+		t.Errorf("expected auto-added 'Routine' tag, got %v", saved.Tags)
 	}
 }
 

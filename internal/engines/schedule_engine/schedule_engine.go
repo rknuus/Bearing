@@ -12,6 +12,7 @@ type IScheduleEngine interface {
 	ComputeOccurrences(pattern RepeatPattern, exceptions []Exception, start, end string) []string
 	ComputeOverdue(pattern RepeatPattern, exceptions []Exception, completedDates []string, asOf string) []string
 	EvaluatePeriodCompletion(pattern RepeatPattern, exceptions []Exception, completedDates []string, asOf string) PeriodCompletion
+	Plan(diff RoutineCheckDiff, routines []RoutineInput, today utilities.CalendarDate) MaterializationPlan
 }
 
 // ScheduleEngine is a stateless implementation of IScheduleEngine.

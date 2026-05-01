@@ -177,11 +177,67 @@ func migrateTaskAcrossZones(orderMap map[string][]string, taskID, oldZone, newZo
 // success a single git commit covers every touched path.
 func (ta *TaskAccess) Commit(req BatchRequest) (BatchOutcome, error) {
 	ta.mu.Lock()
+	outcome, commitPaths, msg, rollback, err := ta.commitLocked(req)
+	if err != nil {
+		ta.mu.Unlock()
+		return BatchOutcome{}, err
+	}
+	if len(commitPaths) == 0 {
+		ta.mu.Unlock()
+		return outcome, nil
+	}
+
+	if err := commitFiles(ta.repo, commitPaths, msg); err != nil {
+		rollback()
+		ta.mu.Unlock()
+		return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: %w", err)
+	}
+	ta.mu.Unlock()
+	return outcome, nil
+}
+
+// CommitNoTx applies a batch of creates and deletes atomically WITHOUT
+// producing a git commit. The caller (typically utilities.RunTransaction
+// at the manager layer) is responsible for staging the working tree and
+// emitting a single terminal commit that covers writes spanning multiple
+// Access components.
+//
+// Lock-ordering note: CommitNoTx still acquires ta.mu to serialise
+// against other TaskAccess writers. Callers running inside
+// utilities.RunTransaction will already hold the per-repo lock acquired
+// by repo.Begin(); ta.mu is taken here in addition. Concurrent
+// non-transactional writers acquire ta.mu first and the per-repo lock
+// second, so a stale concurrent path could deadlock against an outer
+// RunTransaction. This matches the established pattern of
+// CalendarAccess.WriteDayFocus and is a known cost of the
+// cross-Access-atomic-commit design (audit finding #5).
+//
+// On any per-element failure the rollback semantics are identical to
+// Commit's: every file already created is removed, every file already
+// deleted is restored, and the call returns an error with no on-disk
+// change retained.
+func (ta *TaskAccess) CommitNoTx(req BatchRequest) (BatchOutcome, error) {
+	ta.mu.Lock()
 	defer ta.mu.Unlock()
 
+	outcome, _, _, _, err := ta.commitLocked(req)
+	if err != nil {
+		return BatchOutcome{}, err
+	}
+	return outcome, nil
+}
+
+// commitLocked performs the file/order-map mutations of an IBatch.Commit
+// request. Caller must hold ta.mu. Returns the outcome, the list of
+// touched absolute paths (for the caller's commit step), the suggested
+// commit message, and a rollback closure to undo the mutations on a
+// later commitFiles failure. Per-element failures are rolled back
+// internally and surfaced as an error (commitPaths/rollback are nil in
+// that case).
+func (ta *TaskAccess) commitLocked(req BatchRequest) (BatchOutcome, []string, string, func(), error) {
 	outcome := BatchOutcome{}
 	if len(req.Creates) == 0 && len(req.Deletes) == 0 {
-		return outcome, nil
+		return outcome, nil, "", nil, nil
 	}
 
 	// Track for rollback: paths of files we created (to remove on
@@ -210,11 +266,11 @@ func (ta *TaskAccess) Commit(req BatchRequest) (BatchOutcome, error) {
 	// Load order maps once.
 	orderMap, err := ta.LoadTaskOrder()
 	if err != nil {
-		return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: failed to load task order: %w", err)
+		return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: failed to load task order: %w", err)
 	}
 	archivedOrder, err := ta.LoadArchivedOrder()
 	if err != nil {
-		return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: failed to load archived order: %w", err)
+		return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: failed to load archived order: %w", err)
 	}
 	orderChanged := false
 	archivedChanged := false
@@ -227,7 +283,7 @@ func (ta *TaskAccess) Commit(req BatchRequest) (BatchOutcome, error) {
 		paths, _, err := ta.saveTaskFile(&taskCopy)
 		if err != nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: create failed: %w", err)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: create failed: %w", err)
 		}
 		createdPaths = append(createdPaths, paths...)
 		orderMap[create.DropZone] = append(orderMap[create.DropZone], taskCopy.ID)
@@ -240,22 +296,22 @@ func (ta *TaskAccess) Commit(req BatchRequest) (BatchOutcome, error) {
 		foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
 		if err != nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: delete failed for %s: %w", taskID, err)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: delete failed for %s: %w", taskID, err)
 		}
 		if foundTask == nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: task with ID %s not found", taskID)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: task with ID %s not found", taskID)
 		}
 		filePath := ta.taskFilePath(currentStatus, taskID)
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: failed to read task %s: %w", taskID, err)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: failed to read task %s: %w", taskID, err)
 		}
 		isArchived := currentStatus == string(TaskStatusArchived)
 		if err := os.Remove(filePath); err != nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: failed to delete task %s: %w", taskID, err)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: failed to delete task %s: %w", taskID, err)
 		}
 		deletedSnapshots = append(deletedSnapshots, deletedSnapshot{
 			path:     filePath,
@@ -288,7 +344,7 @@ func (ta *TaskAccess) Commit(req BatchRequest) (BatchOutcome, error) {
 		orderFilePath := ta.taskOrderFilePath()
 		if err := writeJSON(orderFilePath, orderMap); err != nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: failed to write task order: %w", err)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: failed to write task order: %w", err)
 		}
 		commitPaths = append(commitPaths, orderFilePath)
 	}
@@ -296,15 +352,11 @@ func (ta *TaskAccess) Commit(req BatchRequest) (BatchOutcome, error) {
 		archivedFilePath := ta.archivedOrderFilePath()
 		if err := writeJSON(archivedFilePath, archivedOrder); err != nil {
 			rollback()
-			return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: failed to write archived order: %w", err)
+			return BatchOutcome{}, nil, "", nil, fmt.Errorf("TaskAccess.Commit: failed to write archived order: %w", err)
 		}
 		commitPaths = append(commitPaths, archivedFilePath)
 	}
 
 	msg := fmt.Sprintf("Batch: %d create(s), %d delete(s)", len(outcome.CreatedIDs), len(outcome.DeletedIDs))
-	if err := commitFiles(ta.repo, commitPaths, msg); err != nil {
-		rollback()
-		return BatchOutcome{}, fmt.Errorf("TaskAccess.Commit: %w", err)
-	}
-	return outcome, nil
+	return outcome, commitPaths, msg, rollback, nil
 }

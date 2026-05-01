@@ -35,9 +35,18 @@ type ITask interface {
 // IBatch is the cross-task batch facet of TaskAccess. Each verb applies
 // N writes inside a single transaction, re-validating preconditions
 // against on-disk state under the access lock.
+//
+// CommitNoTx is the no-commit variant of Commit: it performs the full
+// batch of file/order-map mutations atomically (including rollback on
+// per-element failure) but does NOT produce a git commit. Intended for
+// use inside utilities.RunTransaction at the manager layer where a
+// single terminal commit covers writes spanning multiple Access
+// components. The caller is responsible for staging and committing the
+// working tree.
 type IBatch interface {
 	Promote(req PromoteRequest) (PromoteOutcome, error)
 	Commit(req BatchRequest) (BatchOutcome, error)
+	CommitNoTx(req BatchRequest) (BatchOutcome, error)
 }
 
 // IBoard is the board-structure facet of TaskAccess. Each verb applies

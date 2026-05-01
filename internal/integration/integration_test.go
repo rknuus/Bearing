@@ -99,7 +99,7 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Task
 
 	uiStateAccess := access.NewUIStateAccess(dataDir)
 
-	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess)
+	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess, repo)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)
@@ -551,7 +551,7 @@ func TestIntegration_DataPersistence(t *testing.T) {
 		t.Fatalf("Failed to reopen RoutineAccess: %v", err)
 	}
 	uiStateAccess2 := access.NewUIStateAccess(dataDir)
-	manager2, err := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, routineAccess2, visionAccess2, uiStateAccess2)
+	manager2, err := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, routineAccess2, visionAccess2, uiStateAccess2, repo2)
 	if err != nil {
 		t.Fatalf("Failed to reopen PlanningManager: %v", err)
 	}
@@ -651,7 +651,7 @@ func TestIntegration_NavigationContextPersistence(t *testing.T) {
 	routineAccess2, _ := access.NewRoutineAccess(dataDir2, repo2)
 	visionAccess2, _ := access.NewVisionAccess(dataDir2, repo2)
 	uiStateAccess2 := access.NewUIStateAccess(dataDir2)
-	manager2, _ := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, routineAccess2, visionAccess2, uiStateAccess2)
+	manager2, _ := managers.NewPlanningManager(themeAccess2, taskAccess2, calendarAccess2, routineAccess2, visionAccess2, uiStateAccess2, repo2)
 
 	// Load and verify
 	loadedCtx, err := manager2.LoadNavigationContext()

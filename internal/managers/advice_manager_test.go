@@ -133,6 +133,7 @@ func newTestAdviceManager(
 		ra,
 		&mockVisionAccess{},
 		uiStateAccess,
+		newStubRepo(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create PlanningManager for test: %w", err)
@@ -230,7 +231,7 @@ func TestUnit_AdviceManager_RequestAdvice_WithSelectedOKRIds(t *testing.T) {
 	ua := &mockAdviceUIStateAccess{}
 
 	ra := newMockRoutineAccess()
-	pm, _ := NewPlanningManager(ta, newMockTaskAccess(), &mockCalendarAccess{}, ra, &mockVisionAccess{}, ua)
+	pm, _ := NewPlanningManager(ta, newMockTaskAccess(), &mockCalendarAccess{}, ra, &mockVisionAccess{}, ua, newStubRepo())
 	am, err := NewAdviceManager(ta, ra, capturingEngine, ma, ua, pm)
 	if err != nil {
 		t.Fatalf("failed to create AdviceManager: %v", err)

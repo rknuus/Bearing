@@ -396,6 +396,7 @@ type PlanningManager struct {
 	routineAccess  access.IRoutineAccess
 	visionAccess   access.IVisionAccess
 	uiStateAccess  access.IUIStateAccess
+	repo           utilities.IRepository
 	ruleEngine     rule_engine.IRuleEngine
 	progressEngine progress_engine.IProgressEngine
 	scheduleEngine schedule_engine.IScheduleEngine
@@ -415,6 +416,13 @@ func (m *PlanningManager) getAccessBoardConfig() (*access.BoardConfiguration, er
 }
 
 // NewPlanningManager creates a new PlanningManager instance.
+//
+// The repo handle is required by orchestrations that span multiple
+// Access components in a single git commit (e.g.,
+// RecordRoutineCompletions). It must be the same IRepository that backs
+// the supplied Access components so utilities.RunTransaction's per-repo
+// lock serialises the cross-Access write against any concurrent
+// committing verb.
 func NewPlanningManager(
 	themeAccess access.IThemeAccess,
 	taskAccess taskAccessFacets,
@@ -422,6 +430,7 @@ func NewPlanningManager(
 	routineAccess access.IRoutineAccess,
 	visionAccess access.IVisionAccess,
 	uiStateAccess access.IUIStateAccess,
+	repo utilities.IRepository,
 ) (*PlanningManager, error) {
 	if themeAccess == nil {
 		return nil, fmt.Errorf("themeAccess cannot be nil")
@@ -441,6 +450,9 @@ func NewPlanningManager(
 	if uiStateAccess == nil {
 		return nil, fmt.Errorf("uiStateAccess cannot be nil")
 	}
+	if repo == nil {
+		return nil, fmt.Errorf("repo cannot be nil")
+	}
 
 	engine := rule_engine.NewRuleEngine(rule_engine.DefaultRules())
 	progressEng := progress_engine.NewProgressEngine()
@@ -453,6 +465,7 @@ func NewPlanningManager(
 		routineAccess:  routineAccess,
 		visionAccess:   visionAccess,
 		uiStateAccess:  uiStateAccess,
+		repo:           repo,
 		ruleEngine:     engine,
 		progressEngine: progressEng,
 		scheduleEngine: scheduleEng,
@@ -1061,131 +1074,239 @@ func (m *PlanningManager) SaveDayFocus(day DayFocus) error {
 	return nil
 }
 
-// SaveDayFocusWithRoutines saves a day focus entry and creates or deletes
-// routine tasks based on which routines were checked or unchecked.
+// SaveDayFocusWithRoutines is a transitional shim that forwards to
+// RecordRoutineCompletions. The routineInfos argument is ignored: the
+// new orchestration derives routine metadata (description, urgency)
+// from access.Routine + ScheduleEngine rather than from caller-supplied
+// hints. The shim exists only so the existing Wails binding in main.go
+// keeps compiling until task 105 retires it; new manager-level callers
+// must use RecordRoutineCompletions directly.
+func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, _ []RoutineTaskInfo, previousChecks []string) error {
+	return m.RecordRoutineCompletions(day, previousChecks)
+}
+
+// RecordRoutineCompletions atomically applies a day's routine-check
+// changes:
 //
-// It diffs day.RoutineChecks against previousChecks to determine:
-//   - newly checked routines: create a task (idempotent — skips if tag already exists)
-//   - newly unchecked routines: delete the task if still in todo/doing
+//   - Diffs day.RoutineChecks against previousChecks.
+//   - Asks ScheduleEngine.Plan to compute the materialisation plan
+//     (creates for newly-checked routines, deletes for newly-unchecked
+//     ones whose task is still in todo/doing).
+//   - Executes the create/delete batch via IBatch.CommitNoTx and saves
+//     the day focus via CalendarAccess.WriteDayFocus inside a single
+//     utilities.RunTransaction so a single git commit covers both.
 //
-// It also auto-manages the "Routine" day tag based on whether any routines are checked.
-func (m *PlanningManager) SaveDayFocusWithRoutines(day DayFocus, routineInfos []RoutineTaskInfo, previousChecks []string) error {
+// The "Routine" day-level tag is auto-managed based on whether any
+// routines are checked on the day, mirroring the legacy behaviour.
+//
+// Closes audit finding #5 (N+1 commits regression in
+// SaveDayFocusWithRoutines).
+func (m *PlanningManager) RecordRoutineCompletions(day DayFocus, previousChecks []string) error {
 	if day.Date.IsZero() {
 		return fmt.Errorf("date cannot be empty")
 	}
 
-	// Build lookup maps
-	currentSet := make(map[string]bool, len(day.RoutineChecks))
-	for _, id := range day.RoutineChecks {
+	newlyChecked, newlyUnchecked := computeRoutineDiff(day.RoutineChecks, previousChecks)
+
+	// Auto-manage the "Routine" day-level tag. Done up-front so the day
+	// focus persisted inside the transaction reflects the final tag set.
+	day.Tags = adjustRoutineTag(day.Tags, len(day.RoutineChecks) > 0)
+
+	// Fast path: no routine-check changes. Save the day focus through
+	// the existing committing verb (single commit, no batch needed).
+	if len(newlyChecked) == 0 && len(newlyUnchecked) == 0 {
+		if err := m.calendarAccess.SaveDayFocus(toAccessDayFocus(day)); err != nil {
+			return fmt.Errorf("RecordRoutineCompletions: %w", err)
+		}
+		return nil
+	}
+
+	// Pre-compute outside the transaction: catalogue lookups and
+	// existing-task discovery for newly-unchecked routines. These are
+	// reads; keeping them out of the transaction shortens the per-repo
+	// critical section.
+	routines, err := m.routineAccess.GetRoutines()
+	if err != nil {
+		return fmt.Errorf("RecordRoutineCompletions: failed to load routines: %w", err)
+	}
+
+	existingRefs, err := m.findExistingRoutineTasks(newlyUnchecked, day.Date)
+	if err != nil {
+		return fmt.Errorf("RecordRoutineCompletions: %w", err)
+	}
+
+	engineDiff := schedule_engine.RoutineCheckDiff{
+		Date:           day.Date,
+		NewlyChecked:   newlyChecked,
+		NewlyUnchecked: newlyUnchecked,
+		ExistingTasks:  existingRefs,
+	}
+	plan := m.scheduleEngine.Plan(engineDiff, toEngineRoutineInputs(routines), utilities.Today())
+
+	// Translate engine TaskSpecs to access.TaskCreate, computing the
+	// drop zone via RuleEngine (same source-of-truth used by other
+	// task-creating manager paths).
+	creates, err := m.buildRoutineTaskCreates(plan.Creates)
+	if err != nil {
+		return fmt.Errorf("RecordRoutineCompletions: %w", err)
+	}
+
+	batchReq := access.BatchRequest{Creates: creates, Deletes: plan.Deletes}
+
+	commitMsg := fmt.Sprintf("Record routine completions for %s", day.Date)
+	if err := utilities.RunTransaction(m.repo, commitMsg, func() error {
+		if _, err := m.taskAccess.CommitNoTx(batchReq); err != nil {
+			return fmt.Errorf("batch commit failed: %w", err)
+		}
+		if err := m.calendarAccess.WriteDayFocus(toAccessDayFocus(day)); err != nil {
+			return fmt.Errorf("write day focus failed: %w", err)
+		}
+		return nil
+	}); err != nil {
+		return fmt.Errorf("RecordRoutineCompletions: %w", err)
+	}
+
+	slog.Info("RecordRoutineCompletions: applied",
+		"date", day.Date,
+		"created", len(plan.Creates),
+		"deleted", len(plan.Deletes))
+	return nil
+}
+
+// computeRoutineDiff returns the routine IDs that were newly checked
+// and newly unchecked between previousChecks and currentChecks.
+func computeRoutineDiff(currentChecks, previousChecks []string) (newlyChecked, newlyUnchecked []string) {
+	currentSet := make(map[string]bool, len(currentChecks))
+	for _, id := range currentChecks {
 		currentSet[id] = true
 	}
 	previousSet := make(map[string]bool, len(previousChecks))
 	for _, id := range previousChecks {
 		previousSet[id] = true
 	}
-	infoByID := make(map[string]RoutineTaskInfo, len(routineInfos))
-	for _, info := range routineInfos {
-		infoByID[info.RoutineID] = info
-	}
-
-	// Determine newly checked and newly unchecked routines
-	var newlyChecked []string
-	for _, id := range day.RoutineChecks {
+	for _, id := range currentChecks {
 		if !previousSet[id] {
 			newlyChecked = append(newlyChecked, id)
 		}
 	}
-	var newlyUnchecked []string
 	for _, id := range previousChecks {
 		if !currentSet[id] {
 			newlyUnchecked = append(newlyUnchecked, id)
 		}
 	}
+	return newlyChecked, newlyUnchecked
+}
 
-	// Process newly checked routines — create tasks
-	for _, routineID := range newlyChecked {
-		ref := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
-
-		// Idempotency check: skip if a Routine-tagged task with this description already exists
-		existing, err := m.taskAccess.FindTasksByTag("Routine")
-		if err != nil {
-			return fmt.Errorf("SaveDayFocusWithRoutines: failed to find tasks by tag: %w", err)
-		}
-		found := false
-		for _, t := range existing {
-			if t.Task.Description == ref {
-				found = true
-				break
-			}
-		}
-		if found {
-			slog.Debug("SaveDayFocusWithRoutines: task already exists for routine", "routineId", routineID, "date", day.Date)
-			continue
-		}
-
-		info, ok := infoByID[routineID]
-		if !ok {
-			slog.Warn("SaveDayFocusWithRoutines: no info for routine, skipping task creation", "routineId", routineID)
-			continue
-		}
-
-		priority := string(access.PriorityImportantNotUrgent)
-		if info.IsOverdue {
-			priority = string(access.PriorityImportantUrgent)
-		}
-
-		if _, err := m.CreateTask(info.Description, "", priority, ref, "Routine", ""); err != nil {
-			return fmt.Errorf("SaveDayFocusWithRoutines: failed to create task for routine %s: %w", routineID, err)
-		}
-		slog.Info("SaveDayFocusWithRoutines: created task for routine", "routineId", routineID, "date", day.Date)
-	}
-
-	// Process newly unchecked routines — delete tasks if eligible
-	for _, routineID := range newlyUnchecked {
-		ref := fmt.Sprintf("routine:%s:%s", routineID, day.Date)
-
-		matches, err := m.taskAccess.FindTasksByTag("Routine")
-		if err != nil {
-			return fmt.Errorf("SaveDayFocusWithRoutines: failed to find tasks by tag: %w", err)
-		}
-
-		for _, match := range matches {
-			if match.Task.Description != ref {
-				continue
-			}
-			if match.Status == string(access.TaskStatusTodo) || match.Status == string(access.TaskStatusDoing) {
-				if err := m.DeleteTask(match.Task.ID); err != nil {
-					return fmt.Errorf("SaveDayFocusWithRoutines: failed to delete task %s: %w", match.Task.ID, err)
-				}
-				slog.Info("SaveDayFocusWithRoutines: deleted task for unchecked routine", "routineId", routineID, "taskId", match.Task.ID)
-			}
-			// done/archived: leave as-is
-		}
-	}
-
-	// Auto-manage "Routine" day tag
-	hasRoutineTag := false
-	routineTagIndex := -1
-	for i, t := range day.Tags {
+// adjustRoutineTag adds or removes the "Routine" day-level tag to mirror
+// whether any routines are checked on the day. Returns the updated slice.
+func adjustRoutineTag(tags []string, hasChecks bool) []string {
+	idx := -1
+	for i, t := range tags {
 		if t == "Routine" {
-			hasRoutineTag = true
-			routineTagIndex = i
+			idx = i
 			break
 		}
 	}
-
-	if len(day.RoutineChecks) > 0 && !hasRoutineTag {
-		day.Tags = append(day.Tags, "Routine")
-	} else if len(day.RoutineChecks) == 0 && hasRoutineTag {
-		day.Tags = append(day.Tags[:routineTagIndex], day.Tags[routineTagIndex+1:]...)
+	if hasChecks && idx < 0 {
+		return append(tags, "Routine")
 	}
-
-	// Delegate to existing SaveDayFocus
-	if err := m.calendarAccess.SaveDayFocus(toAccessDayFocus(day)); err != nil {
-		return fmt.Errorf("SaveDayFocusWithRoutines: %w", err)
+	if !hasChecks && idx >= 0 {
+		return append(tags[:idx], tags[idx+1:]...)
 	}
+	return tags
+}
 
-	return nil
+// findExistingRoutineTasks looks up every task linked to the given
+// (routineID, date) pair across all status directories. The returned
+// engine refs carry the status so ScheduleEngine.Plan can apply its
+// "delete only if todo/doing" rule.
+func (m *PlanningManager) findExistingRoutineTasks(routineIDs []string, date utilities.CalendarDate) ([]schedule_engine.ExistingTaskRef, error) {
+	if len(routineIDs) == 0 {
+		return nil, nil
+	}
+	statuses := []string{
+		string(access.TaskStatusTodo),
+		string(access.TaskStatusDoing),
+		string(access.TaskStatusDone),
+		string(access.TaskStatusArchived),
+	}
+	var refs []schedule_engine.ExistingTaskRef
+	for _, routineID := range routineIDs {
+		filterRef := access.RoutineRef{RoutineID: routineID, Date: date}
+		for _, status := range statuses {
+			statusCopy := status
+			tasks, err := m.taskAccess.Find(access.TaskFilter{
+				Status:     &statusCopy,
+				RoutineRef: &filterRef,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("find tasks for routine %s: %w", routineID, err)
+			}
+			for _, t := range tasks {
+				refs = append(refs, schedule_engine.ExistingTaskRef{
+					TaskID:    t.ID,
+					RoutineID: routineID,
+					Date:      date,
+					Status:    status,
+				})
+			}
+		}
+	}
+	return refs, nil
+}
+
+// toEngineRoutineInputs translates access.Routine values to the engine's
+// RoutineInput DTO. CompletedDates is left empty: ScheduleEngine.Plan's
+// urgency rule for a newly-checked occurrence depends only on whether
+// the diff date is in the past (back-fill) or whether the routine has
+// outstanding overdue occurrences as of today, the latter computed from
+// completed-dates. The completed dates available at this call site are
+// the previous day's checks, which are insufficient for the rule; the
+// engine's urgency rule therefore degrades gracefully to "important-
+// not-urgent" for periodic routines without overdue history. Improving
+// this requires the calendar access exposing a cross-day completed-dates
+// query, which is out of scope for task 104.
+func toEngineRoutineInputs(routines []access.Routine) []schedule_engine.RoutineInput {
+	out := make([]schedule_engine.RoutineInput, len(routines))
+	for i, r := range routines {
+		out[i] = schedule_engine.RoutineInput{
+			ID:            r.ID,
+			Description:   r.Description,
+			RepeatPattern: toEngineRepeatPattern(r.RepeatPattern),
+			Exceptions:    toEngineExceptions(r.Exceptions),
+		}
+	}
+	return out
+}
+
+// buildRoutineTaskCreates translates engine TaskSpecs to access.TaskCreate
+// values, computing each task's DropZone via RuleEngine.
+func (m *PlanningManager) buildRoutineTaskCreates(specs []schedule_engine.TaskSpec) ([]access.TaskCreate, error) {
+	if len(specs) == 0 {
+		return nil, nil
+	}
+	config, err := m.getAccessBoardConfig()
+	if err != nil {
+		return nil, fmt.Errorf("load board config: %w", err)
+	}
+	todoSlug := m.ruleEngine.TodoSlugFromColumns(toColumnInfos(config.ColumnDefinitions))
+
+	out := make([]access.TaskCreate, 0, len(specs))
+	for _, spec := range specs {
+		now := utilities.Now()
+		task := access.Task{
+			Title:       spec.Description,
+			Description: fmt.Sprintf("routine:%s:%s", spec.RoutineID, spec.Date),
+			Priority:    spec.Priority,
+			Tags:        spec.Tags,
+			RoutineRef:  &access.RoutineRef{RoutineID: spec.RoutineID, Date: spec.Date},
+			CreatedAt:   now,
+			UpdatedAt:   now,
+		}
+		zone := m.ruleEngine.DropZoneForTask(spec.Status, spec.Priority, todoSlug)
+		out = append(out, access.TaskCreate{Task: task, DropZone: zone})
+	}
+	return out, nil
 }
 
 // ClearDayFocus removes a day focus entry by clearing theme IDs.

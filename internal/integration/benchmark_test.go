@@ -77,7 +77,7 @@ func setupBenchmarkEnvironment(b *testing.B) (*managers.PlanningManager, *access
 	}
 
 	uiStateAccess := access.NewUIStateAccess(dataDir)
-	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess)
+	manager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess, repo)
 	if err != nil {
 		repo.Close()
 		os.RemoveAll(tmpDir)

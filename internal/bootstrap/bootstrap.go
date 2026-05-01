@@ -104,7 +104,7 @@ func Initialize() (*Result, error) {
 	uiStateAccess := access.NewUIStateAccess(bearingDir)
 
 	// Initialize Managers
-	planningManager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess)
+	planningManager, err := managers.NewPlanningManager(themeAccess, taskAccess, calendarAccess, routineAccess, visionAccess, uiStateAccess, repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize PlanningManager: %w", err)
 	}
