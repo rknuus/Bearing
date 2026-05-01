@@ -36,6 +36,34 @@
     onNavigateToTheme,
     draggable = true,
   }: Props = $props();
+
+  // svelte-dnd-action attaches mousedown/touchstart listeners directly on the
+  // draggable container via addEventListener() and calls e.preventDefault()
+  // inside its handler. preventDefault on mousedown suppresses the browser's
+  // click-event generation, so the first click on a footer button is lost
+  // (only the second one, after mouseup has cleared the dnd start tracker,
+  // succeeds).
+  //
+  // Svelte 5's `onclick`/`onmousedown` attributes register *delegated*
+  // listeners attached to the component's mount target — those run AFTER
+  // native ancestor listeners have already seen the event during bubbling, so
+  // calling `e.stopPropagation()` inside them is too late.
+  //
+  // The fix is to attach a *native* (non-delegated) listener directly to the
+  // button via a Svelte action, intercepting mousedown/touchstart at the
+  // source so the dnd container listener never sees them. Drag still works on
+  // every other surface of the card.
+  function stopDragStart(node: HTMLElement) {
+    const stop = (e: Event) => e.stopPropagation();
+    node.addEventListener('mousedown', stop);
+    node.addEventListener('touchstart', stop, { passive: true });
+    return {
+      destroy() {
+        node.removeEventListener('mousedown', stop);
+        node.removeEventListener('touchstart', stop);
+      },
+    };
+  }
 </script>
 
 <div
@@ -55,6 +83,7 @@
         type="button"
         class="theme-badge"
         style="background-color: {getThemeColor(themes, task.themeId)};"
+        use:stopDragStart
         onclick={(e) => { e.stopPropagation(); onNavigateToTheme?.(task.themeId); }}
         title="Go to theme"
       >
@@ -69,6 +98,7 @@
       <button
         type="button"
         class="delete-btn"
+        use:stopDragStart
         onclick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Delete task"
       >
@@ -79,6 +109,7 @@
       <button
         type="button"
         class="archive-btn"
+        use:stopDragStart
         onclick={(e) => { e.stopPropagation(); onArchive(); }}
         aria-label="Archive task"
         title="Archive task"
@@ -90,7 +121,8 @@
       <button
         type="button"
         class="restore-btn"
-        onclick={() => onRestore()}
+        use:stopDragStart
+        onclick={(e) => { e.stopPropagation(); onRestore(); }}
         title="Restore to done"
       >
         Restore
