@@ -1304,7 +1304,7 @@ func TestUnit_SaveAndGetBoardConfiguration(t *testing.T) {
 		},
 	}
 
-	if err := env.tasks.SaveBoardConfiguration(custom); err != nil {
+	if err := env.tasks.saveBoardConfiguration(custom); err != nil {
 		t.Fatalf("SaveBoardConfiguration failed: %v", err)
 	}
 
@@ -1336,12 +1336,12 @@ func TestUnit_FindTaskInPlan_DynamicStatuses(t *testing.T) {
 			{Name: "done", Title: "Done", Type: ColumnTypeDone},
 		},
 	}
-	if err := env.tasks.SaveBoardConfiguration(custom); err != nil {
+	if err := env.tasks.saveBoardConfiguration(custom); err != nil {
 		t.Fatalf("SaveBoardConfiguration failed: %v", err)
 	}
 
 	// Create the review directory and put a task in it
-	if err := env.tasks.EnsureStatusDirectory("review"); err != nil {
+	if err := env.tasks.ensureStatusDirectory("review"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 
@@ -1369,14 +1369,14 @@ func TestUnit_EnsureStatusDirectory(t *testing.T) {
 
 	dirPath := filepath.Join(tmpDir, "data", "tasks", "in-review")
 
-	if err := env.tasks.EnsureStatusDirectory("in-review"); err != nil {
+	if err := env.tasks.ensureStatusDirectory("in-review"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		t.Error("Expected directory to exist after EnsureStatusDirectory")
 	}
 
-	if err := env.tasks.EnsureStatusDirectory("in-review"); err != nil {
+	if err := env.tasks.ensureStatusDirectory("in-review"); err != nil {
 		t.Fatalf("Idempotent EnsureStatusDirectory failed: %v", err)
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
@@ -1388,7 +1388,7 @@ func TestUnit_RemoveStatusDirectory(t *testing.T) {
 	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	if err := env.tasks.EnsureStatusDirectory("empty-col"); err != nil {
+	if err := env.tasks.ensureStatusDirectory("empty-col"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	if err := env.tasks.removeStatusDirectory("empty-col"); err != nil {
@@ -1399,7 +1399,7 @@ func TestUnit_RemoveStatusDirectory(t *testing.T) {
 		t.Error("Expected directory to be removed")
 	}
 
-	if err := env.tasks.EnsureStatusDirectory("non-empty"); err != nil {
+	if err := env.tasks.ensureStatusDirectory("non-empty"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	filePath := filepath.Join(tmpDir, "data", "tasks", "non-empty", "task.json")
@@ -1415,7 +1415,7 @@ func TestUnit_RenameStatusDirectory(t *testing.T) {
 	env, tmpDir, cleanup := setupTestPlanAccess(t)
 	defer cleanup()
 
-	if err := env.tasks.EnsureStatusDirectory("old-name"); err != nil {
+	if err := env.tasks.ensureStatusDirectory("old-name"); err != nil {
 		t.Fatalf("EnsureStatusDirectory failed: %v", err)
 	}
 	filePath := filepath.Join(tmpDir, "data", "tasks", "old-name", "task.json")
@@ -1468,8 +1468,8 @@ func TestUnit_CommitAll(t *testing.T) {
 		t.Fatalf("Failed to write task file: %v", err)
 	}
 
-	if err := env.tasks.CommitAll("batch update"); err != nil {
-		t.Fatalf("CommitAll failed: %v", err)
+	if err := commitAll(env.repo, "batch update"); err != nil {
+		t.Fatalf("commitAll failed: %v", err)
 	}
 
 	afterHistory, err := repo.GetHistory(100)
@@ -1566,7 +1566,7 @@ func TestUnit_EnsureDirectoryStructure_CustomConfig(t *testing.T) {
 			{Name: "shipped", Title: "Shipped", Type: ColumnTypeDone},
 		},
 	}
-	if err := env.tasks.SaveBoardConfiguration(custom); err != nil {
+	if err := env.tasks.saveBoardConfiguration(custom); err != nil {
 		t.Fatalf("SaveBoardConfiguration failed: %v", err)
 	}
 

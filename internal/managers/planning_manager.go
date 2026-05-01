@@ -368,34 +368,12 @@ func detectGoalType(id string) GoalType {
 	return GoalTypeTheme
 }
 
-// defaultAccessBoardConfiguration returns the default board configuration
-// using access-layer types for internal use within the Manager.
+// defaultAccessBoardConfiguration returns the canonical default board
+// configuration. This is a thin re-export of the access-layer source of
+// truth (access.DefaultBoardConfiguration); kept as a manager-local
+// helper so call sites stay terse.
 func defaultAccessBoardConfiguration() *access.BoardConfiguration {
-	return &access.BoardConfiguration{
-		Name: "Bearing Board",
-		ColumnDefinitions: []access.ColumnDefinition{
-			{
-				Name:  "todo",
-				Title: "TODO",
-				Type:  access.ColumnTypeTodo,
-				Sections: []access.SectionDefinition{
-					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
-					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#f59e0b"},
-					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#3b82f6"},
-				},
-			},
-			{
-				Name:  "doing",
-				Title: "DOING",
-				Type:  access.ColumnTypeDoing,
-			},
-			{
-				Name:  "done",
-				Title: "DONE",
-				Type:  access.ColumnTypeDone,
-			},
-		},
-	}
+	return access.DefaultBoardConfiguration()
 }
 
 // taskAccessFacets composes the new ITask + IBatch facet interfaces with

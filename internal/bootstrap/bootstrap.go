@@ -73,6 +73,14 @@ func Initialize() (*Result, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize TaskAccess: %w", err)
 	}
+	// Materialise the default board configuration on first startup. The
+	// call is idempotent — on subsequent runs board_config.json already
+	// exists and SeedDefaultBoard returns without writing or committing.
+	// This replaces the lazy WorkspaceManager.ensureBoardSeeded bridge
+	// (task 109): seeding is data-bootstrap work, not column-op work.
+	if err := taskAccess.SeedDefaultBoard(); err != nil {
+		return nil, fmt.Errorf("failed to seed default board configuration: %w", err)
+	}
 	calendarAccess, err := access.NewCalendarAccess(bearingDir, repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize CalendarAccess: %w", err)

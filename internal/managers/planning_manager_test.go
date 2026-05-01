@@ -139,8 +139,12 @@ type mockTaskAccess struct {
 }
 
 func newMockTaskAccess() *mockTaskAccess {
+	// Mirror the production startup sequence: bootstrap.Initialize seeds
+	// the default board configuration before any manager runs, so the
+	// mock starts with the canonical default in place.
 	return &mockTaskAccess{
-		tasks: make(map[string][]access.Task),
+		tasks:       make(map[string][]access.Task),
+		boardConfig: access.DefaultBoardConfiguration(),
 	}
 }
 
@@ -318,11 +322,6 @@ func (m *mockTaskAccess) GetBoardConfiguration() (*access.BoardConfiguration, er
 		return m.boardConfig, nil
 	}
 	return nil, nil
-}
-
-func (m *mockTaskAccess) SaveBoardConfiguration(config *access.BoardConfiguration) error {
-	m.boardConfig = config
-	return nil
 }
 
 // IBoard facet implementation. The mock's IBoard verbs operate against
@@ -504,13 +503,6 @@ func (m *mockTaskAccess) ReorderColumns(slugs []string) (access.BoardConfigurati
 	return *m.boardConfig, nil
 }
 
-func (m *mockTaskAccess) EnsureStatusDirectory(slug string) error { return nil }
-func (m *mockTaskAccess) CommitAll(message string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.commitAllCount++
-	return nil
-}
 func (m *mockTaskAccess) LoadArchivedOrder() ([]string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

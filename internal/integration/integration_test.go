@@ -67,6 +67,14 @@ func setupIntegrationTest(t *testing.T) (*managers.PlanningManager, *access.Task
 		os.RemoveAll(tmpDir)
 		t.Fatalf("Failed to create TaskAccess: %v", err)
 	}
+	// Mirror bootstrap.Initialize: seed the default board configuration
+	// once so the integration scenarios start from the same on-disk shape
+	// as a fresh production data directory.
+	if err := taskAccess.SeedDefaultBoard(); err != nil {
+		repo.Close()
+		os.RemoveAll(tmpDir)
+		t.Fatalf("Failed to seed default board: %v", err)
+	}
 
 	calendarAccess, err := access.NewCalendarAccess(dataDir, repo)
 	if err != nil {
@@ -1005,6 +1013,16 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 
 	dataDir := filepath.Join(tmpDir, "data")
 
+	// Capture the post-bootstrap commit count so the assertion below
+	// counts only the commits produced by this test's operations. Setup
+	// has already produced the default-board seed commit (task 109 moved
+	// seeding from a lazy WorkspaceManager bridge into bootstrap).
+	baselineHistory, err := repo.GetHistory(0)
+	if err != nil {
+		t.Fatalf("Failed to get baseline git history: %v", err)
+	}
+	baselineCommits := len(baselineHistory)
+
 	// Create workspace manager sharing the same task access
 	wm, err := managers.NewWorkspaceManager(taskAccess)
 	if err != nil {
@@ -1190,10 +1208,11 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 		t.Errorf("Expected 3 columns after removal, got %d", len(config.ColumnDefinitions))
 	}
 
-	// Step 6: Verify total git commit count
-	// Operations under the IBoard facet:
+	// Step 6: Verify total git commit count produced by the test body.
+	// Operations under the IBoard facet (default-board seeding is now
+	// performed by setupIntegrationTest, mirroring bootstrap, and is
+	// excluded from this count via baselineCommits):
 	//   CreateTheme(1) +
-	//   first WorkspaceManager mutation seeds default board (1) +
 	//   AddColumn = IBoard.AddColumn (insertion-in-place, single commit) (1) +
 	//   CreateTask*2(2) +
 	//   MoveTask*2(batched=2) +
@@ -1201,16 +1220,15 @@ func TestIntegration_ColumnCRUDLifecycle(t *testing.T) {
 	//   ReorderColumns (1) +
 	//   MoveTask*2(batched=2) +
 	//   RemoveColumn (1)
-	// = 12. The one extra commit over baseline (default seed) is a
-	// transitional artifact of the IBoard facet decomposition and will
-	// collapse back to 11 once defaults move into the bootstrap layer.
+	// = 11.
 	history, err := repo.GetHistory(0)
 	if err != nil {
 		t.Fatalf("Failed to get git history: %v", err)
 	}
-	expectedCommits := 12
-	if len(history) != expectedCommits {
-		t.Errorf("Expected %d commits, got %d", expectedCommits, len(history))
+	expectedCommits := 11
+	gotCommits := len(history) - baselineCommits
+	if gotCommits != expectedCommits {
+		t.Errorf("Expected %d commits, got %d", expectedCommits, gotCommits)
 		for i, c := range history {
 			t.Logf("  commit %d: %s", i+1, c.Message)
 		}

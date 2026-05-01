@@ -16,17 +16,23 @@ import (
 
 // ITaskAccess defines the legacy task-data access surface that has not
 // yet migrated to the ITask/IBatch/IBoard facets. It now contains only
-// the read-mostly helpers the Manager layer (PlanningManager,
-// WorkspaceManager) still uses, plus a small set of seeding helpers
-// invoked by WorkspaceManager.ensureBoardSeeded. Each entry should
-// eventually move into a facet (Find covers most of the read paths) or
-// into the bootstrap layer.
+// the read-mostly helpers the Manager layer (PlanningManager) still uses.
+// Each entry should eventually move into a facet (Find covers most of
+// the read paths).
 //
 // The atomic write verbs (Find, Create, Save, Move, Archive, Restore,
 // Delete, Reorder, Promote, Commit, Get/AddColumn/RemoveColumn/
 // RenameColumn/RetitleColumn/ReorderColumns) live on access.ITask,
 // access.IBatch, and access.IBoard — callers should depend on those
 // facets, not on ITaskAccess.
+//
+// Default-board seeding (formerly handled lazily by
+// WorkspaceManager.ensureBoardSeeded via SaveBoardConfiguration /
+// EnsureStatusDirectory / CommitAll) now lives in
+// bootstrap.Initialize, which calls TaskAccess.SeedDefaultBoard once
+// at startup. Those three legacy helpers were therefore unexported
+// (saveBoardConfiguration, ensureStatusDirectory) or removed (the
+// bare CommitAll bridge has no remaining production caller).
 type ITaskAccess interface {
 	// Read-mostly helpers still used by PlanningManager.
 	GetTasksByTheme(themeID string) ([]Task, error)
@@ -36,11 +42,6 @@ type ITaskAccess interface {
 	SaveTaskOrder(order map[string][]string) error
 	LoadArchivedOrder() ([]string, error)
 	GetBoardConfiguration() (*BoardConfiguration, error)
-
-	// Seeding helpers used by WorkspaceManager.ensureBoardSeeded.
-	SaveBoardConfiguration(config *BoardConfiguration) error
-	EnsureStatusDirectory(slug string) error
-	CommitAll(message string) error
 }
 
 // TaskAccess implements ITaskAccess with file-based storage and git versioning.
@@ -418,21 +419,24 @@ func (ta *TaskAccess) GetBoardConfiguration() (*BoardConfiguration, error) {
 	return &config, nil
 }
 
-// SaveBoardConfiguration writes the board configuration to file without git commit.
-// The caller is responsible for committing the change.
-func (ta *TaskAccess) SaveBoardConfiguration(config *BoardConfiguration) error {
+// saveBoardConfiguration writes the board configuration to file without
+// committing. Internal helper used by the IBoard verbs and the
+// SeedDefaultBoard bootstrap entry point — both wrap the write in a
+// single git commit at the verb level.
+func (ta *TaskAccess) saveBoardConfiguration(config *BoardConfiguration) error {
 	filePath := ta.boardConfigFilePath()
 	if err := writeJSON(filePath, config); err != nil {
-		return fmt.Errorf("TaskAccess.SaveBoardConfiguration: %w", err)
+		return fmt.Errorf("TaskAccess.saveBoardConfiguration: %w", err)
 	}
 	return nil
 }
 
-// EnsureStatusDirectory creates a task status directory if it doesn't exist.
-func (ta *TaskAccess) EnsureStatusDirectory(slug string) error {
+// ensureStatusDirectory creates a task status directory if it doesn't
+// exist. Internal helper used by IBoard.AddColumn and SeedDefaultBoard.
+func (ta *TaskAccess) ensureStatusDirectory(slug string) error {
 	dir := ta.taskDirPath(slug)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("TaskAccess.EnsureStatusDirectory: failed to create directory %s: %w", dir, err)
+		return fmt.Errorf("TaskAccess.ensureStatusDirectory: failed to create directory %s: %w", dir, err)
 	}
 	return nil
 }
@@ -457,14 +461,6 @@ func (ta *TaskAccess) renameStatusDirectory(oldSlug, newSlug string) error {
 		return fmt.Errorf("TaskAccess.renameStatusDirectory: failed to rename %s to %s: %w", oldDir, newDir, err)
 	}
 	return nil
-}
-
-// CommitAll stages all changes in the repository and commits with the given
-// message. Retained transitionally for WorkspaceManager.ensureBoardSeeded
-// (default-board seeding); slated for removal once seeding moves into the
-// bootstrap layer.
-func (ta *TaskAccess) CommitAll(message string) error {
-	return commitAll(ta.repo, message)
 }
 
 // generateTaskID generates a new theme-scoped task ID by scanning filenames

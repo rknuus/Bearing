@@ -18,23 +18,13 @@ type IWorkspaceManager interface {
 	ReorderColumns(slugs []string) (*BoardConfiguration, error)
 }
 
-// workspaceAccess combines the IBoard facet (the new atomic column verbs)
-// with the small subset of the legacy TaskAccess surface that the manager
-// still uses for one-time default seeding. The seeding helpers
-// (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) materialise
-// the in-memory default board on first mutation so subsequent IBoard
-// verbs see a non-empty on-disk configuration; once the bootstrap layer
-// owns default-seeding, this interface collapses to access.IBoard.
-//
-// CommitAll remains here only for default-seeding; the IBoard.RenameColumn
-// staging defect that previously forced a follow-up CommitAll has been
-// fixed (task 99 — RenameColumn now discovers and stages the moved task
-// files itself).
+// workspaceAccess is the access surface WorkspaceManager depends on.
+// After task 109 it is exactly access.IBoard — the manager no longer
+// performs any default-board seeding; bootstrap.Initialize calls
+// TaskAccess.SeedDefaultBoard once at startup so every IBoard verb here
+// sees a non-empty on-disk configuration on the first call.
 type workspaceAccess interface {
 	access.IBoard
-	SaveBoardConfiguration(config *access.BoardConfiguration) error
-	EnsureStatusDirectory(slug string) error
-	CommitAll(message string) error
 }
 
 // WorkspaceManager implements IWorkspaceManager with board configuration logic.
@@ -67,52 +57,19 @@ var reservedSlugs = map[string]bool{
 	"archived": true,
 }
 
-// ensureBoardSeeded persists the default board configuration when no
-// on-disk configuration exists. This bridges the gap between the
-// in-memory default returned by getAccessBoardConfig and the on-disk
-// state that subsequent IBoard verbs read; without it the first IBoard
-// mutation would write a configuration containing only the new column
-// and lose the default todo/doing/done bookends.
-//
-// The method is idempotent: when the on-disk configuration already has
-// columns, it returns immediately. It calls retained legacy helpers
-// (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) that should
-// move into the bootstrap layer in a future iteration.
-func (m *WorkspaceManager) ensureBoardSeeded() (*access.BoardConfiguration, error) {
-	config, err := m.access.Get()
-	if err != nil {
-		return nil, err
-	}
-	if len(config.ColumnDefinitions) > 0 {
-		return &config, nil
-	}
-
-	defaults := defaultAccessBoardConfiguration()
-	for _, col := range defaults.ColumnDefinitions {
-		if err := m.access.EnsureStatusDirectory(col.Name); err != nil {
-			return nil, fmt.Errorf("seed default column %q: %w", col.Name, err)
-		}
-	}
-	if err := m.access.SaveBoardConfiguration(defaults); err != nil {
-		return nil, fmt.Errorf("seed default board configuration: %w", err)
-	}
-	if err := m.access.CommitAll("Seed default board configuration"); err != nil {
-		return nil, fmt.Errorf("seed default board configuration commit: %w", err)
-	}
-	return defaults, nil
-}
-
-// getAccessBoardConfig returns the access-layer board configuration,
-// falling back to the in-memory default when no configuration is stored.
-// Read-only callers see the default without persisting it; mutating
-// callers must invoke ensureBoardSeeded first to materialise it.
+// getAccessBoardConfig returns the access-layer board configuration.
+// In production the on-disk configuration is always non-empty —
+// bootstrap.Initialize seeds the default board via
+// TaskAccess.SeedDefaultBoard before any manager runs — but the
+// access.DefaultBoardConfiguration() fallback stays as a defensive
+// guard for tests or stripped-down deployments that bypass bootstrap.
 func (m *WorkspaceManager) getAccessBoardConfig() (*access.BoardConfiguration, error) {
 	config, err := m.access.Get()
 	if err != nil {
 		return nil, err
 	}
 	if len(config.ColumnDefinitions) == 0 {
-		return defaultAccessBoardConfiguration(), nil
+		return access.DefaultBoardConfiguration(), nil
 	}
 	return &config, nil
 }
@@ -144,7 +101,7 @@ func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfi
 		return nil, fmt.Errorf("the name %q is reserved", slug)
 	}
 
-	config, err := m.ensureBoardSeeded()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -181,7 +138,7 @@ func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfi
 // TaskAccess's mutex — closing the TOCTOU window that previously lived
 // in the manager between an "is empty?" check and the directory removal.
 func (m *WorkspaceManager) RemoveColumn(slug string) (*BoardConfiguration, error) {
-	config, err := m.ensureBoardSeeded()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -227,7 +184,7 @@ func (m *WorkspaceManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigu
 		return nil, fmt.Errorf("the name %q is reserved", newSlug)
 	}
 
-	config, err := m.ensureBoardSeeded()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -266,7 +223,7 @@ func (m *WorkspaceManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigu
 // (first column must be todo-type, last must be done-type). The actual
 // rewrite is delegated to access.IBoard.ReorderColumns.
 func (m *WorkspaceManager) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
-	config, err := m.ensureBoardSeeded()
+	config, err := m.getAccessBoardConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}

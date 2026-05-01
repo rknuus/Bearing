@@ -26,16 +26,16 @@ func seedColumns(t *testing.T, env *testEnv) {
 			{Name: "done", Title: "DONE", Type: ColumnTypeDone},
 		},
 	}
-	if err := env.tasks.SaveBoardConfiguration(cfg); err != nil {
-		t.Fatalf("SaveBoardConfiguration failed: %v", err)
+	if err := env.tasks.saveBoardConfiguration(cfg); err != nil {
+		t.Fatalf("saveBoardConfiguration failed: %v", err)
 	}
 	for _, col := range cfg.ColumnDefinitions {
-		if err := env.tasks.EnsureStatusDirectory(col.Name); err != nil {
-			t.Fatalf("EnsureStatusDirectory(%s) failed: %v", col.Name, err)
+		if err := env.tasks.ensureStatusDirectory(col.Name); err != nil {
+			t.Fatalf("ensureStatusDirectory(%s) failed: %v", col.Name, err)
 		}
 	}
-	if err := env.tasks.CommitAll("seed board"); err != nil {
-		t.Fatalf("CommitAll(seed) failed: %v", err)
+	if err := commitAll(env.repo, "seed board"); err != nil {
+		t.Fatalf("commitAll(seed) failed: %v", err)
 	}
 }
 
@@ -523,5 +523,76 @@ func TestUnit_IBoard_statusDirExists_Honest(t *testing.T) {
 	}
 	if !env.tasks.statusDirExists("yes") {
 		t.Error("Expected statusDirExists to be true for present dir")
+	}
+}
+
+// =============================================================================
+// SeedDefaultBoard tests (task 109)
+// =============================================================================
+
+// TestUnit_SeedDefaultBoard_FreshRepoProducesOneCommit verifies that the
+// bootstrap entry point materialises the canonical default board in a
+// fresh data directory with exactly one git commit, populates the
+// expected status directories, and writes a board_config.json whose
+// columns match access.DefaultBoardConfiguration.
+func TestUnit_SeedDefaultBoard_FreshRepoProducesOneCommit(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	beforeCommits := commitCount(t, env.repo)
+
+	if err := env.tasks.SeedDefaultBoard(); err != nil {
+		t.Fatalf("SeedDefaultBoard failed: %v", err)
+	}
+
+	if delta := commitCount(t, env.repo) - beforeCommits; delta != 1 {
+		t.Errorf("Expected exactly 1 new commit, got %d", delta)
+	}
+
+	cfg, err := env.tasks.GetBoardConfiguration()
+	if err != nil {
+		t.Fatalf("GetBoardConfiguration failed: %v", err)
+	}
+	if cfg == nil {
+		t.Fatal("Expected board_config.json to exist after seed")
+	}
+
+	want := DefaultBoardConfiguration()
+	if cfg.Name != want.Name {
+		t.Errorf("Expected name %q, got %q", want.Name, cfg.Name)
+	}
+	if len(cfg.ColumnDefinitions) != len(want.ColumnDefinitions) {
+		t.Fatalf("Expected %d columns, got %d", len(want.ColumnDefinitions), len(cfg.ColumnDefinitions))
+	}
+	for i, col := range cfg.ColumnDefinitions {
+		if col.Name != want.ColumnDefinitions[i].Name {
+			t.Errorf("Column %d name: expected %q, got %q", i, want.ColumnDefinitions[i].Name, col.Name)
+		}
+		if col.Type != want.ColumnDefinitions[i].Type {
+			t.Errorf("Column %d type: expected %q, got %q", i, want.ColumnDefinitions[i].Type, col.Type)
+		}
+		if !env.tasks.statusDirExists(col.Name) {
+			t.Errorf("Expected status directory for %q to exist", col.Name)
+		}
+	}
+}
+
+// TestUnit_SeedDefaultBoard_IdempotentOnSecondCall verifies that an
+// already-seeded data directory is left untouched: no new commit is
+// produced and the existing board configuration is not rewritten.
+func TestUnit_SeedDefaultBoard_IdempotentOnSecondCall(t *testing.T) {
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	if err := env.tasks.SeedDefaultBoard(); err != nil {
+		t.Fatalf("First SeedDefaultBoard failed: %v", err)
+	}
+	commitsAfterFirst := commitCount(t, env.repo)
+
+	if err := env.tasks.SeedDefaultBoard(); err != nil {
+		t.Fatalf("Second SeedDefaultBoard failed: %v", err)
+	}
+	if delta := commitCount(t, env.repo) - commitsAfterFirst; delta != 0 {
+		t.Errorf("Expected no new commit on idempotent call, got %d", delta)
 	}
 }

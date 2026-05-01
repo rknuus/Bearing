@@ -132,11 +132,11 @@ func (ta *TaskAccess) AddColumn(slug, title, afterSlug string) (BoardConfigurati
 	updated = append(updated, cols[insertIdx:]...)
 	config.ColumnDefinitions = updated
 
-	if err := ta.EnsureStatusDirectory(slug); err != nil {
+	if err := ta.ensureStatusDirectory(slug); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
 	}
 
-	if err := ta.SaveBoardConfiguration(config); err != nil {
+	if err := ta.saveBoardConfiguration(config); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.AddColumn: %w", err)
 	}
 
@@ -225,7 +225,7 @@ func (ta *TaskAccess) RemoveColumn(slug string) (BoardConfiguration, error) {
 	}
 
 	config.ColumnDefinitions = append(config.ColumnDefinitions[:colIdx], config.ColumnDefinitions[colIdx+1:]...)
-	if err := ta.SaveBoardConfiguration(config); err != nil {
+	if err := ta.saveBoardConfiguration(config); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RemoveColumn: %w", err)
 	}
 
@@ -305,7 +305,7 @@ func (ta *TaskAccess) RenameColumn(oldSlug, newSlug, newTitle string) (BoardConf
 	}
 	config.ColumnDefinitions[colIdx].Title = newTitle
 
-	if err := ta.SaveBoardConfiguration(config); err != nil {
+	if err := ta.saveBoardConfiguration(config); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RenameColumn: %w", err)
 	}
 
@@ -343,7 +343,7 @@ func (ta *TaskAccess) RetitleColumn(slug, newTitle string) (BoardConfiguration, 
 
 	config.ColumnDefinitions[colIdx].Title = newTitle
 
-	if err := ta.SaveBoardConfiguration(config); err != nil {
+	if err := ta.saveBoardConfiguration(config); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.RetitleColumn: %w", err)
 	}
 
@@ -392,7 +392,7 @@ func (ta *TaskAccess) ReorderColumns(slugs []string) (BoardConfiguration, error)
 	}
 
 	config.ColumnDefinitions = reordered
-	if err := ta.SaveBoardConfiguration(config); err != nil {
+	if err := ta.saveBoardConfiguration(config); err != nil {
 		return BoardConfiguration{}, fmt.Errorf("TaskAccess.ReorderColumns: %w", err)
 	}
 
@@ -409,4 +409,75 @@ func (ta *TaskAccess) ReorderColumns(slugs []string) (BoardConfiguration, error)
 func (ta *TaskAccess) statusDirExists(slug string) bool {
 	info, err := os.Stat(ta.taskDirPath(slug))
 	return err == nil && info.IsDir()
+}
+
+// DefaultBoardConfiguration returns the canonical default board: three
+// columns (todo / doing / done) with the standard bookend types and the
+// Eisenhower-priority sections on todo. This is the single source of
+// truth for the "fresh data dir" board shape; bootstrap seeds it on
+// first startup, and Manager-layer fallbacks reuse it for read paths
+// when (defensively) no on-disk configuration is found.
+func DefaultBoardConfiguration() *BoardConfiguration {
+	return &BoardConfiguration{
+		Name: "Bearing Board",
+		ColumnDefinitions: []ColumnDefinition{
+			{
+				Name:  "todo",
+				Title: "TODO",
+				Type:  ColumnTypeTodo,
+				Sections: []SectionDefinition{
+					{Name: "important-urgent", Title: "Important & Urgent", Color: "#ef4444"},
+					{Name: "not-important-urgent", Title: "Not Important & Urgent", Color: "#f59e0b"},
+					{Name: "important-not-urgent", Title: "Important & Not Urgent", Color: "#3b82f6"},
+				},
+			},
+			{
+				Name:  "doing",
+				Title: "DOING",
+				Type:  ColumnTypeDoing,
+			},
+			{
+				Name:  "done",
+				Title: "DONE",
+				Type:  ColumnTypeDone,
+			},
+		},
+	}
+}
+
+// SeedDefaultBoard materialises the default board configuration on disk
+// when no board_config.json exists yet. Called once by bootstrap.Initialize
+// after TaskAccess is constructed; idempotent on subsequent runs (returns
+// nil with no commit when the file is already present).
+//
+// On a fresh data dir this writes board_config.json, creates the
+// corresponding status directories (todo / doing / done), and produces a
+// SINGLE git commit ("Seed default board configuration") under
+// TaskAccess's mutex. On an already-seeded dir nothing is written and no
+// commit is produced.
+func (ta *TaskAccess) SeedDefaultBoard() error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	existing, err := ta.GetBoardConfiguration()
+	if err != nil {
+		return fmt.Errorf("TaskAccess.SeedDefaultBoard: %w", err)
+	}
+	if existing != nil {
+		return nil
+	}
+
+	defaults := DefaultBoardConfiguration()
+	for _, col := range defaults.ColumnDefinitions {
+		if err := ta.ensureStatusDirectory(col.Name); err != nil {
+			return fmt.Errorf("TaskAccess.SeedDefaultBoard: %w", err)
+		}
+	}
+	if err := ta.saveBoardConfiguration(defaults); err != nil {
+		return fmt.Errorf("TaskAccess.SeedDefaultBoard: %w", err)
+	}
+	if err := commitFiles(ta.repo, []string{ta.boardConfigFilePath()}, "Seed default board configuration"); err != nil {
+		return fmt.Errorf("TaskAccess.SeedDefaultBoard: %w", err)
+	}
+	return nil
 }

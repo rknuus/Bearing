@@ -1518,12 +1518,12 @@ export async function runTests() {
 
       assertDirExists(DATA_DIR, 'tasks/e2e-review')
 
-      // The IBoard facet decomposition adds one transitional commit to
-      // the AddColumn flow: WorkspaceManager seeds the default board
-      // configuration on its first mutation (1), then IBoard.AddColumn
-      // performs insertion-in-place as a single atomic verb (1). The
-      // seed commit collapses away once defaults move into bootstrap.
-      expectedCommits += 2
+      // IBoard.AddColumn performs insertion-in-place as a single atomic
+      // verb (1 commit). Default-board seeding now happens once in
+      // bootstrap.Initialize at startup (task 109) and is captured by
+      // the baseline expectedCommits read at test start, so AddColumn
+      // contributes exactly one commit here.
+      expectedCommits += 1
       assertCommitCount('after add column')
       assertLatestCommitContains('Add column: E2E Review')
 
