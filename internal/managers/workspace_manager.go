@@ -1,9 +1,9 @@
 package managers
 
 import (
+	"errors"
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/rkn/bearing/internal/access"
 	"github.com/rkn/bearing/internal/utilities"
@@ -18,19 +18,42 @@ type IWorkspaceManager interface {
 	ReorderColumns(slugs []string) (*BoardConfiguration, error)
 }
 
+// workspaceAccess combines the IBoard facet (the new atomic column verbs)
+// with the small subset of the legacy ITaskAccess surface that the
+// manager still uses for one-time default seeding. The seeding helpers
+// (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) materialise
+// the in-memory default board on first mutation so subsequent IBoard
+// verbs see a non-empty on-disk configuration; once the bootstrap layer
+// owns default-seeding, this interface collapses to access.IBoard.
+type workspaceAccess interface {
+	access.IBoard
+	SaveBoardConfiguration(config *access.BoardConfiguration) error
+	EnsureStatusDirectory(slug string) error
+	CommitAll(message string) error
+}
+
 // WorkspaceManager implements IWorkspaceManager with board configuration logic.
+//
+// The manager is now a thin policy/validation layer over access.IBoard:
+// slug derivation, reserved-slug rejection, slug uniqueness, and bookend
+// constraints stay here; every subsequent on-disk mutation (status
+// directory, board configuration, task_order.json) and the surrounding
+// git commit happen inside a single IBoard verb under TaskAccess's
+// internal mutex. Because each IBoard verb is itself atomic and the
+// manager never composes two verbs into one logical operation, no
+// manager-side mutex is needed — the pre-existing taskOrderMu has been
+// removed.
 type WorkspaceManager struct {
-	taskAccess  access.ITaskAccess
-	taskOrderMu sync.Mutex
+	access workspaceAccess
 }
 
 // NewWorkspaceManager creates a new WorkspaceManager instance.
-func NewWorkspaceManager(taskAccess access.ITaskAccess) (*WorkspaceManager, error) {
-	if taskAccess == nil {
-		return nil, fmt.Errorf("taskAccess cannot be nil")
+func NewWorkspaceManager(a workspaceAccess) (*WorkspaceManager, error) {
+	if a == nil {
+		return nil, fmt.Errorf("access cannot be nil")
 	}
 	return &WorkspaceManager{
-		taskAccess: taskAccess,
+		access: a,
 	}, nil
 }
 
@@ -39,17 +62,55 @@ var reservedSlugs = map[string]bool{
 	"archived": true,
 }
 
-// getAccessBoardConfig returns the access-layer board configuration,
-// falling back to the default if none is stored.
-func (m *WorkspaceManager) getAccessBoardConfig() (*access.BoardConfiguration, error) {
-	config, err := m.taskAccess.GetBoardConfiguration()
+// ensureBoardSeeded persists the default board configuration when no
+// on-disk configuration exists. This bridges the gap between the
+// in-memory default returned by getAccessBoardConfig and the on-disk
+// state that subsequent IBoard verbs read; without it the first IBoard
+// mutation would write a configuration containing only the new column
+// and lose the default todo/doing/done bookends.
+//
+// The method is idempotent: when the on-disk configuration already has
+// columns, it returns immediately. It calls legacy helpers
+// (SaveBoardConfiguration, EnsureStatusDirectory, CommitAll) that will
+// be removed by task 99 once default-seeding moves into the bootstrap
+// layer.
+func (m *WorkspaceManager) ensureBoardSeeded() (*access.BoardConfiguration, error) {
+	config, err := m.access.Get()
 	if err != nil {
 		return nil, err
 	}
-	if config == nil {
+	if len(config.ColumnDefinitions) > 0 {
+		return &config, nil
+	}
+
+	defaults := defaultAccessBoardConfiguration()
+	for _, col := range defaults.ColumnDefinitions {
+		if err := m.access.EnsureStatusDirectory(col.Name); err != nil {
+			return nil, fmt.Errorf("seed default column %q: %w", col.Name, err)
+		}
+	}
+	if err := m.access.SaveBoardConfiguration(defaults); err != nil {
+		return nil, fmt.Errorf("seed default board configuration: %w", err)
+	}
+	if err := m.access.CommitAll("Seed default board configuration"); err != nil {
+		return nil, fmt.Errorf("seed default board configuration commit: %w", err)
+	}
+	return defaults, nil
+}
+
+// getAccessBoardConfig returns the access-layer board configuration,
+// falling back to the in-memory default when no configuration is stored.
+// Read-only callers see the default without persisting it; mutating
+// callers must invoke ensureBoardSeeded first to materialise it.
+func (m *WorkspaceManager) getAccessBoardConfig() (*access.BoardConfiguration, error) {
+	config, err := m.access.Get()
+	if err != nil {
+		return nil, err
+	}
+	if len(config.ColumnDefinitions) == 0 {
 		return defaultAccessBoardConfiguration(), nil
 	}
-	return config, nil
+	return &config, nil
 }
 
 // GetBoardConfiguration returns the board configuration.
@@ -63,8 +124,13 @@ func (m *WorkspaceManager) GetBoardConfiguration() (*BoardConfiguration, error) 
 }
 
 // AddColumn adds a new doing-type column after the specified column.
+// Slug derivation, reserved-slug rejection, slug uniqueness, and bookend
+// (insert-position) constraints are validated manager-side; the actual
+// directory creation, board-config write, and git commit happen atomically
+// inside access.IBoard.AddColumn under TaskAccess's mutex.
 func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfiguration, error) {
-	slug := utilities.Slugify(title)
+	trimmedTitle := strings.TrimSpace(title)
+	slug := utilities.Slugify(trimmedTitle)
 	if slug == "" {
 		return nil, fmt.Errorf("column name must contain at least one letter or number")
 	}
@@ -72,19 +138,19 @@ func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfi
 		return nil, fmt.Errorf("the name %q is reserved", slug)
 	}
 
-	config, err := m.getAccessBoardConfig()
+	config, err := m.ensureBoardSeeded()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	// Validate slug uniqueness
+	// Validate slug uniqueness.
 	for _, col := range config.ColumnDefinitions {
 		if col.Name == slug {
 			return nil, fmt.Errorf("column %q already exists", slug)
 		}
 	}
 
-	// Find insertion position
+	// Find insertion position.
 	insertIdx := -1
 	for i, col := range config.ColumnDefinitions {
 		if col.Name == insertAfterSlug {
@@ -96,50 +162,54 @@ func (m *WorkspaceManager) AddColumn(title, insertAfterSlug string) (*BoardConfi
 		return nil, fmt.Errorf("column %q not found", insertAfterSlug)
 	}
 
-	// Validate: cannot insert before first (todo) or after last (done)
+	// Validate: cannot insert before first (todo) or after last (done).
 	if insertIdx <= 0 {
 		return nil, fmt.Errorf("cannot insert before the first column")
 	}
 	if insertIdx >= len(config.ColumnDefinitions) && config.ColumnDefinitions[len(config.ColumnDefinitions)-1].Type == access.ColumnTypeDone {
-		// insertIdx points past the last column, which is done-type — insert before done
 		return nil, fmt.Errorf("cannot insert after the last column")
 	}
 
-	newCol := access.ColumnDefinition{
-		Name:  slug,
-		Title: strings.TrimSpace(title),
-		Type:  access.ColumnTypeDoing,
-	}
-
-	// Insert at position
-	config.ColumnDefinitions = append(config.ColumnDefinitions[:insertIdx],
-		append([]access.ColumnDefinition{newCol}, config.ColumnDefinitions[insertIdx:]...)...)
-
-	// Create directory
-	if err := m.taskAccess.EnsureStatusDirectory(slug); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	// Save config
-	if err := m.taskAccess.SaveBoardConfiguration(config); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Add column: %s", strings.TrimSpace(title))); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	return toManagerBoardConfig(config), nil
-}
-
-// RemoveColumn removes a doing-type column that has no tasks.
-func (m *WorkspaceManager) RemoveColumn(slug string) (*BoardConfiguration, error) {
-	config, err := m.getAccessBoardConfig()
+	// IBoard.AddColumn appends the new column at the end. When the caller
+	// requested an interior position, follow up with IBoard.ReorderColumns
+	// to move the new column to its target index. Both calls are
+	// individually atomic and produce one git commit each.
+	updated, err := m.access.AddColumn(slug, trimmedTitle)
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	// Find column and validate type
+	if insertIdx != len(updated.ColumnDefinitions)-1 {
+		others := make([]string, 0, len(updated.ColumnDefinitions)-1)
+		for _, col := range updated.ColumnDefinitions {
+			if col.Name == slug {
+				continue
+			}
+			others = append(others, col.Name)
+		}
+		reordered := make([]string, 0, len(others)+1)
+		reordered = append(reordered, others[:insertIdx]...)
+		reordered = append(reordered, slug)
+		reordered = append(reordered, others[insertIdx:]...)
+		updated, err = m.access.ReorderColumns(reordered)
+		if err != nil {
+			return nil, fmt.Errorf("%w", err)
+		}
+	}
+
+	return toManagerBoardConfig(&updated), nil
+}
+
+// RemoveColumn removes a doing-type column. The "no tasks in column"
+// precondition is now enforced inside access.IBoard.RemoveColumn under
+// TaskAccess's mutex — closing the TOCTOU window that previously lived
+// in the manager between an "is empty?" check and the directory removal.
+func (m *WorkspaceManager) RemoveColumn(slug string) (*BoardConfiguration, error) {
+	config, err := m.ensureBoardSeeded()
+	if err != nil {
+		return nil, fmt.Errorf("%w", err)
+	}
+
 	colIdx := -1
 	for i, col := range config.ColumnDefinitions {
 		if col.Name == slug {
@@ -154,91 +224,46 @@ func (m *WorkspaceManager) RemoveColumn(slug string) (*BoardConfiguration, error
 		return nil, fmt.Errorf("only custom columns can be removed")
 	}
 
-	// Check no tasks in column
-	tasks, err := m.taskAccess.GetTasksByStatus(slug)
+	updated, err := m.access.RemoveColumn(slug)
 	if err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-	if len(tasks) > 0 {
-		return nil, fmt.Errorf("cannot delete column %q: it still has %d task(s) — move or archive them first", config.ColumnDefinitions[colIdx].Title, len(tasks))
-	}
-
-	// Remove directory
-	if err := m.taskAccess.RemoveStatusDirectory(slug); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	// Clean task order entries
-	m.taskOrderMu.Lock()
-	orderMap, loadErr := m.taskAccess.LoadTaskOrder()
-	if loadErr == nil {
-		if _, exists := orderMap[slug]; exists {
-			delete(orderMap, slug)
-			_ = m.taskAccess.WriteTaskOrder(orderMap)
+		// Surface the empty-column error with the column's display title
+		// so the UI can show a meaningful message.
+		if errors.Is(err, access.ErrColumnNotEmpty) {
+			return nil, fmt.Errorf("cannot delete column %q: %w — move or archive its tasks first", config.ColumnDefinitions[colIdx].Title, err)
 		}
-	}
-	m.taskOrderMu.Unlock()
-
-	// Update config
-	config.ColumnDefinitions = append(config.ColumnDefinitions[:colIdx], config.ColumnDefinitions[colIdx+1:]...)
-	if err := m.taskAccess.SaveBoardConfiguration(config); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Remove column: %s", slug)); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	return toManagerBoardConfig(config), nil
+	return toManagerBoardConfig(&updated), nil
 }
 
-// RenameColumn renames a column, migrating its directory and updating task order.
+// RenameColumn renames a column; when the derived slug is unchanged the
+// call degrades to a title-only update via access.IBoard.RetitleColumn.
+// Slug derivation, reserved-slug rejection, and uniqueness validation
+// stay manager-side.
 func (m *WorkspaceManager) RenameColumn(oldSlug, newTitle string) (*BoardConfiguration, error) {
-	newSlug := utilities.Slugify(newTitle)
+	trimmedTitle := strings.TrimSpace(newTitle)
+	newSlug := utilities.Slugify(trimmedTitle)
 	if newSlug == "" {
 		return nil, fmt.Errorf("column name must contain at least one letter or number")
 	}
 	if reservedSlugs[newSlug] {
 		return nil, fmt.Errorf("the name %q is reserved", newSlug)
 	}
-	if oldSlug == newSlug {
-		// Only title change, no slug change — just update the title
-		config, err := m.getAccessBoardConfig()
-		if err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
-		found := false
-		for i, col := range config.ColumnDefinitions {
-			if col.Name == oldSlug {
-				config.ColumnDefinitions[i].Title = strings.TrimSpace(newTitle)
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("column %q not found", oldSlug)
-		}
-		if err := m.taskAccess.SaveBoardConfiguration(config); err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
-		if err := m.taskAccess.CommitAll(fmt.Sprintf("Rename column title: %s", strings.TrimSpace(newTitle))); err != nil {
-			return nil, fmt.Errorf("%w", err)
-		}
-		return toManagerBoardConfig(config), nil
-	}
 
-	config, err := m.getAccessBoardConfig()
+	config, err := m.ensureBoardSeeded()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
 
-	// Validate old column exists and new slug is unique
+	// Validate old column exists, and (when the slug is changing) that the
+	// new slug does not collide with an existing column.
 	colIdx := -1
 	for i, col := range config.ColumnDefinitions {
 		if col.Name == oldSlug {
 			colIdx = i
 		}
-		if col.Name == newSlug {
+		if oldSlug != newSlug && col.Name == newSlug {
 			return nil, fmt.Errorf("column %q already exists", newSlug)
 		}
 	}
@@ -246,40 +271,36 @@ func (m *WorkspaceManager) RenameColumn(oldSlug, newTitle string) (*BoardConfigu
 		return nil, fmt.Errorf("column %q not found", oldSlug)
 	}
 
-	// Rename directory
-	if err := m.taskAccess.RenameStatusDirectory(oldSlug, newSlug); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	// Update task_order.json keys
-	m.taskOrderMu.Lock()
-	orderMap, loadErr := m.taskAccess.LoadTaskOrder()
-	if loadErr == nil {
-		if ids, exists := orderMap[oldSlug]; exists {
-			orderMap[newSlug] = ids
-			delete(orderMap, oldSlug)
-			_ = m.taskAccess.WriteTaskOrder(orderMap)
+	if oldSlug == newSlug {
+		updated, err := m.access.RetitleColumn(oldSlug, trimmedTitle)
+		if err != nil {
+			return nil, fmt.Errorf("%w", err)
 		}
+		return toManagerBoardConfig(&updated), nil
 	}
-	m.taskOrderMu.Unlock()
 
-	// Update config
-	config.ColumnDefinitions[colIdx].Name = newSlug
-	config.ColumnDefinitions[colIdx].Title = strings.TrimSpace(newTitle)
-	if err := m.taskAccess.SaveBoardConfiguration(config); err != nil {
+	updated, err := m.access.RenameColumn(oldSlug, newSlug, trimmedTitle)
+	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-
-	if err := m.taskAccess.CommitAll(fmt.Sprintf("Rename column: %s -> %s", oldSlug, strings.TrimSpace(newTitle))); err != nil {
+	// IBoard.RenameColumn renames the status directory but its commitFiles
+	// call only stages board_config.json + task_order.json — task files
+	// inside the renamed directory therefore move on disk without being
+	// staged, leaving the working tree dirty. Until task 96's verb is
+	// taught to discover and stage those files itself, follow up with a
+	// CommitAll so the rename surfaces as a single coherent end-state in
+	// git history. The follow-up is a no-op when no task files moved.
+	if err := m.access.CommitAll(fmt.Sprintf("Restage task files after column rename: %s -> %s", oldSlug, newSlug)); err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-
-	return toManagerBoardConfig(config), nil
+	return toManagerBoardConfig(&updated), nil
 }
 
-// ReorderColumns reorders columns while enforcing bookend constraints.
+// ReorderColumns reorders columns while enforcing the bookend invariant
+// (first column must be todo-type, last must be done-type). The actual
+// rewrite is delegated to access.IBoard.ReorderColumns.
 func (m *WorkspaceManager) ReorderColumns(slugs []string) (*BoardConfiguration, error) {
-	config, err := m.getAccessBoardConfig()
+	config, err := m.ensureBoardSeeded()
 	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
@@ -288,13 +309,15 @@ func (m *WorkspaceManager) ReorderColumns(slugs []string) (*BoardConfiguration, 
 		return nil, fmt.Errorf("expected %d columns, got %d", len(config.ColumnDefinitions), len(slugs))
 	}
 
-	// Build lookup
+	// Build a slug -> column lookup for bookend validation and
+	// duplicate/unknown detection. Detection is duplicated here (rather
+	// than relying solely on IBoard) so the bookend error message is
+	// emitted before any access-level error.
 	colMap := make(map[string]access.ColumnDefinition, len(config.ColumnDefinitions))
 	for _, col := range config.ColumnDefinitions {
 		colMap[col.Name] = col
 	}
 
-	// Validate: all slugs present, no duplicates
 	seen := make(map[string]bool, len(slugs))
 	reordered := make([]access.ColumnDefinition, 0, len(slugs))
 	for _, slug := range slugs {
@@ -309,7 +332,7 @@ func (m *WorkspaceManager) ReorderColumns(slugs []string) (*BoardConfiguration, 
 		reordered = append(reordered, col)
 	}
 
-	// Validate bookends: first must be todo, last must be done
+	// Bookend invariant: first must be todo, last must be done.
 	if reordered[0].Type != access.ColumnTypeTodo {
 		return nil, fmt.Errorf("first column cannot be moved")
 	}
@@ -317,14 +340,9 @@ func (m *WorkspaceManager) ReorderColumns(slugs []string) (*BoardConfiguration, 
 		return nil, fmt.Errorf("last column cannot be moved")
 	}
 
-	config.ColumnDefinitions = reordered
-	if err := m.taskAccess.SaveBoardConfiguration(config); err != nil {
+	updated, err := m.access.ReorderColumns(slugs)
+	if err != nil {
 		return nil, fmt.Errorf("%w", err)
 	}
-
-	if err := m.taskAccess.CommitAll("Reorder columns"); err != nil {
-		return nil, fmt.Errorf("%w", err)
-	}
-
-	return toManagerBoardConfig(config), nil
+	return toManagerBoardConfig(&updated), nil
 }

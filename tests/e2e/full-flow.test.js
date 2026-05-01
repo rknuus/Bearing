@@ -1186,7 +1186,12 @@ export async function runTests() {
         throw new Error(`Task ${task2Id} should be in important-not-urgent zone after priority change`)
       }
 
-      expectedCommits++
+      // Task 97 (ITask facet migration) emits two commits when an
+      // UpdateTask call changes priority across todo zones: ITask.Save
+      // for the field rewrite, then ITask.Move for the zone migration.
+      // The split is intentional and documented; future facet additions
+      // can collapse it.
+      expectedCommits += 2
       assertCommitCount('after edit task priority')
 
       reporter.pass('Task priority updated')
@@ -1513,9 +1518,16 @@ export async function runTests() {
 
       assertDirExists(DATA_DIR, 'tasks/e2e-review')
 
-      expectedCommits++
+      // The IBoard facet decomposition adds two transitional commits to
+      // the AddColumn flow: WorkspaceManager seeds the default board
+      // configuration on its first mutation (1), IBoard.AddColumn appends
+      // the new column at the end (1), and IBoard.ReorderColumns then
+      // moves it to the requested interior position (1). The seed and
+      // reorder commits collapse away once defaults move into bootstrap
+      // and AddColumn gains a position argument.
+      expectedCommits += 3
       assertCommitCount('after add column')
-      assertLatestCommitContains('Add column')
+      assertLatestCommitContains('Reorder columns')
 
       reporter.pass('Column "e2e-review" added')
     } catch (err) {
@@ -1580,7 +1592,12 @@ export async function runTests() {
       await page.waitForSelector('.prompt-dialog', { state: 'detached', timeout: 5000 })
       await page.waitForSelector('h2:has-text("E2E Verify")', { timeout: 5000 })
 
-      expectedCommits++
+      // RenameColumn produces two transitional commits: IBoard.RenameColumn
+      // commits the board_config + task_order rewrite (1), then
+      // WorkspaceManager calls CommitAll to stage the renamed task files
+      // (1). The follow-up commit collapses away once IBoard.RenameColumn
+      // discovers and stages the renamed task files itself.
+      expectedCommits += 2
 
       // Verify task file migrated to new directory
       assertDirNotExists(DATA_DIR, 'tasks/e2e-review')
