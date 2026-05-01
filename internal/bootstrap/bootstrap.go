@@ -81,6 +81,14 @@ func Initialize() (*Result, error) {
 	if err := taskAccess.SeedDefaultBoard(); err != nil {
 		return nil, fmt.Errorf("failed to seed default board configuration: %w", err)
 	}
+	// One-time migration: backfill Task.RoutineRef on tasks materialised
+	// under the legacy "routine:<id>:<date>" Description + "Routine" tag
+	// convention. Idempotent; produces no commit on a fully-migrated repo.
+	// Runs BEFORE any manager construction so PlanningManager never sees
+	// a half-migrated state.
+	if err := migrateRoutineRefs(taskAccess, repo, bearingDir, slog.Default()); err != nil {
+		return nil, fmt.Errorf("failed to migrate routine refs: %w", err)
+	}
 	calendarAccess, err := access.NewCalendarAccess(bearingDir, repo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize CalendarAccess: %w", err)
