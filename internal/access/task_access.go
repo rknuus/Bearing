@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/rkn/bearing/internal/utilities"
 )
@@ -63,9 +64,26 @@ type ITaskAccess interface {
 }
 
 // TaskAccess implements ITaskAccess with file-based storage and git versioning.
+//
+// Concurrency: mu is the single internal mutex that serialises every
+// resource-mutating operation on TaskAccess. It covers (a) task files in
+// the per-status directories, (b) task_order.json, (c) archived_order.json,
+// and (d) task-ID generation (which must not race against itself or
+// against task creation).
+//
+// Lock-ordering invariant: callers must acquire TaskAccess.mu BEFORE the
+// per-repo lock taken inside commitFiles. Inverting this order can
+// deadlock against any other component that locks the repo first and
+// then attempts to call into TaskAccess.
+//
+// This unification closes audit findings #4 (split task_order mutex),
+// #6 (task-ID generation race), and #7 (Move/Archive split critical
+// sections — file rename and order-map mutation now happen under one
+// lock, in one commit).
 type TaskAccess struct {
 	dataPath string
 	repo     utilities.IRepository
+	mu       sync.Mutex
 }
 
 // NewTaskAccess creates a new TaskAccess instance.
@@ -323,6 +341,8 @@ func (ta *TaskAccess) WriteTask(task Task) error {
 // If the task ID is empty, a new ID will be generated and CreatedAt is set.
 // UpdatedAt is always set to the current time on every save.
 func (ta *TaskAccess) SaveTask(task Task) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	paths, isNew, err := ta.saveTaskFile(&task)
 	if err != nil {
 		return fmt.Errorf("TaskAccess.SaveTask: %w", err)
@@ -344,6 +364,8 @@ func (ta *TaskAccess) SaveTask(task Task) error {
 // in a single git commit. This prevents race conditions when creating multiple
 // tasks concurrently.
 func (ta *TaskAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	taskPaths, isNew, err := ta.saveTaskFile(&task)
 	if err != nil {
 		return nil, fmt.Errorf("TaskAccess.SaveTaskWithOrder: %w", err)
@@ -377,6 +399,8 @@ func (ta *TaskAccess) SaveTaskWithOrder(task Task, dropZone string) (*Task, erro
 // UpdateTaskWithOrderMove atomically saves a task and moves its entry from
 // oldZone to newZone in task_order.json in a single git commit.
 func (ta *TaskAccess) UpdateTaskWithOrderMove(task Task, oldZone, newZone string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	taskPaths, _, err := ta.saveTaskFile(&task)
 	if err != nil {
 		return fmt.Errorf("TaskAccess.UpdateTaskWithOrderMove: %w", err)
@@ -441,6 +465,8 @@ func (ta *TaskAccess) WriteMoveTask(taskID, newStatus string) ([]string, error) 
 // MoveTask moves a task to a new status using git mv.
 // The caller (manager layer) is responsible for validating the target status.
 func (ta *TaskAccess) MoveTask(taskID, newStatus string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	foundTask, currentStatus, _, findErr := ta.findTaskInPlan(taskID)
 	if findErr != nil {
 		return fmt.Errorf("TaskAccess.MoveTask: %w", findErr)
@@ -490,6 +516,8 @@ func (ta *TaskAccess) WriteArchiveTask(taskID string) ([]string, error) {
 
 // ArchiveTask moves a task to the archived directory.
 func (ta *TaskAccess) ArchiveTask(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	paths, err := ta.WriteArchiveTask(taskID)
 	if err != nil {
 		return fmt.Errorf("TaskAccess.ArchiveTask: %w", err)
@@ -528,6 +556,8 @@ func (ta *TaskAccess) WriteRestoreTask(taskID string) ([]string, error) {
 
 // RestoreTask moves a task from the archived directory to done.
 func (ta *TaskAccess) RestoreTask(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	paths, err := ta.WriteRestoreTask(taskID)
 	if err != nil {
 		return fmt.Errorf("TaskAccess.RestoreTask: %w", err)
@@ -545,6 +575,8 @@ func (ta *TaskAccess) RestoreTask(taskID string) error {
 
 // DeleteTask deletes a task.
 func (ta *TaskAccess) DeleteTask(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	// Find the task
 	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
 	if err != nil {
@@ -572,6 +604,8 @@ func (ta *TaskAccess) DeleteTask(taskID string) error {
 // DeleteTaskWithOrder atomically deletes a task file and removes it from the
 // task order in a single git commit.
 func (ta *TaskAccess) DeleteTaskWithOrder(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	// Find the task
 	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
 	if err != nil {
@@ -667,6 +701,8 @@ func (ta *TaskAccess) WriteTaskOrder(order map[string][]string) error {
 
 // SaveTaskOrder writes the order map to task_order.json and git-commits.
 func (ta *TaskAccess) SaveTaskOrder(order map[string][]string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	if err := ta.WriteTaskOrder(order); err != nil {
 		return fmt.Errorf("TaskAccess.SaveTaskOrder: %w", err)
 	}
@@ -721,6 +757,8 @@ func (ta *TaskAccess) WriteArchivedOrder(order []string) error {
 
 // SaveArchivedOrder writes the order slice to archived_order.json and git-commits.
 func (ta *TaskAccess) SaveArchivedOrder(order []string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
 	if err := ta.WriteArchivedOrder(order); err != nil {
 		return fmt.Errorf("TaskAccess.SaveArchivedOrder: %w", err)
 	}
@@ -867,4 +905,438 @@ func (ta *TaskAccess) generateTaskID(themeAbbr string) string {
 		return fmt.Sprintf("T%d", maxNum+1)
 	}
 	return fmt.Sprintf("%s-T%d", themeAbbr, maxNum+1)
+}
+
+// =============================================================================
+// ITask facet implementation
+// =============================================================================
+//
+// The eight verbs below implement the ITask facet declared in task_facets.go.
+// Each verb is atomic: it acquires ta.mu, performs the file/order mutations
+// across whatever state it touches, calls commitFiles to produce ONE git
+// commit, and releases the lock. Internal helpers (saveTaskFile,
+// findTaskInPlan, generateTaskID, LoadTaskOrder, LoadArchivedOrder, the
+// Write* helpers) are reused without re-locking — they assume the caller
+// holds ta.mu.
+//
+// Lock-ordering invariant: ta.mu is acquired BEFORE the per-repo lock that
+// commitFiles takes inside repo.Begin(). No path inverts this order.
+
+// removeFromOrderMap removes taskID from every zone in orderMap and returns
+// whether any change was made.
+func removeFromOrderMap(orderMap map[string][]string, taskID string) bool {
+	changed := false
+	for zone, ids := range orderMap {
+		filtered := make([]string, 0, len(ids))
+		for _, id := range ids {
+			if id != taskID {
+				filtered = append(filtered, id)
+			}
+		}
+		if len(filtered) != len(ids) {
+			orderMap[zone] = filtered
+			changed = true
+		}
+	}
+	return changed
+}
+
+// removeFromArchivedOrder removes taskID from the archived-order slice and
+// returns the (possibly trimmed) slice along with whether a change occurred.
+func removeFromArchivedOrder(order []string, taskID string) ([]string, bool) {
+	filtered := make([]string, 0, len(order))
+	for _, id := range order {
+		if id != taskID {
+			filtered = append(filtered, id)
+		}
+	}
+	return filtered, len(filtered) != len(order)
+}
+
+// Find returns tasks matching the supplied filter. All filter fields are
+// optional and combine with AND. RoutineRef is reserved for Epic 3 (task
+// 102) when Task gains the matching field; for now it is a no-op.
+func (ta *TaskAccess) Find(filter TaskFilter) ([]Task, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	var statuses []string
+	if filter.Status != nil {
+		statuses = []string{*filter.Status}
+	} else {
+		statuses = ta.allStatusSlugs()
+	}
+
+	var result []Task
+	for _, status := range statuses {
+		tasks, err := ta.GetTasksByStatus(status)
+		if err != nil {
+			return nil, fmt.Errorf("TaskAccess.Find: %w", err)
+		}
+		for _, t := range tasks {
+			if filter.ThemeID != nil && t.ThemeID != *filter.ThemeID {
+				continue
+			}
+			if filter.Tag != nil {
+				if !slices.Contains(t.Tags, *filter.Tag) {
+					continue
+				}
+			}
+			// TODO(task 102): wire RoutineRef filter when Task gains the field.
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+// Create allocates a fresh task ID, writes the task file in the todo
+// status directory, appends the new ID to the supplied zone in
+// task_order.json, and commits both files in a single git commit. The
+// task-ID allocation is serialised by ta.mu (closes audit finding #6).
+func (ta *TaskAccess) Create(task Task, zone string) (Task, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	// Force ID allocation under the lock.
+	task.ID = ""
+	taskPaths, _, err := ta.saveTaskFile(&task)
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskAccess.Create: %w", err)
+	}
+
+	orderMap, err := ta.LoadTaskOrder()
+	if err != nil {
+		return Task{}, fmt.Errorf("TaskAccess.Create: failed to load task order: %w", err)
+	}
+	orderMap[zone] = append(orderMap[zone], task.ID)
+
+	orderFilePath := ta.taskOrderFilePath()
+	if err := writeJSON(orderFilePath, orderMap); err != nil {
+		return Task{}, fmt.Errorf("TaskAccess.Create: failed to write task order: %w", err)
+	}
+
+	commitPaths := append(taskPaths, orderFilePath)
+	if err := commitFiles(ta.repo, commitPaths, fmt.Sprintf("Add task: %s", task.Title)); err != nil {
+		return Task{}, fmt.Errorf("TaskAccess.Create: %w", err)
+	}
+	return task, nil
+}
+
+// Save writes the task file in place (no zone change, no order-map
+// mutation) and produces a single commit.
+func (ta *TaskAccess) Save(task Task) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	if task.ID == "" {
+		return fmt.Errorf("TaskAccess.Save: task ID is required")
+	}
+	paths, _, err := ta.saveTaskFile(&task)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Save: %w", err)
+	}
+	if err := commitFiles(ta.repo, paths, fmt.Sprintf("Update task: %s", task.Title)); err != nil {
+		return fmt.Errorf("TaskAccess.Save: %w", err)
+	}
+	return nil
+}
+
+// Move atomically applies the requested status change, optional priority
+// change, and zone-position update for a task. File rename, task-file
+// rewrite, and order-map mutation all happen in a single critical section
+// followed by ONE git commit (closes audit finding #7).
+func (ta *TaskAccess) Move(req MoveRequest) (MoveOutcome, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	foundTask, currentStatus, _, err := ta.findTaskInPlan(req.TaskID)
+	if err != nil {
+		return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: %w", err)
+	}
+	if foundTask == nil {
+		return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: task with ID %s not found", req.TaskID)
+	}
+
+	commitPaths := []string{}
+
+	// Decide priority and write the task file if priority changed or
+	// status changes (we always need to refresh UpdatedAt and the
+	// possibly-relocated path).
+	taskCopy := *foundTask
+	priorityChanged := false
+	if req.NewPriority != "" && req.NewPriority != taskCopy.Priority {
+		taskCopy.Priority = req.NewPriority
+		priorityChanged = true
+	}
+	taskCopy.UpdatedAt = utilities.Now()
+
+	statusChanged := req.NewStatus != "" && req.NewStatus != currentStatus
+	targetStatus := currentStatus
+	if statusChanged {
+		targetStatus = req.NewStatus
+	}
+
+	if statusChanged {
+		oldPath := ta.taskFilePath(currentStatus, req.TaskID)
+		newPath := ta.taskFilePath(targetStatus, req.TaskID)
+		if err := os.Rename(oldPath, newPath); err != nil {
+			return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: failed to move task file: %w", err)
+		}
+		commitPaths = append(commitPaths, oldPath, newPath)
+	}
+
+	if priorityChanged || statusChanged {
+		// Write the (potentially relocated) task file with refreshed
+		// fields so the on-disk content matches its directory.
+		filePath := ta.taskFilePath(targetStatus, req.TaskID)
+		if err := writeJSON(filePath, taskCopy); err != nil {
+			return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: failed to write task file: %w", err)
+		}
+		if !statusChanged {
+			commitPaths = append(commitPaths, filePath)
+		}
+	}
+
+	// Apply order-map updates.
+	orderMap, err := ta.LoadTaskOrder()
+	if err != nil {
+		return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: failed to load task order: %w", err)
+	}
+	orderChanged := false
+	if len(req.Positions) > 0 {
+		// Remove the task from every existing zone first so we don't end
+		// up with duplicate entries; then merge the supplied zones.
+		if removeFromOrderMap(orderMap, req.TaskID) {
+			orderChanged = true
+		}
+		for zone, ids := range req.Positions {
+			orderMap[zone] = append([]string(nil), ids...)
+			orderChanged = true
+		}
+	} else if statusChanged {
+		// No client-supplied positions: remove from current zones and
+		// append to the target status as a single zone.
+		removeFromOrderMap(orderMap, req.TaskID)
+		orderMap[targetStatus] = append(orderMap[targetStatus], req.TaskID)
+		orderChanged = true
+	}
+	if orderChanged {
+		orderFilePath := ta.taskOrderFilePath()
+		if err := writeJSON(orderFilePath, orderMap); err != nil {
+			return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: failed to write task order: %w", err)
+		}
+		commitPaths = append(commitPaths, orderFilePath)
+	}
+
+	if len(commitPaths) > 0 {
+		msg := fmt.Sprintf("Move task %s: %s -> %s", taskCopy.Title, currentStatus, targetStatus)
+		if !statusChanged {
+			msg = fmt.Sprintf("Update task: %s", taskCopy.Title)
+		}
+		if err := commitFiles(ta.repo, commitPaths, msg); err != nil {
+			return MoveOutcome{}, fmt.Errorf("TaskAccess.Move: %w", err)
+		}
+	}
+
+	outcome := MoveOutcome{
+		Title:     taskCopy.Title,
+		Positions: map[string][]string{},
+	}
+	for zone := range req.Positions {
+		outcome.Positions[zone] = append([]string(nil), orderMap[zone]...)
+	}
+	if statusChanged && len(req.Positions) == 0 {
+		outcome.Positions[targetStatus] = append([]string(nil), orderMap[targetStatus]...)
+	}
+	return outcome, nil
+}
+
+// Archive moves a task to the archived/ directory, removes it from
+// task_order.json, prepends it to archived_order.json, and commits all
+// three changes in a single git commit.
+func (ta *TaskAccess) Archive(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Archive: %w", err)
+	}
+	if foundTask == nil {
+		return fmt.Errorf("TaskAccess.Archive: task with ID %s not found", taskID)
+	}
+	if currentStatus == string(TaskStatusArchived) {
+		return nil
+	}
+
+	oldPath := ta.taskFilePath(currentStatus, taskID)
+	newPath := ta.taskFilePath(string(TaskStatusArchived), taskID)
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return fmt.Errorf("TaskAccess.Archive: failed to move task file: %w", err)
+	}
+	commitPaths := []string{oldPath, newPath}
+
+	orderMap, err := ta.LoadTaskOrder()
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Archive: failed to load task order: %w", err)
+	}
+	if removeFromOrderMap(orderMap, taskID) {
+		orderFilePath := ta.taskOrderFilePath()
+		if err := writeJSON(orderFilePath, orderMap); err != nil {
+			return fmt.Errorf("TaskAccess.Archive: failed to write task order: %w", err)
+		}
+		commitPaths = append(commitPaths, orderFilePath)
+	}
+
+	archived, err := ta.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Archive: failed to load archived order: %w", err)
+	}
+	// Prepend taskID (most recently archived first).
+	archived = append([]string{taskID}, archived...)
+	archivedFilePath := ta.archivedOrderFilePath()
+	if err := writeJSON(archivedFilePath, archived); err != nil {
+		return fmt.Errorf("TaskAccess.Archive: failed to write archived order: %w", err)
+	}
+	commitPaths = append(commitPaths, archivedFilePath)
+
+	if err := commitFiles(ta.repo, commitPaths, fmt.Sprintf("Archive task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("TaskAccess.Archive: %w", err)
+	}
+	return nil
+}
+
+// Restore moves a task from archived/ to done/, removes it from
+// archived_order.json, appends it to the done zone in task_order.json,
+// and commits all three changes in a single git commit.
+func (ta *TaskAccess) Restore(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Restore: %w", err)
+	}
+	if foundTask == nil {
+		return fmt.Errorf("TaskAccess.Restore: task with ID %s not found", taskID)
+	}
+	if currentStatus != string(TaskStatusArchived) {
+		return fmt.Errorf("TaskAccess.Restore: task %s is not archived (status: %s)", taskID, currentStatus)
+	}
+
+	oldPath := ta.taskFilePath(string(TaskStatusArchived), taskID)
+	newPath := ta.taskFilePath(string(TaskStatusDone), taskID)
+	if err := os.Rename(oldPath, newPath); err != nil {
+		return fmt.Errorf("TaskAccess.Restore: failed to move task file: %w", err)
+	}
+	commitPaths := []string{oldPath, newPath}
+
+	archived, err := ta.LoadArchivedOrder()
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Restore: failed to load archived order: %w", err)
+	}
+	if updated, changed := removeFromArchivedOrder(archived, taskID); changed {
+		archivedFilePath := ta.archivedOrderFilePath()
+		if err := writeJSON(archivedFilePath, updated); err != nil {
+			return fmt.Errorf("TaskAccess.Restore: failed to write archived order: %w", err)
+		}
+		commitPaths = append(commitPaths, archivedFilePath)
+	}
+
+	orderMap, err := ta.LoadTaskOrder()
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Restore: failed to load task order: %w", err)
+	}
+	doneZone := string(TaskStatusDone)
+	orderMap[doneZone] = append(orderMap[doneZone], taskID)
+	orderFilePath := ta.taskOrderFilePath()
+	if err := writeJSON(orderFilePath, orderMap); err != nil {
+		return fmt.Errorf("TaskAccess.Restore: failed to write task order: %w", err)
+	}
+	commitPaths = append(commitPaths, orderFilePath)
+
+	if err := commitFiles(ta.repo, commitPaths, fmt.Sprintf("Restore task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("TaskAccess.Restore: %w", err)
+	}
+	return nil
+}
+
+// Delete removes the task file and cleans up its order-map entries
+// (active or archived) in a single git commit.
+func (ta *TaskAccess) Delete(taskID string) error {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	foundTask, currentStatus, _, err := ta.findTaskInPlan(taskID)
+	if err != nil {
+		return fmt.Errorf("TaskAccess.Delete: %w", err)
+	}
+	if foundTask == nil {
+		return fmt.Errorf("TaskAccess.Delete: task with ID %s not found", taskID)
+	}
+
+	filePath := ta.taskFilePath(currentStatus, taskID)
+	if err := os.Remove(filePath); err != nil {
+		return fmt.Errorf("TaskAccess.Delete: failed to delete task file: %w", err)
+	}
+	commitPaths := []string{filePath}
+
+	if currentStatus == string(TaskStatusArchived) {
+		archived, err := ta.LoadArchivedOrder()
+		if err == nil {
+			if updated, changed := removeFromArchivedOrder(archived, taskID); changed {
+				archivedFilePath := ta.archivedOrderFilePath()
+				if err := writeJSON(archivedFilePath, updated); err != nil {
+					return fmt.Errorf("TaskAccess.Delete: failed to write archived order: %w", err)
+				}
+				commitPaths = append(commitPaths, archivedFilePath)
+			}
+		}
+	} else {
+		orderMap, err := ta.LoadTaskOrder()
+		if err == nil {
+			if removeFromOrderMap(orderMap, taskID) {
+				orderFilePath := ta.taskOrderFilePath()
+				if err := writeJSON(orderFilePath, orderMap); err != nil {
+					return fmt.Errorf("TaskAccess.Delete: failed to write task order: %w", err)
+				}
+				commitPaths = append(commitPaths, orderFilePath)
+			}
+		}
+	}
+
+	if err := commitFiles(ta.repo, commitPaths, fmt.Sprintf("Delete task: %s", foundTask.Title)); err != nil {
+		return fmt.Errorf("TaskAccess.Delete: %w", err)
+	}
+	return nil
+}
+
+// Reorder merges the supplied positions map into task_order.json. Zones
+// not present in the input keep their current contents. Returns the
+// authoritative post-write zone contents that the caller touched.
+func (ta *TaskAccess) Reorder(positions map[string][]string) (ReorderOutcome, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	orderMap, err := ta.LoadTaskOrder()
+	if err != nil {
+		return ReorderOutcome{}, fmt.Errorf("TaskAccess.Reorder: failed to load task order: %w", err)
+	}
+	for zone, ids := range positions {
+		orderMap[zone] = append([]string(nil), ids...)
+	}
+
+	orderFilePath := ta.taskOrderFilePath()
+	if err := writeJSON(orderFilePath, orderMap); err != nil {
+		return ReorderOutcome{}, fmt.Errorf("TaskAccess.Reorder: failed to write task order: %w", err)
+	}
+	if err := commitFiles(ta.repo, []string{orderFilePath}, "Update task order"); err != nil {
+		return ReorderOutcome{}, fmt.Errorf("TaskAccess.Reorder: %w", err)
+	}
+
+	outcome := ReorderOutcome{Positions: map[string][]string{}}
+	for zone := range positions {
+		outcome.Positions[zone] = append([]string(nil), orderMap[zone]...)
+	}
+	return outcome, nil
 }
