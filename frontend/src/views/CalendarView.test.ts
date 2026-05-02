@@ -1817,4 +1817,22 @@ describe('CalendarView', () => {
       expect(container.querySelector('.dialog')).toBeTruthy();
     });
   });
+
+  it('renders tag section above theme section in day-focus editor', async () => {
+    await renderView();
+    const dayCell = container.querySelector<HTMLButtonElement>('.day-num');
+    dayCell!.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+    await tick();
+    await vi.waitFor(() => {
+      if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+    });
+
+    const labels = Array.from(container.querySelectorAll('.dialog .form-group .form-label'))
+      .map(el => el.textContent?.trim() ?? '');
+    const tagsIdx = labels.indexOf('Tags');
+    const themeIdx = labels.findIndex(l => l.startsWith('Theme'));
+    expect(tagsIdx).toBeGreaterThanOrEqual(0);
+    expect(themeIdx).toBeGreaterThanOrEqual(0);
+    expect(tagsIdx).toBeLessThan(themeIdx);
+  });
 });
