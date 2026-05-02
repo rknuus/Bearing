@@ -125,7 +125,6 @@ The architect gathers context, presents findings with numbered options, then del
 - Never ask permission to do the right thing — build trust through results, not arguments; frame architecture value as business agility and opportunity gained.
 - Practice requires a mentor — without one, incorrect solutions risk becoming permanent damage. The true practice is 5% design and 110% mentorship.
 
-
 ### Volatility Identification
 - **axes of volatility** — the two dimensions of change in any business:
   1. The **same customer over time** — business context evolves, usage patterns shift
@@ -134,20 +133,64 @@ The architect gathers context, presents findings with numbered options, then del
 - Watch for **solutions masquerading as requirements** — "cooking" is a solution; the real requirement is "feeding" or even "well-being of the occupants"
 - Do not encapsulate the nature of the business — aspects that are fairly constant and would be done poorly if encapsulated
 
-## General guidelines
+## Interaction rules
 
-> Think carefully and implement the most concise solution that changes as little code as possible.
+- Ask clarifying questions if input is unclear
+- Explain why and suggest alternatives if task is not feasible
+- Use structured, readable formatting (headings, lists, code blocks)
+- Follow instructions closely and explain clearly what you have done
+- Don't modify code unrelated to the current task
+- Try always to match the style of the code you are touching
+- When refactoring, never modify test assertions, only the implementation
 
-Follow existing patterns in the codebase.
+## Coding standards
+
+- Write meaningful tests with assertions for all code
+- Avoid duplicate assertions
+- Maintain evolving code coverage
+- Apply Four Rules of Simple Design (Kent Beck):
+  - Code works (passes tests)
+  - Reveals intent
+  - No duplication
+  - Minimal elements
+- Prefer functional style:
+  - Use explicit parameters
+  - Prefer immutability
+  - Prefer declarative over imperative
+  - Minimize state
+
+## Architecture
+
+- Modularize by concern, not by technical layer
+- One responsibility per module
+- Low inter-module coupling
+- Short functions, no overengineering
+
+## Workflow
+
+- Write and pass tests before finalizing
+- When refactoring: never modify test assertions, only the implementation
+- Lint code using `make lint` before finalizing
+- Keep a `README.md` with `tailor-ccpm` setup/run info
+- Store documents in Markdown
+
+## Commit strategy
+
+Each commit:
+- self-contained
+- includes tests
+- uses 50/70 commit message format
+
+## Safe practices
+
+- Do not change test assertions during refactoring
+- Do not skip failing tests
+- Do not invent unknown APIs, look up or ask if you are unsure
 
 ## Project-Specific Instructions
 
-- See [README](../README.md) for background about the project
-- Document all architectural aspects in `doc/architecture/`
 - To build, test, etc. use `make` commands. Do not come up with own commands. If a `make` command you need is missing, tell the user
-- Cover new/changed code by tests, unless coverage is not possible: in this case confirm with the user
-- Always lint code before committing and only disable rules for genuine false positives, not for non-idiomatic code: `make lint` in the project root
-- Always run all tests before committing: `make test && make test-ui-component-headless && make test-e2e-headless` in the project root
+- Use `make test && make test-ui-component-headless && make test-e2e-headless` in the project root to run tests, do not use ad-hoc commands
 - Ensure backend state changes are atomic to avoid state inconstistencies between frontend and backend because of race conditions
 - Log all relevant events, especially errors with all relevant details except sensitive data like passwords
 - To analyze errors read the log file `~/.bearing/bearing.log`
@@ -159,10 +202,9 @@ Follow existing patterns in the codebase.
 - In Svelte 5 `$effect` blocks, never read and write the same `$state` variable. Use `untrack()` for state the effect modifies but should not depend on
 - Task state modifications in the frontend must verify state consistency with backends at the end
 - No business logic in client code
-- Write production-grade code
+- Write and maintain the `README.md` with clear instructions how to build and run the application
 - Avoid repeating code patterns, factor out common code
 - Use state of the art coding patterns, idioms, and approaches
-- Write state of the art tests
 - Use state of the art tooling
 - Ensure high code quality
 - Do not pollute production code with test code, e.g. no testid in frontend code
