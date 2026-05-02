@@ -795,7 +795,7 @@
           onclick={() => tagSectionOpen = !tagSectionOpen}
           aria-expanded={tagSectionOpen}
         >
-          <span class="expand-icon">{tagSectionOpen ? '▼' : '▶'}</span>
+          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
           <span class="form-label">Tags</span>
         </button>
         {#if tagSectionOpen}
@@ -862,7 +862,7 @@
                   <input type="checkbox" checked={editRoutineChecks.includes(routine.routineId)}
                          onchange={() => toggleRoutineCheck(routine.routineId)} />
                   <span class="theme-dot" style="background-color: {ROUTINE_COLOR}"></span>
-                  <span class="routine-desc">{routine.description}{routine.missedCount !== undefined && routine.missedCount >= 2 ? ` · ${routine.missedCount} missed` : ''} ({formatDateLocale(routine.date)})</span>
+                  <span class="routine-desc">{routine.description}{routine.missedCount !== undefined && routine.missedCount >= 2 ? ` \u00B7 ${routine.missedCount} missed` : ''} ({formatDateLocale(routine.date)})</span>
                 </label>
                 {#if reschedulingKey === routineKey(routine)}
                   <div class="reschedule-inline">
