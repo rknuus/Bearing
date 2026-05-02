@@ -128,7 +128,9 @@
     {#each peekData as peek (peek.depth + ':' + peek.xOffset)}
       <div
         class="board-body-peek"
-        style="--peek-x-offset: {peek.xOffset}px; --peek-y-offset: {peek.yOffset}px; --peek-depth: {peek.depth};"
+        class:shift-positive={peek.xOffset > 0}
+        class:shift-negative={peek.xOffset < 0}
+        style="--peek-x-offset: {peek.xOffset}px; --peek-y-offset: {peek.yOffset}px; --peek-abs-x-offset: {Math.abs(peek.xOffset)}px; --peek-abs-y-offset: {Math.abs(peek.yOffset)}px; --peek-depth: {peek.depth};"
         aria-hidden="true"
       ></div>
     {/each}
@@ -295,6 +297,24 @@
    * each step subtracts 0.15, clamped at 0.30 so deep peeks stay
    * visible. Z-index decreases with depth so depth-1 peeks sit closest
    * to the foreground card and deeper peeks layer further behind.
+   *
+   * Issue #126: occlusion by the foreground's z-index alone is not
+   * enough — the foreground's `border-radius: 8px` carves a recession
+   * out of each corner, and a translated peek's straight edge or its
+   * own rounded corner shows through that recession as a small "ear"
+   * just inside-and-below the foreground's bottom-left corner (for a
+   * down-right peek) or inside-and-above the foreground's top-right
+   * corner (for an up-left peek). Hard-clip every peek to the L-shape
+   * that lies STRICTLY outside the foreground rectangle. The peek's
+   * translation `(xOffset, yOffset)` defines the foreground rectangle
+   * in peek-relative coordinates as `(-xOffset, -yOffset, W, H)`; the
+   * visible L equals the peek box minus that overlap. For a positive
+   * shift (down-right) the overlap sits at the peek's top-left, so
+   * the L wraps the bottom + right edges; for a negative shift
+   * (up-left) the overlap sits at the peek's bottom-right, so the L
+   * wraps the top + left edges. `--peek-abs-x-offset` and
+   * `--peek-abs-y-offset` carry the unsigned magnitudes for use in
+   * the polygon vertices below.
    */
   .board-body-peek {
     position: absolute;
@@ -307,6 +327,43 @@
     transform: translateX(var(--peek-x-offset, 0)) translateY(var(--peek-y-offset, 0));
     z-index: calc(50 - var(--peek-depth, 0));
     opacity: max(0.30, calc(1 - var(--peek-depth, 0) * 0.15));
+  }
+
+  /*
+   * Down-right peek (positive shift). Foreground overlaps the peek's
+   * top-left rectangle `[0..W-xOffset, 0..H-yOffset]`. Visible L =
+   * right strip ∪ bottom strip. Polygon vertices, clockwise from the
+   * top of the right strip:
+   *   (W-x, 0) → (W, 0) → (W, H) → (0, H) → (0, H-y) → (W-x, H-y) → close.
+   * Where W = 100% of the peek box, x = `--peek-abs-x-offset`,
+   * y = `--peek-abs-y-offset`.
+   */
+  .board-body-peek.shift-positive {
+    clip-path: polygon(
+      calc(100% - var(--peek-abs-x-offset, 0px)) 0%,
+      100% 0%,
+      100% 100%,
+      0% 100%,
+      0% calc(100% - var(--peek-abs-y-offset, 0px)),
+      calc(100% - var(--peek-abs-x-offset, 0px)) calc(100% - var(--peek-abs-y-offset, 0px))
+    );
+  }
+
+  /*
+   * Up-left peek (negative shift). Foreground overlaps the peek's
+   * bottom-right rectangle `[|x|..W, |y|..H]`. Visible L = top strip ∪
+   * left strip. Polygon vertices, clockwise from the peek's top-left:
+   *   (0, 0) → (W, 0) → (W, |y|) → (|x|, |y|) → (|x|, H) → (0, H) → close.
+   */
+  .board-body-peek.shift-negative {
+    clip-path: polygon(
+      0% 0%,
+      100% 0%,
+      100% var(--peek-abs-y-offset, 0px),
+      var(--peek-abs-x-offset, 0px) var(--peek-abs-y-offset, 0px),
+      var(--peek-abs-x-offset, 0px) 100%,
+      0% 100%
+    );
   }
 
   /*

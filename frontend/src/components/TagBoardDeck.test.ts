@@ -583,43 +583,98 @@ describe('TagBoardDeck', () => {
       ]);
     });
 
-    it('emits no peeks when the foreground is at index 0 of the visual order (issue #126)', async () => {
+    it('emits peeks with positive xOffset and positive yOffset when the foreground is at index 0 of the visual order', async () => {
       // Visual order = [All, Untagged, work, urgent, personal] with
-      // `All` selected → foregroundIndex = 0. With the leftmost-strip
-      // tag (top of stack) foregrounded, every non-selected board would
-      // otherwise sit below — peeks would shift down-right by
-      // (+N×2px, +N×5px). Their straight left edges and bottom-left
-      // curved corners would then fall inside the foreground's bottom-
-      // left rounded-corner recession zone (border-radius: 8px),
-      // painting a small "ear" artefact at the bottom-left of the
-      // foreground (issue #126). The deck must therefore emit no peek
-      // descriptors at all when foregroundIndex === 0 so no peek-frame
-      // visual extent appears anywhere left-of or below the foreground.
+      // `All` selected → foregroundIndex = 0. Every non-selected board
+      // sits BELOW the foreground, so every peek shifts down-right by
+      // (+N×2px, +N×5px). Issue #126: descriptor emission is unchanged
+      // for this case — every non-selected board still gets a peek
+      // descriptor; the bottom-left "ear" artefact is suppressed at
+      // the CSS layer (clip-path on `.board-body-peek.shift-positive`)
+      // rather than by dropping descriptors.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      expect(peekDescriptors(container)).toEqual([]);
+      expect(peekDescriptors(container)).toEqual([
+        { depth: 1, xOffset: 2, yOffset: 5 },
+        { depth: 2, xOffset: 4, yOffset: 10 },
+        { depth: 3, xOffset: 6, yOffset: 15 },
+        { depth: 4, xOffset: 8, yOffset: 20 },
+      ]);
     });
 
-    it('renders no .board-body-peek elements when the leftmost-strip tag is foregrounded (issue #126)', async () => {
-      // Direct DOM-level invariant: when `selectedTag === 'All'` (the
-      // canonical leftmost-strip tag → foregroundIndex 0 in visualOrder
-      // after the deck's reverse), there must be zero `.board-body-peek`
-      // elements rendered. This guards against a future regression that
-      // would re-introduce peek descriptors on the leftmost-selected
-      // case (where the rounded-corner reveal exposed the depth-1
-      // peek's left edge as a bottom-left "ear" artefact).
+    it('marks every down-right peek with `shift-positive` so the L-clip CSS hides its left-of-foreground reveal (issue #126)', async () => {
+      // Issue #126 invariant. With the leftmost-strip tag foregrounded
+      // (`selectedTag === 'All'` → foregroundIndex = 0), every peek
+      // shifts down-right (positive xOffset). The deck must mark each
+      // such peek with the `.shift-positive` class so the clip-path
+      // polygon defined in `TagBoardCard.svelte` removes the peek's
+      // top-left rectangle — the area that previously revealed a small
+      // "ear" through the foreground's bottom-left rounded corner. Only
+      // the bottom + right L-strip remains visible.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      const peekFrames = container.querySelectorAll('.tag-board-card.foreground .board-body-peek');
-      expect(peekFrames.length).toBe(0);
+      const peeks = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-card.foreground .board-body-peek'),
+      );
+      expect(peeks.length).toBe(4);
+      for (const peek of peeks) {
+        expect(peek.classList.contains('shift-positive')).toBe(true);
+        expect(peek.classList.contains('shift-negative')).toBe(false);
+        // The clip-path consumes the unsigned magnitude so the polygon
+        // vertices are well-defined regardless of the sign of the
+        // translation.
+        const xSigned = parseInt(peek.style.getPropertyValue('--peek-x-offset'), 10);
+        const ySigned = parseInt(peek.style.getPropertyValue('--peek-y-offset'), 10);
+        const xAbs = parseInt(peek.style.getPropertyValue('--peek-abs-x-offset'), 10);
+        const yAbs = parseInt(peek.style.getPropertyValue('--peek-abs-y-offset'), 10);
+        expect(xAbs).toBe(Math.abs(xSigned));
+        expect(yAbs).toBe(Math.abs(ySigned));
+      }
+    });
+
+    it('marks up-left peeks with `shift-negative` and down-right peeks with `shift-positive` for a middle selection (issue #126)', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] with
+      // `work` selected → foregroundIndex = 2. The two peeks above
+      // (All, Untagged) shift up-left → `.shift-negative`. The two
+      // peeks below (urgent, personal) shift down-right →
+      // `.shift-positive`. The clip-path applied via these classes
+      // keeps each peek's L-protrusion on the side it translates
+      // toward and removes its overlap with the foreground rectangle.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      const peeks = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-card.foreground .board-body-peek'),
+      );
+      expect(peeks.length).toBe(4);
+
+      const classes = peeks.map(p => ({
+        positive: p.classList.contains('shift-positive'),
+        negative: p.classList.contains('shift-negative'),
+        xOffset: parseInt(p.style.getPropertyValue('--peek-x-offset'), 10),
+      }));
+      // Order in DOM matches visualOrder index order:
+      // i=0 (All)      xOffset=-4 → negative
+      // i=1 (Untagged) xOffset=-2 → negative
+      // i=3 (urgent)   xOffset=+2 → positive
+      // i=4 (personal) xOffset=+4 → positive
+      expect(classes).toEqual([
+        { positive: false, negative: true, xOffset: -4 },
+        { positive: false, negative: true, xOffset: -2 },
+        { positive: true, negative: false, xOffset: 2 },
+        { positive: true, negative: false, xOffset: 4 },
+      ]);
     });
 
     it('emits peeks with negative xOffset and negative yOffset when the foreground is at the end of the visual order', async () => {
@@ -674,20 +729,17 @@ describe('TagBoardDeck', () => {
       };
     }
 
-    it('projects zero padding on both sides when foreground sits at the top of the visual order (issue #126)', async () => {
+    it('projects zero top padding when foreground sits at the top of the visual order', async () => {
       // Visual order = [All, Untagged, work, urgent, personal] (length 5)
       // with `All` selected → foregroundIndex = 0. maxAboveDepth = 0 →
-      // padding-top = 0. Issue #126: peek descriptors are suppressed
-      // entirely when foregroundIndex === 0, so there is no extension
-      // below to absorb either — padding-bottom collapses to 0 to keep
-      // the foreground flush with the stack's bottom edge.
+      // padding-top = 0; maxBelowDepth = 4 → padding-bottom = 4*5 = 20.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      expect(stackPadding(container)).toEqual({ top: '0px', bottom: '0px' });
+      expect(stackPadding(container)).toEqual({ top: '0px', bottom: '20px' });
     });
 
     it('projects symmetric stack padding when foreground sits in the middle of the visual order', async () => {
