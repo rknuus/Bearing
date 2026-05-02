@@ -4,9 +4,6 @@ import { tick, createRawSnippet } from 'svelte';
 import TagBoardDeck from './TagBoardDeck.svelte';
 import type { TaskWithStatus } from '../lib/wails-mock';
 import { setClockForTesting, resetClock } from '../lib/utils/clock';
-// Vite `?raw` import surfaces the component source so we can assert the
-// CSS contract — jsdom doesn't compute `perspective` / `transform-style`.
-import deckSource from './TagBoardDeck.svelte?raw';
 
 /**
  * Renders the deck with a board snippet that surfaces every task in the
@@ -217,7 +214,7 @@ describe('TagBoardDeck', () => {
     await tick();
 
     expect(userTagLabels(container)).toEqual(['personal', 'urgent', 'work']);
-    expect(container.querySelector('.tag-board-strip-focus-marker')).toBeNull();
+    expect(container.querySelector('.focus-group-frame')).toBeNull();
   });
 
   it('places focus tags at the front, alphabetically, with non-focus tags following alphabetically', async () => {
@@ -275,7 +272,7 @@ describe('TagBoardDeck', () => {
     });
     await tick();
 
-    expect(container.querySelector('.tag-board-strip-focus-marker')).not.toBeNull();
+    expect(container.querySelector('.focus-group-frame')).not.toBeNull();
     expect(focusChipLabels(container)).toEqual(['urgent', 'work']);
   });
 
@@ -329,49 +326,66 @@ describe('TagBoardDeck', () => {
   });
 
   // ---------------------------------------------------------------------
-  // Issue #122: 3D stacked rendering — receded card behaviour.
-  // These tests cover only the visual layer added in #122. They do NOT
-  // overlap with the slicing / mirror / persistence tests above.
+  // Issue #120 redesign: vertical-accordion stack.
+  //
+  // The deck stacks all boards as title bars; only the selected board
+  // expands its content inline. Visual top-to-bottom order is the
+  // REVERSE of the strip order, so the rightmost-strip tag (`All`) sits
+  // at the top of the stack and the leftmost user tag at the bottom.
   // ---------------------------------------------------------------------
 
-  describe('3D stacked rendering (issue #122)', () => {
-    it('renders every non-foreground board as a receded card behind the foreground', async () => {
-      // makeTasks() yields user tags [personal, urgent, work] plus an
-      // untagged task. With `All` foregrounded we expect 3 user-tag
-      // receded cards + Untagged. (No `All` receded — it is the
-      // foreground.) Total = 4 receded cards.
+  describe('vertical-accordion stack (issue #120 redesign)', () => {
+    function stackTitleBarLabels(c: HTMLElement): string[] {
+      return Array.from(
+        c.querySelectorAll<HTMLElement>('.tag-board-stack .tag-board-card-label'),
+      ).map(el => el.textContent?.trim() ?? '');
+    }
+
+    function stackCardOrder(c: HTMLElement): string[] {
+      // The top-to-bottom ordering of every rendered card in the stack.
+      // Non-selected entries no longer render in the deck (issue #120) —
+      // their visual indication is conveyed by the body peek frames'
+      // stair-stepped top / bottom edges.
+      return Array.from(
+        c.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
+      ).map(card => card.querySelector('.tag-board-card-label')?.textContent?.trim() ?? '');
+    }
+
+    it('renders only the foreground card in the stack (every non-selected board omitted)', async () => {
+      // makeTasks() user tags (alpha): personal, urgent, work; an
+      // untagged task exists. Strip order = [personal, urgent, work,
+      // Untagged, All]; visual order = [All, Untagged, work, urgent,
+      // personal] (reversed). Selected `All` foregrounded → only the
+      // foreground (All) renders in the flex stack; every non-selected
+      // entry is conveyed by the body peek frames behind the foreground.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      const recededLabels = Array.from(
-        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
-      ).map(el => el.textContent?.trim());
-
-      expect(recededLabels.sort()).toEqual(['Untagged', 'personal', 'urgent', 'work'].sort());
+      expect(stackCardOrder(container)).toEqual(['All']);
+      expect(stackTitleBarLabels(container)).toEqual(['All']);
     });
 
-    it('does NOT render the currently-foregrounded tag as a receded card', async () => {
+    it('renders the selected board in foreground mode and no other cards in the deck', async () => {
+      // `work` selected — visual order = [All, Untagged, work, urgent,
+      // personal]. Only `work` renders as a card in the deck stack.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
       });
       await tick();
 
-      const recededLabels = Array.from(
-        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
-      ).map(el => el.textContent?.trim());
-
-      expect(recededLabels).not.toContain('work');
-      const fgLabel = container.querySelector(
-        '.tag-board-card.foreground .tag-board-card-label'
+      const cards = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
       );
-      expect(fgLabel?.textContent?.trim()).toBe('work');
+      expect(cards.length).toBe(1);
+      expect(cards[0].classList.contains('foreground')).toBe(true);
+      expect(cards[0].querySelector('.tag-board-card-label')?.textContent?.trim()).toBe('work');
     });
 
-    it('only the foreground card mounts board content (AD-5 invariant)', async () => {
+    it('selected board is the only one that mounts board content (AD-5 invariant)', async () => {
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
@@ -381,72 +395,33 @@ describe('TagBoardDeck', () => {
       // Exactly one .board-content node — owned by the foreground card.
       const contents = container.querySelectorAll('.board-content');
       expect(contents.length).toBe(1);
-      // Receded cards must show their chrome shell, not board content.
-      const recededShells = container.querySelectorAll(
-        '.tag-board-card.receded .tag-board-card-receded-shell'
-      );
-      expect(recededShells.length).toBeGreaterThan(0);
+
+      // It must live inside the foreground card.
+      const foreground = container.querySelector('.tag-board-card.foreground');
+      expect(foreground?.querySelector('.board-content')).not.toBeNull();
     });
 
-    it('assigns increasing depth to receded cards in deck order', async () => {
+    it('does not render any receded title bars in the deck (no clickable cards beyond the foreground)', async () => {
+      // Issue #120 simplification: the deck exposes selection only via
+      // the strip; non-selected boards no longer render as title-bar
+      // rows in the deck. Verify that no receded card is present.
       render(TagBoardDeck, {
         target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'All',
+          board: boardSnippet(),
+        },
       });
       await tick();
 
-      const cards = Array.from(
-        container.querySelectorAll<HTMLElement>('.tag-board-card.receded')
+      const recededCards = container.querySelectorAll(
+        '.tag-board-stack .tag-board-card.receded',
       );
-      expect(cards.length).toBeGreaterThanOrEqual(2);
-
-      // Depth values come from the inline --card-depth custom property
-      // and must form a strictly-increasing sequence across the receded
-      // card list (deck order).
-      const depths = cards.map(c => Number(c.style.getPropertyValue('--card-depth')));
-      for (let i = 1; i < depths.length; i++) {
-        expect(depths[i]).toBeGreaterThan(depths[i - 1]);
-      }
-      expect(depths[0]).toBe(0);
+      expect(recededCards.length).toBe(0);
     });
 
-    it('renders the deck inside a 3D perspective container', async () => {
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
-      });
-      await tick();
-
-      // The container must exist...
-      const stack = container.querySelector('.tag-board-stack') as HTMLElement;
-      expect(stack).not.toBeNull();
-      // ...and the component's compiled CSS contract must declare
-      // `perspective` and `transform-style: preserve-3d` on the stack.
-      // jsdom does not compute these via getComputedStyle, so we assert
-      // the source-text contract — the same approach used for
-      // reduced-motion in TagBoardCard.test.ts.
-      expect(deckSource).toMatch(
-        /\.tag-board-stack\s*\{[\s\S]*?perspective\s*:\s*\d+px/
-      );
-      expect(deckSource).toMatch(
-        /\.tag-board-stack\s*\{[\s\S]*?transform-style\s*:\s*preserve-3d/
-      );
-    });
-
-    it('does NOT render the All board as a receded card when All is foregrounded', async () => {
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
-      });
-      await tick();
-
-      const recededLabels = Array.from(
-        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
-      ).map(el => el.textContent?.trim());
-      expect(recededLabels).not.toContain('All');
-    });
-
-    it('renders the All board as a receded card when a user tag is foregrounded', async () => {
+    it('does NOT render the currently-foregrounded tag anywhere as a receded title bar', async () => {
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
@@ -454,23 +429,286 @@ describe('TagBoardDeck', () => {
       await tick();
 
       const recededLabels = Array.from(
-        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
+        container.querySelectorAll('.tag-board-stack .tag-board-card.receded .tag-board-card-label'),
       ).map(el => el.textContent?.trim());
-      expect(recededLabels).toContain('All');
+      expect(recededLabels).not.toContain('work');
     });
 
-    it('hides the Untagged receded card when no tasks are untagged', async () => {
-      const tasks = makeTasks().filter(t => t.tags && t.tags.length > 0);
+    it('does not render an Untagged row in the deck regardless of untagged-task presence', async () => {
+      // Even when untagged tasks exist, the deck renders no row for
+      // them — `Untagged` is reachable only via the strip.
       render(TagBoardDeck, {
         target: container,
-        props: { tasks, selectedTag: 'All', board: boardSnippet() },
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      const recededLabels = Array.from(
-        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
-      ).map(el => el.textContent?.trim());
-      expect(recededLabels).not.toContain('Untagged');
+      expect(stackTitleBarLabels(container)).not.toContain('Untagged');
+    });
+
+    it('foreground is the sole card in the deck irrespective of selection or focus', async () => {
+      // Probe several selections; only the foreground card ever renders
+      // inside the deck stack. No before-/after-foreground siblings.
+      for (const tag of ['All', 'Untagged', 'work', 'urgent', 'personal']) {
+        container.innerHTML = '';
+        render(TagBoardDeck, {
+          target: container,
+          props: { tasks: makeTasks(), selectedTag: tag, board: boardSnippet() },
+        });
+        await tick();
+
+        const cards = Array.from(
+          container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
+        );
+        expect(cards.length).toBe(1);
+        expect(cards[0].classList.contains('foreground')).toBe(true);
+        expect(cards[0].classList.contains('before-foreground')).toBe(false);
+        expect(cards[0].classList.contains('after-foreground')).toBe(false);
+      }
+    });
+
+    it('does not render any focus-marked title bar for non-selected focus tags (deck has no receded rows)', async () => {
+      // Focus = ['work']. With `personal` selected, `work` is omitted
+      // from the deck entirely (no title bar). Selecting `work` puts the
+      // focus marker on the foreground; verifying that here as well.
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'personal',
+          focusTags: ['work'],
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      const focusedBars = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-stack .tag-board-card-title-bar.focused'),
+      ).map(el => el.querySelector('.tag-board-card-label')?.textContent?.trim());
+
+      // `personal` is not in focus, so no focused title bar in the deck.
+      expect(focusedBars).toEqual([]);
+    });
+
+    it('projects --stack-x-offset = 0px on the foreground (the sole card in the deck)', async () => {
+      // Only the foreground renders in the deck (issue #120). The
+      // foreground always sits at offset 0 — it is the fan centre.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      const cards = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
+      );
+      expect(cards.length).toBe(1);
+      expect(cards[0].style.getPropertyValue('--stack-x-offset')).toBe('0px');
+    });
+
+    it('does NOT project a --stack-y-offset on the foreground card', async () => {
+      // The foreground stays in its natural flex-flow Y position. The
+      // body peek frames are translated diagonally as a unit (via
+      // `--peek-y-offset` in TagBoardCard) so their L-shaped
+      // protrusions stair-step on all four corners.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      const cards = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
+      );
+      expect(cards.length).toBe(1);
+      expect(cards[0].style.getPropertyValue('--stack-y-offset')).toBe('');
+    });
+
+    it('foreground always has --stack-x-offset = 0px (it is the fan centre)', async () => {
+      // The foreground sits at the centre of the symmetric fan
+      // regardless of its position in the visual order. Probe several
+      // selections to confirm the invariant.
+      for (const tag of ['All', 'Untagged', 'work', 'urgent', 'personal']) {
+        container.innerHTML = '';
+        render(TagBoardDeck, {
+          target: container,
+          props: { tasks: makeTasks(), selectedTag: tag, board: boardSnippet() },
+        });
+        await tick();
+        const fg = container.querySelector('.tag-board-card.foreground') as HTMLElement;
+        expect(fg.style.getPropertyValue('--stack-x-offset')).toBe('0px');
+      }
+    });
+
+    // -------------------------------------------------------------------
+    // Body peeks (issue #120). The deck emits one peek per non-selected
+    // board into the foreground TagBoardCard, with `depth = |i -
+    // foregroundIndex|`, `xOffset = (i - foregroundIndex) * 2px`, and
+    // `yOffset = (i - foregroundIndex) * 5px`. The peeks render as
+    // `.board-body-peek` siblings inside the foreground card; their
+    // inline styles encode the per-peek depth and diagonal translation
+    // for the deck contract.
+    // -------------------------------------------------------------------
+
+    function peekDescriptors(c: HTMLElement): Array<{ depth: number; xOffset: number; yOffset: number }> {
+      return Array.from(
+        c.querySelectorAll<HTMLElement>('.tag-board-card.foreground .board-body-peek'),
+      ).map(el => ({
+        depth: parseInt(el.style.getPropertyValue('--peek-depth'), 10),
+        xOffset: parseInt(el.style.getPropertyValue('--peek-x-offset'), 10),
+        yOffset: parseInt(el.style.getPropertyValue('--peek-y-offset'), 10),
+      }));
+    }
+
+    it('emits peeks behind the foreground for every non-selected board', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
+      // with `work` selected (foregroundIndex = 2). Four peeks expected.
+      // Each peek is the same size as the foreground and translated
+      // diagonally by (signedDist × 2px, signedDist × 5px):
+      // i=0 (All)      → depth 2, xOffset -4, yOffset -10
+      // i=1 (Untagged) → depth 1, xOffset -2, yOffset  -5
+      // i=3 (urgent)   → depth 1, xOffset +2, yOffset  +5
+      // i=4 (personal) → depth 2, xOffset +4, yOffset +10
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      expect(peekDescriptors(container)).toEqual([
+        { depth: 2, xOffset: -4, yOffset: -10 },
+        { depth: 1, xOffset: -2, yOffset: -5 },
+        { depth: 1, xOffset: 2, yOffset: 5 },
+        { depth: 2, xOffset: 4, yOffset: 10 },
+      ]);
+    });
+
+    it('emits peeks with positive xOffset and positive yOffset when the foreground is at index 0 of the visual order', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] with
+      // `All` selected → foregroundIndex = 0. Every non-selected board
+      // sits BELOW the foreground, so every peek shifts down-right by
+      // (+N×2px, +N×5px).
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      expect(peekDescriptors(container)).toEqual([
+        { depth: 1, xOffset: 2, yOffset: 5 },
+        { depth: 2, xOffset: 4, yOffset: 10 },
+        { depth: 3, xOffset: 6, yOffset: 15 },
+        { depth: 4, xOffset: 8, yOffset: 20 },
+      ]);
+    });
+
+    it('emits peeks with negative xOffset and negative yOffset when the foreground is at the end of the visual order', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] with
+      // `personal` selected → foregroundIndex = 4. Every non-selected
+      // board sits ABOVE the foreground, so every peek shifts up-left
+      // by (-N×2px, -N×5px).
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'personal', board: boardSnippet() },
+      });
+      await tick();
+
+      expect(peekDescriptors(container)).toEqual([
+        { depth: 4, xOffset: -8, yOffset: -20 },
+        { depth: 3, xOffset: -6, yOffset: -15 },
+        { depth: 2, xOffset: -4, yOffset: -10 },
+        { depth: 1, xOffset: -2, yOffset: -5 },
+      ]);
+    });
+
+    it('does not render any receded cards in the deck (peeks only emit on the foreground)', async () => {
+      // Issue #120 simplification: only the foreground card mounts in
+      // the deck, so there is no receded-card surface that could carry
+      // a `.board-body-peek`. The peeks only ever live inside the
+      // foreground card.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      const recededCards = container.querySelectorAll(
+        '.tag-board-stack .tag-board-card.receded',
+      );
+      expect(recededCards.length).toBe(0);
+    });
+
+    // -------------------------------------------------------------------
+    // Dynamic stack padding (issue #120). Body peek frames extend past
+    // the foreground edge by N × 5 px where N is the worst-case above /
+    // below depth. The deck must project matching padding via
+    // `--stack-padding-top` / `--stack-padding-bottom` so peek
+    // extensions stay inside the stack's bounds.
+    // -------------------------------------------------------------------
+
+    function stackPadding(c: HTMLElement): { top: string; bottom: string } {
+      const stack = c.querySelector('.tag-board-stack') as HTMLElement;
+      return {
+        top: stack.style.getPropertyValue('--stack-padding-top'),
+        bottom: stack.style.getPropertyValue('--stack-padding-bottom'),
+      };
+    }
+
+    it('projects zero top padding when foreground sits at the top of the visual order', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
+      // with `All` selected → foregroundIndex = 0. maxAboveDepth = 0 →
+      // padding-top = 0; maxBelowDepth = 4 → padding-bottom = 4*5 = 20.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      expect(stackPadding(container)).toEqual({ top: '0px', bottom: '20px' });
+    });
+
+    it('projects symmetric stack padding when foreground sits in the middle of the visual order', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
+      // with `work` selected → foregroundIndex = 2. maxAboveDepth = 2 →
+      // padding-top = 2*5 = 10; maxBelowDepth = 2 → padding-bottom = 10.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      expect(stackPadding(container)).toEqual({ top: '10px', bottom: '10px' });
+    });
+
+    it('projects zero bottom padding when foreground sits at the bottom of the visual order', async () => {
+      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
+      // with `personal` selected → foregroundIndex = 4. maxAboveDepth = 4
+      // → padding-top = 4*5 = 20; maxBelowDepth = 0 → padding-bottom = 0.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'personal', board: boardSnippet() },
+      });
+      await tick();
+
+      expect(stackPadding(container)).toEqual({ top: '20px', bottom: '0px' });
+    });
+
+    it('marks the foreground title bar as focused when the selected board is in focus', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'work',
+          focusTags: ['work'],
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      const fg = container.querySelector(
+        '.tag-board-card.foreground .tag-board-card-title-bar',
+      );
+      expect(fg?.classList.contains('focused')).toBe(true);
     });
   });
 

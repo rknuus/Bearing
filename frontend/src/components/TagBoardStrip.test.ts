@@ -110,25 +110,41 @@ describe('TagBoardStrip', () => {
 
   // --- Focus-group marker (#121, US-7) ---
 
-  it('renders no focus marker when focusTags is empty', async () => {
+  it('renders no focus frame when focusTags is empty', async () => {
     render(TagBoardStrip, { target: container, props: makeProps({ focusTags: [] }) });
     await tick();
 
-    expect(container.querySelector('.tag-board-strip-focus-marker')).toBeNull();
+    expect(container.querySelector('.focus-group-frame')).toBeNull();
     expect(container.querySelectorAll('.tag-board-strip-item.focus-group').length).toBe(0);
   });
 
-  it('renders the focus marker when at least one focus tag is in the prefix', async () => {
+  it('renders the focus frame when at least one focus tag is in the prefix', async () => {
     render(TagBoardStrip, {
       target: container,
       props: makeProps({ tags: ['alpha', 'beta', 'gamma'], focusTags: ['alpha'] }),
     });
     await tick();
 
-    expect(container.querySelector('.tag-board-strip-focus-marker')).not.toBeNull();
+    expect(container.querySelector('.focus-group-frame')).not.toBeNull();
     const focusChips = container.querySelectorAll('.tag-board-strip-item.focus-group');
     expect(focusChips.length).toBe(1);
     expect(focusChips[0].textContent?.trim()).toBe('alpha');
+  });
+
+  it('focus frame exposes accessible label and visible "Today\'s focus" caption (#120 Issue 4)', async () => {
+    render(TagBoardStrip, {
+      target: container,
+      props: makeProps({ tags: ['alpha', 'beta'], focusTags: ['alpha'] }),
+    });
+    await tick();
+
+    const frame = container.querySelector('.focus-group-frame');
+    expect(frame).not.toBeNull();
+    expect(frame?.getAttribute('role')).toBe('group');
+    expect(frame?.getAttribute('aria-label')).toBe("Today's focus");
+
+    const caption = container.querySelector('.focus-group-label');
+    expect(caption?.textContent?.trim()).toBe("Today's focus");
   });
 
   it('marks every contiguous focus chip at the head of the strip (multiple focus tags)', async () => {
@@ -186,7 +202,7 @@ describe('TagBoardStrip', () => {
     expect(active[0].textContent?.trim()).toBe('gamma');
     expect(active[0].classList.contains('focus-group')).toBe(false);
 
-    expect(container.querySelector('.tag-board-strip-focus-marker')).not.toBeNull();
+    expect(container.querySelector('.focus-group-frame')).not.toBeNull();
   });
 
   it('renders tags in the supplied order (FR-10 ordering is the deck\'s job; the strip never re-sorts)', async () => {

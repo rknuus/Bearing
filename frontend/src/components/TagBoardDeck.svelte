@@ -118,6 +118,106 @@
     effectiveSelection(selectedTag, mountedFocusTags, userTags, [ALL_BOARD, UNTAGGED_BOARD]),
   );
 
+  /**
+   * Visual top-to-bottom order in the vertical-accordion stack
+   * (issue #120 redesign).
+   *
+   * The strip orders tags leftmost-first as `[focus alpha, non-focus
+   * alpha, Untagged, All]`. The user's mental model places the
+   * rightmost-strip tag at the TOP of the stack and the leftmost-strip
+   * tag at the BOTTOM, with the selected board expanded inline at its
+   * position in that reversed sequence. We reverse the strip order
+   * here and render each entry in turn — selected as foreground,
+   * everything else as a receded title bar.
+   */
+  const visualOrder = $derived.by(() => {
+    const arr: string[] = [...orderedUserTags];
+    if (hasUntagged) arr.push(UNTAGGED_BOARD);
+    arr.push(ALL_BOARD);
+    return arr.reverse();
+  });
+
+  // Index of the foreground card in the visual order — used to flag
+  // whether a receded card sits above or below it (drives the
+  // before-foreground / after-foreground position-flag classes).
+  const foregroundIndex = $derived(visualOrder.indexOf(effectiveTag));
+
+  /**
+   * Horizontal fan stagger (issue #120). Symmetric fan centered on the
+   * foreground: the foreground card sits at X=0, cards above it shift
+   * left by 2px per index distance, cards below shift right by the same
+   * step. So a typical 7-board deck with the foreground in the middle
+   * spans ~±6px horizontally. Foreground participates in the fan
+   * trivially (it's always at offset 0). Title bars stay in their
+   * natural flex-flow Y positions — there is no Y stagger on the cards;
+   * only the peek frames translate diagonally (see `peekData`).
+   */
+  const STACK_X_OFFSET_STEP_PX = 2;
+  function stackXOffsetPx(index: number): number {
+    return (index - foregroundIndex) * STACK_X_OFFSET_STEP_PX;
+  }
+
+  /**
+   * Vertical translation step per depth (issue #120). All non-selected
+   * boards render as stair-stepped peek frames behind the foreground.
+   * Each peek is the SAME SIZE as the foreground (inset: 0) and is
+   * SHIFTED diagonally as a unit via translate(): above-peeks move up-
+   * left by (-N×2px, -N×5px), below-peeks move down-right by
+   * (+N×2px, +N×5px). This ensures all four corners stair-step
+   * diagonally — extending the frame on one edge would flatten the
+   * opposing corner.
+   */
+  const PEEK_STEP_PX = 5;
+
+  /**
+   * Body peeks (issue #120). For every non-selected board, emit one
+   * empty board-shaped frame behind the foreground CARD. Each peek is
+   * the SAME SIZE as the foreground and translated diagonally by
+   * `(signedDist * STACK_X_OFFSET_STEP_PX, signedDist * PEEK_STEP_PX)`
+   * — above-foreground entries shift up-left, below-foreground entries
+   * shift down-right. Depth = absolute distance from the foreground in
+   * `visualOrder` — drives z-index and opacity so deeper peeks layer
+   * further back and fade out gradually.
+   */
+  const peekData = $derived.by(() => {
+    if (foregroundIndex < 0) {
+      return [] as Array<{ depth: number; xOffset: number; yOffset: number }>;
+    }
+    const result: Array<{ depth: number; xOffset: number; yOffset: number }> = [];
+    for (let i = 0; i < visualOrder.length; i++) {
+      if (i === foregroundIndex) continue;
+      const signedDist = i - foregroundIndex;
+      const dist = Math.abs(signedDist);
+      result.push({
+        depth: dist,
+        xOffset: signedDist * STACK_X_OFFSET_STEP_PX,
+        yOffset: signedDist * PEEK_STEP_PX,
+      });
+    }
+    return result;
+  });
+
+  /**
+   * Dynamic vertical padding on the stack (issue #120). Body peek frames
+   * are translated up by `N × PEEK_STEP_PX` (above) or down by the same
+   * (below) for the deepest above- / below-foreground entry. Without
+   * matching padding, those translations visually overlap the tag-
+   * selector strip above (or any sibling below). Add per-side padding
+   * equal to the worst-case translation so all peek frames stay inside
+   * the stack.
+   */
+  const stackPaddingTopPx = $derived.by(() => {
+    if (foregroundIndex < 0) return 0;
+    const maxAboveDepth = foregroundIndex;
+    return Math.max(0, maxAboveDepth * PEEK_STEP_PX);
+  });
+
+  const stackPaddingBottomPx = $derived.by(() => {
+    if (foregroundIndex < 0) return 0;
+    const maxBelowDepth = visualOrder.length - 1 - foregroundIndex;
+    return Math.max(0, maxBelowDepth * PEEK_STEP_PX);
+  });
+
   // Per-board slice. AD-1: pure presentational projection.
   const slice = $derived.by(() => {
     if (effectiveTag === ALL_BOARD) return tasks;
@@ -214,45 +314,45 @@
   />
 
   <!--
-    3D stack container (issue #122). The `perspective` / `preserve-3d`
-    declarations in the stylesheet make `translateZ` produce real depth
-    on the cards. Receded cards are absolutely-positioned siblings of
-    the foreground card; their `--card-depth` drives the staggered
-    transform (see TagBoardCard.svelte).
+    Vertical-accordion stack (issue #120 redesign).
 
-    Depth ordering: receded cards iterate the deck's canonical order
-    (focus-group user tags first, then non-focus user tags, then
-    Untagged, then All — see orderedUserTags / hasUntagged in the
-    script block) and SKIP the currently-foregrounded tag. The closest
-    receded card (depth 0) is the first non-foreground entry; each
-    subsequent receded card steps back one depth slot. AD-5 holds:
-    receded cards render chrome only, so DOM growth stays at
-    ~1× foreground content + N × chrome regardless of N.
+    The strip above is the canonical navigation surface; the stack
+    expands the selected board inline. Every non-selected board is
+    indicated only by a stair-stepped peek frame edge behind the
+    foreground card — there are no title bars in the deck.
+
+    Only the foreground card mounts the `board` snippet (AD-5
+    invariant preserved through DOM rather than positional layering).
 
     EditTaskDialog is mounted at the EisenKanView level (outside this
     deck), so dialog state survives any board swap without needing
     content-mount gating here.
   -->
-  <div class="tag-board-stack">
-    {#each orderedUserTags as tag, i (tag)}
-      {#if tag !== effectiveTag}
-        {@const earlierForeground = orderedUserTags.slice(0, i).includes(effectiveTag)}
-        <TagBoardCard mode="receded" label={tag} depth={earlierForeground ? i - 1 : i} />
+  <div
+    class="tag-board-stack"
+    style="--stack-padding-top: {stackPaddingTopPx}px; --stack-padding-bottom: {stackPaddingBottomPx}px;"
+  >
+    {#each visualOrder as tag, i (tag)}
+      {#if tag === effectiveTag}
+        <TagBoardCard
+          mode="foreground"
+          label={tag}
+          focused={focusGroup.includes(tag)}
+          style="--stack-x-offset: {stackXOffsetPx(i)}px;"
+          {peekData}
+        >
+          {@render board(slice)}
+        </TagBoardCard>
       {/if}
+      <!--
+        Non-selected boards (issue #120): no TagBoardCard rendered in
+        the flex stack. The body peek frames behind the foreground
+        already extend past it toward each non-selected board's title-
+        bar position in the strip; their stair-stepped top / bottom
+        edges visually convey the presence of every other board without
+        consuming layout space.
+      -->
     {/each}
-    {#if hasUntagged && effectiveTag !== UNTAGGED_BOARD}
-      {@const untaggedDepth = orderedUserTags.filter(t => t !== effectiveTag).length}
-      <TagBoardCard mode="receded" label={UNTAGGED_BOARD} depth={untaggedDepth} />
-    {/if}
-    {#if effectiveTag !== ALL_BOARD}
-      {@const allDepth = orderedUserTags.filter(t => t !== effectiveTag).length + (hasUntagged && effectiveTag !== UNTAGGED_BOARD ? 1 : 0)}
-      <TagBoardCard mode="receded" label={ALL_BOARD} depth={allDepth} />
-    {/if}
-
-    <!-- Foreground card: only this card mounts full board content (AD-5). -->
-    <TagBoardCard mode="foreground" label={effectiveTag}>
-      {@render board(slice)}
-    </TagBoardCard>
   </div>
 </div>
 
@@ -264,18 +364,44 @@
     min-height: 0;
   }
 
-  /* 3D stage. `perspective` makes `translateZ` produce real depth on
-     descendants; `preserve-3d` lets nested transforms compose. The
-     stack is a positioning context for the absolutely-positioned
-     receded cards; the foreground card sits on top via z-index. */
+  /*
+   * Vertical-accordion stack. Plain flex column — the foreground card
+   * uses `flex: 1` to consume remaining space. The horizontal fan
+   * stagger is a translateX on each card (driven by the
+   * `--stack-x-offset` CSS variable projected by this component).
+   * Title bars stay in their natural flex-flow Y positions; the body
+   * peek frames are translated diagonally as a unit (see
+   * `.board-body-peek` in TagBoardCard) so their L-shaped protrusions
+   * stair-step on all four corners.
+   *
+   * The fan is symmetric around the foreground (cards above shift left,
+   * below shift right). The horizontal padding here absorbs the worst-
+   * case absolute offset so negative-X cards don't get clipped on the
+   * left edge nor pushed past the deck on the right. Body peeks (issue
+   * #120) translate past the foreground frame by up to N × 2px
+   * horizontally — at N=10 that's 20px — so 20px comfortably covers
+   * any realistic deck depth.
+   */
   .tag-board-stack {
-    position: relative;
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
-    perspective: 1200px;
-    perspective-origin: 50% 30%;
-    transform-style: preserve-3d;
+    /*
+     * Zero flex gap (issue #120). The deck only renders the foreground
+     * card, so the gap value is academic — kept at 0 to make any future
+     * additions (e.g. an optional toolbar above / below the foreground)
+     * sit flush against the foreground frame by default.
+     */
+    gap: 0;
+    /*
+     * Horizontal padding (20 px each side) absorbs the symmetric fan's
+     * worst-case X offset. Vertical padding is dynamic (issue #120):
+     * matches the worst-case body-peek translation on each side so peek
+     * frames at depth ≥ 2 do not overflow the stack into the tag-
+     * selector strip above (nor a sibling element below). See
+     * `stackPaddingTopPx` / `stackPaddingBottomPx` in the script.
+     */
+    padding: var(--stack-padding-top, 0) 20px var(--stack-padding-bottom, 0);
   }
 </style>

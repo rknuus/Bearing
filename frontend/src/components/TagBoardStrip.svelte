@@ -66,19 +66,28 @@
 
 <div class="tag-board-strip" role="radiogroup" aria-label="Tag boards">
   {#if showFocusMarker}
-    <div
-      class="tag-board-strip-focus-marker"
-      style="--focus-span: {focusCount};"
-      aria-label="Today's focus tags"
-    ></div>
+    <div class="focus-group-frame" role="group" aria-label="Today's focus">
+      <span class="focus-group-label">Today's focus</span>
+      {#each tags.slice(0, focusCount) as tag (tag)}
+        <button
+          type="button"
+          role="radio"
+          class="tag-board-strip-item focus-group"
+          class:active={selectedTag === tag}
+          aria-checked={selectedTag === tag}
+          onclick={() => onSelect(tag)}
+        >
+          {tag}
+        </button>
+      {/each}
+    </div>
   {/if}
-  {#each tags as tag, i (tag)}
+  {#each tags.slice(focusCount) as tag (tag)}
     <button
       type="button"
       role="radio"
       class="tag-board-strip-item"
       class:active={selectedTag === tag}
-      class:focus-group={i < focusCount}
       aria-checked={selectedTag === tag}
       onclick={() => onSelect(tag)}
     >
@@ -148,46 +157,30 @@
   }
 
   /*
-   * Focus-group visual treatment.
+   * Focus-group visual treatment (#120 Issue 4).
    *
-   * The marker is a tinted, rounded background sitting behind the run of
-   * focus chips. Because the chips can wrap onto multiple rows, a single
-   * absolutely-positioned shape would not track them reliably; instead, the
-   * focus chips themselves get a subtle border highlight and the marker
-   * adds a contiguous tinted background that auto-fits behind their
-   * (possibly wrapped) bounding box via flex order.
-   *
-   * Implementation: each focus chip carries a faint primary-tinted border
-   * and a halo via box-shadow; together they read as a clearly-grouped
-   * cluster without depending on absolute geometry.
+   * The focus chips live inside a labeled frame ("Today's focus") with a
+   * primary-coloured border. The frame replaces the per-chip halo because
+   * users found the previous treatment too subtle. If the frame is too
+   * wide for one row the whole frame wraps as a single unit — acceptable.
    */
-  .tag-board-strip-item.focus-group {
-    border-color: var(--color-primary-400);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 14%, transparent);
-    background: color-mix(in srgb, var(--color-primary-500) 6%, var(--color-gray-200));
+  .focus-group-frame {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1.5px solid var(--color-primary-500);
+    border-radius: 9999px;
+    padding: 0.25rem 0.5rem 0.25rem 0.875rem;
+    background: color-mix(in srgb, var(--color-primary-500) 4%, transparent);
   }
 
-  .tag-board-strip-item.focus-group:hover {
-    background: color-mix(in srgb, var(--color-primary-500) 12%, var(--color-gray-300));
-  }
-
-  .tag-board-strip-item.focus-group.active {
-    background: var(--color-primary-500);
-    border-color: var(--color-primary-600);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 28%, transparent);
-    color: white;
-  }
-
-  /*
-   * The marker element is a screen-reader-friendly accent: it does not
-   * paint anything visible by itself (the tinted chips do that work) but
-   * exposes an accessible label so assistive tech recognises the cluster
-   * as today's focus group. Keeping it a no-op visually means the marker
-   * survives any chip animation in #122 without reflow concerns.
-   */
-  .tag-board-strip-focus-marker {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
+  .focus-group-label {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--color-primary-600);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    margin-right: 0.125rem;
   }
 </style>
