@@ -71,6 +71,7 @@ func TestUnit_LoadNavigationContext_ReturnsSavedContext(t *testing.T) {
 		CalendarDayEditorDate:        utilities.MustParseCalendarDate("2026-03-21"),
 		CalendarDayEditorExpandedIds: []string{"exp1"},
 		VisionCollapsed:              &visionCollapsed,
+		SelectedTag:                  "@deep-work",
 	}
 
 	if err := ua.SaveNavigationContext(saved); err != nil {
@@ -132,6 +133,32 @@ func TestUnit_LoadNavigationContext_ReturnsSavedContext(t *testing.T) {
 	}
 	if loaded.VisionCollapsed == nil || *loaded.VisionCollapsed != visionCollapsed {
 		t.Errorf("VisionCollapsed: expected %v, got %v", visionCollapsed, loaded.VisionCollapsed)
+	}
+	if loaded.SelectedTag != saved.SelectedTag {
+		t.Errorf("SelectedTag: expected %q, got %q", saved.SelectedTag, loaded.SelectedTag)
+	}
+}
+
+func TestUnit_LoadNavigationContext_LegacyFileWithoutSelectedTag(t *testing.T) {
+	ua, _, cleanup := setupTestUIStateAccess(t)
+	defer cleanup()
+
+	// Write a legacy-format navigation_context.json that omits selectedTag.
+	legacy := []byte(`{"currentView":"eisenkan","currentItem":"task-1","filterThemeId":"THM","lastAccessed":"2026-03-21T10:00:00Z"}`)
+	filePath := ua.navigationContextFilePath()
+	if err := os.WriteFile(filePath, legacy, 0644); err != nil {
+		t.Fatalf("failed to write legacy file: %v", err)
+	}
+
+	loaded, err := ua.LoadNavigationContext()
+	if err != nil {
+		t.Fatalf("unexpected error loading legacy file: %v", err)
+	}
+	if loaded == nil {
+		t.Fatal("expected non-nil context for legacy file")
+	}
+	if loaded.SelectedTag != "" {
+		t.Errorf("SelectedTag: expected empty string for legacy file, got %q", loaded.SelectedTag)
 	}
 }
 

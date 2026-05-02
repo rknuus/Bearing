@@ -44,6 +44,7 @@ type NavigationContext struct {
 	CalendarDayEditorExpandedIds []string               `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool                  `json:"visionCollapsed,omitempty"`
 	RoutinesCollapsed            *bool                  `json:"routinesCollapsed,omitempty"`
+	SelectedTag                  string                 `json:"selectedTag,omitempty"`
 }
 
 // IGoalStructure defines behavioral operations for managing the OKR hierarchy.
@@ -1542,6 +1543,9 @@ func (m *PlanningManager) CreateTask(title, themeId, priority, description, tags
 			}
 		}
 	}
+	if err := validateTagNames(tagSlice); err != nil {
+		return nil, err
+	}
 
 	task := Task{
 		Title:         title,
@@ -1705,6 +1709,9 @@ func (m *PlanningManager) MoveTask(taskId, newStatus, newPriority string, positi
 func (m *PlanningManager) UpdateTask(task Task) error {
 	if task.ID == "" {
 		return fmt.Errorf("task ID cannot be empty")
+	}
+	if err := validateTagNames(task.Tags); err != nil {
+		return err
 	}
 
 	// Evaluate rules before updating
@@ -2320,6 +2327,7 @@ func (m *PlanningManager) LoadNavigationContext() (*NavigationContext, error) {
 		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
 		VisionCollapsed:              ctx.VisionCollapsed,
 		RoutinesCollapsed:            ctx.RoutinesCollapsed,
+		SelectedTag:                  ctx.SelectedTag,
 	}, nil
 }
 
@@ -2344,6 +2352,7 @@ func (m *PlanningManager) SaveNavigationContext(ctx NavigationContext) error {
 		CalendarDayEditorExpandedIds: ctx.CalendarDayEditorExpandedIds,
 		VisionCollapsed:              ctx.VisionCollapsed,
 		RoutinesCollapsed:            ctx.RoutinesCollapsed,
+		SelectedTag:                  ctx.SelectedTag,
 	}
 
 	if err := m.uiStateAccess.SaveNavigationContext(accessCtx); err != nil {

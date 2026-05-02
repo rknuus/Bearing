@@ -311,4 +311,5 @@ type NavigationContext struct {
 	CalendarDayEditorExpandedIds []string `json:"calendarDayEditorExpandedIds,omitempty"`
 	VisionCollapsed              *bool    `json:"visionCollapsed,omitempty"`
 	RoutinesCollapsed            *bool    `json:"routinesCollapsed,omitempty"`
+	SelectedTag                  string   `json:"selectedTag,omitempty"`
 }
