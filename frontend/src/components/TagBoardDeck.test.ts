@@ -190,4 +190,295 @@ describe('TagBoardDeck', () => {
 
     expect(container.querySelector('.tag-board-strip-item.synthetic.untagged')).toBeNull();
   });
+
+  // --- FR-10 focus-group ordering and marker derivation (#121) ---
+
+  function userTagLabels(c: HTMLElement): string[] {
+    return Array.from(c.querySelectorAll<HTMLElement>('.tag-board-strip-item:not(.synthetic)'))
+      .map(b => b.textContent?.trim() ?? '');
+  }
+
+  function focusChipLabels(c: HTMLElement): string[] {
+    return Array.from(c.querySelectorAll<HTMLElement>('.tag-board-strip-item.focus-group'))
+      .map(b => b.textContent?.trim() ?? '');
+  }
+
+  it('falls back to alphabetical user-tag order when focusTags is empty', async () => {
+    // No focus → group (1) is empty; group (2) holds every tag in alpha
+    // order. Synthetic Untagged / All trail at fixed positions.
+    render(TagBoardDeck, {
+      target: container,
+      props: { tasks: makeTasks(), selectedTag: 'All', focusTags: [], board: boardSnippet() },
+    });
+    await tick();
+
+    expect(userTagLabels(container)).toEqual(['personal', 'urgent', 'work']);
+    expect(container.querySelector('.tag-board-strip-focus-marker')).toBeNull();
+  });
+
+  it('places focus tags at the front, alphabetically, with non-focus tags following alphabetically', async () => {
+    // Available user tags (alpha): personal, urgent, work.
+    // Focus = ['work', 'personal'] (input order is intentionally
+    // non-alphabetical) → focus group: ['personal', 'work']; non-focus:
+    // ['urgent']; synthetic Untagged / All trail.
+    render(TagBoardDeck, {
+      target: container,
+      props: {
+        tasks: makeTasks(),
+        selectedTag: 'All',
+        focusTags: ['work', 'personal'],
+        board: boardSnippet(),
+      },
+    });
+    await tick();
+
+    expect(userTagLabels(container)).toEqual(['personal', 'work', 'urgent']);
+    expect(focusChipLabels(container)).toEqual(['personal', 'work']);
+
+    // Synthetic Untagged / All still in fixed positions.
+    const allItems = Array.from(container.querySelectorAll('.tag-board-strip-item'));
+    expect(allItems[allItems.length - 2].textContent?.trim()).toBe('Untagged');
+    expect(allItems[allItems.length - 1].textContent?.trim()).toBe('All');
+  });
+
+  it('drops focus tags that have no matching board (no tasks carry them)', async () => {
+    // `marketing` is in focus but no task carries it → it must NOT
+    // surface as a board, and must NOT appear in the focus marker.
+    render(TagBoardDeck, {
+      target: container,
+      props: {
+        tasks: makeTasks(),
+        selectedTag: 'All',
+        focusTags: ['marketing', 'work'],
+        board: boardSnippet(),
+      },
+    });
+    await tick();
+
+    expect(userTagLabels(container)).toEqual(['work', 'personal', 'urgent']);
+    expect(focusChipLabels(container)).toEqual(['work']);
+  });
+
+  it('renders focus marker spanning all focus chips when multiple focus tags are present', async () => {
+    render(TagBoardDeck, {
+      target: container,
+      props: {
+        tasks: makeTasks(),
+        selectedTag: 'All',
+        focusTags: ['urgent', 'work'],
+        board: boardSnippet(),
+      },
+    });
+    await tick();
+
+    expect(container.querySelector('.tag-board-strip-focus-marker')).not.toBeNull();
+    expect(focusChipLabels(container)).toEqual(['urgent', 'work']);
+  });
+
+  it('preserves selection of a non-focus tag when focus group is non-empty (US-2)', async () => {
+    // Selected tag (`personal`) is outside the focus group (`work`).
+    // Selection must remain on `personal`; the strip must still highlight it.
+    render(TagBoardDeck, {
+      target: container,
+      props: {
+        tasks: makeTasks(),
+        selectedTag: 'personal',
+        focusTags: ['work'],
+        board: boardSnippet(),
+      },
+    });
+    await tick();
+
+    const active = container.querySelectorAll('.tag-board-strip-item.active');
+    expect(active.length).toBe(1);
+    expect(active[0].textContent?.trim()).toBe('personal');
+
+    // The slice corresponds to `personal` (T2 only), not `work`.
+    expect(visibleIds(container)).toEqual(['T2']);
+  });
+
+  it('case-insensitive sort puts mixed-case focus tags in lowercase-alphabetical order', async () => {
+    // Construct tasks with mixed-case tags and assert the deck's case-
+    // insensitive sort is applied to both groups.
+    const tasks: TaskWithStatus[] = [
+      { id: 'X1', title: 'X1', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['Banana'] },
+      { id: 'X2', title: 'X2', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['apple'] },
+      { id: 'X3', title: 'X3', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['Cherry'] },
+      { id: 'X4', title: 'X4', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['date'] },
+    ];
+
+    render(TagBoardDeck, {
+      target: container,
+      props: {
+        tasks,
+        selectedTag: 'All',
+        focusTags: ['Cherry', 'apple'],
+        board: boardSnippet(),
+      },
+    });
+    await tick();
+
+    // Focus group: ['apple', 'Cherry'] (case-insensitive alpha).
+    // Non-focus: ['Banana', 'date'].
+    expect(userTagLabels(container)).toEqual(['apple', 'Cherry', 'Banana', 'date']);
+    expect(focusChipLabels(container)).toEqual(['apple', 'Cherry']);
+  });
+
+  // ---------------------------------------------------------------------
+  // Issue #122: 3D stacked rendering — receded card behaviour.
+  // These tests cover only the visual layer added in #122. They do NOT
+  // overlap with the slicing / mirror / persistence tests above.
+  // ---------------------------------------------------------------------
+
+  describe('3D stacked rendering (issue #122)', () => {
+    it('renders every non-foreground board as a receded card behind the foreground', async () => {
+      // makeTasks() yields user tags [personal, urgent, work] plus an
+      // untagged task. With `All` foregrounded we expect 3 user-tag
+      // receded cards + Untagged. (No `All` receded — it is the
+      // foreground.) Total = 4 receded cards.
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      const recededLabels = Array.from(
+        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
+      ).map(el => el.textContent?.trim());
+
+      expect(recededLabels.sort()).toEqual(['Untagged', 'personal', 'urgent', 'work'].sort());
+    });
+
+    it('does NOT render the currently-foregrounded tag as a receded card', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      const recededLabels = Array.from(
+        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
+      ).map(el => el.textContent?.trim());
+
+      expect(recededLabels).not.toContain('work');
+      const fgLabel = container.querySelector(
+        '.tag-board-card.foreground .tag-board-card-label'
+      );
+      expect(fgLabel?.textContent?.trim()).toBe('work');
+    });
+
+    it('only the foreground card mounts board content (AD-5 invariant)', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      // Exactly one .board-content node — owned by the foreground card.
+      const contents = container.querySelectorAll('.board-content');
+      expect(contents.length).toBe(1);
+      // Receded cards must show their chrome shell, not board content.
+      const recededShells = container.querySelectorAll(
+        '.tag-board-card.receded .tag-board-card-receded-shell'
+      );
+      expect(recededShells.length).toBeGreaterThan(0);
+    });
+
+    it('assigns increasing depth to receded cards in deck order', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      const cards = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-card.receded')
+      );
+      expect(cards.length).toBeGreaterThanOrEqual(2);
+
+      // Depth values come from the inline --card-depth custom property
+      // and must form a strictly-increasing sequence across the receded
+      // card list (deck order).
+      const depths = cards.map(c => Number(c.style.getPropertyValue('--card-depth')));
+      for (let i = 1; i < depths.length; i++) {
+        expect(depths[i]).toBeGreaterThan(depths[i - 1]);
+      }
+      expect(depths[0]).toBe(0);
+    });
+
+    it('renders the deck inside a 3D perspective container', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      const stack = container.querySelector('.tag-board-stack') as HTMLElement;
+      expect(stack).not.toBeNull();
+      // jsdom does not compute `perspective` via getComputedStyle. We
+      // assert the CSS contract by walking document.styleSheets and
+      // matching the .tag-board-stack rule.
+      let perspectiveDeclared = false;
+      let preserve3dDeclared = false;
+      for (const sheet of Array.from(document.styleSheets)) {
+        let rules: CSSRuleList;
+        try {
+          rules = sheet.cssRules;
+        } catch {
+          continue;
+        }
+        for (const rule of Array.from(rules)) {
+          if (
+            rule instanceof CSSStyleRule &&
+            rule.selectorText.includes('tag-board-stack')
+          ) {
+            if (/perspective:\s*\d+px/.test(rule.cssText)) perspectiveDeclared = true;
+            if (rule.cssText.includes('transform-style: preserve-3d')) preserve3dDeclared = true;
+          }
+        }
+      }
+      expect(perspectiveDeclared).toBe(true);
+      expect(preserve3dDeclared).toBe(true);
+    });
+
+    it('does NOT render the All board as a receded card when All is foregrounded', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      const recededLabels = Array.from(
+        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
+      ).map(el => el.textContent?.trim());
+      expect(recededLabels).not.toContain('All');
+    });
+
+    it('renders the All board as a receded card when a user tag is foregrounded', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
+      });
+      await tick();
+
+      const recededLabels = Array.from(
+        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
+      ).map(el => el.textContent?.trim());
+      expect(recededLabels).toContain('All');
+    });
+
+    it('hides the Untagged receded card when no tasks are untagged', async () => {
+      const tasks = makeTasks().filter(t => t.tags && t.tags.length > 0);
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks, selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      const recededLabels = Array.from(
+        container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
+      ).map(el => el.textContent?.trim());
+      expect(recededLabels).not.toContain('Untagged');
+    });
+  });
 });

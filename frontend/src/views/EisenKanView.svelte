@@ -59,7 +59,7 @@
     currentDate?: CalendarDate;
   }
 
-  let { onNavigateToTheme, currentDate }: Props = $props();
+  let { onNavigateToTheme, currentDate, todayFocusTags = [] }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -1014,7 +1014,7 @@
       <p>Loading tasks...</p>
     </div>
   {:else}
-    <TagBoardDeck tasks={deckTasks} {selectedTag} onSelectionChange={handleDeckSelect}>
+    <TagBoardDeck tasks={deckTasks} {selectedTag} focusTags={todayFocusTags} onSelectionChange={handleDeckSelect}>
       {#snippet board(_slice)}
     <div class="kanban-board" style="grid-template-columns: {gridTemplateCols};">
       {#each columns as column (column.name)}
