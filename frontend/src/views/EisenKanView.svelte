@@ -13,8 +13,7 @@
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Button, ErrorBanner } from '../lib/components';
 
-  import ThemeFilterBar from '../components/ThemeFilterBar.svelte';
-  import TagSelection from '../components/TagSelection.svelte';
+  import TagBoardDeck from '../components/TagBoardDeck.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
   import CreateTaskDialog from '../components/CreateTaskDialog.svelte';
   import ErrorDialog from '../components/ErrorDialog.svelte';
@@ -31,12 +30,18 @@
   } from '../lib/wails-mock';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { getTheme } from '../lib/utils/theme-helpers';
-  import { UNTAGGED_SENTINEL } from '../lib/constants/filters';
+  import { ALL_BOARD, UNTAGGED_BOARD } from '../lib/constants/tag-boards';
   import { formatDate } from '../lib/utils/date-format';
   import { today as todayDate, type CalendarDate } from '../lib/utils/date-utils';
   import { checkFullState } from '../lib/utils/state-check';
 
   // Props for cross-view navigation
+  //
+  // The legacy theme/tag filter props (filterThemeIds, filterTagIds, and their
+  // toggle/clear callbacks plus the today-focus pass-through) are accepted for
+  // backwards-compatibility with App.svelte's wiring but no longer drive any
+  // EisenKan UI — the TagBoardDeck has replaced ThemeFilterBar/TagSelection.
+  // App.svelte still consumes the underlying state for its breadcrumbs.
   interface Props {
     onNavigateToTheme?: (themeId: string) => void;
     filterThemeIds?: string[];
@@ -54,7 +59,7 @@
     currentDate?: CalendarDate;
   }
 
-  let { onNavigateToTheme, filterThemeIds = [], filterTagIds = [], onFilterThemeToggle, onFilterThemeClear, onFilterTagToggle, onFilterTagClear, todayFocusThemeId, todayFocusActive, onTodayFocusToggle, todayFocusTags, tagFocusActive, onTagFocusToggle, currentDate }: Props = $props();
+  let { onNavigateToTheme, currentDate }: Props = $props();
 
   // Types
   type Theme = LifeTheme;
@@ -71,6 +76,12 @@
   // Archive toggle state (persisted via navigation context)
   let showArchivedTasks = $state(false);
   let contextLoaded = false;
+
+  // TagBoardDeck selection (persisted via navigation context). `null` /
+  // empty / unrecognised name collapses to the default board (`All` for
+  // #120 — focus-aware default arrives in #123). Persisted by tag NAME
+  // per AD-6.
+  let selectedTag = $state<string>(ALL_BOARD);
 
   // Fold state (persisted via navigation context)
   let collapsedSections = new SvelteSet<string>();
@@ -145,88 +156,26 @@
     return cols.join(' ');
   });
 
-  // Filter tasks based on props
-  const filteredTasks = $derived.by(() => {
-    let result = [...tasks];
-    if (filterThemeIds.length > 0) {
-      result = result.filter(t => !t.themeId || filterThemeIds.includes(t.themeId));
-    }
-    if (tagFocusActive && todayFocusTags && todayFocusTags.length > 0) {
-      result = result.filter(t => t.tags?.some(tag => todayFocusTags.includes(tag)));
-    } else if (filterTagIds.length > 0) {
-      const realTags = filterTagIds.filter(t => t !== UNTAGGED_SENTINEL);
-      const includeUntagged = filterTagIds.includes(UNTAGGED_SENTINEL);
-      result = result.filter(t => {
-        const hasTags = t.tags && t.tags.length > 0;
-        if (includeUntagged && !hasTags) return true;
-        if (realTags.length > 0 && hasTags) return realTags.every(tag => t.tags!.includes(tag));
-        return false;
-      });
-    }
-    return result;
-  });
-
-  // Derive available tags from all tasks (not filtered) for the tag filter bar
-  const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
-
-  // Base task set for count computation (excludes archived unless shown)
-  const countBaseTasks = $derived(
+  // Tasks for the deck source: include archived only when the toggle is on,
+  // matching the behaviour of the previous filter chain.
+  const deckTasks = $derived(
     showArchivedTasks ? tasks : tasks.filter(t => t.status !== 'archived')
   );
 
-  // Whether any task in the full base set has no tags (for Untagged pill visibility)
-  const hasUntaggedTasks = $derived(countBaseTasks.some(t => !t.tags || t.tags.length === 0));
-
-  // Theme filter pill counts: each theme count = tasks matching that theme + active tag/date filters
-  const themeCounts = $derived.by(() => {
-    const base = countBaseTasks;
-    const realTags = filterTagIds.filter(t => t !== UNTAGGED_SENTINEL);
-    const includeUntagged = filterTagIds.includes(UNTAGGED_SENTINEL);
-
-    function matchesTags(t: TaskWithStatus): boolean {
-      if (filterTagIds.length === 0) return true;
-      const hasTags = t.tags && t.tags.length > 0;
-      if (includeUntagged && !hasTags) return true;
-      if (realTags.length > 0 && hasTags) return realTags.every(tag => t.tags!.includes(tag));
-      return false;
-    }
-
-    const counts: Record<string, number> = {};
-    let allCount = 0;
-    for (const t of base) {
-      if (!matchesTags(t)) continue;
-      allCount++;
-      counts[t.themeId] = (counts[t.themeId] ?? 0) + 1;
-    }
-    counts['__all__'] = allCount;
-    return counts;
+  // Per-board task slice driven by the TagBoardDeck selection. Mirrors the
+  // deck's projection so that columnItems/sectionItems can be re-derived in
+  // this view (DnD lives here). Both derivations consume the same `tasks`
+  // source, so the rendered foreground card and the regrouped columns are
+  // guaranteed to agree.
+  const filteredTasks = $derived.by(() => {
+    if (selectedTag === ALL_BOARD) return deckTasks;
+    if (selectedTag === UNTAGGED_BOARD) return deckTasks.filter(t => !t.tags || t.tags.length === 0);
+    return deckTasks.filter(t => t.tags?.includes(selectedTag));
   });
 
-  // Tag filter pill counts: per-tag counts apply theme filter; "All" uses themeCounts
-  const tagCounts = $derived.by(() => {
-    const base = countBaseTasks;
-
-    function matchesTheme(t: TaskWithStatus): boolean {
-      return filterThemeIds.length === 0 || filterThemeIds.includes(t.themeId);
-    }
-
-    const counts: Record<string, number> = {};
-    let untaggedCount = 0;
-    for (const t of base) {
-      if (!matchesTheme(t)) continue;
-      const hasTags = t.tags && t.tags.length > 0;
-      if (hasTags) {
-        for (const tag of t.tags!) {
-          counts[tag] = (counts[tag] ?? 0) + 1;
-        }
-      } else {
-        untaggedCount++;
-      }
-    }
-    counts['__all__'] = themeCounts['__all__'];
-    counts[UNTAGGED_SENTINEL] = untaggedCount;
-    return counts;
-  });
+  // Tags available across the current task set, surfaced to the
+  // create/edit dialogs for tag autocompletion.
+  const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
 
   // Re-derive columnItems and sectionItems from the current filteredTasks.
   // Called by the $effect (reactive sync) and by the drag-cancel path (synchronous reset).
@@ -363,6 +312,10 @@
           showArchivedTasks = navCtx.showArchivedTasks ?? false;
           for (const s of navCtx.collapsedSections ?? []) collapsedSections.add(s);
           for (const c of navCtx.collapsedColumns ?? []) collapsedColumns.add(c);
+          // selectedTag is persisted by name (AD-6); empty / missing collapses
+          // to the default. The TagBoardDeck handles the resolution.
+          const persisted = navCtx.selectedTag;
+          if (persisted) selectedTag = persisted;
         }
       } catch {
         // Ignore errors loading nav context
@@ -426,6 +379,26 @@
       }).catch(() => { /* ignore */ });
     });
   });
+
+  // Persist selectedTag (TagBoardDeck selection) to NavigationContext.
+  // Same cadence as the other context fields above.
+  $effect(() => {
+    const tag = selectedTag;
+    if (!contextLoaded) return;
+    untrack(() => {
+      getBindings().LoadNavigationContext().then((ctx) => {
+        if (ctx) {
+          getBindings().SaveNavigationContext({ ...ctx, selectedTag: tag });
+        }
+      }).catch(() => { /* ignore */ });
+    });
+  });
+
+  // Deck selection handler. The deck owns the strip's interaction surface
+  // and emits the new selection here; this view persists it.
+  function handleDeckSelect(tag: string) {
+    selectedTag = tag;
+  }
 
   // Create task dialog handlers
   function openCreateDialog() {
@@ -1041,32 +1014,8 @@
       <p>Loading tasks...</p>
     </div>
   {:else}
-    {#if themes.length > 0 && onFilterThemeToggle && onFilterThemeClear}
-      <ThemeFilterBar
-        {themes}
-        activeThemeIds={filterThemeIds}
-        onToggle={onFilterThemeToggle}
-        onClear={onFilterThemeClear}
-        counts={themeCounts}
-        {todayFocusThemeId}
-        {todayFocusActive}
-        {onTodayFocusToggle}
-      />
-    {/if}
-    {#if (availableTags.length > 0 || hasUntaggedTasks) && onFilterTagToggle && onFilterTagClear}
-      <TagSelection
-        {availableTags}
-        activeTagIds={filterTagIds}
-        onToggle={onFilterTagToggle}
-        onClear={onFilterTagClear}
-        counts={tagCounts}
-        untaggedActive={filterTagIds.includes(UNTAGGED_SENTINEL)}
-        {hasUntaggedTasks}
-        {todayFocusTags}
-        todayFocusActive={tagFocusActive}
-        onTodayFocusToggle={onTagFocusToggle}
-      />
-    {/if}
+    <TagBoardDeck tasks={deckTasks} {selectedTag} onSelectionChange={handleDeckSelect}>
+      {#snippet board(_slice)}
     <div class="kanban-board" style="grid-template-columns: {gridTemplateCols};">
       {#each columns as column (column.name)}
         {@const columnCollapsed = collapsedColumns.has(column.name) && !isDragging}
@@ -1272,6 +1221,8 @@
         </div>
       {/if}
     </div>
+      {/snippet}
+    </TagBoardDeck>
   {/if}
 
   <!-- Context Menu for Cross-View Navigation -->

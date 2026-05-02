@@ -297,32 +297,11 @@ describe('EisenKanView', () => {
     });
   });
 
-  it('filters tasks by filterThemeIds prop', async () => {
-    await renderView({ filterThemeIds: ['HF'] });
-
-    // Only HF tasks (T1 in todo, T4 in done) should be visible
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(2);
-
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).toContain('Exercise');
-    expect(titles).toContain('Done task');
-  });
-
-  it('shows routine tasks (empty themeId) even when theme filter is active', async () => {
-    currentTasks = [
-      ...makeTestTasks(),
-      { id: 'T5', title: 'Morning run', themeId: '', priority: 'important-not-urgent', status: 'todo', tags: ['Routine'] },
-    ];
-    await renderView({ filterThemeIds: ['HF'] });
-
-    // HF tasks + routine task (no theme) should be visible
-    const cards = container.querySelectorAll('.task-card');
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).toContain('Exercise');
-    expect(titles).toContain('Done task');
-    expect(titles).toContain('Morning run');
-  });
+  // Theme filtering removed in issue #120: the legacy ThemeFilterBar (and the
+  // `filterThemeIds` axis it drove) is gone. Theme remains a first-class
+  // attribute on tasks (badge, color) but no longer filters the EisenKan
+  // board. The tag-stacked-boards deck replaces the filter as the
+  // navigational surface for slicing.
 
   it('shows empty column placeholder when column has no tasks', async () => {
     // Provide tasks only for todo column
@@ -430,178 +409,11 @@ describe('EisenKanView', () => {
     expect(result.violations[0].message).toBe('WIP limit exceeded');
   });
 
-  // Tag filtering tests
-  it('filters tasks by tag when filterTagIds is set', async () => {
-    await renderView({ filterTagIds: ['backend'] });
-
-    // T1 (tags: ['backend', 'api']) and T2 (tags: ['backend']) should be shown
-    // T3 (tags: ['api']) and T4 (no tags) should be hidden
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(2);
-
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).toContain('Exercise');
-    expect(titles).toContain('Study');
-  });
-
-  it('multi-tag filter uses AND logic', async () => {
-    await renderView({ filterTagIds: ['backend', 'api'] });
-
-    // Only T1 has both 'backend' and 'api' tags
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(1);
-
-    const title = cards[0].querySelector('.task-title')?.textContent;
-    expect(title).toBe('Exercise');
-  });
-
-  it('__untagged__ sentinel filters to tasks with no tags', async () => {
-    await renderView({ filterTagIds: ['__untagged__'] });
-
-    // T4 has no tags
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(1);
-    expect(cards[0].querySelector('.task-title')?.textContent).toBe('Done task');
-  });
-
-  it('__untagged__ combined with real tags uses union', async () => {
-    await renderView({ filterTagIds: ['__untagged__', 'api'] });
-
-    // T1 (tags: ['backend', 'api']), T3 (tags: ['api']), T4 (no tags)
-    // Union: tasks with 'api' tag OR no tags
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(3);
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).toContain('Exercise');
-    expect(titles).toContain('Emails');
-    expect(titles).toContain('Done task');
-  });
-
-  // Tag focus (Today's Focus) filtering tests
-  it('tagFocusActive filters tasks by OR of todayFocusTags', async () => {
-    await renderView({ tagFocusActive: true, todayFocusTags: ['api'] });
-
-    // T1 (tags: ['backend', 'api']) and T3 (tags: ['api']) have 'api'
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(2);
-
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).toContain('Exercise');
-    expect(titles).toContain('Emails');
-  });
-
-  it('tagFocusActive with multiple tags uses OR logic', async () => {
-    await renderView({ tagFocusActive: true, todayFocusTags: ['api', 'backend'] });
-
-    // T1 (backend, api), T2 (backend), T3 (api) all match; T4 (no tags) doesn't
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(3);
-
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).not.toContain('Done task');
-  });
-
-  it('tag filter uses normal filterTagIds when tagFocusActive is false', async () => {
-    await renderView({ tagFocusActive: false, todayFocusTags: ['api'], filterTagIds: ['backend'] });
-
-    // Normal AND filter: T1 (backend, api) and T2 (backend)
-    const cards = container.querySelectorAll('.task-card');
-    expect(cards.length).toBe(2);
-
-    const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-    expect(titles).toContain('Exercise');
-    expect(titles).toContain('Study');
-  });
-
-  it('shows theme count badges on filter pills', async () => {
-    const onFilterThemeToggle = vi.fn();
-    const onFilterThemeClear = vi.fn();
-    await renderView({ onFilterThemeToggle, onFilterThemeClear });
-
-    // "All" pill badge should show total count
-    const allBadge = container.querySelector('.theme-filter-bar .all-pill .count-badge');
-    expect(allBadge?.textContent).toBe('4');
-
-    // Theme pill badges should show per-theme counts
-    const themePills = container.querySelectorAll('.theme-filter-bar .theme-pill');
-    const hfBadge = Array.from(themePills).find(p => p.textContent?.includes('Health'))?.querySelector('.count-badge');
-    const cgBadge = Array.from(themePills).find(p => p.textContent?.includes('Career'))?.querySelector('.count-badge');
-    expect(hfBadge?.textContent).toBe('2');
-    expect(cgBadge?.textContent).toBe('2');
-  });
-
-  it('shows tag count badges on filter pills', async () => {
-    const onFilterTagToggle = vi.fn();
-    const onFilterTagClear = vi.fn();
-    await renderView({ onFilterTagToggle, onFilterTagClear });
-
-    const allBadge = container.querySelector('.tag-filter-bar .all-pill .count-badge');
-    expect(allBadge?.textContent).toBe('4');
-
-    // Check untagged pill exists with badge
-    const untaggedPill = container.querySelector('.untagged-pill');
-    expect(untaggedPill).not.toBeNull();
-    expect(untaggedPill?.textContent).toContain('Untagged');
-    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('1');
-  });
-
-  it('theme count badges update when tag filter is active', async () => {
-    const onFilterThemeToggle = vi.fn();
-    const onFilterThemeClear = vi.fn();
-    // Filter to 'backend' tag: T1 (HF) and T2 (CG) match
-    await renderView({ filterTagIds: ['backend'], onFilterThemeToggle, onFilterThemeClear });
-
-    const allBadge = container.querySelector('.theme-filter-bar .all-pill .count-badge');
-    expect(allBadge?.textContent).toBe('2');
-  });
-
-  it('tag count badges update when theme filter is active', async () => {
-    const onFilterTagToggle = vi.fn();
-    const onFilterTagClear = vi.fn();
-    // Filter to HF theme: T1 (tags: backend, api) and T4 (no tags)
-    await renderView({ filterThemeIds: ['HF'], onFilterTagToggle, onFilterTagClear });
-
-    const untaggedBadge = container.querySelector('.untagged-pill .count-badge');
-    expect(untaggedBadge?.textContent).toBe('1');
-  });
-
-  it('Untagged pill visible with zero count when theme filter excludes all untagged tasks', async () => {
-    const onFilterTagToggle = vi.fn();
-    const onFilterTagClear = vi.fn();
-    // Filter to CG theme: T2 (tags: backend) and T3 (tags: api) — no untagged tasks for CG
-    // Pill is still visible (hasUntaggedTasks uses full base) but count is 0
-    await renderView({ filterThemeIds: ['CG'], onFilterTagToggle, onFilterTagClear });
-
-    const untaggedPill = container.querySelector('.untagged-pill');
-    expect(untaggedPill).not.toBeNull();
-    expect(untaggedPill?.querySelector('.count-badge')?.textContent).toBe('0');
-  });
-
-  it('tag All count matches theme All count', async () => {
-    const onFilterTagToggle = vi.fn();
-    const onFilterTagClear = vi.fn();
-    const onFilterThemeToggle = vi.fn();
-    const onFilterThemeClear = vi.fn();
-    // Filter to HF theme — tag "All" should equal theme "All" (both = 4, no tag filter active)
-    await renderView({ filterThemeIds: ['HF'], onFilterTagToggle, onFilterTagClear, onFilterThemeToggle, onFilterThemeClear });
-
-    const themeAllBadge = container.querySelector('.theme-filter-bar .all-pill .count-badge');
-    const tagAllBadge = container.querySelector('.tag-filter-bar .all-pill .count-badge');
-    expect(tagAllBadge?.textContent).toBe(themeAllBadge?.textContent);
-  });
-
-  it('count badges exclude archived tasks by default', async () => {
-    // Add an archived task
-    currentTasks.push({ id: 'T5', title: 'Archived', themeId: 'HF', priority: 'important-urgent', status: 'archived' });
-    const onFilterThemeToggle = vi.fn();
-    const onFilterThemeClear = vi.fn();
-    await renderView({ onFilterThemeToggle, onFilterThemeClear });
-
-    // HF count should be 2 (T1 + T4), not 3 (T1 + T4 + T5 archived)
-    const themePills = container.querySelectorAll('.theme-filter-bar .theme-pill');
-    const hfBadge = Array.from(themePills).find(p => p.textContent?.includes('Health'))?.querySelector('.count-badge');
-    expect(hfBadge?.textContent).toBe('2');
-  });
+  // Tag filtering via filterTagIds / tagFocusActive props removed in
+  // issue #120 alongside ThemeFilterBar / TagSelection. Tag-driven slicing
+  // now happens through the TagBoardDeck strip — covered by the deck's own
+  // component tests and the EisenKan tests further down that exercise the
+  // selection -> mirror-render path.
 
   // Cross-column and cross-section DnD position preservation tests
   describe('DnD position preservation', () => {
@@ -1010,49 +822,8 @@ describe('EisenKanView', () => {
     }
   });
 
-  describe('theme filtering', () => {
-    it('renders only filtered theme tasks', async () => {
-      const onFilterThemeToggle = vi.fn();
-      const onFilterThemeClear = vi.fn();
-
-      await renderView({ filterThemeIds: ['HF'], onFilterThemeToggle, onFilterThemeClear });
-
-      const cards = container.querySelectorAll('.task-card');
-      const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-
-      // HF tasks visible
-      expect(titles).toContain('Exercise');
-      expect(titles).toContain('Done task');
-
-      // CG tasks hidden
-      expect(titles).not.toContain('Study');
-      expect(titles).not.toContain('Emails');
-    });
-
-    it('clears filter and shows all tasks', async () => {
-      const onFilterThemeToggle = vi.fn();
-      const onFilterThemeClear = vi.fn();
-
-      const { unmount } = await renderView({ filterThemeIds: ['HF'], onFilterThemeToggle, onFilterThemeClear });
-
-      // Verify filtered state
-      let cards = container.querySelectorAll('.task-card');
-      expect(cards.length).toBe(2);
-
-      // Re-render without filter
-      unmount();
-      await renderView({ filterThemeIds: [], onFilterThemeToggle, onFilterThemeClear });
-
-      cards = container.querySelectorAll('.task-card');
-      expect(cards.length).toBe(4);
-
-      const titles = Array.from(cards).map(c => c.querySelector('.task-title')?.textContent);
-      expect(titles).toContain('Exercise');
-      expect(titles).toContain('Study');
-      expect(titles).toContain('Emails');
-      expect(titles).toContain('Done task');
-    });
-  });
+  // Theme filtering removed in issue #120 — see comment near earlier
+  // theme/tag filter test removals.
 
   describe('archive functionality', () => {
     it('renders archive button only on done-column task cards', async () => {
@@ -1424,40 +1195,9 @@ describe('EisenKanView', () => {
     });
   });
 
-  describe('Today\'s Focus pass-through', () => {
-    it('passes Today\'s Focus props to ThemeFilterBar', async () => {
-      const onFilterThemeToggle = vi.fn();
-      const onFilterThemeClear = vi.fn();
-      const onTodayFocusToggle = vi.fn();
-
-      await renderView({
-        onFilterThemeToggle,
-        onFilterThemeClear,
-        todayFocusThemeId: 'HF',
-        todayFocusActive: true,
-        onTodayFocusToggle,
-      });
-
-      // ThemeFilterBar should render the today-focus-pill button
-      const chip = container.querySelector('.today-focus-pill');
-      expect(chip).not.toBeNull();
-      expect(chip?.textContent?.trim()).toBe("Today's Focus");
-      expect(chip?.classList.contains('active')).toBe(true);
-    });
-
-    it('does not render Today\'s Focus chip when onTodayFocusToggle not provided', async () => {
-      const onFilterThemeToggle = vi.fn();
-      const onFilterThemeClear = vi.fn();
-
-      await renderView({
-        onFilterThemeToggle,
-        onFilterThemeClear,
-      });
-
-      const chip = container.querySelector('.today-focus-pill');
-      expect(chip).toBeNull();
-    });
-  });
+  // Today's-Focus pass-through tests deleted with the ThemeFilterBar in
+  // issue #120. The deck no longer surfaces today-focus chrome; that
+  // responsibility moves to the focus-group marker in issue #121.
 
   describe('section folding', () => {
     it('renders fold arrow buttons on section headers', async () => {

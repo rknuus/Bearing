@@ -151,7 +151,7 @@
     checkDayRollover();
   }
 
-  // Derived single-theme ID for backward compat with child components (ThemeFilterBar, EisenKanView)
+  // Derived single-theme ID for backward compat with breadcrumb/EisenKanView wiring.
   let todayFocusThemeId = $derived(todayFocusThemeIds.length > 0 ? todayFocusThemeIds[0] : null);
 
   // Build breadcrumb path including view context
@@ -267,7 +267,7 @@
     todayFocusEdited = true;
   }
 
-  // Theme filter handlers for ThemeFilterBar
+  // Theme filter handlers (consumed by App breadcrumbs and downstream views).
   function handleFilterThemeToggle(themeId: string) {
     todayFocusActive = false;
     if (filterThemeIds.includes(themeId)) {

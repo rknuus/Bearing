@@ -318,7 +318,7 @@ describe('App', () => {
       mockBindings.GetYearFocus.mockResolvedValue([
         { date: todayDateString(), themeIds: ['HF'], notes: '', text: '' },
       ]);
-      // Provide themes so ThemeFilterBar renders in EisenKanView
+      // Provide themes for EisenKanView (consumed by TaskCards / dialogs).
       mockBindings.GetHierarchy.mockResolvedValue([
         { id: 'HF', name: 'Health & Fitness', color: '#22c55e', objectives: [] },
       ]);

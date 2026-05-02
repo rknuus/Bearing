@@ -63,138 +63,125 @@ export async function runTests() {
       timeout: TEST_CONFIG.TIMEOUT,
     })
 
-    // ---- Task 201: Filter workflow ----
+    // ---- Task 201: TagBoardDeck workflow ----
+    // The legacy ThemeFilterBar / TagSelection were removed in issue #120.
+    // EisenKan now uses the TagBoardDeck — a single-select tag strip
+    // surfaces a foreground board for the chosen tag plus the synthetic
+    // `Untagged` and `All` boards. Theme is no longer a filter axis on
+    // EisenKan; the theme stays as a per-task attribute (badge, color).
 
-    // Sub-test 1: ThemeFilterBar and TagSelection render on Tasks view
-    reporter.startTest('201a: Filter bars render on Tasks view')
+    // Sub-test 1: TagBoardDeck strip renders on Tasks view
+    reporter.startTest('201a: TagBoardDeck strip renders on Tasks view')
     try {
       await page.click('.nav-link:has-text("Short-term")')
       await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
 
-      // Verify ThemeFilterBar renders
-      await page.waitForSelector('.theme-filter-bar', { timeout: 5000 })
-      const themeLabel = await page.$eval('.theme-filter-bar .filter-label', el => el.textContent.trim())
-      if (!themeLabel.includes('Filter by theme')) {
-        throw new Error(`Expected "Filter by theme" label, got "${themeLabel}"`)
+      await page.waitForSelector('.tag-board-strip', { timeout: 5000 })
+
+      // The synthetic `All` board is always present in the strip.
+      const hasAll = await page.waitForFunction(() => {
+        const items = document.querySelectorAll('.tag-board-strip-item')
+        return Array.from(items).some(b => b.textContent.trim() === 'All')
+      }, { timeout: 5000 })
+      if (!hasAll) {
+        throw new Error('Expected "All" synthetic board in the tag strip')
       }
 
-      // Verify TagSelection renders
-      await page.waitForSelector('.tag-filter-bar', { timeout: 5000 })
-      const tagLabel = await page.$eval('.tag-filter-bar .filter-label', el => el.textContent.trim())
-      if (!tagLabel.includes('Filter by tag')) {
-        throw new Error(`Expected "Filter by tag" label, got "${tagLabel}"`)
-      }
-
-      reporter.pass('Filter bars render correctly')
+      reporter.pass('TagBoardDeck strip renders correctly')
     } catch (err) {
       reporter.fail(err)
     }
 
-    // Sub-test 2: Click a theme pill to filter tasks
-    reporter.startTest('201b: Theme pill filters tasks')
+    // Sub-test 2: Tag-board selection filters tasks to that tag
+    reporter.startTest('201b: Selecting a tag-board surfaces matching tasks')
     try {
-      // Click "Career Growth" theme pill
-      await page.click('.theme-filter-bar .theme-pill:has-text("Career Growth")')
+      // CG-T1 is tagged "backend"; selecting the backend board should
+      // surface CG-T1 and hide tasks without that tag.
+      await page.click('.tag-board-strip-item:not(.synthetic):has-text("backend")')
 
-      // Wait for filter to take effect
       await page.waitForFunction(() => {
-        const pills = document.querySelectorAll('.theme-filter-bar .theme-pill.active')
-        return pills.length > 0
+        const items = document.querySelectorAll('.tag-board-strip-item.active')
+        return Array.from(items).some(b => b.textContent.trim() === 'backend')
       }, { timeout: 5000 })
 
-      // Verify only CG tasks are visible (CG-T1 in todo, CG-T2 in doing)
       const visibleTitles = await page.$$eval('.task-title', els => els.map(el => el.textContent.trim()))
-      const cgTitles = ['Complete project proposal', 'Respond to emails']
-      for (const title of cgTitles) {
-        if (!visibleTitles.includes(title)) {
-          throw new Error(`Expected CG task "${title}" visible, got: [${visibleTitles.join(', ')}]`)
-        }
+      if (!visibleTitles.includes('Complete project proposal')) {
+        throw new Error(`Expected backend-tagged task visible, got: [${visibleTitles.join(', ')}]`)
       }
-      // HF and PF tasks should not be visible
+      // Tasks without the backend tag must not appear on the backend board.
       if (visibleTitles.includes('Review quarterly goals')) {
-        throw new Error('HF task should be filtered out')
-      }
-      if (visibleTitles.includes('Review budget spreadsheet')) {
-        throw new Error('PF task should be filtered out')
+        throw new Error('Untagged HF-T1 should not appear on the backend board')
       }
 
-      reporter.pass('Theme filter shows only matching tasks')
+      reporter.pass('Tag board surfaces only tasks carrying that tag')
     } catch (err) {
       reporter.fail(err)
     }
 
-    // Sub-test 3: All pill resets filter
-    reporter.startTest('201c: All pill resets theme filter')
+    // Sub-test 3: `All` synthetic board surfaces every task
+    reporter.startTest('201c: All board surfaces every task')
     try {
-      await page.click('.theme-filter-bar .all-pill')
+      await page.click('.tag-board-strip-item.synthetic.all')
 
-      // Wait for all tasks to reappear
       await page.waitForFunction(() => {
-        const pills = document.querySelectorAll('.theme-filter-bar .theme-pill.active')
-        return pills.length === 0
+        const all = document.querySelector('.tag-board-strip-item.synthetic.all')
+        return all && all.classList.contains('active')
       }, { timeout: 5000 })
 
-      // Verify All pill is active
-      const allActive = await page.$eval('.theme-filter-bar .all-pill', el => el.classList.contains('active'))
-      if (!allActive) {
-        throw new Error('All pill should be active after reset')
-      }
-
-      // Verify all tasks are visible again (at least CG and HF tasks)
+      // Tasks from across themes should reappear.
       await page.waitForSelector('.task-title:has-text("Complete project proposal")', { timeout: 5000 })
       await page.waitForSelector('.task-title:has-text("Review quarterly goals")', { timeout: 5000 })
 
-      reporter.pass('All pill resets theme filter')
+      reporter.pass('All board includes tasks from every tag')
     } catch (err) {
       reporter.fail(err)
     }
 
-    // Sub-test 4: Tag pill filters tasks
-    reporter.startTest('201d: Tag pill filters tasks')
+    // Sub-test 4: Tag-board selection persists across reload
+    reporter.startTest('201d: Tag-board selection persists across reload')
     try {
-      // Click "backend" tag pill
-      await page.click('.tag-filter-bar .tag-pill:has-text("#backend")')
+      await page.click('.tag-board-strip-item:not(.synthetic):has-text("backend")')
 
-      // Wait for filter to take effect
       await page.waitForFunction(() => {
-        const pills = document.querySelectorAll('.tag-filter-bar .tag-pill.active')
-        return pills.length > 0
+        const items = document.querySelectorAll('.tag-board-strip-item.active')
+        return Array.from(items).some(b => b.textContent.trim() === 'backend')
       }, { timeout: 5000 })
 
-      // Only CG-T1 has the "backend" tag
-      const visibleTitles = await page.$$eval('.task-title', els => els.map(el => el.textContent.trim()))
-      if (!visibleTitles.includes('Complete project proposal')) {
-        throw new Error(`Expected CG-T1 visible with "backend" tag, got: [${visibleTitles.join(', ')}]`)
-      }
-      // Other tasks without "backend" tag should not be visible
-      if (visibleTitles.includes('Review quarterly goals')) {
-        throw new Error('HF-T1 should be filtered out (no backend tag)')
-      }
+      // Reload the page; persisted selectedTag should restore the choice.
+      await page.reload({ waitUntil: 'networkidle', timeout: TEST_CONFIG.TIMEOUT })
+      await page.waitForSelector('.eisenkan-container', { timeout: 5000 })
+      await page.waitForSelector('.tag-board-strip', { timeout: 5000 })
 
-      // Reset tag filter
-      await page.click('.tag-filter-bar .all-pill')
-      await page.waitForFunction(() => {
-        const pills = document.querySelectorAll('.tag-filter-bar .tag-pill.active')
-        return pills.length === 0
+      const restored = await page.waitForFunction(() => {
+        const items = document.querySelectorAll('.tag-board-strip-item.active')
+        return Array.from(items).some(b => b.textContent.trim() === 'backend')
       }, { timeout: 5000 })
+      if (!restored) {
+        throw new Error('Expected backend tag-board to remain selected after reload')
+      }
 
-      reporter.pass('Tag filter shows only matching tasks')
+      // Reset back to All for downstream tests.
+      await page.click('.tag-board-strip-item.synthetic.all')
+
+      reporter.pass('Tag-board selection persists across reload')
     } catch (err) {
       reporter.fail(err)
+      // Best-effort reset.
+      try {
+        await page.click('.tag-board-strip-item.synthetic.all')
+      } catch { /* best effort */ }
     }
 
-    // Sub-test 5: Untagged pill filters
-    reporter.startTest('201e: Untagged pill filters tasks without tags')
+    // Sub-test 5: Untagged synthetic board surfaces only untagged tasks
+    reporter.startTest('201e: Untagged board surfaces only untagged tasks')
     try {
-      // Click "Untagged" pill
-      await page.click('.tag-filter-bar .untagged-pill')
+      await page.click('.tag-board-strip-item.synthetic.untagged')
 
       await page.waitForFunction(() => {
-        const pill = document.querySelector('.tag-filter-bar .untagged-pill')
-        return pill && pill.classList.contains('active')
+        const u = document.querySelector('.tag-board-strip-item.synthetic.untagged')
+        return u && u.classList.contains('active')
       }, { timeout: 5000 })
 
-      // HF-T1 and PF-T1 have no tags
       const visibleTitles = await page.$$eval('.task-title', els => els.map(el => el.textContent.trim()))
       if (!visibleTitles.includes('Review quarterly goals')) {
         throw new Error(`Expected untagged HF-T1 visible, got: [${visibleTitles.join(', ')}]`)
@@ -202,62 +189,50 @@ export async function runTests() {
       if (!visibleTitles.includes('Review budget spreadsheet')) {
         throw new Error(`Expected untagged PF-T1 visible, got: [${visibleTitles.join(', ')}]`)
       }
-      // Tagged tasks should not be visible
       if (visibleTitles.includes('Complete project proposal')) {
-        throw new Error('Tagged CG-T1 should be filtered out')
+        throw new Error('Tagged CG-T1 should not appear on the Untagged board')
       }
 
-      // Reset
-      await page.click('.tag-filter-bar .all-pill')
-      await page.waitForFunction(() => {
-        const pill = document.querySelector('.tag-filter-bar .untagged-pill')
-        return !pill || !pill.classList.contains('active')
-      }, { timeout: 5000 })
+      // Reset.
+      await page.click('.tag-board-strip-item.synthetic.all')
 
-      reporter.pass('Untagged pill shows only untagged tasks')
+      reporter.pass('Untagged board shows only untagged tasks')
     } catch (err) {
       reporter.fail(err)
+      try {
+        await page.click('.tag-board-strip-item.synthetic.all')
+      } catch { /* best effort */ }
     }
 
-    // Sub-test 6: Combined theme + tag filter
-    reporter.startTest('201f: Combined theme + tag filter')
+    // Sub-test 6: Multi-tag task appears on every matching tag-board (US-3)
+    reporter.startTest('201f: Multi-tag task appears on every matching tag-board')
     try {
-      // Filter by Career Growth theme first
-      await page.click('.theme-filter-bar .theme-pill:has-text("Career Growth")')
+      // CG-T2 ("Respond to emails") carries both `urgent` and `review` tags.
+      // It should appear on the urgent board, the review board, and the
+      // All board — same task, mirrored presentationally.
+      await page.click('.tag-board-strip-item:not(.synthetic):has-text("urgent")')
       await page.waitForFunction(() => {
-        const pills = document.querySelectorAll('.theme-filter-bar .theme-pill.active')
-        return pills.length > 0
+        const titles = Array.from(document.querySelectorAll('.task-title')).map(t => t.textContent.trim())
+        return titles.includes('Respond to emails')
       }, { timeout: 5000 })
 
-      // Then filter by "urgent" tag
-      await page.click('.tag-filter-bar .tag-pill:has-text("#urgent")')
+      await page.click('.tag-board-strip-item:not(.synthetic):has-text("review")')
       await page.waitForFunction(() => {
-        const pills = document.querySelectorAll('.tag-filter-bar .tag-pill.active')
-        return pills.length > 0
+        const titles = Array.from(document.querySelectorAll('.task-title')).map(t => t.textContent.trim())
+        return titles.includes('Respond to emails')
       }, { timeout: 5000 })
 
-      // Only CG-T2 has both CG theme and "urgent" tag
-      const visibleTitles = await page.$$eval('.task-title', els => els.map(el => el.textContent.trim()))
-      if (!visibleTitles.includes('Respond to emails')) {
-        throw new Error(`Expected CG-T2 visible with combined filter, got: [${visibleTitles.join(', ')}]`)
-      }
-      if (visibleTitles.includes('Complete project proposal')) {
-        throw new Error('CG-T1 should be filtered out (no "urgent" tag)')
-      }
+      await page.click('.tag-board-strip-item.synthetic.all')
+      await page.waitForFunction(() => {
+        const titles = Array.from(document.querySelectorAll('.task-title')).map(t => t.textContent.trim())
+        return titles.includes('Respond to emails')
+      }, { timeout: 5000 })
 
-      // Reset both filters
-      await page.click('.theme-filter-bar .all-pill')
-      await page.click('.tag-filter-bar .all-pill')
-
-      reporter.pass('Combined theme + tag filter narrows results')
+      reporter.pass('Multi-tag task is mirrored across matching tag-boards')
     } catch (err) {
       reporter.fail(err)
-      // Best effort cleanup
       try {
-        const activeThemePills = await page.$$('.theme-filter-bar .theme-pill.active')
-        if (activeThemePills.length > 0) await page.click('.theme-filter-bar .all-pill')
-        const activeTagPills = await page.$$('.tag-filter-bar .tag-pill.active')
-        if (activeTagPills.length > 0) await page.click('.tag-filter-bar .all-pill')
+        await page.click('.tag-board-strip-item.synthetic.all')
       } catch { /* best effort */ }
     }
 
