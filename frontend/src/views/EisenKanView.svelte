@@ -31,6 +31,7 @@
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { getTheme } from '../lib/utils/theme-helpers';
   import { ALL_BOARD, UNTAGGED_BOARD } from '../lib/constants/tag-boards';
+  import { defaultBoard } from '../lib/utils/board-order';
   import { formatDate } from '../lib/utils/date-format';
   import { today as todayDate, type CalendarDate } from '../lib/utils/date-utils';
   import { checkFullState } from '../lib/utils/state-check';
@@ -77,10 +78,13 @@
   let showArchivedTasks = $state(false);
   let contextLoaded = false;
 
-  // TagBoardDeck selection (persisted via navigation context). `null` /
-  // empty / unrecognised name collapses to the default board (`All` for
-  // #120 — focus-aware default arrives in #123). Persisted by tag NAME
-  // per AD-6.
+  // TagBoardDeck selection (persisted via navigation context). Defaults
+  // to the synthetic `All` board so the view always has a valid slice
+  // before any backend round-trip. The persisted name overrides this on
+  // navigation-context load (`onMount`); when no recognised persisted
+  // value applies, the deck propagates a focus-aware default upward via
+  // `onSelectionChange` (US-1 default-board rule, #123). Persisted by
+  // tag NAME per AD-6.
   let selectedTag = $state<string>(ALL_BOARD);
 
   // Fold state (persisted via navigation context)
@@ -312,10 +316,33 @@
           showArchivedTasks = navCtx.showArchivedTasks ?? false;
           for (const s of navCtx.collapsedSections ?? []) collapsedSections.add(s);
           for (const c of navCtx.collapsedColumns ?? []) collapsedColumns.add(c);
-          // selectedTag is persisted by name (AD-6); empty / missing collapses
-          // to the default. The TagBoardDeck handles the resolution.
+          // selectedTag is persisted by name (AD-6). The view-mount
+          // resolution mirrors the deck's:
+          //   - a recognised user tag or synthetic identifier wins;
+          //   - empty / missing / removed-tag falls back to the
+          //     focus-aware default-board rule (US-1, #123).
+          // Resolving here (before the deck mounts) keeps the initial
+          // foreground stable during the first paint — the deck never
+          // observes a transient empty / unrecognised value.
           const persisted = navCtx.selectedTag;
-          if (persisted) selectedTag = persisted;
+          const userTagList: string[] = [];
+          const seenUserTag: Record<string, true> = {};
+          for (const t of fetchedTasks) {
+            for (const tag of t.tags ?? []) {
+              if (tag && !seenUserTag[tag]) {
+                seenUserTag[tag] = true;
+                userTagList.push(tag);
+              }
+            }
+          }
+          if (
+            persisted &&
+            (persisted === ALL_BOARD || persisted === UNTAGGED_BOARD || seenUserTag[persisted])
+          ) {
+            selectedTag = persisted;
+          } else {
+            selectedTag = defaultBoard(todayFocusTags, userTagList, ALL_BOARD);
+          }
         }
       } catch {
         // Ignore errors loading nav context

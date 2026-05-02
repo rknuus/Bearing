@@ -53,3 +53,56 @@ export function effectiveFocusTags(userTags: string[], focusTags: string[]): str
   const userSet = new Set(userTags);
   return focusTags.filter(t => userSet.has(t)).sort(compareTagCaseInsensitive);
 }
+
+/**
+ * Default-board rule (FR-4, US-1).
+ *
+ * The board to surface in the foreground when no persisted selection
+ * applies. Returns the alphabetically-first focus tag that has a board,
+ * or the synthetic `All` board when no focus tag has a board (either
+ * because today has no focus or no focus tag matches a user tag).
+ *
+ * @param focusTags - today's daily-focus tags. Order on input is irrelevant.
+ * @param userTags - distinct user-tag names present in the deck (i.e., the
+ *                   tags actually backing a board). Synthetic `Untagged` /
+ *                   `All` are NOT user tags and must NOT be included here.
+ * @param fallback - synthetic identifier used when no focus tag has a board.
+ *                   Defaults to `'All'`.
+ */
+export function defaultBoard(
+  focusTags: string[],
+  userTags: string[],
+  fallback: string = 'All',
+): string {
+  const present = effectiveFocusTags(userTags, focusTags);
+  return present.length > 0 ? present[0] : fallback;
+}
+
+/**
+ * Resolve the effective foreground board name from a (possibly empty or
+ * stale) persisted selection plus today's focus and the current user-tag
+ * set.
+ *
+ * Persisted selection wins whenever it is recognised: `All`, `Untagged`,
+ * or any user tag still present on the deck. Otherwise the default-board
+ * rule applies.
+ *
+ * @param persisted - the value previously persisted via the navigation
+ *                    context, or `null` / empty when no preference exists.
+ * @param focusTags - today's daily-focus tags.
+ * @param userTags - distinct user-tag names present in the deck.
+ * @param synthetics - reserved synthetic identifiers that always count as
+ *                     valid persisted selections (default: `['All', 'Untagged']`).
+ */
+export function effectiveSelection(
+  persisted: string | null | undefined,
+  focusTags: string[],
+  userTags: string[],
+  synthetics: readonly string[] = ['All', 'Untagged'],
+): string {
+  if (persisted) {
+    if (synthetics.includes(persisted)) return persisted;
+    if (userTags.includes(persisted)) return persisted;
+  }
+  return defaultBoard(focusTags, userTags, 'All');
+}

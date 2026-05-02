@@ -3,6 +3,7 @@ import { render, fireEvent } from '@testing-library/svelte';
 import { tick, createRawSnippet } from 'svelte';
 import TagBoardDeck from './TagBoardDeck.svelte';
 import type { TaskWithStatus } from '../lib/wails-mock';
+import { setClockForTesting, resetClock } from '../lib/utils/clock';
 // Vite `?raw` import surfaces the component source so we can assert the
 // CSS contract — jsdom doesn't compute `perspective` / `transform-style`.
 import deckSource from './TagBoardDeck.svelte?raw';
@@ -470,6 +471,287 @@ describe('TagBoardDeck', () => {
         container.querySelectorAll('.tag-board-card.receded .tag-board-card-label')
       ).map(el => el.textContent?.trim());
       expect(recededLabels).not.toContain('Untagged');
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Issue #123: default-board rule on view-mount and midnight rollover.
+  //
+  // These tests cover the two AD-4 live-update triggers (view-mount
+  // re-read, midnight rollover) and the US-1 default-board rule. The
+  // mount-only re-read is exercised implicitly: each `render(...)` call
+  // is a fresh mount and the focus snapshot is captured per mount.
+  // ---------------------------------------------------------------------
+
+  describe('default-board rule (US-1)', () => {
+    function activeUserTagLabel(c: HTMLElement): string | null {
+      const active = c.querySelector('.tag-board-strip-item.active');
+      return active?.textContent?.trim() ?? null;
+    }
+
+    it('foregrounds the alphabetically-first focus tag when no persisted selection', async () => {
+      // Focus = ['work', 'deep-work']. Tasks include both. With no
+      // persisted selection the deck must land on `deep-work` (alpha-1st).
+      const tasks: TaskWithStatus[] = [
+        { id: 'A', title: 'A', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['work'] },
+        { id: 'B', title: 'B', themeId: 'HF', priority: 'important-urgent', status: 'todo', tags: ['deep-work'] },
+      ];
+
+      const onSelectionChange = vi.fn();
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks,
+          selectedTag: null,
+          focusTags: ['work', 'deep-work'],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      expect(activeUserTagLabel(container)).toBe('deep-work');
+      // Default-board resolution must be persisted upward so the next
+      // view-mount sees a recognised selection (US-1 + AD-6).
+      expect(onSelectionChange).toHaveBeenCalledWith('deep-work');
+    });
+
+    it('falls back to All when no focus tag matches a board (focus = [])', async () => {
+      const onSelectionChange = vi.fn();
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: null,
+          focusTags: [],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      const allBtn = container.querySelector('.tag-board-strip-item.synthetic.all');
+      expect(allBtn?.classList.contains('active')).toBe(true);
+      // Persisted is null → resolved is `All`; deck propagates the
+      // resolution so the next mount sees a recognised selection.
+      expect(onSelectionChange).toHaveBeenCalledWith('All');
+    });
+
+    it('falls back to All when every focus tag has no matching board', async () => {
+      // Focus tags exist but none matches a tag carried by any task →
+      // intersection is empty → default rule returns `All`.
+      const onSelectionChange = vi.fn();
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: null,
+          focusTags: ['marketing', 'sales'],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      const allBtn = container.querySelector('.tag-board-strip-item.synthetic.all');
+      expect(allBtn?.classList.contains('active')).toBe(true);
+      expect(onSelectionChange).toHaveBeenCalledWith('All');
+    });
+
+    it('persisted user-tag selection wins over the default-board rule', async () => {
+      // Focus would default to `personal` (alpha-1st present), but the
+      // user has `urgent` persisted and that tag still has a board, so
+      // selection must stick on `urgent`.
+      const onSelectionChange = vi.fn();
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'urgent',
+          focusTags: ['personal'],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      expect(activeUserTagLabel(container)).toBe('urgent');
+      // Persisted was already recognised → no upward propagation.
+      expect(onSelectionChange).not.toHaveBeenCalled();
+    });
+
+    it('persisted "All" / "Untagged" always wins (synthetic boards exist by definition)', async () => {
+      // Even with focus tags pointing at real boards, an explicit `All`
+      // selection must be respected. Synthetic identifiers always count
+      // as recognised.
+      for (const seed of ['All', 'Untagged']) {
+        container.innerHTML = '';
+        const onSelectionChange = vi.fn();
+        render(TagBoardDeck, {
+          target: container,
+          props: {
+            tasks: makeTasks(),
+            selectedTag: seed,
+            focusTags: ['work'],
+            onSelectionChange,
+            board: boardSnippet(),
+          },
+        });
+        await tick();
+        const activeSynth = container.querySelector('.tag-board-strip-item.synthetic.active');
+        expect(activeSynth?.textContent?.trim()).toBe(seed);
+        expect(onSelectionChange).not.toHaveBeenCalled();
+      }
+    });
+
+    it('falls back to default-board rule when persisted selection refers to a removed tag', async () => {
+      // `errands` is persisted but no task carries that tag any more
+      // (e.g., the last task with that tag was retagged). Focus =
+      // `personal` exists → resolved = `personal`.
+      const onSelectionChange = vi.fn();
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'errands',
+          focusTags: ['personal'],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      expect(activeUserTagLabel(container)).toBe('personal');
+      expect(onSelectionChange).toHaveBeenCalledWith('personal');
+    });
+  });
+
+  describe('midnight rollover (FR-11)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      resetClock();
+      vi.useRealTimers();
+    });
+
+    /** Flush microtasks so reactive updates propagate under fake timers. */
+    async function flush(rounds = 5) {
+      for (let i = 0; i < rounds; i++) {
+        await vi.advanceTimersByTimeAsync(0);
+        await tick();
+      }
+    }
+
+    it('reschedules at midnight and re-applies the default-board rule when no manual pick', async () => {
+      // Day-1 clock is just before midnight. Today's focus has `personal`
+      // (alpha-1st present), so the deck lands on `personal`.
+      setClockForTesting(() => new Date(2026, 4, 1, 23, 59, 59, 900));
+
+      const onSelectionChange = vi.fn();
+      const result = render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: null,
+          focusTags: ['personal'],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await flush();
+
+      // Initial mount resolves to `personal`.
+      expect(onSelectionChange).toHaveBeenCalledWith('personal');
+      onSelectionChange.mockClear();
+
+      // Cross midnight; parent has updated focus to `urgent` and pushed
+      // an updated prop. Persisted selection is still null (the parent
+      // hasn't accepted the previous emit in this test wiring).
+      setClockForTesting(() => new Date(2026, 4, 2, 0, 0, 0, 100));
+      result.rerender({
+        tasks: makeTasks(),
+        selectedTag: null,
+        focusTags: ['urgent'],
+        onSelectionChange,
+        board: boardSnippet(),
+      });
+      // Fire the midnight timeout (~100ms after the original 23:59:59:900
+      // baseline) and let reactivity settle.
+      await vi.advanceTimersByTimeAsync(500);
+      await flush();
+
+      // Default-board rule must re-evaluate against the new focus and
+      // the resolved choice must propagate upward.
+      expect(onSelectionChange).toHaveBeenCalledWith('urgent');
+    });
+
+    it('persisted user selection persists across midnight (US-8)', async () => {
+      // User has explicitly selected `personal`. Even though midnight
+      // rolls over and focus changes, a recognised persisted selection
+      // wins — no spurious onSelectionChange emission.
+      setClockForTesting(() => new Date(2026, 4, 1, 23, 59, 59, 900));
+
+      const onSelectionChange = vi.fn();
+      const result = render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'personal',
+          focusTags: ['urgent'],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await flush();
+      // Mount: persisted is recognised → no emission.
+      expect(onSelectionChange).not.toHaveBeenCalled();
+
+      // Cross midnight with a different focus.
+      setClockForTesting(() => new Date(2026, 4, 2, 0, 0, 0, 100));
+      result.rerender({
+        tasks: makeTasks(),
+        selectedTag: 'personal',
+        focusTags: ['work'],
+        onSelectionChange,
+        board: boardSnippet(),
+      });
+      await vi.advanceTimersByTimeAsync(500);
+      await flush();
+
+      // Persisted `personal` is still a valid user tag → no override.
+      expect(onSelectionChange).not.toHaveBeenCalled();
+      const active = container.querySelector('.tag-board-strip-item.active');
+      expect(active?.textContent?.trim()).toBe('personal');
+    });
+
+    it('clears the midnight timer on unmount (no leaked callback)', async () => {
+      setClockForTesting(() => new Date(2026, 4, 1, 23, 59, 59, 900));
+
+      const onSelectionChange = vi.fn();
+      const result = render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: null,
+          focusTags: [],
+          onSelectionChange,
+          board: boardSnippet(),
+        },
+      });
+      await flush();
+      onSelectionChange.mockClear();
+
+      // Unmount before the timer fires.
+      result.unmount();
+
+      // Cross midnight; the cleared timer must not invoke the callback.
+      setClockForTesting(() => new Date(2026, 4, 2, 0, 0, 0, 100));
+      await vi.advanceTimersByTimeAsync(500);
+      await flush();
+
+      expect(onSelectionChange).not.toHaveBeenCalled();
     });
   });
 });

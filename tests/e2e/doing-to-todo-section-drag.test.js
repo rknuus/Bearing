@@ -234,7 +234,10 @@ export async function runTests() {
       // The shared E2E data dir carries a NavigationContext from prior test
       // suites that may have an active tag/theme filter (e.g. filterTagIds:
       // ["Routine"]). Reset it to a neutral state so the EisenKan view shows
-      // all tasks, not just the previous suite's filter slice.
+      // all tasks, not just the previous suite's filter slice. Pin
+      // selectedTag to `All` so the focus-aware default-board rule (US-1,
+      // #123) doesn't surface a tag-specific board when prior suites have
+      // left day-focus tags set for today.
       await page.evaluate(async () => {
         await window.go.main.App.SaveNavigationContext({
           currentView: 'eisenkan',
@@ -246,6 +249,7 @@ export async function runTests() {
           todayFocusActive: false,
           tagFocusActive: false,
           calendarDayEditorDate: '',
+          selectedTag: 'All',
         })
       })
       await page.reload({ waitUntil: 'networkidle', timeout: TEST_CONFIG.TIMEOUT })

@@ -17,17 +17,29 @@
    * `Untagged` and `All` are synthetic identifiers (never values inside
    * `task.tags`). Per AD-6, selection persists by tag NAME.
    *
-   * Walking-skeleton scope (issue #120):
-   *   - foreground card only — no receded cards yet (#122 layers 3D + animation)
-   *   - alphabetical strip ordering — focus-grouping arrives in #121
-   *   - default-board fallback is `All` — #123 introduces the focus-aware default
+   * Live-update model (AD-4 / issue #123):
+   *   - View-mount re-read: every time the deck mounts (i.e., every time
+   *     EisenKan becomes the active view), today's focus is snapshotted
+   *     fresh from the `focusTags` prop.
+   *   - Midnight rollover: a local-clock midnight timer recomputes the
+   *     deck. When the user has no manual selection on the new day, the
+   *     default-board rule re-applies; otherwise the persisted selection
+   *     persists.
+   *   - No new event bus. Cross-view focus changes propagate via
+   *     view-mount only.
    */
 
   import { onMount, untrack } from 'svelte';
   import type { Snippet } from 'svelte';
   import type { TaskWithStatus } from '../lib/wails-mock';
   import { ALL_BOARD, UNTAGGED_BOARD } from '../lib/constants/tag-boards';
-  import { effectiveFocusTags, orderUserTagsByFocus } from '../lib/utils/board-order';
+  import {
+    defaultBoard,
+    effectiveFocusTags,
+    effectiveSelection,
+    orderUserTagsByFocus,
+  } from '../lib/utils/board-order';
+  import { getNow } from '../lib/utils/clock';
   import TagBoardStrip from './TagBoardStrip.svelte';
   import TagBoardCard from './TagBoardCard.svelte';
 
@@ -38,17 +50,21 @@
      * Currently selected board. The parent owns the persistence cadence;
      * the deck reads this prop and emits `onSelectionChange` when the user
      * picks a different tag in the strip. `null` / empty string / a name
-     * no longer present in `tasks` all collapse to the default (`All` for
-     * #120 — focus-aware default arrives in #123).
+     * no longer present in `tasks` collapse to the focus-aware default
+     * board (US-1, #123): the alphabetically-first focus tag with a
+     * matching board, or the synthetic `All` board when no focus tag has
+     * a board. The resolved default is propagated upward via
+     * `onSelectionChange` so the navigation context persists it.
      */
     selectedTag?: string | null;
     /**
      * Today's daily-focus tags (FR-10, US-7). Used to:
      *   - Surface the focus group at the front of the deck (alphabetical).
      *   - Drive the strip's focus-group visual marker.
-     * Snapshotted once on view-mount per the #121 spec — live recomputation
-     * on focus change arrives in #123. Passing a fresh array later is
-     * intentionally ignored to avoid mid-session re-orderings here.
+     *   - Resolve the default-board rule on view-mount.
+     * Snapshotted on view-mount and on local-clock midnight rollover
+     * (AD-4, #123). Mid-mount prop changes are intentionally ignored —
+     * cross-view focus changes propagate via view re-entry only.
      */
     focusTags?: string[];
     /** Called when the user picks a different tag in the strip. */
@@ -59,14 +75,12 @@
 
   let { tasks, selectedTag, focusTags = [], onSelectionChange, board }: Props = $props();
 
-  // Mounted snapshot of today's focus tags. Captured once on view-mount;
-  // never re-read after that. #123 will replace this with a live binding.
+  // Mounted snapshot of today's focus tags. Captured on every view-mount
+  // (every time EisenKan becomes the active view, since EisenKanView is
+  // conditionally rendered) and re-captured on midnight rollover (AD-4).
+  // Never re-read on prop change inside a single mount — that would defeat
+  // AD-4's "view-mount only" propagation rule.
   let mountedFocusTags = $state<string[]>([]);
-  onMount(() => {
-    untrack(() => {
-      mountedFocusTags = [...focusTags];
-    });
-  });
 
   // Distinct user-tag set present in the tasks (AD-2). Order does not
   // matter at this stage — the FR-10 ordering helper sorts.
@@ -97,14 +111,12 @@
 
   const hasUntagged = $derived(tasks.some(t => !t.tags || t.tags.length === 0));
 
-  // Resolve the effective selection. An unrecognised persisted name falls
-  // back to `All` until #123 introduces the focus-aware default-board rule.
-  const effectiveTag = $derived.by(() => {
-    if (!selectedTag) return ALL_BOARD;
-    if (selectedTag === ALL_BOARD || selectedTag === UNTAGGED_BOARD) return selectedTag;
-    if (userTags.includes(selectedTag)) return selectedTag;
-    return ALL_BOARD;
-  });
+  // Resolve the effective selection (US-1 default-board rule). Persisted
+  // selection wins whenever it is recognised; otherwise the focus-aware
+  // default applies.
+  const effectiveTag = $derived(
+    effectiveSelection(selectedTag, mountedFocusTags, userTags, [ALL_BOARD, UNTAGGED_BOARD]),
+  );
 
   // Per-board slice. AD-1: pure presentational projection.
   const slice = $derived.by(() => {
@@ -117,6 +129,79 @@
     if (effectiveTag === tag) return;
     onSelectionChange?.(tag);
   }
+
+  /**
+   * Returns the persisted selection if it is a recognised user tag or
+   * synthetic identifier on the current deck; otherwise `null`. Used to
+   * decide whether the default-board rule needs to be re-applied (and
+   * propagated upward via `onSelectionChange` so the navigation context
+   * persists the resolved choice).
+   */
+  function recognisedSelection(persisted: string | null | undefined, tags: readonly string[]): string | null {
+    if (!persisted) return null;
+    if (persisted === ALL_BOARD || persisted === UNTAGGED_BOARD) return persisted;
+    if (tags.includes(persisted)) return persisted;
+    return null;
+  }
+
+  // Snapshot today's focus on mount (every mount, not just first launch —
+  // AD-4 view-mount re-read) and emit the resolved default selection if
+  // the persisted value is empty / unrecognised. The emission persists the
+  // resolved choice via the parent's `onSelectionChange` cadence, so a
+  // subsequent view-switch sees a recognised selection.
+  onMount(() => {
+    untrack(() => {
+      mountedFocusTags = [...focusTags];
+      const recognised = recognisedSelection(selectedTag, userTags);
+      if (recognised === null) {
+        const resolved = defaultBoard(mountedFocusTags, userTags, ALL_BOARD);
+        if (resolved !== selectedTag) onSelectionChange?.(resolved);
+      }
+    });
+  });
+
+  /** ms until next local-clock midnight at the time of call. */
+  function msUntilNextMidnight(): number {
+    const now = getNow();
+    const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    return Math.max(0, tomorrow.getTime() - now.getTime());
+  }
+
+  // Midnight rollover (FR-11). Re-evaluate today's focus and the
+  // default-board rule when the local-clock day changes. The deck owns
+  // its own timer (independent of the App-level day-change handler) so
+  // the snapshot it presents stays in lock-step with "today" without
+  // relying on prop reactivity inside a single mount.
+  $effect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const schedule = () => {
+      timer = setTimeout(() => {
+        untrack(() => {
+          // New day: refresh the focus snapshot from the latest prop
+          // value (the parent's day-change handler updates it in the
+          // same tick), then re-apply the default-board rule whenever
+          // the persisted selection is empty / unrecognised. A
+          // recognised persisted selection wins — US-8 acceptance:
+          // "selection persists on that tag" even when focus shifts.
+          mountedFocusTags = [...focusTags];
+
+          const recognised = recognisedSelection(selectedTag, userTags);
+          if (recognised === null) {
+            const resolved = defaultBoard(mountedFocusTags, userTags, ALL_BOARD);
+            if (resolved !== selectedTag) onSelectionChange?.(resolved);
+          }
+        });
+        schedule();
+      }, msUntilNextMidnight());
+    };
+
+    schedule();
+
+    return () => {
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  });
 </script>
 
 <div class="tag-board-deck">

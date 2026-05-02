@@ -127,8 +127,11 @@ export async function runTests() {
 
     reporter.startTest('Navigate to EisenKan and verify task card is visible')
     try {
-      // Reset NavigationContext so the EisenKan view shows all tasks (any prior
-      // suite's tag/theme filter would otherwise hide our seeded card).
+      // Reset NavigationContext so the EisenKan view shows all tasks (any
+      // prior suite's tag/theme filter would otherwise hide our seeded card).
+      // Pin selectedTag to the synthetic `All` board so the focus-aware
+      // default-board rule (US-1, #123) doesn't surface a tag-specific
+      // board when prior suites have left day-focus tags set for today.
       await page.evaluate(async () => {
         await window.go.main.App.SaveNavigationContext({
           currentView: 'eisenkan',
@@ -140,6 +143,7 @@ export async function runTests() {
           todayFocusActive: false,
           tagFocusActive: false,
           calendarDayEditorDate: '',
+          selectedTag: 'All',
         })
       })
       await page.reload({ waitUntil: 'networkidle', timeout: TEST_CONFIG.TIMEOUT })
