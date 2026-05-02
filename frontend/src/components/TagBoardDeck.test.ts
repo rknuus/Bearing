@@ -583,23 +583,43 @@ describe('TagBoardDeck', () => {
       ]);
     });
 
-    it('emits peeks with positive xOffset and positive yOffset when the foreground is at index 0 of the visual order', async () => {
+    it('emits no peeks when the foreground is at index 0 of the visual order (issue #126)', async () => {
       // Visual order = [All, Untagged, work, urgent, personal] with
-      // `All` selected → foregroundIndex = 0. Every non-selected board
-      // sits BELOW the foreground, so every peek shifts down-right by
-      // (+N×2px, +N×5px).
+      // `All` selected → foregroundIndex = 0. With the leftmost-strip
+      // tag (top of stack) foregrounded, every non-selected board would
+      // otherwise sit below — peeks would shift down-right by
+      // (+N×2px, +N×5px). Their straight left edges and bottom-left
+      // curved corners would then fall inside the foreground's bottom-
+      // left rounded-corner recession zone (border-radius: 8px),
+      // painting a small "ear" artefact at the bottom-left of the
+      // foreground (issue #126). The deck must therefore emit no peek
+      // descriptors at all when foregroundIndex === 0 so no peek-frame
+      // visual extent appears anywhere left-of or below the foreground.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      expect(peekDescriptors(container)).toEqual([
-        { depth: 1, xOffset: 2, yOffset: 5 },
-        { depth: 2, xOffset: 4, yOffset: 10 },
-        { depth: 3, xOffset: 6, yOffset: 15 },
-        { depth: 4, xOffset: 8, yOffset: 20 },
-      ]);
+      expect(peekDescriptors(container)).toEqual([]);
+    });
+
+    it('renders no .board-body-peek elements when the leftmost-strip tag is foregrounded (issue #126)', async () => {
+      // Direct DOM-level invariant: when `selectedTag === 'All'` (the
+      // canonical leftmost-strip tag → foregroundIndex 0 in visualOrder
+      // after the deck's reverse), there must be zero `.board-body-peek`
+      // elements rendered. This guards against a future regression that
+      // would re-introduce peek descriptors on the leftmost-selected
+      // case (where the rounded-corner reveal exposed the depth-1
+      // peek's left edge as a bottom-left "ear" artefact).
+      render(TagBoardDeck, {
+        target: container,
+        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
+      });
+      await tick();
+
+      const peekFrames = container.querySelectorAll('.tag-board-card.foreground .board-body-peek');
+      expect(peekFrames.length).toBe(0);
     });
 
     it('emits peeks with negative xOffset and negative yOffset when the foreground is at the end of the visual order', async () => {
@@ -654,17 +674,20 @@ describe('TagBoardDeck', () => {
       };
     }
 
-    it('projects zero top padding when foreground sits at the top of the visual order', async () => {
+    it('projects zero padding on both sides when foreground sits at the top of the visual order (issue #126)', async () => {
       // Visual order = [All, Untagged, work, urgent, personal] (length 5)
       // with `All` selected → foregroundIndex = 0. maxAboveDepth = 0 →
-      // padding-top = 0; maxBelowDepth = 4 → padding-bottom = 4*5 = 20.
+      // padding-top = 0. Issue #126: peek descriptors are suppressed
+      // entirely when foregroundIndex === 0, so there is no extension
+      // below to absorb either — padding-bottom collapses to 0 to keep
+      // the foreground flush with the stack's bottom edge.
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      expect(stackPadding(container)).toEqual({ top: '0px', bottom: '20px' });
+      expect(stackPadding(container)).toEqual({ top: '0px', bottom: '0px' });
     });
 
     it('projects symmetric stack padding when foreground sits in the middle of the visual order', async () => {

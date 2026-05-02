@@ -178,9 +178,22 @@
    * shift down-right. Depth = absolute distance from the foreground in
    * `visualOrder` — drives z-index and opacity so deeper peeks layer
    * further back and fade out gradually.
+   *
+   * Issue #126: when the foreground is at index 0 of `visualOrder` —
+   * i.e., the leftmost-strip tag (typically `All`) is selected and
+   * sits at the top of the stack — every peek would shift down-right
+   * by (+N×2px, +N×5px). The depth-1 peek's straight-and-curved left
+   * edge then falls inside the foreground's bottom-left rounded-corner
+   * recession zone (border-radius: 8px), painting a small "ear" /
+   * vertical sliver artefact at the foreground's bottom-left. Suppress
+   * peek descriptors entirely in this case — the strip already conveys
+   * the full board list, so the depth-stair visual is redundant on the
+   * topmost board and not worth the artefact. Mirror case (foreground
+   * at the END of `visualOrder`) is intentionally left untouched per
+   * the task's scope.
    */
   const peekData = $derived.by(() => {
-    if (foregroundIndex < 0) {
+    if (foregroundIndex <= 0) {
       return [] as Array<{ depth: number; xOffset: number; yOffset: number }>;
     }
     const result: Array<{ depth: number; xOffset: number; yOffset: number }> = [];
@@ -205,6 +218,11 @@
    * selector strip above (or any sibling below). Add per-side padding
    * equal to the worst-case translation so all peek frames stay inside
    * the stack.
+   *
+   * Issue #126: when peeks are suppressed (`foregroundIndex === 0`),
+   * there is no extension to absorb on the bottom side either, so the
+   * bottom padding must collapse to 0 — keeping it would leave a dead
+   * gap below the foreground.
    */
   const stackPaddingTopPx = $derived.by(() => {
     if (foregroundIndex < 0) return 0;
@@ -213,7 +231,7 @@
   });
 
   const stackPaddingBottomPx = $derived.by(() => {
-    if (foregroundIndex < 0) return 0;
+    if (foregroundIndex <= 0) return 0;
     const maxBelowDepth = visualOrder.length - 1 - foregroundIndex;
     return Math.max(0, maxBelowDepth * PEEK_STEP_PX);
   });
