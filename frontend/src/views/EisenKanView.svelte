@@ -40,7 +40,7 @@
   // The legacy theme/tag filter props (filterThemeIds, filterTagIds, and their
   // toggle/clear callbacks plus the today-focus pass-through) are accepted for
   // backwards-compatibility with App.svelte's wiring but no longer drive any
-  // EisenKan UI — the TagBoardDeck has replaced ThemeFilterBar/TagSelection.
+  // EisenKan UI — the TagBoardDeck has replaced the legacy filter bars.
   // App.svelte still consumes the underlying state for its breadcrumbs.
   interface Props {
     onNavigateToTheme?: (themeId: string) => void;

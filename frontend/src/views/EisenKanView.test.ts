@@ -297,8 +297,8 @@ describe('EisenKanView', () => {
     });
   });
 
-  // Theme filtering removed in issue #120: the legacy ThemeFilterBar (and the
-  // `filterThemeIds` axis it drove) is gone. Theme remains a first-class
+  // Theme filtering removed in issue #120: the legacy theme-filter bar (and
+  // the `filterThemeIds` axis it drove) is gone. Theme remains a first-class
   // attribute on tasks (badge, color) but no longer filters the EisenKan
   // board. The tag-stacked-boards deck replaces the filter as the
   // navigational surface for slicing.
@@ -410,7 +410,7 @@ describe('EisenKanView', () => {
   });
 
   // Tag filtering via filterTagIds / tagFocusActive props removed in
-  // issue #120 alongside ThemeFilterBar / TagSelection. Tag-driven slicing
+  // issue #120 alongside the legacy filter bars. Tag-driven slicing
   // now happens through the TagBoardDeck strip — covered by the deck's own
   // component tests and the EisenKan tests further down that exercise the
   // selection -> mirror-render path.
@@ -1195,7 +1195,7 @@ describe('EisenKanView', () => {
     });
   });
 
-  // Today's-Focus pass-through tests deleted with the ThemeFilterBar in
+  // Today's-Focus pass-through tests deleted with the legacy filter bar in
   // issue #120. The deck no longer surfaces today-focus chrome; that
   // responsibility moves to the focus-group marker in issue #121.
 
