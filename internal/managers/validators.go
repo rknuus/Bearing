@@ -1,6 +1,40 @@
 package managers
 
-import "github.com/rkn/bearing/internal/access"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/rkn/bearing/internal/access"
+)
+
+// reservedTagNames lists synthetic presentational identifiers that must never
+// appear as values in task.Tags. They are display-only filters in the EisenKan
+// tag deck (AD-3 in the eisenkan-tag-deck epic). Comparison is case-insensitive.
+var reservedTagNames = []string{"Untagged", "All"}
+
+// validateTagName returns a non-nil error if name matches any reserved
+// presentational identifier (case-insensitive). Empty values are accepted
+// here — callers are responsible for trimming and empty-filtering before
+// calling this guard.
+func validateTagName(name string) error {
+	for _, reserved := range reservedTagNames {
+		if strings.EqualFold(name, reserved) {
+			return fmt.Errorf("tag name %q is reserved and cannot be used", name)
+		}
+	}
+	return nil
+}
+
+// validateTagNames runs validateTagName on every entry. Returns the first
+// reserved-name error encountered, or nil if all entries are acceptable.
+func validateTagNames(names []string) error {
+	for _, name := range names {
+		if err := validateTagName(name); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 // IsValidPriority checks if a priority string is valid.
 func IsValidPriority(priority string) bool {

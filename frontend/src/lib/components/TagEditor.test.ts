@@ -488,4 +488,134 @@ describe('TagEditor', () => {
     expect(onTagsChange).toHaveBeenCalledWith(['health']);
     expect(input.value).toBe('fit');
   });
+
+  // --- Reserved-name guard tests (Issue #118 / AD-3) ---
+
+  function getErrorMessage(): string | null {
+    const el = container.querySelector<HTMLElement>('.tag-error');
+    return el ? el.textContent?.trim() ?? null : null;
+  }
+
+  const reservedVariants = ['Untagged', 'untagged', 'UNTAGGED', 'All', 'all', 'ALL'];
+
+  for (const reserved of reservedVariants) {
+    it(`Enter rejects reserved name ${reserved} with inline error`, async () => {
+      const onTagsChange = vi.fn();
+      await renderEditor({
+        tags: [],
+        availableTags: [],
+        onTagsChange,
+      });
+
+      const input = getInput();
+      input.value = reserved;
+      await fireEvent.input(input);
+      await tick();
+
+      await fireEvent.keyDown(input, { key: 'Enter' });
+      await tick();
+
+      expect(onTagsChange).not.toHaveBeenCalled();
+      expect(getErrorMessage()).toMatch(/reserved/i);
+      // Value retained so the user can correct it
+      expect(input.value).toBe(reserved);
+    });
+  }
+
+  it('comma-trigger rejects reserved name without committing', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'Untagged,';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+    expect(getErrorMessage()).toMatch(/reserved/i);
+  });
+
+  it('blur rejects reserved name with inline error', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'All';
+    await fireEvent.input(input);
+    await tick();
+
+    await fireEvent.blur(input);
+    await tick();
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+    expect(getErrorMessage()).toMatch(/reserved/i);
+  });
+
+  it('typing a new character clears the reserved-name error', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'Untagged';
+    await fireEvent.input(input);
+    await tick();
+    await fireEvent.keyDown(input, { key: 'Enter' });
+    await tick();
+
+    expect(getErrorMessage()).toMatch(/reserved/i);
+
+    input.value = 'Untagged-extra';
+    await fireEvent.input(input);
+    await tick();
+
+    expect(getErrorMessage()).toBeNull();
+  });
+
+  it('toggleTag rejects reserved name leaked into availableTags', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      // Defensive: reserved name should never appear here, but if it leaks
+      // through from older data, clicking it must not persist it.
+      availableTags: ['frontend', 'All'],
+      onTagsChange,
+    });
+
+    const allPill = getAllPills().find(p => p.textContent?.trim() === 'All')!;
+    await fireEvent.click(allPill);
+
+    expect(onTagsChange).not.toHaveBeenCalled();
+    expect(getErrorMessage()).toMatch(/reserved/i);
+  });
+
+  it('accepts non-reserved tags whose names contain reserved-name substrings', async () => {
+    const onTagsChange = vi.fn();
+    await renderEditor({
+      tags: [],
+      availableTags: [],
+      onTagsChange,
+    });
+
+    const input = getInput();
+    input.value = 'Untagged-extra';
+    await fireEvent.input(input);
+    await tick();
+    await fireEvent.keyDown(input, { key: 'Enter' });
+    await tick();
+
+    expect(onTagsChange).toHaveBeenCalledWith(['Untagged-extra']);
+    expect(getErrorMessage()).toBeNull();
+  });
 });

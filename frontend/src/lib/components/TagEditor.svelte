@@ -38,12 +38,34 @@
   let showSuggestions = $state(false);
   let highlightedIndex = $state(-1);
 
+  // Inline error for reserved-name rejection (AD-3 in eisenkan-tag-deck epic).
+  // Cleared on the next keystroke or successful commit.
+  let errorMessage = $state('');
+
+  // Reserved synthetic identifiers — display-only, never persisted as task tags.
+  const RESERVED_TAG_NAMES = ['Untagged', 'All'] as const;
+
+  function isReservedTagName(name: string): boolean {
+    const lower = name.trim().toLowerCase();
+    return RESERVED_TAG_NAMES.some(r => r.toLowerCase() === lower);
+  }
+
+  function reservedErrorFor(name: string): string {
+    return `"${name.trim()}" is reserved and cannot be used as a tag.`;
+  }
+
   function toggleTag(tag: string) {
     if (tags.includes(tag)) {
       onTagsChange(tags.filter(t => t !== tag));
-    } else {
-      onTagsChange([...tags, tag]);
+      return;
     }
+    // Defensive: a reserved name should never reach availableTags/extraTags,
+    // but guard the toggle path so a leak from older data cannot persist.
+    if (isReservedTagName(tag)) {
+      errorMessage = reservedErrorFor(tag);
+      return;
+    }
+    onTagsChange([...tags, tag]);
   }
 
   function computeSuggestions(input: string): string[] {
@@ -55,6 +77,8 @@
   }
 
   function handleInput() {
+    // Any keystroke clears stale reserved-name errors.
+    errorMessage = '';
     const commaIdx = inputValue.indexOf(',');
     if (commaIdx !== -1) {
       const before = inputValue.slice(0, commaIdx);
@@ -70,7 +94,20 @@
 
   function addNewTag() {
     const tag = inputValue.trim();
-    if (tag && !tags.includes(tag)) {
+    if (!tag) {
+      inputValue = '';
+      showSuggestions = false;
+      highlightedIndex = -1;
+      return;
+    }
+    if (isReservedTagName(tag)) {
+      errorMessage = reservedErrorFor(tag);
+      // Keep the input value so the user can correct it.
+      showSuggestions = false;
+      highlightedIndex = -1;
+      return;
+    }
+    if (!tags.includes(tag)) {
       onTagsChange([...tags, tag]);
       if (!availableTags.includes(tag) && !extraTags.includes(tag)) {
         extraTags = [...extraTags, tag];
@@ -181,6 +218,9 @@
       </ul>
     {/if}
   </div>
+  {#if errorMessage}
+    <p class="tag-error" role="alert">{errorMessage}</p>
+  {/if}
 </div>
 
 <style>
@@ -271,5 +311,11 @@
   .tag-suggestion-item.highlighted {
     background-color: var(--color-primary-50, #eff6ff);
     color: var(--color-primary-700, #1d4ed8);
+  }
+
+  .tag-error {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-error-600, #dc2626);
   }
 </style>

@@ -5559,3 +5559,52 @@ func TestUnit_CreateTask_FailsWithEmptyThemeIDNoRoutineTag(t *testing.T) {
 		t.Errorf("expected error about empty themeID, got: %v", err)
 	}
 }
+
+func TestUnit_CreateTask_RejectsReservedTagName(t *testing.T) {
+	manager, _, _ := newMockManager()
+
+	cases := []string{"Untagged", "untagged", "All", "ALL"}
+	for _, reserved := range cases {
+		_, err := manager.CreateTask("Some task", "T", "important-urgent", "", reserved, "")
+		if err == nil {
+			t.Errorf("CreateTask with reserved tag %q: expected error, got nil", reserved)
+			continue
+		}
+		if !strings.Contains(err.Error(), "reserved") {
+			t.Errorf("CreateTask with reserved tag %q: expected reserved-name error, got: %v", reserved, err)
+		}
+	}
+}
+
+func TestUnit_CreateTask_RejectsReservedTagAmongOthers(t *testing.T) {
+	manager, _, _ := newMockManager()
+
+	_, err := manager.CreateTask("Some task", "T", "important-urgent", "", "frontend, All, backend", "")
+	if err == nil {
+		t.Fatal("expected error when reserved tag is mixed with normal tags, got nil")
+	}
+	if !strings.Contains(err.Error(), "reserved") {
+		t.Errorf("expected reserved-name error, got: %v", err)
+	}
+}
+
+func TestUnit_UpdateTask_RejectsReservedTagName(t *testing.T) {
+	manager, _, _ := newMockManager()
+
+	task, err := manager.CreateTask("Test Task", "T", "important-urgent", "", "frontend", "")
+	if err != nil {
+		t.Fatalf("CreateTask failed: %v", err)
+	}
+
+	cases := []string{"Untagged", "untagged", "All", "ALL"}
+	for _, reserved := range cases {
+		updated := *task
+		updated.Tags = []string{"frontend", reserved}
+		if err := manager.UpdateTask(updated); err == nil {
+			t.Errorf("UpdateTask with reserved tag %q: expected error, got nil", reserved)
+			continue
+		} else if !strings.Contains(err.Error(), "reserved") {
+			t.Errorf("UpdateTask with reserved tag %q: expected reserved-name error, got: %v", reserved, err)
+		}
+	}
+}

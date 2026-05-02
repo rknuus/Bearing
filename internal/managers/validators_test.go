@@ -73,3 +73,55 @@ func TestUnit_IsValidKRType(t *testing.T) {
 		}
 	}
 }
+
+func TestUnit_ValidateTagName_RejectsReserved(t *testing.T) {
+	reserved := []string{
+		"Untagged", "untagged", "UNTAGGED", "UnTaGgEd",
+		"All", "all", "ALL", "aLL",
+	}
+	for _, name := range reserved {
+		if err := validateTagName(name); err == nil {
+			t.Errorf("validateTagName(%q) = nil, want error", name)
+		}
+	}
+}
+
+func TestUnit_ValidateTagName_AcceptsNormal(t *testing.T) {
+	allowed := []string{
+		"", "frontend", "backend", "api", "Routine", "health",
+		"Untagged-extra", "All-Hands", "alley", "tagged",
+	}
+	for _, name := range allowed {
+		if err := validateTagName(name); err != nil {
+			t.Errorf("validateTagName(%q) = %v, want nil", name, err)
+		}
+	}
+}
+
+func TestUnit_ValidateTagNames_RejectsAnyReserved(t *testing.T) {
+	cases := [][]string{
+		{"Untagged"},
+		{"frontend", "All"},
+		{"backend", "untagged", "api"},
+	}
+	for _, names := range cases {
+		if err := validateTagNames(names); err == nil {
+			t.Errorf("validateTagNames(%v) = nil, want error", names)
+		}
+	}
+}
+
+func TestUnit_ValidateTagNames_AcceptsClean(t *testing.T) {
+	clean := [][]string{
+		nil,
+		{},
+		{"frontend"},
+		{"frontend", "backend", "api"},
+		{"Routine"},
+	}
+	for _, names := range clean {
+		if err := validateTagNames(names); err != nil {
+			t.Errorf("validateTagNames(%v) = %v, want nil", names, err)
+		}
+	}
+}
