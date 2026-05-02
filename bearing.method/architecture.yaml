@@ -115,9 +115,11 @@ volatilities:
       confidence: "medium"
     - id: "vol-today-focus-filtering"
       name: "Today Focus Auto-Filtering"
-      description: "How the calendar day focus drives automatic filtering on the EisenKan board. When today has a calendar
-        assignment, the board auto-filters tasks by the assigned themes and tags. Cross-view coordination between
-        Calendar and EisenKan views."
+      description: "How the calendar day focus drives presentation on the EisenKan board. When today has a calendar entry with
+        one or more focus tags, those tags form a contiguous \"focus group\" at the front of the tag-board deck
+        (alphabetical within the group), are visually distinguished on the strip, and the alphabetically-first focus tag
+        is the default foreground board on view-entry (unless the user has a persisted selection). Theme is no longer a
+        filter axis on EisenKan."
       evidence: "Same customer over time: filter criteria may expand beyond themes and tags. Different customers at same time:
         some users rely on auto-filtering, others prefer manual control. Currently implemented in the Svelte client with
         resolveTodayFocus() and coordination between views."
@@ -596,7 +598,11 @@ use_cases:
               note: "GetYearFocus(currentYear) — reads calendar/{year}.json"
             - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
               to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
-              note: "SaveNavigationContext({todayFocusActive, filterThemeIds}) — client resolves today's focus and applies filter"
+              note: "SaveNavigationContext({selectedTag}) — on EisenKan view-mount, client reads today's focus tags from the calendar
+                entry, reorders the tag-board deck so focus tags appear first (alphabetical), then non-focus tags
+                (alphabetical), then `Untagged`, then `All`, renders the focus-group marker on the strip; if the user
+                has no persisted board selection, defaults to the alphabetically-first focus tag's board (or `All` if
+                today has no focus)"
             - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
               to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
               note: "SaveNavigationContext(ctx)"
