@@ -3,6 +3,9 @@ import { render, fireEvent } from '@testing-library/svelte';
 import { tick, createRawSnippet } from 'svelte';
 import TagBoardDeck from './TagBoardDeck.svelte';
 import type { TaskWithStatus } from '../lib/wails-mock';
+// Vite `?raw` import surfaces the component source so we can assert the
+// CSS contract — jsdom doesn't compute `perspective` / `transform-style`.
+import deckSource from './TagBoardDeck.svelte?raw';
 
 /**
  * Renders the deck with a board snippet that surfaces every task in the
@@ -413,32 +416,20 @@ describe('TagBoardDeck', () => {
       });
       await tick();
 
+      // The container must exist...
       const stack = container.querySelector('.tag-board-stack') as HTMLElement;
       expect(stack).not.toBeNull();
-      // jsdom does not compute `perspective` via getComputedStyle. We
-      // assert the CSS contract by walking document.styleSheets and
-      // matching the .tag-board-stack rule.
-      let perspectiveDeclared = false;
-      let preserve3dDeclared = false;
-      for (const sheet of Array.from(document.styleSheets)) {
-        let rules: CSSRuleList;
-        try {
-          rules = sheet.cssRules;
-        } catch {
-          continue;
-        }
-        for (const rule of Array.from(rules)) {
-          if (
-            rule instanceof CSSStyleRule &&
-            rule.selectorText.includes('tag-board-stack')
-          ) {
-            if (/perspective:\s*\d+px/.test(rule.cssText)) perspectiveDeclared = true;
-            if (rule.cssText.includes('transform-style: preserve-3d')) preserve3dDeclared = true;
-          }
-        }
-      }
-      expect(perspectiveDeclared).toBe(true);
-      expect(preserve3dDeclared).toBe(true);
+      // ...and the component's compiled CSS contract must declare
+      // `perspective` and `transform-style: preserve-3d` on the stack.
+      // jsdom does not compute these via getComputedStyle, so we assert
+      // the source-text contract — the same approach used for
+      // reduced-motion in TagBoardCard.test.ts.
+      expect(deckSource).toMatch(
+        /\.tag-board-stack\s*\{[\s\S]*?perspective\s*:\s*\d+px/
+      );
+      expect(deckSource).toMatch(
+        /\.tag-board-stack\s*\{[\s\S]*?transform-style\s*:\s*preserve-3d/
+      );
     });
 
     it('does NOT render the All board as a receded card when All is foregrounded', async () => {
