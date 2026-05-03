@@ -171,7 +171,7 @@ The architect gathers context, presents findings with numbered options, then del
 - Write and pass tests before finalizing
 - When refactoring: never modify test assertions, only the implementation
 - Lint code using `make lint` before finalizing
-- Keep a `README.md` with `tailor-ccpm` setup/run info
+- Keep a `README.md` with usage/setup/run info
 - Store documents in Markdown
 
 ## Commit strategy
