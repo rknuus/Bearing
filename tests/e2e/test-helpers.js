@@ -157,6 +157,113 @@ export function getTaskFiles(dataDir, status) {
   return fs.readdirSync(dir).filter(f => f.endsWith('.json'))
 }
 
+// --- Suite-scoped task residue cleanup -----------------------------------
+//
+// Each E2E suite shares one `~/.bearing/data` workspace across the run-all
+// sequence. If a suite archives or moves task files and never cleans up,
+// the residue leaks into the next suite. To keep suites isolated without
+// blanket-deleting unrelated files (which would also wipe pre-existing
+// residue from earlier suites or manual probes), we snapshot the task ids
+// present under each status directory at suite start, then on teardown
+// invoke the backend's DeleteTask binding for every id present at end that
+// wasn't present at start.
+//
+// Going through the backend (not raw `fs.unlink` + `git rm`) keeps the
+// data-dir git repository consistent: the backend's CommitAll pipeline
+// owns every write to that repo and aborts hard if its on-disk view
+// diverges from in-memory state. Using `DeleteTask` for archived files
+// requires Restore-then-Delete since DeleteTask only handles non-archived
+// statuses; the helper handles that.
+
+const TASK_STATUSES = ['todo', 'doing', 'done', 'archived']
+
+/** Filename → task id (filenames are `<id>.json`). */
+function fileNameToId(name) {
+  return name.endsWith('.json') ? name.slice(0, -5) : name
+}
+
+/**
+ * Snapshot the set of task ids under each status directory. Returned
+ * value is opaque — pass it to `cleanupTaskResidue` to remove any task
+ * files that were added after the snapshot was taken.
+ */
+export function snapshotTaskFilenames(dataDir) {
+  const snapshot = {}
+  for (const status of TASK_STATUSES) {
+    snapshot[status] = new Set(
+      getTaskFiles(dataDir, status).map(fileNameToId),
+    )
+  }
+  return snapshot
+}
+
+/**
+ * Remove task files added after `snapshot` was taken via the backend's
+ * RestoreTask / DeleteTask bindings (so the data-dir's git history and the
+ * backend's in-memory state stay in lockstep). Files present in the
+ * snapshot are left alone, even if their content has changed (the suite's
+ * own assertions cover content/state).
+ *
+ * The snapshot is matched by *id*, not by `(status, id)`: the backend
+ * routinely moves a task between status directories (e.g., MoveTask,
+ * ArchiveTask, RestoreTask) and we must not delete a pre-existing task
+ * that simply migrated columns during the run.
+ *
+ * Defensive: errors per task are logged but do not throw, so a failing
+ * scenario still gets best-effort cleanup.
+ */
+export async function cleanupTaskResidue(page, dataDir, snapshot) {
+  // Union of every id present anywhere at snapshot time. Any id in this
+  // set is treated as pre-existing regardless of where it currently lives.
+  const baselineIds = new Set()
+  for (const status of TASK_STATUSES) {
+    for (const id of snapshot[status] ?? new Set()) {
+      baselineIds.add(id)
+    }
+  }
+
+  const additions = { todo: [], doing: [], done: [], archived: [] }
+  for (const status of TASK_STATUSES) {
+    for (const name of getTaskFiles(dataDir, status)) {
+      const id = fileNameToId(name)
+      if (baselineIds.has(id)) continue
+      additions[status].push(id)
+    }
+  }
+
+  const archivedToDelete = additions.archived
+  const directDelete = [...additions.todo, ...additions.doing, ...additions.done]
+
+  if (archivedToDelete.length + directDelete.length === 0) return
+
+  try {
+    await page.evaluate(async ({ archived, direct }) => {
+      const app = window.go.main.App
+      // Archived tasks: restore first (DeleteTask doesn't accept archived),
+      // then delete. Errors per id are swallowed so the loop runs to end.
+      for (const id of archived) {
+        try {
+          await app.RestoreTask(id)
+          await app.DeleteTask(id)
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.log(`[cleanup] archived ${id}: ${err && err.message ? err.message : err}`)
+        }
+      }
+      for (const id of direct) {
+        try {
+          await app.DeleteTask(id)
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.log(`[cleanup] ${id}: ${err && err.message ? err.message : err}`)
+        }
+      }
+    }, { archived: archivedToDelete, direct: directDelete })
+  } catch (err) {
+    console.log(`  [cleanup] page.evaluate failed: ${err.message}`)
+  }
+}
+
 /**
  * Check if git working tree is clean (no unstaged changes).
  * Excludes ephemeral files that are not versioned business data:

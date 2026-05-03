@@ -43,6 +43,8 @@ import {
   TestReporter,
   waitForServers,
   getTaskFiles,
+  snapshotTaskFilenames,
+  cleanupTaskResidue,
 } from './test-helpers.js'
 
 const DATA_DIR = process.env.BEARING_DATA_DIR
@@ -162,24 +164,24 @@ function readDiskState(dataDir) {
 }
 
 /**
- * Restore the seeded done-set tasks back to tasks/done/. Used between
- * scenarios so each run starts with the full done set regardless of
- * what the previous scenario archived. Only the tasks listed in
- * `seededIds` are touched — earlier suites in the run-all-tests run
- * may leave their own artefacts under tasks/archived/, and we must not
- * disturb them.
+ * Restore every currently-archived task back to tasks/done/. Used between
+ * scenarios so each run starts with the full done set regardless of what
+ * the previous scenario archived.
+ *
+ * Suite-scoped cleanup at suite start (snapshotTaskFilenames) plus the
+ * matching teardown means we are the only suite contributing residue
+ * under tasks/archived/, so this can safely restore everything it sees.
  */
-async function restoreSeededArchived(page, dataDir, seededIds) {
+async function restoreAllArchived(page, dataDir) {
   const { archived } = readDiskState(dataDir)
-  const seededSet = new Set(seededIds)
-  const toRestore = archived.filter(a => seededSet.has(a.id)).map(a => a.id)
-  if (toRestore.length === 0) return
+  const ids = archived.map(a => a.id)
+  if (ids.length === 0) return
   await page.evaluate(async (ids) => {
     const app = window.go.main.App
     for (const id of ids) {
       await app.RestoreTask(id)
     }
-  }, toRestore)
+  }, ids)
 }
 
 /** Return the set of titles currently in `tasks/done/`. */
@@ -208,7 +210,13 @@ export async function runTests() {
   console.log('Starting Tag-Scoped Bulk Archive E2E Tests...\n')
   console.log(`Data directory: ${DATA_DIR}\n`)
 
+  // Snapshot task filenames so the `finally` block can remove anything
+  // this suite added — even if a scenario crashes mid-flight, the
+  // workspace ends in the same archive state it started in.
+  const taskFilenameSnapshot = snapshotTaskFilenames(DATA_DIR)
+
   let browser
+  let page
   const pageErrors = []
   const consoleErrors = []
 
@@ -225,7 +233,7 @@ export async function runTests() {
       launchOptions.channel = TEST_CONFIG.CHROME_CHANNEL
     }
     browser = await chromium.launch(launchOptions)
-    const page = await browser.newPage()
+    page = await browser.newPage()
 
     page.on('pageerror', (error) => {
       pageErrors.push(error.message)
@@ -408,7 +416,7 @@ export async function runTests() {
 
     reporter.startTest('Untagged scope: restore previous archive set so the done set is whole again')
     try {
-      await restoreSeededArchived(page, DATA_DIR, [homeId, workId, homeWorkId, untaggedId])
+      await restoreAllArchived(page, DATA_DIR)
       const done = diskDoneTitles(DATA_DIR)
       for (const t of [TASK_HOME, TASK_WORK, TASK_HOME_WORK, TASK_UNTAGGED]) {
         if (!done.includes(t)) {
@@ -436,10 +444,10 @@ export async function runTests() {
     reporter.startTest('Untagged scope: only untagged done task moved to archived (UI)')
     try {
       // Pre-condition on the Untagged board: among the seeded set,
-      // only TASK_UNTAGGED is visible in the Done column. (Earlier
-      // suites in the run-all-tests sequence may leave their own
-      // untagged done tasks behind, so we only assert against the
-      // seeded subset.)
+      // only TASK_UNTAGGED is visible in the Done column. We filter to
+      // the seeded subset so the assertion stays robust against any
+      // residue a manual probe (or a future shared workspace fixture)
+      // might place under tasks/done/.
       const seededTitles = [TASK_HOME, TASK_WORK, TASK_HOME_WORK, TASK_UNTAGGED]
       const before = await readDoneTitles(page)
       const beforeSeeded = before.filter(t => seededTitles.includes(t)).sort()
@@ -447,9 +455,10 @@ export async function runTests() {
         throw new Error(`Pre-condition: among seeded tasks, expected Done = ["${TASK_UNTAGGED}"] on Untagged board, got ${JSON.stringify(beforeSeeded)}`)
       }
       // Click and wait until our seeded TASK_UNTAGGED is gone from the
-      // Untagged board's Done column. Other untagged tasks (from earlier
-      // suites) may also be archived in the same call — they share the
-      // Untagged scope — but those are unrelated to this assertion.
+      // Untagged board's Done column. Any other untagged task that
+      // happens to share the workspace (e.g. a manual residue probe)
+      // may also be archived in the same call — that's outside this
+      // assertion's scope.
       const btn = page.locator('[data-column-name="done"] .archive-all-btn').first()
       await btn.click()
       await page.waitForFunction((ourTitle) => {
@@ -512,7 +521,7 @@ export async function runTests() {
 
     reporter.startTest('Specific tag scope: restore previous archive set so the done set is whole again')
     try {
-      await restoreSeededArchived(page, DATA_DIR, [homeId, workId, homeWorkId, untaggedId])
+      await restoreAllArchived(page, DATA_DIR)
       const done = diskDoneTitles(DATA_DIR)
       for (const t of [TASK_HOME, TASK_WORK, TASK_HOME_WORK, TASK_UNTAGGED]) {
         if (!done.includes(t)) {
@@ -638,6 +647,18 @@ export async function runTests() {
   } catch (err) {
     console.error('\nFatal error:', err)
   } finally {
+    // Suite-scoped cleanup: route through the backend so the data-dir
+    // git repository stays consistent. Runs before browser.close() so
+    // `page.evaluate` is still available, and even when a scenario
+    // crashes mid-flight so the workspace ends in the same archive
+    // state it started in.
+    if (page) {
+      try {
+        await cleanupTaskResidue(page, DATA_DIR, taskFilenameSnapshot)
+      } catch (err) {
+        console.log(`  [cleanup] error: ${err.message}`)
+      }
+    }
     if (browser) {
       await browser.close()
     }
