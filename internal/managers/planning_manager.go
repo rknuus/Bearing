@@ -74,6 +74,7 @@ type ITaskExecution interface {
 	DeleteTask(taskId string) error
 	ArchiveTask(taskId string) error
 	ArchiveAllDoneTasks() error
+	ArchiveDoneTasksByTag(scope string) (int, error)
 	RestoreTask(taskId string) error
 	ReorderTasks(positions map[string][]string) (*ReorderResult, error)
 	ProcessPriorityPromotions() ([]PromotedTask, error)
@@ -1942,6 +1943,22 @@ func (m *PlanningManager) ArchiveAllDoneTasks() error {
 	}
 
 	return nil
+}
+
+// ArchiveDoneTasksByTag archives every done task whose tag list matches
+// the supplied scope. The scope is one of access.ScopeAll,
+// access.ScopeUntagged, or a specific tag name; the matching rule lives
+// in TaskAccess. Returns the number of tasks archived. The whole batch
+// is one atomic git commit produced by IBatch.ArchiveDoneTasksByTag.
+func (m *PlanningManager) ArchiveDoneTasksByTag(scope string) (int, error) {
+	count, err := m.taskAccess.ArchiveDoneTasksByTag(scope)
+	if err != nil {
+		slog.Info("archived done tasks", "scope", scope, "count", 0, "error", err.Error())
+		return 0, fmt.Errorf("failed to archive done tasks for scope %q: %w", scope, err)
+	}
+
+	slog.Info("archived done tasks", "scope", scope, "count", count)
+	return count, nil
 }
 
 // RestoreTask restores an archived task to done.
