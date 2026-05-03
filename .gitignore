@@ -40,3 +40,6 @@ tests/demo/node_modules/
 
 # TheAgent — transient history backups
 .theagent/history/
+
+# Don't publish personal access tokens
+.mcp.json
