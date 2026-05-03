@@ -438,6 +438,21 @@ use_cases:
             - from: "df214ddd-50f0-46bf-9e31-0b752e46d174"
               to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
               note: "Begin() -> Stage(task + task_order.json) -> Commit()"
+        - name: "Archive Done Tasks Matching Tag"
+          steps:
+            - from: "f9e848e7-0b5e-4c8e-9c26-ab231c1bb172"
+              to: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              note: "ArchiveDoneTasksByTag(scope)"
+            - from: "fd554c15-5dd4-4dd2-9f19-c3c486e72684"
+              to: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              note: "ArchiveDoneTasksByTag(scope) — logs scope and archived count"
+            - from: "36dbcfd7-bca1-4fa3-9d04-301ae4f279f8"
+              to: "df214ddd-50f0-46bf-9e31-0b752e46d174"
+              note: "ArchiveDoneTasksByTag(scope) — filters done tasks by scope (All / Untagged / tag membership), moves matches to
+                archived/, updates task_order.json"
+            - from: "df214ddd-50f0-46bf-9e31-0b752e46d174"
+              to: "c2cf5663-1b5d-4d03-954d-88c54d9d39fb"
+              note: "Begin() -> Stage(moved files + task_order.json) -> Commit('Archive done tasks (scope=...)')"
     - id: "uc-1"
       name: "Manage OKR Hierarchy"
       description: "User creates, updates, records progress on, and dismisses life themes, objectives (with recursive
