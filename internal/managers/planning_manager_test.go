@@ -871,6 +871,15 @@ func (m *mockTaskAccess) CommitNoTx(req access.BatchRequest) (access.BatchOutcom
 	return m.commitInternal(req)
 }
 
+// ArchiveDoneTasksByTag is a stub satisfying the IBatch facet so the
+// PlanningManager constructor accepts this mock. The manager-side wiring
+// for tag-scoped archive-all (initiative tag-scoped-archive-all task
+// #132) will replace this stub with a recorded-call variant when it
+// lands.
+func (m *mockTaskAccess) ArchiveDoneTasksByTag(scope string) (int, error) {
+	return 0, nil
+}
+
 func (m *mockTaskAccess) commitInternal(req access.BatchRequest) (access.BatchOutcome, error) {
 	outcome := access.BatchOutcome{}
 	for i := range req.Creates {

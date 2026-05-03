@@ -339,3 +339,327 @@ func sameOrderMap(a, b map[string][]string) bool {
 	}
 	return true
 }
+
+// makeTaskInDone writes a task file directly to the done status
+// directory and registers it in task_order.json under the done zone.
+// Bypasses TaskAccess's lock to set up test fixtures without producing
+// extra git commits beyond the single fixture commit at the end.
+func makeTaskInDone(t *testing.T, env *testEnv, id, themeID string, tags []string) {
+	t.Helper()
+	task := Task{
+		ID:      id,
+		Title:   id,
+		ThemeID: themeID,
+		Tags:    tags,
+	}
+	dir := env.tasks.taskDirPath(string(TaskStatusDone))
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatalf("mkdir %s: %v", dir, err)
+	}
+	path := filepath.Join(dir, id+".json")
+	data, err := json.MarshalIndent(task, "", "  ")
+	if err != nil {
+		t.Fatalf("marshal task: %v", err)
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatalf("write task: %v", err)
+	}
+
+	// Register in task_order.json under the done zone.
+	orderMap, err := env.tasks.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("load task order: %v", err)
+	}
+	doneZone := string(TaskStatusDone)
+	orderMap[doneZone] = append(orderMap[doneZone], id)
+	if err := env.tasks.writeTaskOrder(orderMap); err != nil {
+		t.Fatalf("write task order: %v", err)
+	}
+
+	if err := commitAll(env.repo, "fixture: add "+id); err != nil {
+		t.Fatalf("commit fixture: %v", err)
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_ScopeAll_ArchivesEveryDoneTask(t *testing.T) {
+	t.Parallel()
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// Mix tagged, multi-tagged, and untagged done tasks.
+	makeTaskInDone(t, env, "H-T1", "H", []string{"focus"})
+	makeTaskInDone(t, env, "H-T2", "H", []string{"focus", "errand"})
+	makeTaskInDone(t, env, "H-T3", "H", nil)
+	// A non-done task that must NOT be archived.
+	makeTaskInTodo(t, env, "H-T4", "H", string(PriorityImportantUrgent))
+
+	before := commitCount(t, env.repo)
+
+	count, err := env.tasks.ArchiveDoneTasksByTag(ScopeAll)
+	if err != nil {
+		t.Fatalf("ArchiveDoneTasksByTag returned error: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("expected count=3, got %d", count)
+	}
+
+	after := commitCount(t, env.repo)
+	if after-before != 1 {
+		t.Errorf("expected exactly one new commit, got %d", after-before)
+	}
+
+	// All three done tasks now live in archived/.
+	archived, _ := env.tasks.GetTasksByStatus(string(TaskStatusArchived))
+	if len(archived) != 3 {
+		t.Errorf("expected 3 archived tasks, got %d (%v)", len(archived), archived)
+	}
+	done, _ := env.tasks.GetTasksByStatus(string(TaskStatusDone))
+	if len(done) != 0 {
+		t.Errorf("expected 0 done tasks, got %d (%v)", len(done), done)
+	}
+
+	// task_order.json no longer references any of the archived IDs.
+	orderMap, err := env.tasks.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder: %v", err)
+	}
+	for _, id := range []string{"H-T1", "H-T2", "H-T3"} {
+		for zone, ids := range orderMap {
+			if slices.Contains(ids, id) {
+				t.Errorf("expected %s removed from task_order, still in zone %q: %v", id, zone, ids)
+			}
+		}
+	}
+
+	// archived_order.json contains every ID, most recently archived first.
+	archivedOrder, err := env.tasks.LoadArchivedOrder()
+	if err != nil {
+		t.Fatalf("LoadArchivedOrder: %v", err)
+	}
+	if len(archivedOrder) != 3 {
+		t.Fatalf("expected 3 entries in archived_order, got %v", archivedOrder)
+	}
+	// Iteration preserves the matched[] order at the head: T1, T2, T3.
+	if archivedOrder[0] != "H-T1" || archivedOrder[1] != "H-T2" || archivedOrder[2] != "H-T3" {
+		t.Errorf("unexpected archived order: %v", archivedOrder)
+	}
+
+	// The non-done task is untouched.
+	if _, err := os.Stat(filepath.Join(env.tasks.taskDirPath(string(TaskStatusTodo)), "H-T4.json")); err != nil {
+		t.Errorf("non-done task should remain untouched, got err=%v", err)
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_ScopeUntagged_ArchivesOnlyTaglessDoneTasks(t *testing.T) {
+	t.Parallel()
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	makeTaskInDone(t, env, "H-T1", "H", []string{"focus"})           // tagged: skip
+	makeTaskInDone(t, env, "H-T2", "H", nil)                          // untagged: archive
+	makeTaskInDone(t, env, "H-T3", "H", []string{})                   // empty slice: archive
+	makeTaskInDone(t, env, "H-T4", "H", []string{"focus", "errand"}) // multi-tag: skip
+
+	before := commitCount(t, env.repo)
+
+	count, err := env.tasks.ArchiveDoneTasksByTag(ScopeUntagged)
+	if err != nil {
+		t.Fatalf("ArchiveDoneTasksByTag returned error: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("expected count=2, got %d", count)
+	}
+
+	after := commitCount(t, env.repo)
+	if after-before != 1 {
+		t.Errorf("expected exactly one new commit, got %d", after-before)
+	}
+
+	archived, _ := env.tasks.GetTasksByStatus(string(TaskStatusArchived))
+	archivedIDs := map[string]bool{}
+	for _, a := range archived {
+		archivedIDs[a.ID] = true
+	}
+	if !archivedIDs["H-T2"] || !archivedIDs["H-T3"] {
+		t.Errorf("expected H-T2 and H-T3 archived, got %v", archivedIDs)
+	}
+	if archivedIDs["H-T1"] || archivedIDs["H-T4"] {
+		t.Errorf("expected tagged tasks NOT archived, got %v", archivedIDs)
+	}
+
+	done, _ := env.tasks.GetTasksByStatus(string(TaskStatusDone))
+	doneIDs := map[string]bool{}
+	for _, d := range done {
+		doneIDs[d.ID] = true
+	}
+	if !doneIDs["H-T1"] || !doneIDs["H-T4"] {
+		t.Errorf("expected tagged tasks still in done, got %v", doneIDs)
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_SpecificTag_ArchivesMembershipMatches(t *testing.T) {
+	t.Parallel()
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	makeTaskInDone(t, env, "H-T1", "H", []string{"focus"})            // matches
+	makeTaskInDone(t, env, "H-T2", "H", []string{"focus", "errand"})  // matches (multi-tag membership)
+	makeTaskInDone(t, env, "H-T3", "H", []string{"errand"})           // does not match
+	makeTaskInDone(t, env, "H-T4", "H", nil)                          // does not match
+
+	before := commitCount(t, env.repo)
+
+	count, err := env.tasks.ArchiveDoneTasksByTag("focus")
+	if err != nil {
+		t.Fatalf("ArchiveDoneTasksByTag returned error: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("expected count=2, got %d", count)
+	}
+
+	after := commitCount(t, env.repo)
+	if after-before != 1 {
+		t.Errorf("expected exactly one new commit, got %d", after-before)
+	}
+
+	archived, _ := env.tasks.GetTasksByStatus(string(TaskStatusArchived))
+	archivedIDs := map[string]bool{}
+	for _, a := range archived {
+		archivedIDs[a.ID] = true
+	}
+	if !archivedIDs["H-T1"] || !archivedIDs["H-T2"] {
+		t.Errorf("expected H-T1 and H-T2 archived, got %v", archivedIDs)
+	}
+	if archivedIDs["H-T3"] || archivedIDs["H-T4"] {
+		t.Errorf("expected non-matching tasks NOT archived, got %v", archivedIDs)
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_EmptyDoneSet_ReturnsZeroNoCommit(t *testing.T) {
+	t.Parallel()
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	// One non-done task; the done set is empty.
+	makeTaskInTodo(t, env, "H-T1", "H", string(PriorityImportantUrgent))
+
+	before := commitCount(t, env.repo)
+
+	count, err := env.tasks.ArchiveDoneTasksByTag(ScopeAll)
+	if err != nil {
+		t.Fatalf("ArchiveDoneTasksByTag returned error: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected count=0, got %d", count)
+	}
+
+	after := commitCount(t, env.repo)
+	if after != before {
+		t.Errorf("expected no new commit, got %d new", after-before)
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_SpecificTag_NoMatch_ReturnsZeroNoCommit(t *testing.T) {
+	t.Parallel()
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	makeTaskInDone(t, env, "H-T1", "H", []string{"focus"})
+	makeTaskInDone(t, env, "H-T2", "H", nil)
+
+	before := commitCount(t, env.repo)
+
+	count, err := env.tasks.ArchiveDoneTasksByTag("nonexistent-tag")
+	if err != nil {
+		t.Fatalf("ArchiveDoneTasksByTag returned error: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("expected count=0, got %d", count)
+	}
+
+	after := commitCount(t, env.repo)
+	if after != before {
+		t.Errorf("expected no new commit, got %d new", after-before)
+	}
+
+	// Both tasks remain in done.
+	done, _ := env.tasks.GetTasksByStatus(string(TaskStatusDone))
+	if len(done) != 2 {
+		t.Errorf("expected 2 done tasks remaining, got %d", len(done))
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_RenameFailure_RollsBackPriorMoves(t *testing.T) {
+	t.Parallel()
+	env, _, cleanup := setupTestPlanAccess(t)
+	defer cleanup()
+
+	makeTaskInDone(t, env, "H-T1", "H", []string{"focus"})
+	makeTaskInDone(t, env, "H-T2", "H", []string{"focus"})
+
+	// Snapshot disk state before the call.
+	beforeOrder, err := env.tasks.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder: %v", err)
+	}
+	before := commitCount(t, env.repo)
+
+	// Replace the archived/ directory with a regular file so os.Rename
+	// into archived/<id>.json fails after the first move (or even on
+	// the first one). This forces an internal rollback.
+	archivedDir := env.tasks.taskDirPath(string(TaskStatusArchived))
+	if err := os.RemoveAll(archivedDir); err != nil {
+		t.Fatalf("RemoveAll archived dir: %v", err)
+	}
+	if err := os.WriteFile(archivedDir, []byte("not a directory"), 0644); err != nil {
+		t.Fatalf("write archived placeholder: %v", err)
+	}
+
+	count, err := env.tasks.ArchiveDoneTasksByTag(ScopeAll)
+	if err == nil {
+		t.Fatalf("expected error from ArchiveDoneTasksByTag, got nil; count=%d", count)
+	}
+	if count != 0 {
+		t.Errorf("expected count=0 on failure, got %d", count)
+	}
+
+	// Restore the archived directory so subsequent assertions can read.
+	if err := os.Remove(archivedDir); err != nil {
+		t.Fatalf("remove archived placeholder: %v", err)
+	}
+	if err := os.MkdirAll(archivedDir, 0755); err != nil {
+		t.Fatalf("recreate archived dir: %v", err)
+	}
+
+	// No new commit.
+	after := commitCount(t, env.repo)
+	if after != before {
+		t.Errorf("expected no new commit on rollback, got %d new", after-before)
+	}
+
+	// Both done tasks still on disk under done/.
+	for _, id := range []string{"H-T1", "H-T2"} {
+		path := filepath.Join(env.tasks.taskDirPath(string(TaskStatusDone)), id+".json")
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("expected %s restored under done/, got err=%v", id, err)
+		}
+	}
+
+	// task_order.json unchanged on disk.
+	afterOrder, err := env.tasks.LoadTaskOrder()
+	if err != nil {
+		t.Fatalf("LoadTaskOrder: %v", err)
+	}
+	if !sameOrderMap(beforeOrder, afterOrder) {
+		t.Errorf("order map changed after rollback:\nbefore=%v\nafter=%v", beforeOrder, afterOrder)
+	}
+
+	// archived_order.json must remain empty.
+	archivedOrder, err := env.tasks.LoadArchivedOrder()
+	if err != nil {
+		t.Fatalf("LoadArchivedOrder: %v", err)
+	}
+	if len(archivedOrder) != 0 {
+		t.Errorf("expected empty archived_order after rollback, got %v", archivedOrder)
+	}
+}
