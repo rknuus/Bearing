@@ -47,6 +47,7 @@ type IBatch interface {
 	Promote(req PromoteRequest) (PromoteOutcome, error)
 	Commit(req BatchRequest) (BatchOutcome, error)
 	CommitNoTx(req BatchRequest) (BatchOutcome, error)
+	ArchiveDoneTasksByTag(scope string) (int, error)
 }
 
 // IBoard is the board-structure facet of TaskAccess. Each verb applies

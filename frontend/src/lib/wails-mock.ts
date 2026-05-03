@@ -1040,6 +1040,23 @@ export const mockAppBindings = {
     }
   },
 
+  // Mirrors internal/access/scopes.go matching rule:
+  //   'All'      → every done task,
+  //   'Untagged' → done tasks with no tags,
+  //   else       → done tasks whose `tags` contain the scope literal.
+  ArchiveDoneTasksByTag: async (scope: string): Promise<number> => {
+    const matches = (task: TaskWithStatus): boolean => {
+      if (scope === 'All') return true;
+      if (scope === 'Untagged') return !task.tags || task.tags.length === 0;
+      return task.tags?.includes(scope) ?? false;
+    };
+    const doneInScope = mockTasks.filter(t => t.status === 'done' && matches(t));
+    for (const task of doneInScope) {
+      await mockAppBindings.ArchiveTask(task.id);
+    }
+    return doneInScope.length;
+  },
+
   RestoreTask: async (taskId: string): Promise<void> => {
     const task = mockTasks.find(t => t.id === taskId);
     if (!task || task.status !== 'archived') return;

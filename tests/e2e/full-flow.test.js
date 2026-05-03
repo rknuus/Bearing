@@ -30,6 +30,8 @@ import {
   assertDirNotExists,
   getTaskFiles,
   isWorkingTreeClean,
+  snapshotTaskFilenames,
+  cleanupTaskResidue,
 } from './test-helpers.js'
 
 const DATA_DIR = process.env.BEARING_DATA_DIR
@@ -68,7 +70,13 @@ export async function runTests() {
   // Record initial commit count (repo init creates an initial commit)
   expectedCommits = getGitCommitCount(DATA_DIR)
 
+  // Snapshot task filenames so the `finally` block can remove anything
+  // this suite added (archived, moved, or otherwise). Keeps cross-suite
+  // residue out of the workspace even if a scenario crashes mid-flight.
+  const taskFilenameSnapshot = snapshotTaskFilenames(DATA_DIR)
+
   let browser
+  let page
   const pageErrors = []
   const consoleErrors = []
 
@@ -88,7 +96,7 @@ export async function runTests() {
     browser = await chromium.launch(launchOptions)
     console.log('  Browser launched\n')
 
-    const page = await browser.newPage()
+    page = await browser.newPage()
 
     page.on('pageerror', (error) => {
       pageErrors.push(error.message)
@@ -1709,6 +1717,16 @@ export async function runTests() {
   } catch (err) {
     console.error('\nFatal error:', err)
   } finally {
+    // Suite-scoped cleanup: route through the backend so the data-dir
+    // git repository stays consistent with the backend's in-memory view.
+    // Runs before browser.close() so `page.evaluate` is still available.
+    if (page) {
+      try {
+        await cleanupTaskResidue(page, DATA_DIR, taskFilenameSnapshot)
+      } catch (err) {
+        console.log(`  [cleanup] error: ${err.message}`)
+      }
+    }
     if (browser) {
       await browser.close()
     }

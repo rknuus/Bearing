@@ -1,8 +1,10 @@
 package managers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"slices"
 	"sort"
 	"strings"
@@ -129,15 +131,18 @@ func (m *mockThemeAccess) WriteDeleteTheme(id string) error {
 // mockTaskAccess implements access.ITaskAccess plus the new ITask, IBatch,
 // and IBoard facet interfaces for testing.
 type mockTaskAccess struct {
-	mu             sync.Mutex
-	tasks          map[string][]access.Task
-	taskOrder      map[string][]string
-	archivedOrder  []string
-	nextTaskNum    int
-	boardConfig    *access.BoardConfiguration
-	writeTaskErr   error // when set, ITask.Move returns this error (atomicity tests)
-	batchErr       error // when set, IBatch.CommitNoTx returns this error (atomicity tests)
-	commitAllCount int   // number of synthetic per-verb commit ticks (Save/Move/Promote/...)
+	mu                sync.Mutex
+	tasks             map[string][]access.Task
+	taskOrder         map[string][]string
+	archivedOrder     []string
+	nextTaskNum       int
+	boardConfig       *access.BoardConfiguration
+	writeTaskErr      error // when set, ITask.Move returns this error (atomicity tests)
+	batchErr          error // when set, IBatch.CommitNoTx returns this error (atomicity tests)
+	commitAllCount    int   // number of synthetic per-verb commit ticks (Save/Move/Promote/...)
+	archiveByTagCalls []string
+	archiveByTagCount int
+	archiveByTagErr   error
 }
 
 func newMockTaskAccess() *mockTaskAccess {
@@ -869,6 +874,19 @@ func (m *mockTaskAccess) CommitNoTx(req access.BatchRequest) (access.BatchOutcom
 		return access.BatchOutcome{}, m.batchErr
 	}
 	return m.commitInternal(req)
+}
+
+// ArchiveDoneTasksByTag records the scope it was called with and
+// returns the configured count + error, mirroring how Archive records
+// its invocation for manager-level unit tests.
+func (m *mockTaskAccess) ArchiveDoneTasksByTag(scope string) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.archiveByTagCalls = append(m.archiveByTagCalls, scope)
+	if m.archiveByTagErr != nil {
+		return 0, m.archiveByTagErr
+	}
+	return m.archiveByTagCount, nil
 }
 
 func (m *mockTaskAccess) commitInternal(req access.BatchRequest) (access.BatchOutcome, error) {
@@ -3738,6 +3756,151 @@ func TestArchiveAllDoneTasks(t *testing.T) {
 			t.Error("task should remain in todo")
 		}
 	})
+}
+
+func TestUnit_ArchiveDoneTasksByTag_ForwardsScope(t *testing.T) {
+	cases := []struct {
+		name  string
+		scope string
+		count int
+	}{
+		{name: "scope All", scope: access.ScopeAll, count: 5},
+		{name: "scope Untagged", scope: access.ScopeUntagged, count: 2},
+		{name: "specific tag", scope: "work", count: 1},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			manager, _, mockAccess := newMockManager()
+			mockAccess.archiveByTagCount = tc.count
+
+			got, err := manager.ArchiveDoneTasksByTag(tc.scope)
+			if err != nil {
+				t.Fatalf("expected no error, got %v", err)
+			}
+			if got != tc.count {
+				t.Errorf("expected count %d, got %d", tc.count, got)
+			}
+			if len(mockAccess.archiveByTagCalls) != 1 {
+				t.Fatalf("expected 1 ArchiveDoneTasksByTag call, got %d", len(mockAccess.archiveByTagCalls))
+			}
+			if mockAccess.archiveByTagCalls[0] != tc.scope {
+				t.Errorf("expected scope %q forwarded verbatim, got %q", tc.scope, mockAccess.archiveByTagCalls[0])
+			}
+		})
+	}
+}
+
+func TestUnit_ArchiveDoneTasksByTag_PropagatesError(t *testing.T) {
+	manager, _, mockAccess := newMockManager()
+	mockAccess.archiveByTagErr = fmt.Errorf("rename failed")
+
+	count, err := manager.ArchiveDoneTasksByTag(access.ScopeAll)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if count != 0 {
+		t.Errorf("expected count 0 on error, got %d", count)
+	}
+	if !strings.Contains(err.Error(), "rename failed") {
+		t.Errorf("expected wrapped underlying error, got %v", err)
+	}
+	if !strings.Contains(err.Error(), access.ScopeAll) {
+		t.Errorf("expected scope %q in error message, got %v", access.ScopeAll, err)
+	}
+	if len(mockAccess.archiveByTagCalls) != 1 {
+		t.Fatalf("expected 1 ArchiveDoneTasksByTag call, got %d", len(mockAccess.archiveByTagCalls))
+	}
+}
+
+// captureSlogHandler records every log record into the provided slice for
+// inspection in tests. Records keep their attribute key/value pairs.
+type captureSlogHandler struct {
+	mu      *sync.Mutex
+	records *[]capturedLog
+}
+
+type capturedLog struct {
+	level slog.Level
+	msg   string
+	attrs map[string]any
+}
+
+func (h captureSlogHandler) Enabled(_ context.Context, _ slog.Level) bool { return true }
+func (h captureSlogHandler) Handle(_ context.Context, r slog.Record) error {
+	rec := capturedLog{level: r.Level, msg: r.Message, attrs: map[string]any{}}
+	r.Attrs(func(a slog.Attr) bool {
+		rec.attrs[a.Key] = a.Value.Any()
+		return true
+	})
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	*h.records = append(*h.records, rec)
+	return nil
+}
+func (h captureSlogHandler) WithAttrs(_ []slog.Attr) slog.Handler { return h }
+func (h captureSlogHandler) WithGroup(_ string) slog.Handler      { return h }
+
+func withCapturedSlog(t *testing.T) *[]capturedLog {
+	t.Helper()
+	var mu sync.Mutex
+	records := []capturedLog{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(captureSlogHandler{mu: &mu, records: &records}))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	return &records
+}
+
+func TestUnit_ArchiveDoneTasksByTag_LogsScopeAndCount(t *testing.T) {
+	t.Run("happy path emits scope and count", func(t *testing.T) {
+		records := withCapturedSlog(t)
+		manager, _, mockAccess := newMockManager()
+		mockAccess.archiveByTagCount = 3
+
+		if _, err := manager.ArchiveDoneTasksByTag("work"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		rec := findRecord(t, *records, "archived done tasks")
+		if rec.level != slog.LevelInfo {
+			t.Errorf("expected level Info, got %v", rec.level)
+		}
+		if rec.attrs["scope"] != "work" {
+			t.Errorf("expected scope=work, got %v", rec.attrs["scope"])
+		}
+		if rec.attrs["count"] != int64(3) {
+			t.Errorf("expected count=3, got %v", rec.attrs["count"])
+		}
+	})
+
+	t.Run("error path emits scope and count=0", func(t *testing.T) {
+		records := withCapturedSlog(t)
+		manager, _, mockAccess := newMockManager()
+		mockAccess.archiveByTagErr = fmt.Errorf("disk full")
+
+		if _, err := manager.ArchiveDoneTasksByTag(access.ScopeUntagged); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		rec := findRecord(t, *records, "archived done tasks")
+		if rec.attrs["scope"] != access.ScopeUntagged {
+			t.Errorf("expected scope=%s, got %v", access.ScopeUntagged, rec.attrs["scope"])
+		}
+		if rec.attrs["count"] != int64(0) {
+			t.Errorf("expected count=0 on error path, got %v", rec.attrs["count"])
+		}
+	})
+}
+
+func findRecord(t *testing.T, records []capturedLog, msg string) capturedLog {
+	t.Helper()
+	for _, r := range records {
+		if r.msg == msg {
+			return r
+		}
+	}
+	t.Fatalf("expected log record with msg %q, got %d records", msg, len(records))
+	return capturedLog{}
 }
 
 func TestRestoreTask(t *testing.T) {

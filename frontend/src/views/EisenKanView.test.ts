@@ -52,6 +52,7 @@ const mockProcessPriorityPromotions = vi.fn();
 const mockReorderTasks = vi.fn();
 const mockArchiveTask = vi.fn();
 const mockArchiveAllDoneTasks = vi.fn();
+const mockArchiveDoneTasksByTag = vi.fn<(scope: string) => Promise<number>>();
 const mockRestoreTask = vi.fn();
 const mockReorderColumns = vi.fn();
 const mockLoadNavigationContext = vi.fn();
@@ -74,6 +75,7 @@ vi.mock('../lib/wails-mock', async (importOriginal) => {
       ReorderTasks: (...args: unknown[]) => mockReorderTasks(...args),
       ArchiveTask: (...args: unknown[]) => mockArchiveTask(...args),
       ArchiveAllDoneTasks: (...args: unknown[]) => mockArchiveAllDoneTasks(...args as []),
+      ArchiveDoneTasksByTag: (...args: unknown[]) => mockArchiveDoneTasksByTag(...args as [string]),
       RestoreTask: (...args: unknown[]) => mockRestoreTask(...args),
       ReorderColumns: (...args: unknown[]) => mockReorderColumns(...args),
       LoadNavigationContext: (...args: unknown[]) => mockLoadNavigationContext(...args as []),
@@ -143,6 +145,22 @@ describe('EisenKanView', () => {
     });
     mockArchiveAllDoneTasks.mockImplementation(async () => {
       currentTasks = currentTasks.map(t => t.status === 'done' ? { ...t, status: 'archived' } : t);
+    });
+    mockArchiveDoneTasksByTag.mockImplementation(async (scope: string) => {
+      const matches = (task: TaskWithStatus): boolean => {
+        if (scope === 'All') return true;
+        if (scope === 'Untagged') return !task.tags || task.tags.length === 0;
+        return task.tags?.includes(scope) ?? false;
+      };
+      let count = 0;
+      currentTasks = currentTasks.map(t => {
+        if (t.status === 'done' && matches(t)) {
+          count += 1;
+          return { ...t, status: 'archived' };
+        }
+        return t;
+      });
+      return count;
     });
     mockRestoreTask.mockImplementation(async (id: string) => {
       currentTasks = currentTasks.map(t => t.id === id ? { ...t, status: 'done' } : t);
@@ -871,7 +889,7 @@ describe('EisenKanView', () => {
       });
     });
 
-    it('"Archive all" button calls ArchiveAllDoneTasks and refreshes tasks', async () => {
+    it('"Archive all" button calls ArchiveDoneTasksByTag with the active scope', async () => {
       await renderView();
 
 
@@ -880,11 +898,90 @@ describe('EisenKanView', () => {
       await tick();
 
       await vi.waitFor(() => {
-        expect(mockArchiveAllDoneTasks).toHaveBeenCalledOnce();
+        expect(mockArchiveDoneTasksByTag).toHaveBeenCalledExactlyOnceWith('All');
       });
 
       await vi.waitFor(() => {
         expect(mockGetTasks).toHaveBeenCalledTimes(3); // initial + post-archive + state-check
+      });
+    });
+
+    it('"Archive all" label reflects the All board on initial mount', async () => {
+      await renderView();
+
+      const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
+      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all ✅');
+      expect(archiveAllBtn.title).toBe('Archive all ✅');
+    });
+
+    it('"Archive all" label switches to "in Untagged" when the Untagged board is selected', async () => {
+      // Seed at least one untagged task so the Untagged strip button renders.
+      currentTasks = [
+        ...makeTestTasks(),
+        { id: 'T-NOTAG', title: 'No tags here', themeId: 'HF', priority: 'important-urgent', status: 'todo' },
+      ];
+
+      await renderView();
+
+      const untaggedBtn = Array.from(
+        container.querySelectorAll<HTMLButtonElement>('.tag-board-strip-item.synthetic.untagged')
+      )[0];
+      expect(untaggedBtn).toBeTruthy();
+      untaggedBtn.click();
+      await tick();
+
+      const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
+      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all ✅ in Untagged');
+      expect(archiveAllBtn.title).toBe('Archive all ✅ in Untagged');
+    });
+
+    it('"Archive all" label switches to "in <tag>" when a user tag board is selected', async () => {
+      await renderView();
+
+      // The seeded tasks include a "backend" tag — pick the strip button by its label.
+      const tagBtn = Array.from(
+        container.querySelectorAll<HTMLButtonElement>('.tag-board-strip-item')
+      ).find(b => b.textContent?.trim() === 'backend');
+      expect(tagBtn).toBeTruthy();
+      tagBtn!.click();
+      await tick();
+
+      const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
+      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all ✅ in backend');
+      expect(archiveAllBtn.title).toBe('Archive all ✅ in backend');
+    });
+
+    it('"Archive all" passes the active tag scope verbatim and only archives matching done tasks', async () => {
+      // Two done tasks — one tagged "frontend", one untagged. Selecting the
+      // "frontend" board must archive only the frontend-tagged done task.
+      currentTasks = [
+        { id: 'T1', title: 'Done frontend', themeId: 'HF', priority: 'important-urgent', status: 'done', tags: ['frontend'] },
+        { id: 'T2', title: 'Done untagged', themeId: 'HF', priority: 'important-urgent', status: 'done' },
+        { id: 'T3', title: 'Todo frontend', themeId: 'CG', priority: 'important-urgent', status: 'todo', tags: ['frontend'] },
+      ];
+
+      await renderView();
+
+      const tagBtn = Array.from(
+        container.querySelectorAll<HTMLButtonElement>('.tag-board-strip-item')
+      ).find(b => b.textContent?.trim() === 'frontend');
+      expect(tagBtn).toBeTruthy();
+      tagBtn!.click();
+      await tick();
+
+      const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
+      archiveAllBtn.click();
+      await tick();
+
+      await vi.waitFor(() => {
+        expect(mockArchiveDoneTasksByTag).toHaveBeenCalledExactlyOnceWith('frontend');
+      });
+
+      // After reconcile only the frontend-tagged done task is archived; the
+      // untagged done task remains in the Done column.
+      await vi.waitFor(() => {
+        const archived = currentTasks.filter(t => t.status === 'archived').map(t => t.id);
+        expect(archived).toEqual(['T1']);
       });
     });
 

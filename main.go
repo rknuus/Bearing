@@ -197,6 +197,10 @@ func (a *App) ArchiveAllDoneTasks() error {
 	return a.planningManager.ArchiveAllDoneTasks()
 }
 
+func (a *App) ArchiveDoneTasksByTag(scope string) (int, error) {
+	return a.planningManager.ArchiveDoneTasksByTag(scope)
+}
+
 func (a *App) RestoreTask(taskId string) error {
 	return a.planningManager.RestoreTask(taskId)
 }

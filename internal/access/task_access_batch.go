@@ -3,6 +3,7 @@ package access
 import (
 	"fmt"
 	"os"
+	"slices"
 )
 
 // =============================================================================
@@ -374,4 +375,140 @@ func (ta *TaskAccess) commitLocked(req BatchRequest) (BatchOutcome, []string, st
 
 	msg := fmt.Sprintf("Batch: %d create(s), %d delete(s)", len(outcome.CreatedIDs), len(outcome.DeletedIDs))
 	return outcome, commitPaths, msg, rollback, nil
+}
+
+// ArchiveDoneTasksByTag archives every task currently in the done status
+// directory whose tag list satisfies the supplied scope, in a single
+// atomic transaction:
+//
+//   - scope == ScopeAll      : every done task is archived.
+//   - scope == ScopeUntagged : only done tasks with an empty tag list
+//                              are archived.
+//   - otherwise              : done tasks whose Tags slice contains the
+//                              scope string (membership match) are
+//                              archived. Multi-tag tasks qualify when at
+//                              least one tag equals the scope.
+//
+// Each matched task is moved from tasks/done/<id>.json to
+// tasks/archived/<id>.json, removed from every zone in task_order.json,
+// and prepended to archived_order.json (most recently archived first,
+// matching ITask.Archive). All filesystem mutations happen under ta.mu;
+// any per-task failure rolls every preceding move back and surfaces an
+// error with no on-disk change retained. On success a SINGLE git commit
+// covers every touched path with the message
+// "Archive done tasks (scope=<scope>)".
+//
+// Returns the number of tasks actually archived. Returns (0, nil) when
+// the done set is empty or no done task matches the scope; in that case
+// no commit is produced.
+func (ta *TaskAccess) ArchiveDoneTasksByTag(scope string) (int, error) {
+	ta.mu.Lock()
+	defer ta.mu.Unlock()
+
+	doneTasks, err := ta.GetTasksByStatus(string(TaskStatusDone))
+	if err != nil {
+		return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: %w", err)
+	}
+
+	matched := make([]Task, 0, len(doneTasks))
+	for _, t := range doneTasks {
+		if scopeMatches(scope, t.Tags) {
+			matched = append(matched, t)
+		}
+	}
+	if len(matched) == 0 {
+		return 0, nil
+	}
+
+	// Track moved files so we can roll back any partial rename if a
+	// later step fails. Each entry records both the original done path
+	// and the new archived path; rollback renames new -> old.
+	type movedFile struct {
+		oldPath string
+		newPath string
+	}
+	moved := make([]movedFile, 0, len(matched))
+
+	rollback := func() {
+		for i := len(moved) - 1; i >= 0; i-- {
+			_ = os.Rename(moved[i].newPath, moved[i].oldPath)
+		}
+	}
+
+	commitPaths := make([]string, 0, 2*len(matched)+2)
+
+	for _, t := range matched {
+		oldPath := ta.taskFilePath(string(TaskStatusDone), t.ID)
+		newPath := ta.taskFilePath(string(TaskStatusArchived), t.ID)
+		if err := os.Rename(oldPath, newPath); err != nil {
+			rollback()
+			return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: failed to move task %s: %w", t.ID, err)
+		}
+		moved = append(moved, movedFile{oldPath: oldPath, newPath: newPath})
+		commitPaths = append(commitPaths, oldPath, newPath)
+	}
+
+	// Mutate the order maps in memory first so a write failure on either
+	// file leaves only the in-memory state dirty, which we then discard.
+	orderMap, err := ta.LoadTaskOrder()
+	if err != nil {
+		rollback()
+		return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: failed to load task order: %w", err)
+	}
+	orderChanged := false
+	for _, t := range matched {
+		if removeFromOrderMap(orderMap, t.ID) {
+			orderChanged = true
+		}
+	}
+
+	archived, err := ta.LoadArchivedOrder()
+	if err != nil {
+		rollback()
+		return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: failed to load archived order: %w", err)
+	}
+	// Prepend each matched task ID so the most recently archived task
+	// appears first, mirroring ITask.Archive's single-task semantics.
+	// Iterate in reverse so the relative order of matched[] is preserved
+	// at the head of the resulting slice.
+	for i := len(matched) - 1; i >= 0; i-- {
+		archived = append([]string{matched[i].ID}, archived...)
+	}
+
+	if orderChanged {
+		orderFilePath := ta.taskOrderFilePath()
+		if err := writeJSON(orderFilePath, orderMap); err != nil {
+			rollback()
+			return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: failed to write task order: %w", err)
+		}
+		commitPaths = append(commitPaths, orderFilePath)
+	}
+
+	archivedFilePath := ta.archivedOrderFilePath()
+	if err := writeJSON(archivedFilePath, archived); err != nil {
+		rollback()
+		return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: failed to write archived order: %w", err)
+	}
+	commitPaths = append(commitPaths, archivedFilePath)
+
+	msg := fmt.Sprintf("Archive done tasks (scope=%s)", scope)
+	if err := commitFiles(ta.repo, commitPaths, msg); err != nil {
+		rollback()
+		return 0, fmt.Errorf("TaskAccess.ArchiveDoneTasksByTag: %w", err)
+	}
+	return len(matched), nil
+}
+
+// scopeMatches reports whether a task with the supplied tag list
+// qualifies under the given scope literal. See ArchiveDoneTasksByTag for
+// the matching semantics.
+func scopeMatches(scope string, tags []string) bool {
+	switch scope {
+	case ScopeAll:
+		return true
+	case ScopeUntagged:
+		return len(tags) == 0
+	default:
+		return slices.Contains(tags, scope)
+	}
 }

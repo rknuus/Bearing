@@ -17,6 +17,7 @@ const TEST_SUITES = [
   { name: 'Single-Click Task Actions (E2E)', file: 'single-click-task-actions.test.js', enabled: true },
   { name: 'Tag Deck View-Entry Re-Read (E2E)', file: 'tag-deck-view-entry-rebind.test.js', enabled: true },
   { name: 'Move-to-Top/Bottom Menu (E2E)', file: 'move-to-top-bottom-menu.test.js', enabled: true },
+  { name: 'EisenKan Tag-Scoped Bulk Archive (E2E)', file: 'eisenkan-tag-scoped-archive.test.js', enabled: true },
 ]
 
 const enabledSuites = TEST_SUITES.filter(suite => suite.enabled)
