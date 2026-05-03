@@ -188,6 +188,14 @@
   // create/edit dialogs for tag autocompletion.
   const availableTags = $derived([...new Set(tasks.flatMap(t => t.tags ?? []))].sort());
 
+  // Done-column "Archive all" button label, scoped to the active board so
+  // users can see which slice they are about to archive (#133).
+  const archiveAllLabel = $derived.by(() => {
+    if (selectedTag === ALL_BOARD) return 'Archive all ✅';
+    if (selectedTag === UNTAGGED_BOARD) return 'Archive all ✅ in Untagged';
+    return `Archive all ✅ in ${selectedTag}`;
+  });
+
   // Re-derive columnItems and sectionItems from the current filteredTasks.
   // Called by the $effect (reactive sync) and by the drag-cancel path (synchronous reset).
   function regroupItems() {
@@ -272,8 +280,8 @@
     await getBindings().ArchiveTask(taskId);
   }
 
-  async function apiArchiveAllDoneTasks(): Promise<void> {
-    await getBindings().ArchiveAllDoneTasks();
+  async function apiArchiveDoneTasksByTag(scope: string): Promise<number> {
+    return getBindings().ArchiveDoneTasksByTag(scope);
   }
 
   async function apiRestoreTask(taskId: string): Promise<void> {
@@ -1035,13 +1043,36 @@
     }
   }
 
+  /**
+   * Returns true when `task` falls within the active board scope. Mirrors
+   * the backend matching rule (see internal/access/scopes.go):
+   *   - `ALL_BOARD`     → every task qualifies;
+   *   - `UNTAGGED_BOARD`→ tasks with no tags;
+   *   - otherwise       → tasks whose `tags` contain the scope literal.
+   */
+  function taskMatchesScope(task: TaskWithStatus, scope: string): boolean {
+    if (scope === ALL_BOARD) return true;
+    if (scope === UNTAGGED_BOARD) return !task.tags || task.tags.length === 0;
+    return task.tags?.includes(scope) ?? false;
+  }
+
   async function handleArchiveAllDone() {
+    const scope = selectedTag;
+    const snapshot = tasks;
+    // Optimistically archive only the done tasks within the active scope —
+    // mirrors the backend matching rule so the UI converges with the
+    // post-call reconcile.
+    tasks = tasks.map(t =>
+      t.status === 'done' && taskMatchesScope(t, scope)
+        ? { ...t, status: 'archived' }
+        : t
+    );
     try {
-      await apiArchiveAllDoneTasks();
+      await apiArchiveDoneTasksByTag(scope);
       tasks = await fetchTasks();
       await verifyTaskState();
     } catch (e) {
-      error = extractError(e);
+      rollbackMove(snapshot, extractError(e));
     }
   }
 
@@ -1312,9 +1343,9 @@
                   type="button"
                   class="archive-all-btn"
                   onclick={handleArchiveAllDone}
-                  title="Archive all done tasks"
+                  title={archiveAllLabel}
                 >
-                  Archive all ✅
+                  {archiveAllLabel}
                 </button>
               {/if}
               <span class="task-count">{getColumnTaskCount(column.name)}</span>
