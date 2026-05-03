@@ -12,6 +12,12 @@
   import { TagBadges } from '../lib/components';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels, priorityColors } from '../lib/constants/priorities';
+  import TaskActionMenu from './TaskActionMenu.svelte';
+
+  interface TaskAction {
+    label: string;
+    onSelect: () => void;
+  }
 
   interface Props {
     task: TaskWithStatus;
@@ -23,6 +29,12 @@
     onRestore?: () => void;
     onNavigateToTheme?: (themeId: string) => void;
     draggable?: boolean;
+    /**
+     * Optional list of actions to render in a three-dot menu in the card's
+     * top-right corner. When undefined or empty, no menu is rendered and the
+     * card layout is preserved as-is.
+     */
+    actions?: TaskAction[];
   }
 
   let {
@@ -35,6 +47,7 @@
     onRestore,
     onNavigateToTheme,
     draggable = true,
+    actions,
   }: Props = $props();
 
   // svelte-dnd-action attaches mousedown/touchstart listeners directly on the
@@ -53,14 +66,26 @@
   // button via a Svelte action, intercepting mousedown/touchstart at the
   // source so the dnd container listener never sees them. Drag still works on
   // every other surface of the card.
+  //
+  // pointerdown is also stopped: even though dnd 0.9.x doesn't subscribe to
+  // pointer events directly, browsers may still synthesise a follow-up
+  // mousedown if the pointerdown bubbled to an ancestor — belt-and-braces.
+  // The action is also applied to the move-menu slot wrapper to prevent the
+  // "wobble" reported on issue #129: when the user clicked the three-dot
+  // trigger, the inner button's mousedown leaked to the dnd-zone listener on
+  // the card root, which registered a drag candidate and ran a brief
+  // false-alarm cycle (mousedown + tiny mousemove + mouseup), visibly nudging
+  // the card.
   function stopDragStart(node: HTMLElement) {
     const stop = (e: Event) => e.stopPropagation();
     node.addEventListener('mousedown', stop);
     node.addEventListener('touchstart', stop, { passive: true });
+    node.addEventListener('pointerdown', stop);
     return {
       destroy() {
         node.removeEventListener('mousedown', stop);
         node.removeEventListener('touchstart', stop);
+        node.removeEventListener('pointerdown', stop);
       },
     };
   }
@@ -89,6 +114,11 @@
       >
         {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
       </button>
+    {/if}
+    {#if actions && actions.length > 0}
+      <div class="task-action-menu-slot" use:stopDragStart>
+        <TaskActionMenu actions={actions} ariaLabel="Move task" />
+      </div>
     {/if}
   </div>
   <h3 class="task-title">{task.title}</h3>
@@ -168,6 +198,17 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+  }
+
+  /*
+   * Push the move-menu trigger to the far right of the header, separated
+   * from the priority + theme badges by an auto margin so it never crowds
+   * the existing badges.
+   */
+  .task-action-menu-slot {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
   }
 
   .priority-badge {

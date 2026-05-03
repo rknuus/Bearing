@@ -30,6 +30,13 @@
   } from '../lib/wails-mock';
   import { getBindings, extractError } from '../lib/utils/bindings';
   import { getTheme } from '../lib/utils/theme-helpers';
+  import {
+    moveToTopOfZone,
+    moveToBottomOfZone,
+    moveToTopOfColumn,
+    moveToBottomOfColumn,
+    type ColumnSection,
+  } from '../lib/utils/task-move-positions';
   import { ALL_BOARD, UNTAGGED_BOARD } from '../lib/constants/tag-boards';
   import { defaultBoard } from '../lib/utils/board-order';
   import { formatDate } from '../lib/utils/date-format';
@@ -540,6 +547,216 @@
     for (const [, ids] of Object.entries(backendPositions)) {
       tasks = reorderZone(tasks, ids);
     }
+  }
+
+  // ----------------------------------------------------------------------
+  // Task action menu (move-to-top / move-to-bottom) — wiring for #129
+  //
+  // Each TaskCard receives a per-task `actions` array. Action callbacks compute
+  // a `positions` map via the helper module (#127), snapshot the current
+  // tasks, optimistically reorder, then call the appropriate backend wrapper.
+  // On rule-engine rejection or backend error, restore the snapshot and
+  // surface an ErrorDialog (or ErrorBanner) per existing convention.
+  // ----------------------------------------------------------------------
+
+  /**
+   * Read the current ordered task IDs visible in a single zone (priority
+   * section name in the Todo column, or status name for flat columns).
+   * Mirrors the master-list ordering used by drag-and-drop.
+   */
+  function currentZoneIds(zone: string): string[] {
+    return tasks
+      .filter(t => (t.status === 'todo' ? (t.priority || 'todo') : t.status) === zone)
+      .map(t => t.id);
+  }
+
+  /**
+   * Build the live `ColumnSection[]` snapshot for the Todo column from the
+   * current `BoardConfiguration.sections` ordering — never hardcoded.
+   */
+  function buildTodoSections(todoCol: ColumnDefinition): ColumnSection[] {
+    return (todoCol.sections ?? []).map(s => ({
+      name: s.name,
+      orderedIds: currentZoneIds(s.name),
+    }));
+  }
+
+  /**
+   * Common rollback path: restore the pre-move tasks snapshot and surface
+   * either rule violations (preferred — opens ErrorDialog) or a generic
+   * error message (ErrorBanner).
+   */
+  function rollbackMove(snapshot: TaskWithStatus[], reason: string, violations?: RuleViolation[]) {
+    isRollingBack = true;
+    tasks = snapshot;
+    queueMicrotask(() => { isRollingBack = false; });
+    if (violations && violations.length > 0) {
+      errorViolations = violations;
+    } else {
+      error = reason;
+    }
+  }
+
+  /**
+   * Apply a `positions` payload to the optimistic task list — reorders each
+   * affected zone according to the helper output. For cross-section moves the
+   * task's `status`/`priority` are updated separately by the caller.
+   */
+  function applyOptimisticPositions(positions: Record<string, string[]>): void {
+    for (const [, ids] of Object.entries(positions)) {
+      tasks = reorderZone(tasks, ids);
+    }
+  }
+
+  /**
+   * Same-zone reorder via apiReorderTasks. Used by:
+   *   - Top/bottom of section in the Todo column.
+   *   - Top/bottom of column in flat (Doing/Done/Archived) columns.
+   */
+  async function performZoneMove(
+    taskId: string,
+    zone: string,
+    direction: 'top' | 'bottom',
+    sourceLabel: string,
+  ): Promise<void> {
+    if (isValidating || isRollingBack) return;
+    const current = currentZoneIds(zone);
+    const next = direction === 'top'
+      ? moveToTopOfZone(current, taskId)
+      : moveToBottomOfZone(current, taskId);
+    // No-op detection: helper returns a copy when nothing moves.
+    if (current.length === next.length && current.every((id, i) => id === next[i])) {
+      getBindings().LogFrontend('info', `Move skipped (already at ${direction}): task=${taskId} zone=${zone}`, 'task-action-menu');
+      return;
+    }
+    const snapshot = [...tasks];
+    tasks = reorderZone(tasks, next);
+    isValidating = true;
+    try {
+      await apiReorderTasks({ [zone]: next });
+      await verifyTaskState();
+      getBindings().LogFrontend(
+        'info',
+        `Move ok: task=${taskId} from=${sourceLabel} to=${direction}-of-${zone}`,
+        'task-action-menu',
+      );
+    } catch (e) {
+      rollbackMove(snapshot, extractError(e));
+      getBindings().LogFrontend(
+        'error',
+        `Move failed: task=${taskId} from=${sourceLabel} to=${direction}-of-${zone} reason=${extractError(e)}`,
+        'task-action-menu',
+      );
+    } finally {
+      isValidating = false;
+    }
+  }
+
+  /**
+   * Top/bottom-of-column for the Todo column. May cross sections; helper may
+   * return `{}` (no change), a single-section payload (already in target
+   * section but not at the slot), or a multi-section payload.
+   */
+  async function performColumnMoveInTodo(
+    taskId: string,
+    direction: 'top' | 'bottom',
+  ): Promise<void> {
+    if (isValidating || isRollingBack) return;
+    const todoCol = columns.find(c => c.type === 'todo');
+    if (!todoCol || !todoCol.sections || todoCol.sections.length === 0) return;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const currentSection = task.priority;
+    const sections = buildTodoSections(todoCol);
+
+    let positions: Record<string, string[]>;
+    try {
+      positions = direction === 'top'
+        ? moveToTopOfColumn(sections, taskId, currentSection)
+        : moveToBottomOfColumn(sections, taskId, currentSection);
+    } catch (e) {
+      error = extractError(e);
+      return;
+    }
+
+    const affectedZones = Object.keys(positions);
+    if (affectedZones.length === 0) {
+      // Already at target slot of target section — nothing to do.
+      getBindings().LogFrontend('info', `Move skipped (already at ${direction} of column): task=${taskId}`, 'task-action-menu');
+      return;
+    }
+
+    const targetSectionName = direction === 'top'
+      ? todoCol.sections[0].name
+      : todoCol.sections[todoCol.sections.length - 1].name;
+
+    const snapshot = [...tasks];
+    isValidating = true;
+    try {
+      if (currentSection === targetSectionName) {
+        // Same-section move (helper returned a single-section payload).
+        applyOptimisticPositions(positions);
+        await apiReorderTasks(positions);
+      } else {
+        // Cross-section move: status stays 'todo', priority becomes target section.
+        tasks = tasks.map(t =>
+          t.id === taskId ? { ...t, priority: targetSectionName } : t,
+        );
+        applyOptimisticPositions(positions);
+        const result = await apiMoveTask(taskId, 'todo', targetSectionName, positions);
+        if (!result.success) {
+          rollbackMove(snapshot, 'Move rejected by rules', result.violations);
+          getBindings().LogFrontend(
+            'error',
+            `Move rejected: task=${taskId} from=${currentSection} to=${targetSectionName}`,
+            'task-action-menu',
+          );
+          return;
+        }
+        if (result.positions) {
+          applyBackendPositions(result.positions);
+        }
+      }
+      await verifyTaskState();
+      getBindings().LogFrontend(
+        'info',
+        `Move ok: task=${taskId} from=${currentSection} to=${direction}-of-todo-column (${targetSectionName})`,
+        'task-action-menu',
+      );
+    } catch (e) {
+      rollbackMove(snapshot, extractError(e));
+      getBindings().LogFrontend(
+        'error',
+        `Move failed: task=${taskId} from=${currentSection} to=${direction}-of-todo-column reason=${extractError(e)}`,
+        'task-action-menu',
+      );
+    } finally {
+      isValidating = false;
+    }
+  }
+
+  /**
+   * Compose the per-task action list for the move menu. Returns `[]` for
+   * archived (and any other column the menu does not target) so the menu
+   * is suppressed entirely there.
+   */
+  function buildTaskActions(task: TaskWithStatus, column: ColumnDefinition): { label: string; onSelect: () => void }[] {
+    const taskId = task.id;
+    if (column.sections && column.sections.length > 0) {
+      // Sectioned column (Todo): 4 actions.
+      const sectionName = task.priority;
+      return [
+        { label: 'Move to top of section', onSelect: () => performZoneMove(taskId, sectionName, 'top', sectionName) },
+        { label: 'Move to bottom of section', onSelect: () => performZoneMove(taskId, sectionName, 'bottom', sectionName) },
+        { label: 'Move to top of column', onSelect: () => performColumnMoveInTodo(taskId, 'top') },
+        { label: 'Move to bottom of column', onSelect: () => performColumnMoveInTodo(taskId, 'bottom') },
+      ];
+    }
+    // Flat column (Doing / custom Doing variants / Done): 2 actions.
+    return [
+      { label: 'Move to top of column', onSelect: () => performZoneMove(taskId, column.name, 'top', column.name) },
+      { label: 'Move to bottom of column', onSelect: () => performZoneMove(taskId, column.name, 'bottom', column.name) },
+    ];
   }
 
   function handleDragPointerDown() {
@@ -1177,6 +1394,7 @@
                         oncontextmenu={(e) => handleTaskContextMenu(e, task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         {onNavigateToTheme}
+                        actions={buildTaskActions(task, column)}
                       />
                     {/each}
                   </div>
@@ -1202,6 +1420,7 @@
                   onDelete={() => handleDeleteTask(task.id)}
                   onArchive={column.type === 'done' ? () => handleArchiveTask(task.id) : undefined}
                   {onNavigateToTheme}
+                  actions={buildTaskActions(task, column)}
                 />
               {/each}
 
