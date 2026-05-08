@@ -9,6 +9,7 @@
    */
 
   import { onMount, onDestroy, untrack } from 'svelte';
+  import { ChevronDown } from 'lucide-svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
@@ -366,7 +367,7 @@
             style="background-color: {q.color};"
             onclick={() => handleAddTask(q.id)}
             disabled={isSubmitting || !newTaskTitle.trim()}
-          >Prioritize to ⬇</button>
+          ><span class="btn-add-label">Prioritize to <ChevronDown size={12} /></span></button>
         {/each}
       </div>
     </fieldset>
@@ -473,6 +474,12 @@
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.2s;
+  }
+
+  .btn-add-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
   }
 
   .btn-add:hover:not(:disabled) {
