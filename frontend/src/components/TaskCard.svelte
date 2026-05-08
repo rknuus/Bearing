@@ -13,11 +13,12 @@
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels, priorityColors } from '../lib/constants/priorities';
   import TaskActionMenu from './TaskActionMenu.svelte';
-  import { Trash2, Archive, RotateCcw } from '@lucide/svelte';
+  import { Trash2, Archive, RotateCcw, Pencil, type LucideIcon } from '@lucide/svelte';
 
   interface TaskAction {
     label: string;
     onSelect: () => void;
+    icon?: LucideIcon;
   }
 
   interface Props {
@@ -28,12 +29,20 @@
     onDelete?: () => void;
     onArchive?: () => void;
     onRestore?: () => void;
+    /**
+     * Single-click edit affordance. When provided, an "Edit" entry is
+     * prepended to the three-dot menu so the action is discoverable without
+     * relying on the existing double-click shortcut. Resolves UX/UI finding
+     * I1 (#146).
+     */
+    onEdit?: () => void;
     onNavigateToTheme?: (themeId: string) => void;
     draggable?: boolean;
     /**
      * Optional list of actions to render in a three-dot menu in the card's
-     * top-right corner. When undefined or empty, no menu is rendered and the
-     * card layout is preserved as-is.
+     * top-right corner. When undefined or empty, no menu is rendered unless
+     * `onEdit` is provided (in which case the menu carries just the Edit
+     * entry).
      */
     actions?: TaskAction[];
   }
@@ -46,10 +55,26 @@
     onDelete,
     onArchive,
     onRestore,
+    onEdit,
     onNavigateToTheme,
     draggable = true,
     actions,
   }: Props = $props();
+
+  /*
+   * Compose the final action list rendered by TaskActionMenu. When `onEdit`
+   * is supplied we prepend a single "Edit" entry — the move-top/bottom
+   * entries that callers already pass continue to render unchanged below it.
+   * Recomputed from props (no $effect) so reactivity stays trivially correct.
+   */
+  let menuActions = $derived.by<TaskAction[] | undefined>(() => {
+    const editAction: TaskAction | null = onEdit
+      ? { label: 'Edit', onSelect: onEdit, icon: Pencil }
+      : null;
+    if (!editAction && (!actions || actions.length === 0)) return undefined;
+    const tail = actions ?? [];
+    return editAction ? [editAction, ...tail] : tail;
+  });
 
   // svelte-dnd-action attaches mousedown/touchstart listeners directly on the
   // draggable container via addEventListener() and calls e.preventDefault()
@@ -116,9 +141,9 @@
         {getTheme(themes, task.themeId)?.name ?? 'Unknown'}
       </button>
     {/if}
-    {#if actions && actions.length > 0}
+    {#if menuActions && menuActions.length > 0}
       <div class="task-action-menu-slot" use:stopDragStart>
-        <TaskActionMenu actions={actions} ariaLabel="Move task" />
+        <TaskActionMenu actions={menuActions} ariaLabel="Move task" />
       </div>
     {/if}
   </div>

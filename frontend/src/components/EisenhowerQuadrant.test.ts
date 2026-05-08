@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render } from '@testing-library/svelte';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
 import type { LifeTheme } from '../lib/wails-mock';
 import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
@@ -80,5 +80,54 @@ describe('EisenhowerQuadrant', () => {
     const badges = container.querySelectorAll('.tag-badge');
     expect(badges.length).toBe(1);
     expect(badges[0].textContent).toBe('#review');
+  });
+
+  /**
+   * Single-click edit affordance (#146 / UX finding I1). The quadrant's
+   * pending-task cards do not embed a TaskActionMenu, so the equivalent
+   * affordance is a hover-revealed pencil button that calls the same
+   * `onTaskDblClick` callback the existing double-click invokes.
+   */
+  describe('hover-pencil edit affordance (#146)', () => {
+    it('renders an edit button when onTaskDblClick is provided and forwards click to the callback', async () => {
+      const onTaskDblClick = vi.fn();
+      render(EisenhowerQuadrant, {
+        target: container,
+        props: {
+          quadrantId: 'important-urgent',
+          title: 'Important & Urgent',
+          color: '#ef4444',
+          tasks: [{ id: 'pending-1', title: 'Edit me' }],
+          themes: makeTestThemes(),
+          onTasksChange: () => {},
+          onTaskDblClick,
+        },
+      });
+      await tick();
+
+      const button = container.querySelector<HTMLButtonElement>(
+        'button[aria-label="Edit task"]',
+      );
+      expect(button).toBeTruthy();
+      await fireEvent.click(button!);
+      expect(onTaskDblClick).toHaveBeenCalledTimes(1);
+      expect(onTaskDblClick).toHaveBeenCalledWith({ id: 'pending-1', title: 'Edit me' });
+    });
+
+    it('omits the edit button when onTaskDblClick is not provided', async () => {
+      render(EisenhowerQuadrant, {
+        target: container,
+        props: {
+          quadrantId: 'important-urgent',
+          title: 'Important & Urgent',
+          color: '#ef4444',
+          tasks: [{ id: 'pending-1', title: 'Read-only' }],
+          themes: makeTestThemes(),
+          onTasksChange: () => {},
+        },
+      });
+      await tick();
+      expect(container.querySelector('button[aria-label="Edit task"]')).toBeNull();
+    });
   });
 });

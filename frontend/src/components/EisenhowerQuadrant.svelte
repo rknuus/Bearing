@@ -7,7 +7,7 @@
    */
 
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
-  import { Trash2 } from '@lucide/svelte';
+  import { Trash2, Pencil } from '@lucide/svelte';
   import TagBadges from '../lib/components/TagBadges.svelte';
 
   import type { LifeTheme } from '../lib/wails-mock';
@@ -90,6 +90,24 @@
               {getTheme(themes, task.themeId)?.name}
             </span>
           {/if}
+          {#if onTaskDblClick}
+            <!--
+              Single-click edit affordance. EisenhowerQuadrant cards do not
+              embed a TaskActionMenu (they live inside CreateTaskDialog and
+              there are no kanban-style move actions to expose), so we use
+              the same hover-pencil pattern as CalendarView's day-cell
+              (#146 / UX finding I1). Visible at rest only on hover or
+              keyboard focus; opens the pending-task editor via the same
+              `onTaskDblClick` callback the existing double-click uses.
+            -->
+            <button
+              type="button"
+              class="edit-btn"
+              onclick={(e) => { e.stopPropagation(); onTaskDblClick(task); }}
+              aria-label="Edit task"
+              title="Edit task"
+            ><Pencil size={12} /></button>
+          {/if}
         </div>
         <h3 class="task-title">{task.title}</h3>
         <TagBadges tags={task.tags} />
@@ -170,6 +188,45 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.5rem;
+  }
+
+  /*
+   * Hover-revealed pencil button. Sits flush against the right edge of the
+   * task header thanks to `margin-left: auto`. At rest the button is fully
+   * transparent so the card stays visually quiet (the priority + theme
+   * badges already define the header's appearance); hovering the card or
+   * giving the button keyboard focus reveals it.
+   */
+  .edit-btn {
+    margin-left: auto;
+    background: none;
+    border: none;
+    padding: 0.125rem;
+    border-radius: 4px;
+    color: var(--color-gray-600);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 200ms ease, color 0.15s, background-color 0.15s;
+  }
+
+  .pending-task:hover .edit-btn,
+  .edit-btn:focus-visible {
+    opacity: 0.7;
+  }
+
+  .edit-btn:hover {
+    color: var(--color-gray-800);
+    background-color: var(--color-gray-100);
+    opacity: 1;
+  }
+
+  .edit-btn:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 
   .priority-badge {

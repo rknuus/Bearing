@@ -1840,4 +1840,76 @@ describe('CalendarView', () => {
     expect(themeIdx).toBeGreaterThanOrEqual(0);
     expect(tagsIdx).toBeLessThan(themeIdx);
   });
+
+  /**
+   * Single-click edit affordance (#146 / UX finding I1).
+   *
+   * Editing a day previously required a double-click. New users
+   * single-clicked, got selection, and never discovered the editor. The
+   * fix surfaces a hover-revealed pencil button at the top-right of each
+   * day-text cell — single click opens the same day editor the existing
+   * double-click invokes.
+   */
+  describe('day-cell hover-pencil edit affordance (#146)', () => {
+    it('renders one pencil edit button per day-text cell with the expected aria-label', async () => {
+      await renderView();
+      const cells = container.querySelectorAll('.day-text-cell');
+      const buttons = container.querySelectorAll<HTMLButtonElement>('.day-edit-btn');
+      // 365 days in 2025 → one cell per day → one pencil button per cell.
+      expect(cells.length).toBe(365);
+      expect(buttons.length).toBe(365);
+      // Every pencil exposes the same accessible label.
+      for (const btn of buttons) {
+        expect(btn.getAttribute('aria-label')).toBe('Edit day');
+      }
+    });
+
+    it('clicking the pencil button opens the day editor', async () => {
+      await renderView();
+      const button = container.querySelector<HTMLButtonElement>('.day-edit-btn');
+      expect(button).toBeTruthy();
+      button!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await tick();
+      await vi.waitFor(() => {
+        if (!container.querySelector('.dialog')) throw new Error('dialog not open');
+      });
+      expect(container.querySelector('.dialog')).toBeTruthy();
+    });
+
+    it('pencil button does not inherit the .day-text selection state and does not propagate to the cell', async () => {
+      // Clicking the pencil must NOT also flip the cell into "selected"
+      // (which is the single-click behaviour of `.day-text` itself). The
+      // pencil's onclick handler stops propagation, so the wrapping
+      // `.day-text` button never receives the click.
+      await renderView();
+      expect(container.querySelectorAll('.day-text.selected').length).toBe(0);
+      const button = container.querySelector<HTMLButtonElement>('.day-edit-btn');
+      button!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      await tick();
+      // The dialog opened; selection state on the underlying .day-text
+      // button is unchanged (still zero selected cells).
+      expect(container.querySelectorAll('.day-text.selected').length).toBe(0);
+    });
+
+    it('pencil buttons are not rendered while the calendar grid is in the loading state', async () => {
+      // Render synchronously and inspect the DOM before data resolves.
+      // While the grid is still in `class:loading`, the pencil button
+      // must not be rendered (we hide it via the `{#if !loading}` block).
+      render(CalendarView, {
+        target: container,
+        props: { year: 2025 },
+      });
+      await tick();
+      // The grid renders structurally during loading.
+      expect(container.querySelector('.calendar-grid.loading')).toBeTruthy();
+      expect(container.querySelectorAll('.day-edit-btn').length).toBe(0);
+      // After data resolves the buttons appear.
+      await vi.waitFor(() => {
+        if (container.querySelector('.calendar-grid.loading'))
+          throw new Error('still loading');
+      });
+      await tick();
+      expect(container.querySelectorAll('.day-edit-btn').length).toBe(365);
+    });
+  });
 });

@@ -130,6 +130,86 @@ describe('TaskCard', () => {
     expect(outerTouchStartSpy).not.toHaveBeenCalled();
   });
 
+  /**
+   * Single-click edit affordance (#146 / UX finding I1). When `onEdit` is
+   * provided TaskCard prepends an "Edit" entry to the three-dot menu so
+   * the action is discoverable without relying on the existing
+   * double-click shortcut. Callers (EisenKanView) wire the same callback
+   * to `ondblclick` so both gestures continue to open the editor.
+   */
+  describe('onEdit menu entry (#146)', () => {
+    it('prepends an Edit entry to the three-dot menu when onEdit is provided and fires the handler on click', async () => {
+      const onEdit = vi.fn();
+      const onMoveTop = vi.fn();
+      render(TaskCard, {
+        target: container,
+        props: {
+          task: makeTask(),
+          themes: makeThemes(),
+          onEdit,
+          actions: [{ label: 'Move to top', onSelect: onMoveTop }],
+        },
+      });
+      await tick();
+
+      const trigger = container.querySelector<HTMLButtonElement>('.task-action-menu-btn');
+      expect(trigger).toBeTruthy();
+      await fireEvent.click(trigger!);
+      await tick();
+
+      // Panel is portalled to <body>; query there for the menu items.
+      const items = document.body.querySelectorAll<HTMLButtonElement>(
+        '.task-action-menu-panel [role="menuitem"]',
+      );
+      expect(items.length).toBe(2);
+      expect(items[0].textContent?.trim()).toBe('Edit');
+      expect(items[1].textContent?.trim()).toBe('Move to top');
+
+      await fireEvent.click(items[0]);
+      await tick();
+      expect(onEdit).toHaveBeenCalledTimes(1);
+      expect(onMoveTop).not.toHaveBeenCalled();
+    });
+
+    it('still renders a single-entry menu when onEdit is provided without any other actions', async () => {
+      const onEdit = vi.fn();
+      render(TaskCard, {
+        target: container,
+        props: {
+          task: makeTask(),
+          themes: makeThemes(),
+          onEdit,
+        },
+      });
+      await tick();
+
+      const trigger = container.querySelector<HTMLButtonElement>('.task-action-menu-btn');
+      expect(trigger).toBeTruthy();
+      await fireEvent.click(trigger!);
+      await tick();
+
+      const items = document.body.querySelectorAll<HTMLButtonElement>(
+        '.task-action-menu-panel [role="menuitem"]',
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].textContent?.trim()).toBe('Edit');
+
+      // Defensive cleanup so the portalled panel does not leak into the
+      // next test's body queries.
+      await fireEvent.keyDown(window, { key: 'Escape' });
+      await tick();
+    });
+
+    it('omits the menu entirely when neither onEdit nor actions are provided', async () => {
+      render(TaskCard, {
+        target: container,
+        props: { task: makeTask(), themes: makeThemes() },
+      });
+      await tick();
+      expect(container.querySelector('.task-action-menu-btn')).toBeNull();
+    });
+  });
+
   it('renders only the variant-specific footer button per callback prop', async () => {
     const { unmount: unmount1 } = render(TaskCard, {
       target: container,

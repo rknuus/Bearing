@@ -49,10 +49,17 @@
    */
 
   import { tick, untrack } from 'svelte';
+  import type { LucideIcon } from '@lucide/svelte';
 
   interface Action {
     label: string;
     onSelect: () => void;
+    /**
+     * Optional Lucide icon component rendered to the left of the label. When
+     * omitted the menu item shows only its text — preserves the existing
+     * icon-less appearance of the move-top/bottom entries.
+     */
+    icon?: LucideIcon;
   }
 
   interface Props {
@@ -295,10 +302,17 @@
         <button
           type="button"
           class="task-action-menu-item"
+          class:has-icon={action.icon}
           role="menuitem"
           use:nativeClick={() => handleAction(action)}
         >
-          {action.label}
+          {#if action.icon}
+            {@const Icon = action.icon}
+            <span class="task-action-menu-icon" aria-hidden="true">
+              <Icon size={14} />
+            </span>
+          {/if}
+          <span class="task-action-menu-label">{action.label}</span>
         </button>
       {/each}
     </div>
@@ -366,7 +380,31 @@
     transition: background-color 0.15s;
   }
 
+  /*
+   * When an action carries an icon, switch the item to a flex layout so the
+   * icon and label sit on a baseline-aligned row. Items without an icon
+   * remain plain block elements (text-only) — matches the move-top/bottom
+   * entries that pre-date the icon affordance.
+   */
+  .task-action-menu-item.has-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .task-action-menu-icon {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-gray-600);
+    flex-shrink: 0;
+  }
+
   .task-action-menu-item:hover {
     background-color: var(--color-gray-100);
+  }
+
+  .task-action-menu-item:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: -2px;
   }
 </style>

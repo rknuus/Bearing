@@ -1457,6 +1457,7 @@
                         {task}
                         {themes}
                         ondblclick={() => handleTaskClick(task)}
+                        onEdit={() => handleTaskClick(task)}
                         oncontextmenu={(e) => handleTaskContextMenu(e, task)}
                         onDelete={() => handleDeleteTask(task.id)}
                         {onNavigateToTheme}
@@ -1482,6 +1483,7 @@
                   {task}
                   {themes}
                   ondblclick={() => handleTaskClick(task)}
+                  onEdit={() => handleTaskClick(task)}
                   oncontextmenu={(e) => handleTaskContextMenu(e, task)}
                   onDelete={() => handleDeleteTask(task.id)}
                   onArchive={column.type === 'done' ? () => handleArchiveTask(task.id) : undefined}

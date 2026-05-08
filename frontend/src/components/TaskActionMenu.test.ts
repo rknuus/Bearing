@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, fireEvent } from '@testing-library/svelte';
 import { tick } from 'svelte';
+import { Pencil, type LucideIcon } from '@lucide/svelte';
 import TaskActionMenu from './TaskActionMenu.svelte';
+
+type TestAction = { label: string; onSelect: () => void; icon?: LucideIcon };
 
 /**
  * The menu panel is portalled to `document.body` while open (#129 follow-up
@@ -40,7 +43,7 @@ describe('TaskActionMenu', () => {
     findOpenPanels().forEach((p) => p.remove());
   });
 
-  function renderMenu(actions: { label: string; onSelect: () => void }[], ariaLabel?: string) {
+  function renderMenu(actions: TestAction[], ariaLabel?: string) {
     return render(TaskActionMenu, {
       target: container,
       props: ariaLabel === undefined ? { actions } : { actions, ariaLabel },
@@ -346,5 +349,35 @@ describe('TaskActionMenu', () => {
 
     const trigger = container.querySelector<HTMLButtonElement>('.task-action-menu-btn');
     expect(trigger?.getAttribute('aria-label')).toBe('Open task menu');
+  });
+
+  /**
+   * Edit affordance (#146 / UX finding I1). Actions can opt into a Lucide
+   * icon rendered to the left of the label. Existing icon-less entries
+   * (move-top/bottom) continue to render as plain text — the structural
+   * `.has-icon` class is only applied when `icon` is supplied.
+   */
+  describe('action icons (#146)', () => {
+    it('renders an SVG icon next to the label only for actions with an `icon` field', async () => {
+      renderMenu([
+        { label: 'Edit', onSelect: () => {}, icon: Pencil },
+        { label: 'Move to top', onSelect: () => {} },
+      ]);
+      await tick();
+      const trigger = container.querySelector<HTMLButtonElement>('.task-action-menu-btn');
+      await fireEvent.click(trigger!);
+      await tick();
+
+      const items = findOpenPanel()!.querySelectorAll<HTMLButtonElement>('[role="menuitem"]');
+      expect(items.length).toBe(2);
+      // Edit has an icon → flex layout via `has-icon`, contains an <svg>.
+      expect(items[0].textContent?.trim()).toBe('Edit');
+      expect(items[0].classList.contains('has-icon')).toBe(true);
+      expect(items[0].querySelector('svg')).toBeTruthy();
+      // Move-to-top has no icon → no `has-icon` class, no <svg>.
+      expect(items[1].textContent?.trim()).toBe('Move to top');
+      expect(items[1].classList.contains('has-icon')).toBe(false);
+      expect(items[1].querySelector('svg')).toBeNull();
+    });
   });
 });

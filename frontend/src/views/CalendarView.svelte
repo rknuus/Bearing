@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { ChevronLeft, ChevronRight } from '@lucide/svelte';
+  import { ChevronLeft, ChevronRight, Pencil } from '@lucide/svelte';
   import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern, type Routine, ROUTINE_COLOR } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
@@ -758,23 +758,46 @@
               {loading ? '' : cell.day}
             </button>
 
-            <!-- Text cell -->
-            <button
-              class="day-text"
-              class:selected={!loading && isCellSelected(cell.month, cell.day)}
-              style="grid-row: {gridRow}; grid-column: {textCol}; {textBg || sundayBg} {textColor}"
-              onclick={(e: MouseEvent) => handleTextCellClick(cell.month, cell.day, e)}
-              ondblclick={() => handleDayClick(cell.month, cell.day)}
-              title={cell.text || displayDate(cell.month, cell.day)}
-              disabled={loading}
+            <!--
+              Text cell. The cell is a grid item that wraps the click-target
+              button and a sibling hover-revealed pencil button (#146). The
+              wrapper carries the grid placement so the inner buttons can
+              participate in normal layout. The pencil sits at the top-right
+              of the cell; existing click-to-select and double-click-to-edit
+              semantics on the text button are preserved.
+            -->
+            <div
+              class="day-text-cell"
+              class:loading-cell={loading}
+              style="grid-row: {gridRow}; grid-column: {textCol};"
             >
-              {#if !loading}
-                <span class="day-text-content">{cell.text}</span>
-                {#if cell.routineStatus}
-                  <span class="routine-dot {cell.routineStatus}" title={cell.routineTooltip}></span>
+              <button
+                class="day-text"
+                class:selected={!loading && isCellSelected(cell.month, cell.day)}
+                style="{textBg || sundayBg} {textColor}"
+                onclick={(e: MouseEvent) => handleTextCellClick(cell.month, cell.day, e)}
+                ondblclick={() => handleDayClick(cell.month, cell.day)}
+                title={cell.text || displayDate(cell.month, cell.day)}
+                disabled={loading}
+              >
+                {#if !loading}
+                  <span class="day-text-content">{cell.text}</span>
+                  {#if cell.routineStatus}
+                    <span class="routine-dot {cell.routineStatus}" title={cell.routineTooltip}></span>
+                  {/if}
                 {/if}
+              </button>
+              {#if !loading}
+                <button
+                  type="button"
+                  class="day-edit-btn"
+                  onclick={(e) => { e.stopPropagation(); handleDayClick(cell.month, cell.day); }}
+                  aria-label="Edit day"
+                  title="Edit day"
+                  tabindex="0"
+                ><Pencil size={12} /></button>
               {/if}
-            </button>
+            </div>
           {/each}
         {/each}
       </div>
@@ -981,6 +1004,11 @@
     background-color: var(--color-gray-100);
   }
 
+  /* Hide the hover-pencil while the grid is in skeleton-loading mode. */
+  .calendar-grid.loading .day-edit-btn {
+    display: none;
+  }
+
   .calendar-grid.loading .header-cell.month-header {
     background-color: var(--color-gray-200);
     border-radius: 4px;
@@ -1088,8 +1116,21 @@
     font-weight: bold;
   }
 
+  /*
+   * Text cell wrapper. Carries the grid placement and serves as the
+   * positioning context for the absolutely-positioned hover-pencil
+   * (#146). The inner `.day-text` button fills the wrapper.
+   */
+  .day-text-cell {
+    position: relative;
+    display: flex;
+    min-width: 0;
+  }
+
   /* Text cells */
   .day-text {
+    flex: 1;
+    min-width: 0;
     padding: 0 4px;
     font-size: 0.7rem;
     color: var(--color-gray-700);
@@ -1101,6 +1142,48 @@
     display: flex;
     align-items: center;
     transition: background-color 0.1s;
+  }
+
+  /*
+   * Hover-revealed edit button. Sits above the text cell at the top-right
+   * corner. At rest fully transparent so the calendar stays visually
+   * quiet; revealed on cell hover or when keyboard-focused. The button
+   * is a separate target from the text cell so the existing
+   * single-click-to-select and double-click-to-edit semantics on
+   * `.day-text` are unchanged.
+   */
+  .day-edit-btn {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    border-radius: 3px;
+    padding: 1px;
+    color: var(--color-gray-700);
+    cursor: pointer;
+    line-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 200ms ease, background-color 0.15s, color 0.15s;
+  }
+
+  .day-text-cell:hover .day-edit-btn,
+  .day-edit-btn:focus-visible {
+    opacity: 0.7;
+  }
+
+  .day-edit-btn:hover {
+    opacity: 1;
+    background: white;
+    color: var(--color-gray-900);
+  }
+
+  .day-edit-btn:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 
   .day-text:hover {
