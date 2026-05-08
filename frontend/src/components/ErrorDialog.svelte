@@ -2,12 +2,19 @@
   /**
    * ErrorDialog Component
    *
-   * A toast/notification component for displaying rule violations and errors.
-   * Shows each violation with its message and category.
-   * Auto-dismisses after 5 seconds or can be closed manually.
+   * A persistent toast/notification component for displaying rule violations
+   * and errors. Each batch of violations stacks vertically (most recent on
+   * top); each is dismissed independently via its × close button or by
+   * pressing Escape (which dismisses the topmost batch only). No
+   * auto-dismiss — errors stay until the user explicitly clears them.
+   *
+   * The component is non-modal: clicks outside the dialog frame still reach
+   * underlying app UI. Stack updates are driven internally by watching the
+   * `violations` prop; when the stack drains the parent's `onClose` is
+   * invoked so callers that gate on `violations.length > 0` reset cleanly.
    */
 
-  import { onMount, onDestroy } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import type { RuleViolation } from '../lib/wails-mock';
 
   interface Props {
@@ -17,46 +24,104 @@
 
   let { violations, onClose }: Props = $props();
 
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  interface StackEntry {
+    id: number;
+    violations: RuleViolation[];
+  }
 
-  onMount(() => {
-    timer = setTimeout(() => {
+  let stack = $state<StackEntry[]>([]);
+  let nextId = 0;
+  let lastSeenRef: RuleViolation[] | null = null;
+
+  // Watch the `violations` prop. Each non-empty array reference that we
+  // haven't seen yet becomes a new stack entry. We compare by reference so
+  // callers that re-assign the same array don't double-push.
+  $effect(() => {
+    const incoming = violations;
+    if (incoming === lastSeenRef) return;
+    lastSeenRef = incoming;
+    if (incoming && incoming.length > 0) {
+      untrack(() => {
+        stack = [...stack, { id: nextId++, violations: incoming }];
+      });
+    }
+  });
+
+  function dismiss(id: number): void {
+    const next = stack.filter(entry => entry.id !== id);
+    stack = next;
+    if (next.length === 0) {
       onClose();
-    }, 5000);
+    }
+  }
+
+  function dismissTopmost(): void {
+    if (stack.length === 0) return;
+    const top = stack[stack.length - 1];
+    dismiss(top.id);
+  }
+
+  function handleKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && stack.length > 0) {
+      event.preventDefault();
+      dismissTopmost();
+    }
+  }
+
+  $effect(() => {
+    if (stack.length > 0) {
+      window.addEventListener('keydown', handleKeydown);
+      return () => window.removeEventListener('keydown', handleKeydown);
+    }
   });
 
   onDestroy(() => {
-    if (timer !== null) {
-      clearTimeout(timer);
-    }
+    window.removeEventListener('keydown', handleKeydown);
   });
 </script>
 
-{#if violations.length > 0}
-  <div class="error-toast" role="alert" data-testid="error-dialog">
-    <div class="toast-header">
-      <span class="toast-title">Rule Violations</span>
-      <button type="button" class="close-btn" onclick={onClose} aria-label="Close">
-        x
-      </button>
-    </div>
-    <ul class="violation-list">
-      {#each violations as violation (violation.ruleId)}
-        <li class="violation-item" data-testid="violation-item">
-          <span class="violation-category">{violation.category}</span>
-          <span class="violation-message">{violation.message}</span>
-        </li>
-      {/each}
-    </ul>
+{#if stack.length > 0}
+  <div class="error-stack">
+    {#each stack as entry (entry.id)}
+      <div class="error-toast" role="alert" data-testid="error-dialog">
+        <div class="toast-header">
+          <span class="toast-title">Rule Violations</span>
+          <button
+            type="button"
+            class="close-btn"
+            onclick={() => dismiss(entry.id)}
+            aria-label="Dismiss"
+          >
+            x
+          </button>
+        </div>
+        <ul class="violation-list">
+          {#each entry.violations as violation (violation.ruleId)}
+            <li class="violation-item" data-testid="violation-item">
+              <span class="violation-category">{violation.category}</span>
+              <span class="violation-message">{violation.message}</span>
+            </li>
+          {/each}
+        </ul>
+      </div>
+    {/each}
   </div>
 {/if}
 
 <style>
-  .error-toast {
+  .error-stack {
     position: fixed;
     top: 1rem;
     right: 1rem;
     z-index: 2000;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+    pointer-events: none;
+  }
+
+  .error-toast {
+    pointer-events: auto;
     background-color: white;
     border: 2px solid var(--color-error-600);
     border-radius: 8px;
