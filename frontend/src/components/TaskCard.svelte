@@ -13,6 +13,7 @@
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels, priorityColors } from '../lib/constants/priorities';
   import TaskActionMenu from './TaskActionMenu.svelte';
+  import { Trash2, Archive, RotateCcw } from 'lucide-svelte';
 
   interface TaskAction {
     label: string;
@@ -132,7 +133,7 @@
         onclick={(e) => { e.stopPropagation(); onDelete(); }}
         aria-label="Delete task"
       >
-        🗑️
+        <Trash2 size={16} />
       </button>
     {/if}
     {#if onArchive}
@@ -144,7 +145,7 @@
         aria-label="Archive task"
         title="Archive task"
       >
-        ✅
+        <Archive size={16} />
       </button>
     {/if}
     {#if onRestore}
@@ -153,9 +154,10 @@
         class="restore-btn"
         use:stopDragStart
         onclick={(e) => { e.stopPropagation(); onRestore(); }}
+        aria-label="Restore task"
         title="Restore to done"
       >
-        Restore
+        <RotateCcw size={16} />
       </button>
     {/if}
   </div>
