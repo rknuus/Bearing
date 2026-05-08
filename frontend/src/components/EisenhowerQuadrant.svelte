@@ -7,6 +7,7 @@
    */
 
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
+  import { Trash2 } from 'lucide-svelte';
   import TagBadges from '../lib/components/TagBadges.svelte';
 
   import type { LifeTheme } from '../lib/wails-mock';
@@ -98,7 +99,7 @@
               class="delete-btn"
               onclick={(e) => { e.stopPropagation(); onTaskDelete(task.id); }}
               aria-label="Remove task"
-            >🗑️</button>
+            ><Trash2 size={16} /></button>
           </div>
         {/if}
       </div>
