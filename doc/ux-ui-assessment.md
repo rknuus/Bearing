@@ -17,7 +17,7 @@
 | C3 | Critical | RESOLVED | `fix-ux-ui-critical-findings` (#141) |
 | I1 | Important | DEFERRED | — |
 | I2 | Important | DEFERRED | — |
-| I3 | Important | DEFERRED | — |
+| I3 | Important | IGNORED | Dismissed by product owner — see I3 below |
 | I4 | Important | DEFERRED | — |
 | I5 | Important | DEFERRED | — |
 | I6 | Important | DEFERRED | — |
@@ -118,7 +118,12 @@ Popovers opened *from inside* modals must beat the modal — TaskActionMenu need
 
 #### I3. Calendar text cells render at 0.7 rem (≈ 11.2 px)
 
-**Status**: DEFERRED — candidate for a future initiative.
+**Status**: IGNORED — dismissed by the product owner during decomposition of `fix-ux-ui-important-findings`.
+
+**Rationale**:
+- Dropping the weekday column (the recommended fix in this assessment) is not acceptable — weekday-of-month is genuinely useful at-a-glance information, and removing it would be poor UX.
+- A planned future feature — adding **monthly and weekly views** alongside the existing yearly grid — addresses the underlying ellipsizing problem at a higher level: when the user wants legible per-day notes they switch to the week or month view; the year view stays a high-density heatmap.
+- Tuning year-view density in isolation would be premature work that conflicts with the future view-switcher design.
 
 **File**: `frontend/src/views/CalendarView.svelte:982,1006,1020,1051`. Grid forced into 24 px + 24 px + 1fr columns at 1.5 rem row height.
 
