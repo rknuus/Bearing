@@ -240,6 +240,11 @@
     background: var(--color-gray-300);
   }
 
+  .tag-board-card-title-bar.receded:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
   /* The foreground title bar sits flush against the frame: no outer
      margin needed. Vertical separation from the kanban content is
      supplied by the content padding below. */

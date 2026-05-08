@@ -1040,6 +1040,11 @@
     background-color: var(--color-primary-700);
   }
 
+  .day-num:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
   .day-weekday.today {
     background-color: var(--color-primary-600);
     color: white;
@@ -1068,6 +1073,11 @@
   .day-text.selected {
     outline: 2px solid var(--color-primary-600);
     outline-offset: -2px;
+  }
+
+  .day-text:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 
   .day-text-content {
@@ -1140,6 +1150,11 @@
   .legend-item.active {
     background-color: var(--color-primary-50);
     border-color: var(--color-primary-500);
+  }
+
+  .legend-item:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 
   .legend-color {

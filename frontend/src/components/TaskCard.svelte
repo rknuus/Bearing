@@ -195,6 +195,11 @@
     transform: none;
   }
 
+  .task-card:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
+
   .task-header {
     display: flex;
     align-items: center;

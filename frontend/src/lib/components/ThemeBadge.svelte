@@ -48,4 +48,9 @@
     width: 24px;
     height: 24px;
   }
+
+  .theme-badge:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
+  }
 </style>

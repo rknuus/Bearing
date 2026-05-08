@@ -81,6 +81,10 @@ body {
   --radius-md: 6px;
   --radius-lg: 8px;
   --radius-full: 9999px;
+
+  /* Focus ring (used by :focus-visible across components) */
+  --focus-ring: 2px solid var(--color-primary-500);
+  --focus-ring-offset: 2px;
 }
 
 /* Example themed component styles that use --theme-color */

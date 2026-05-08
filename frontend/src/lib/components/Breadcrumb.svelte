@@ -103,8 +103,8 @@
   }
 
   .breadcrumb-link:focus-visible {
-    outline: 2px solid var(--color-primary-500);
-    outline-offset: 2px;
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-ring-offset);
   }
 
   .breadcrumb-current {
