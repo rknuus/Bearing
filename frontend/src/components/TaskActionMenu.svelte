@@ -321,7 +321,7 @@
     background: none;
     border: none;
     color: var(--color-gray-400);
-    font-size: 1rem;
+    font-size: var(--font-size-lg);
     cursor: pointer;
     padding: 0 0.25rem;
     line-height: 1;
@@ -349,7 +349,7 @@
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 140px;
-    z-index: 1000;
+    z-index: var(--z-popover);
     overflow: hidden;
   }
 
@@ -360,7 +360,7 @@
     background: none;
     border: none;
     text-align: left;
-    font-size: 0.8125rem;
+    font-size: var(--font-size-base);
     color: var(--color-gray-700);
     cursor: pointer;
     transition: background-color 0.15s;

@@ -1892,7 +1892,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 999;
+    z-index: var(--z-overlay);
   }
 
   .context-menu {
@@ -1902,7 +1902,7 @@
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 180px;
-    z-index: 1000;
+    z-index: var(--z-popover);
     overflow: hidden;
   }
 
@@ -1961,7 +1961,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 999;
+    z-index: var(--z-overlay);
   }
 
   .column-menu {
@@ -1973,7 +1973,7 @@
     border-radius: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 140px;
-    z-index: 1000;
+    z-index: var(--z-popover);
     overflow: hidden;
   }
 
@@ -2002,7 +2002,7 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
-    z-index: 1100;
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;

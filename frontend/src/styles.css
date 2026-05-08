@@ -85,6 +85,29 @@ body {
   /* Focus ring (used by :focus-visible across components) */
   --focus-ring: 2px solid var(--color-primary-500);
   --focus-ring-offset: 2px;
+
+  /* Z-index scale.
+     Ordering rationale (low → high):
+       dropdown < sticky < overlay < modal < popover < toast < error
+     popovers must beat modals so menus opened from inside a Dialog win.
+     toasts beat popovers so transient notifications are never hidden by
+     an open menu. errors beat toasts so rule-violation banners are
+     always visible above any other surface. */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 1000;   /* Dialog backdrop */
+  --z-modal: 1100;     /* Dialog content */
+  --z-popover: 1200;   /* Menus opened from inside modals */
+  --z-toast: 1300;
+  --z-error: 1400;
+
+  /* Font-size scale */
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.75rem;
+  --font-size-base: 0.8125rem;
+  --font-size-md: 0.875rem;
+  --font-size-lg: 1rem;
+  --font-size-xl: 1.25rem;
 }
 
 /* Example themed component styles that use --theme-color */

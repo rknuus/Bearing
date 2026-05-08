@@ -228,7 +228,7 @@
      depth)` so any value ≥ 50 wins; 100 keeps headroom. */
   .tag-board-card-title-bar.foreground {
     position: relative;
-    z-index: 100;
+    z-index: var(--z-dropdown);
   }
 
   .tag-board-card-title-bar.receded {
@@ -286,7 +286,7 @@
     flex: 1;
     min-height: 0;
     padding: 0.5rem;
-    z-index: 100;
+    z-index: var(--z-dropdown);
   }
 
   /*
@@ -379,7 +379,7 @@
    */
   .foreground-body {
     position: relative;
-    z-index: 100;
+    z-index: var(--z-dropdown);
     flex: 1;
     min-height: 0;
     display: flex;

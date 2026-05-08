@@ -113,7 +113,7 @@
     position: fixed;
     top: 1rem;
     right: 1rem;
-    z-index: 2000;
+    z-index: var(--z-error);
     display: flex;
     flex-direction: column-reverse;
     gap: 0.5rem;

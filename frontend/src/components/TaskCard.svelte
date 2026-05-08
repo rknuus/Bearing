@@ -229,7 +229,7 @@
   }
 
   .task-title {
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--color-gray-800);
     margin: 0 0 0.5rem 0;
@@ -266,7 +266,7 @@
     background: none;
     border: none;
     color: var(--color-gray-600);
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     cursor: pointer;
     padding: 0.25rem;
     line-height: 1;
@@ -283,7 +283,7 @@
     background: none;
     border: none;
     color: var(--color-gray-600);
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     cursor: pointer;
     padding: 0.25rem;
     line-height: 1;
@@ -300,7 +300,7 @@
     background: none;
     border: 1px solid var(--color-gray-300);
     color: var(--color-gray-500);
-    font-size: 0.6875rem;
+    font-size: var(--font-size-xs);
     cursor: pointer;
     padding: 0.125rem 0.5rem;
     border-radius: 4px;

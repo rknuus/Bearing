@@ -126,7 +126,7 @@
   }
 
   .quadrant-title {
-    font-size: 0.8125rem;
+    font-size: var(--font-size-base);
     font-weight: 600;
     color: white;
     flex: 1;
@@ -135,7 +135,7 @@
   .task-count {
     background-color: rgba(255, 255, 255, 0.25);
     color: white;
-    font-size: 0.6875rem;
+    font-size: var(--font-size-xs);
     font-weight: 600;
     padding: 0.0625rem 0.375rem;
     border-radius: 9999px;
@@ -207,7 +207,7 @@
     background: none;
     border: none;
     color: var(--color-gray-600);
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     line-height: 1;
     cursor: pointer;
     padding: 0 0.25rem;
@@ -221,7 +221,7 @@
   }
 
   .task-title {
-    font-size: 0.8125rem;
+    font-size: var(--font-size-base);
     font-weight: 500;
     color: var(--color-gray-800);
     margin: 0 0 0.5rem 0;

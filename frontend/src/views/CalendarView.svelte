@@ -931,7 +931,7 @@
     background: var(--color-gray-200);
     border: none;
     border-radius: 4px;
-    font-size: 1rem;
+    font-size: var(--font-size-lg);
     cursor: pointer;
     transition: background-color 0.2s;
   }
@@ -946,7 +946,7 @@
     color: white;
     border: none;
     border-radius: 4px;
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     cursor: pointer;
     transition: background-color 0.2s;
   }
@@ -1125,7 +1125,7 @@
   }
 
   .legend-label {
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--color-gray-500);
   }
@@ -1165,7 +1165,7 @@
   }
 
   .legend-name {
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     color: var(--color-gray-600);
   }
 
@@ -1176,7 +1176,7 @@
   .form-group label,
   .form-group .form-label {
     display: block;
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     font-weight: 500;
     color: var(--color-gray-700);
     margin-bottom: 0.375rem;
@@ -1187,7 +1187,7 @@
     padding: 0.5rem;
     border: 1px solid var(--color-gray-300);
     border-radius: 4px;
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     font-family: inherit;
   }
 
@@ -1231,7 +1231,7 @@
     align-items: center;
     gap: 0.25rem;
     padding: 0.25rem 0;
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
   }
 
   .routine-row.overdue {
@@ -1270,7 +1270,7 @@
     border: 1px solid var(--color-gray-300);
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     padding: 0.125rem 0.375rem;
     color: var(--color-gray-500);
     flex-shrink: 0;
@@ -1290,7 +1290,7 @@
   }
 
   .reschedule-inline input[type="date"] {
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     padding: 0.125rem 0.25rem;
     border: 1px solid var(--color-gray-300);
     border-radius: 4px;
@@ -1302,7 +1302,7 @@
     border: 1px solid var(--color-gray-300);
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     padding: 0.125rem 0.375rem;
     color: var(--color-gray-600);
   }
@@ -1317,7 +1317,7 @@
   }
 
   .overdue-label {
-    font-size: 0.75rem;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     color: var(--color-red-600, #dc2626);
     margin-top: 0.5rem;

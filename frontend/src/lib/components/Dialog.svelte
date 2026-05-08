@@ -71,7 +71,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: var(--z-overlay);
   }
 
   .dialog {
@@ -82,10 +82,12 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    z-index: var(--z-modal);
   }
 
   .dialog h2 {
-    font-size: var(--space-5);
+    font-size: var(--font-size-xl);
     color: var(--color-gray-800);
     margin: 0 0 var(--space-4) 0;
   }

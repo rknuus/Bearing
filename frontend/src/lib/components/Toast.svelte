@@ -35,9 +35,9 @@
     background-color: var(--color-gray-800);
     color: var(--color-gray-50);
     border-radius: var(--radius-md);
-    font-size: 0.875rem;
+    font-size: var(--font-size-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: var(--z-toast);
     animation: toast-in 0.3s ease-out;
   }
 
