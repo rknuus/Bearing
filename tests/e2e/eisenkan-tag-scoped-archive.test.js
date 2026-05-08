@@ -9,17 +9,17 @@
  * `~/.bearing/data/tasks/done/` ↔ `~/.bearing/data/tasks/archived/`.
  *
  *   Scenario A — All scope:
- *     • Button label: "Archive all ✅".
+ *     • Button label: "Archive all".
  *     • Every done task (tagged + untagged) moves to archived.
  *     • Done column ends up empty.
  *
  *   Scenario B — Untagged scope:
- *     • Button label: "Archive all ✅ in Untagged".
+ *     • Button label: "Archive all in Untagged".
  *     • Only the untagged done task moves to archived.
  *     • Tagged done tasks stay visible AND on disk under tasks/done/.
  *
  *   Scenario C — Specific tag scope (`home`):
- *     • Button label: "Archive all ✅ in home".
+ *     • Button label: "Archive all in home".
  *     • Done tasks carrying `home` — including a multi-tag task with
  *       both `home` and `work` — move to archived.
  *     • Done tasks without `home` remain in tasks/done/.
@@ -349,14 +349,14 @@ export async function runTests() {
     // Scenario A — All scope
     // ================================================================
 
-    reporter.startTest('All scope: button label is "Archive all ✅"')
+    reporter.startTest('All scope: button label is "Archive all"')
     try {
       await navigateToEisenKan(page, 'All')
       // Confirm we're on the All chip (navigateToEisenKan pinned it).
       await selectBoard(page, 'All')
       const label = await getArchiveAllLabel(page)
-      if (label !== 'Archive all ✅') {
-        throw new Error(`Expected label "Archive all ✅", got "${label}"`)
+      if (label !== 'Archive all') {
+        throw new Error(`Expected label "Archive all", got "${label}"`)
       }
       reporter.pass(`label="${label}"`)
     } catch (err) {
@@ -428,13 +428,13 @@ export async function runTests() {
       reporter.fail(err)
     }
 
-    reporter.startTest('Untagged scope: button label is "Archive all ✅ in Untagged"')
+    reporter.startTest('Untagged scope: button label is "Archive all in Untagged"')
     try {
       await navigateToEisenKan(page, 'All')
       await selectBoard(page, 'Untagged')
       const label = await getArchiveAllLabel(page)
-      if (label !== 'Archive all ✅ in Untagged') {
-        throw new Error(`Expected label "Archive all ✅ in Untagged", got "${label}"`)
+      if (label !== 'Archive all in Untagged') {
+        throw new Error(`Expected label "Archive all in Untagged", got "${label}"`)
       }
       reporter.pass(`label="${label}"`)
     } catch (err) {
@@ -533,12 +533,12 @@ export async function runTests() {
       reporter.fail(err)
     }
 
-    reporter.startTest(`Specific tag scope: button label is "Archive all ✅ in ${TAG_HOME}"`)
+    reporter.startTest(`Specific tag scope: button label is "Archive all in ${TAG_HOME}"`)
     try {
       await navigateToEisenKan(page, 'All')
       await selectBoard(page, TAG_HOME)
       const label = await getArchiveAllLabel(page)
-      const expected = `Archive all ✅ in ${TAG_HOME}`
+      const expected = `Archive all in ${TAG_HOME}`
       if (label !== expected) {
         throw new Error(`Expected label "${expected}", got "${label}"`)
       }

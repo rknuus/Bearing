@@ -867,7 +867,9 @@ describe('EisenKanView', () => {
 
       const archiveAllBtns = container.querySelectorAll('.archive-all-btn');
       expect(archiveAllBtns.length).toBe(1);
-      expect(archiveAllBtns[0].textContent).toBe('Archive all ✅');
+      expect(archiveAllBtns[0].textContent?.trim()).toBe('Archive all');
+      // The Lucide <Archive /> icon should render as an inline <svg> child.
+      expect(archiveAllBtns[0].querySelector('svg')).toBeTruthy();
     });
 
     it('archive button calls ArchiveTask and refreshes tasks', async () => {
@@ -910,8 +912,8 @@ describe('EisenKanView', () => {
       await renderView();
 
       const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
-      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all ✅');
-      expect(archiveAllBtn.title).toBe('Archive all ✅');
+      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all');
+      expect(archiveAllBtn.title).toBe('Archive all');
     });
 
     it('"Archive all" label switches to "in Untagged" when the Untagged board is selected', async () => {
@@ -931,8 +933,8 @@ describe('EisenKanView', () => {
       await tick();
 
       const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
-      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all ✅ in Untagged');
-      expect(archiveAllBtn.title).toBe('Archive all ✅ in Untagged');
+      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all in Untagged');
+      expect(archiveAllBtn.title).toBe('Archive all in Untagged');
     });
 
     it('"Archive all" label switches to "in <tag>" when a user tag board is selected', async () => {
@@ -947,8 +949,8 @@ describe('EisenKanView', () => {
       await tick();
 
       const archiveAllBtn = container.querySelector<HTMLButtonElement>('.archive-all-btn')!;
-      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all ✅ in backend');
-      expect(archiveAllBtn.title).toBe('Archive all ✅ in backend');
+      expect(archiveAllBtn.textContent?.trim()).toBe('Archive all in backend');
+      expect(archiveAllBtn.title).toBe('Archive all in backend');
     });
 
     it('"Archive all" passes the active tag scope verbatim and only archives matching done tasks', async () => {

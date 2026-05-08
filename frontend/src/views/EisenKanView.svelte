@@ -11,6 +11,7 @@
   import { onMount, onDestroy, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
+  import { Archive } from '@lucide/svelte';
   import { Button, ErrorBanner } from '../lib/components';
 
   import TagBoardDeck from '../components/TagBoardDeck.svelte';
@@ -191,9 +192,9 @@
   // Done-column "Archive all" button label, scoped to the active board so
   // users can see which slice they are about to archive (#133).
   const archiveAllLabel = $derived.by(() => {
-    if (selectedTag === ALL_BOARD) return 'Archive all ✅';
-    if (selectedTag === UNTAGGED_BOARD) return 'Archive all ✅ in Untagged';
-    return `Archive all ✅ in ${selectedTag}`;
+    if (selectedTag === ALL_BOARD) return 'Archive all';
+    if (selectedTag === UNTAGGED_BOARD) return 'Archive all in Untagged';
+    return `Archive all in ${selectedTag}`;
   });
 
   // Re-derive columnItems and sectionItems from the current filteredTasks.
@@ -1345,7 +1346,8 @@
                   onclick={handleArchiveAllDone}
                   title={archiveAllLabel}
                 >
-                  {archiveAllLabel}
+                  <Archive size={14} />
+                  <span>{archiveAllLabel}</span>
                 </button>
               {/if}
               <span class="task-count">{getColumnTaskCount(column.name)}</span>
@@ -1831,6 +1833,9 @@
   }
 
   .archive-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
     background: none;
     border: 1px solid var(--color-gray-300);
     color: var(--color-gray-500);
