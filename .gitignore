@@ -4,6 +4,9 @@
 # CCPM agent worktrees (created by parallel agent execution; never check in)
 .claude/worktrees/
 
+# Runtime lock files from scheduled-task / hook systems
+.claude/*.lock
+
 # Build outputs
 build/
 frontend/dist/
