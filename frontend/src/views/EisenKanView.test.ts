@@ -1073,7 +1073,7 @@ describe('EisenKanView', () => {
 
 
       const restoreBtn = container.querySelector<HTMLButtonElement>('.archived-column .restore-btn')!;
-      expect(restoreBtn.textContent).toBe('Restore');
+      expect(restoreBtn.getAttribute('aria-label')).toBe('Restore task');
       restoreBtn.click();
       await tick();
 
