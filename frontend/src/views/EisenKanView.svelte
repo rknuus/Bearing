@@ -1838,7 +1838,7 @@
     gap: 0.25rem;
     background: none;
     border: 1px solid var(--color-gray-300);
-    color: var(--color-gray-600);
+    color: var(--color-gray-700);
     font-size: 0.6875rem;
     cursor: pointer;
     padding: 0.125rem 0.375rem;
@@ -1847,7 +1847,7 @@
   }
 
   .archive-all-btn:hover {
-    color: var(--color-gray-700);
+    color: var(--color-gray-800);
     background-color: var(--color-gray-300);
   }
 
