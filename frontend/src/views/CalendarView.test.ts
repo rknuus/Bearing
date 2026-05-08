@@ -374,9 +374,14 @@ describe('CalendarView', () => {
     });
     await tick();
 
-    const loadingEl = container.querySelector('.loading');
-    expect(loadingEl).toBeTruthy();
-    expect(loadingEl?.textContent).toContain('Loading');
+    // The grid renders structurally even while loading (skeleton pattern):
+    // it carries the .loading class and aria-busy="true" so assistive tech
+    // is informed, but the surrounding 12 × 31 layout is preserved to avoid
+    // a CLS jump when data arrives.
+    const grid = container.querySelector('.calendar-grid');
+    expect(grid).toBeTruthy();
+    expect(grid?.classList.contains('loading')).toBe(true);
+    expect(grid?.getAttribute('aria-busy')).toBe('true');
   });
 
   it('shows error banner on fetch failure', async () => {
