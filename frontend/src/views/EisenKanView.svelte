@@ -1838,7 +1838,7 @@
     gap: 0.25rem;
     background: none;
     border: 1px solid var(--color-gray-300);
-    color: var(--color-gray-500);
+    color: var(--color-gray-600);
     font-size: 0.6875rem;
     cursor: pointer;
     padding: 0.125rem 0.375rem;

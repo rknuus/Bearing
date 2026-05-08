@@ -7,7 +7,7 @@
    */
 
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
-  import { Trash2 } from 'lucide-svelte';
+  import { Trash2 } from '@lucide/svelte';
   import TagBadges from '../lib/components/TagBadges.svelte';
 
   import type { LifeTheme } from '../lib/wails-mock';
@@ -206,7 +206,7 @@
   .delete-btn {
     background: none;
     border: none;
-    color: var(--color-gray-400);
+    color: var(--color-gray-600);
     font-size: 0.875rem;
     line-height: 1;
     cursor: pointer;

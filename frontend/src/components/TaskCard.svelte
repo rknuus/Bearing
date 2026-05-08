@@ -13,7 +13,7 @@
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels, priorityColors } from '../lib/constants/priorities';
   import TaskActionMenu from './TaskActionMenu.svelte';
-  import { Trash2, Archive, RotateCcw } from 'lucide-svelte';
+  import { Trash2, Archive, RotateCcw } from '@lucide/svelte';
 
   interface TaskAction {
     label: string;
@@ -265,7 +265,7 @@
   .delete-btn {
     background: none;
     border: none;
-    color: var(--color-gray-400);
+    color: var(--color-gray-600);
     font-size: 0.875rem;
     cursor: pointer;
     padding: 0.25rem;
@@ -282,7 +282,7 @@
   .archive-btn {
     background: none;
     border: none;
-    color: var(--color-gray-400);
+    color: var(--color-gray-600);
     font-size: 0.875rem;
     cursor: pointer;
     padding: 0.25rem;
