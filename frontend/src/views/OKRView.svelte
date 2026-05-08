@@ -9,6 +9,7 @@
 
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
+  import { Trash2, Pencil, Check, CheckCircle, X, RotateCcw, Archive, Calendar, Clipboard, Plus } from '@lucide/svelte';
   import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
 
   import AdvisorChat from '../components/AdvisorChat.svelte';
@@ -1458,8 +1459,8 @@
             {#if editConflicts.length > 0}
               <div class="color-warning">Already used by: {editConflicts.join(', ')}</div>
             {/if}
-            <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save">✅</Button>
-            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+            <Button variant="icon" color="save" onclick={() => submitEditTheme(theme)} title="Save" aria-label="Save"><Check size={16} /></Button>
+            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel" aria-label="Cancel"><X size={16} /></Button>
           {:else}
             <span class="theme-pill" style="background-color: {theme.color};">{theme.name}</span>
             <span class="item-id">{theme.id}</span>
@@ -1474,17 +1475,19 @@
                   variant="icon" color="nav"
                   onclick={() => onNavigateToCalendar?.(undefined, theme.id)}
                   title="View in Calendar"
-                >📅</Button>
+                  aria-label="View in Calendar"
+                ><Calendar size={16} /></Button>
               {/if}
               {#if onNavigateToTasks}
                 <Button
                   variant="icon" color="nav"
                   onclick={() => onNavigateToTasks?.({ themeId: theme.id })}
                   title="View Tasks"
-                >📋</Button>
+                  aria-label="View Tasks"
+                ><Clipboard size={16} /></Button>
               {/if}
-              <Button variant="icon" color="edit" onclick={() => startEditTheme(theme)} title="Edit">✏️</Button>
-              <Button variant="icon" color="delete" onclick={() => deleteTheme(theme.id)} title="Delete">🗑️</Button>
+              <Button variant="icon" color="edit" onclick={() => startEditTheme(theme)} title="Edit" aria-label="Edit"><Pencil size={16} /></Button>
+              <Button variant="icon" color="delete" onclick={() => deleteTheme(theme.id)} title="Delete" aria-label="Delete"><Trash2 size={16} /></Button>
               <Button
                 variant="icon" color="add"
                 onclick={() => { addingObjectiveTo = theme.id; expandId(theme.id); }}
@@ -1538,8 +1541,8 @@
                   bind:value={editObjectiveTitle}
                   onkeydown={(e) => { if (e.key === 'Enter') submitEditObjective(objective); if (e.key === 'Escape') cancelEdit(); }}
                 />
-                <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save">✅</Button>
-                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+                <Button variant="icon" color="save" onclick={() => submitEditObjective(objective)} title="Save" aria-label="Save"><Check size={16} /></Button>
+                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel" aria-label="Cancel"><X size={16} /></Button>
               </div>
               <TagEditor
                 tags={editObjectiveTags}
@@ -1564,25 +1567,25 @@
             {/if}
             <div class="item-actions">
               {#if isActive(objective.status)}
-                <Button variant="icon" color="complete" onclick={() => openCloseDialog(objective.id)} title="Close">✅</Button>
+                <Button variant="icon" color="complete" onclick={() => openCloseDialog(objective.id)} title="Close" aria-label="Close"><CheckCircle size={16} /></Button>
               {:else if objective.status === 'completed'}
-                <Button variant="icon" color="reopen" onclick={() => reopenObjective(objective.id)} title="Reopen">🔄</Button>
-                <Button variant="icon" color="archive" onclick={() => setObjectiveStatus(objective.id, 'archived')} title="Archive">📦</Button>
+                <Button variant="icon" color="reopen" onclick={() => reopenObjective(objective.id)} title="Reopen" aria-label="Reopen"><RotateCcw size={16} /></Button>
+                <Button variant="icon" color="archive" onclick={() => setObjectiveStatus(objective.id, 'archived')} title="Archive" aria-label="Archive"><Archive size={16} /></Button>
               {:else}
-                <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen">🔄</Button>
+                <Button variant="icon" color="reopen" onclick={() => setObjectiveStatus(objective.id, 'active')} title="Reopen" aria-label="Reopen"><RotateCcw size={16} /></Button>
               {/if}
-              <Button variant="icon" color="edit" onclick={() => startEditObjective(objective)} title="Edit">✏️</Button>
-              <Button variant="icon" color="delete" onclick={() => deleteObjective(objective.id)} title="Delete">🗑️</Button>
+              <Button variant="icon" color="edit" onclick={() => startEditObjective(objective)} title="Edit" aria-label="Edit"><Pencil size={16} /></Button>
+              <Button variant="icon" color="delete" onclick={() => deleteObjective(objective.id)} title="Delete" aria-label="Delete"><Trash2 size={16} /></Button>
               <Button
                 variant="icon" color="add"
                 onclick={() => { addingObjectiveTo = objective.id; expandId(objective.id); }}
                 title="Add Child Objective"
-              >➕O</Button>
+              ><span class="icon-text"><Plus size={14} /> O</span></Button>
               <Button
                 variant="icon" color="add"
                 onclick={() => { addingKeyResultToObjective = objective.id; expandId(objective.id); }}
                 title="Add Key Result"
-              >➕KR</Button>
+              ><span class="icon-text"><Plus size={14} /> KR</span></Button>
             </div>
           {/if}
         </div>
@@ -1650,8 +1653,8 @@
             />
             <label class="kr-progress-label">Start <input type="number" class="kr-progress-input" bind:value={editKeyResultStartValue} min="0" /></label>
             <label class="kr-progress-label">Target <input type="number" class="kr-progress-input" bind:value={editKeyResultTargetValue} min="0" /></label>
-            <Button variant="icon" color="save" onclick={() => submitEditKeyResult(kr)} title="Save">✅</Button>
-            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+            <Button variant="icon" color="save" onclick={() => submitEditKeyResult(kr)} title="Save" aria-label="Save"><Check size={16} /></Button>
+            <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel" aria-label="Cancel"><X size={16} /></Button>
           {:else}
             <span class="item-name">{kr.description}</span>
             <span class="item-id">{kr.id}</span>
@@ -1686,15 +1689,15 @@
             {/if}
             <div class="item-actions">
               {#if isActive(kr.status)}
-                <Button variant="icon" color="complete" onclick={() => setKeyResultStatus(kr.id, 'completed')} title="Complete">✅</Button>
+                <Button variant="icon" color="complete" onclick={() => setKeyResultStatus(kr.id, 'completed')} title="Complete" aria-label="Complete"><CheckCircle size={16} /></Button>
               {:else if kr.status === 'completed'}
-                <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">🔄</Button>
-                <Button variant="icon" color="archive" onclick={() => setKeyResultStatus(kr.id, 'archived')} title="Archive">📦</Button>
+                <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen" aria-label="Reopen"><RotateCcw size={16} /></Button>
+                <Button variant="icon" color="archive" onclick={() => setKeyResultStatus(kr.id, 'archived')} title="Archive" aria-label="Archive"><Archive size={16} /></Button>
               {:else}
-                <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen">🔄</Button>
+                <Button variant="icon" color="reopen" onclick={() => setKeyResultStatus(kr.id, 'active')} title="Reopen" aria-label="Reopen"><RotateCcw size={16} /></Button>
               {/if}
-              <Button variant="icon" color="edit" onclick={() => startEditKeyResult(kr)} title="Edit">✏️</Button>
-              <Button variant="icon" color="delete" onclick={() => deleteKeyResult(kr.id)} title="Delete">🗑️</Button>
+              <Button variant="icon" color="edit" onclick={() => startEditKeyResult(kr)} title="Edit" aria-label="Edit"><Pencil size={16} /></Button>
+              <Button variant="icon" color="delete" onclick={() => deleteKeyResult(kr.id)} title="Delete" aria-label="Delete"><Trash2 size={16} /></Button>
             </div>
           {/if}
         </div>
@@ -1721,7 +1724,7 @@
           <h1>Routines</h1>
         </button>
         {#if !routinesCollapsed}
-          <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine">➕Routine</Button>
+          <Button variant="icon" color="add" onclick={() => { addingRoutine = true; }} title="Add Routine"><span class="icon-text"><Plus size={14} /> Routine</span></Button>
         {/if}
       </div>
 
@@ -1853,8 +1856,8 @@
                 </div>
               {/if}
               <div class="routine-form-row">
-                <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save">✅</Button>
-                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel">❌</Button>
+                <Button variant="icon" color="save" onclick={() => updateRoutine(routine.id)} title="Save" aria-label="Save"><Check size={16} /></Button>
+                <Button variant="icon" color="cancel" onclick={cancelEdit} title="Cancel" aria-label="Cancel"><X size={16} /></Button>
               </div>
             </div>
           {:else}
@@ -1882,8 +1885,8 @@
                 <span class="routine-sporadic-badge">sporadic</span>
               {/if}
               <div class="item-actions">
-                <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit">✏️</Button>
-                <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete">🗑️</Button>
+                <Button variant="icon" color="edit" onclick={() => startEditRoutine(routine)} title="Edit" aria-label="Edit"><Pencil size={16} /></Button>
+                <Button variant="icon" color="delete" onclick={() => deleteRoutine(routine.id)} title="Delete" aria-label="Delete"><Trash2 size={16} /></Button>
               </div>
             </div>
           {/if}
@@ -2128,8 +2131,14 @@
     display: flex;
     gap: 0.25rem;
     margin-left: auto;
-    opacity: 0;
+    opacity: 0.6;
     transition: opacity 0.2s;
+  }
+
+  .icon-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
   }
 
   .item-header:hover .item-actions {

@@ -109,6 +109,36 @@ describe('OKRView', () => {
     expect(themeName?.textContent).toBe('Test Theme');
   });
 
+  it('renders action buttons visible at rest (opacity > 0)', async () => {
+    await renderView();
+
+    // Action buttons should be visible without hovering — discoverability fix.
+    // The .item-actions container's resting opacity is bumped from 0 to 0.6 so
+    // delete/edit/etc icon buttons are perceivable on first sight.
+    const actions = container.querySelector<HTMLElement>('.tree-theme-item .item-actions');
+    expect(actions).toBeTruthy();
+    const opacity = parseFloat(getComputedStyle(actions!).opacity || '0');
+    expect(opacity).toBeGreaterThan(0);
+  });
+
+  it('renders icon-only action buttons with accessible labels', async () => {
+    await renderView();
+
+    // After the Lucide migration, icon buttons must keep an accessible name
+    // (aria-label or title) since the SVG glyph alone has no inherent text.
+    const deleteBtn = container.querySelector<HTMLButtonElement>(
+      '.tree-theme-item .btn-icon.icon-delete[title="Delete"]',
+    );
+    expect(deleteBtn).toBeTruthy();
+    expect(deleteBtn?.getAttribute('aria-label')).toBe('Delete');
+
+    const editBtn = container.querySelector<HTMLButtonElement>(
+      '.tree-theme-item .btn-icon.icon-edit[title="Edit"]',
+    );
+    expect(editBtn).toBeTruthy();
+    expect(editBtn?.getAttribute('aria-label')).toBe('Edit');
+  });
+
   it('renders binary KR with checkbox', async () => {
     await renderView();
     await expandThemeAndObjective();
