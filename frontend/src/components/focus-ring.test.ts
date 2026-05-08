@@ -9,7 +9,6 @@ import { tick } from 'svelte';
 import taskCardSrc from './TaskCard.svelte?raw';
 import calendarViewSrc from '../views/CalendarView.svelte?raw';
 import themeBadgeSrc from '../lib/components/ThemeBadge.svelte?raw';
-import tagBoardCardSrc from './TagBoardCard.svelte?raw';
 import breadcrumbSrc from '../lib/components/Breadcrumb.svelte?raw';
 
 /**
@@ -38,7 +37,6 @@ const sources: Record<string, string> = {
   'components/TaskCard.svelte': taskCardSrc,
   'views/CalendarView.svelte': calendarViewSrc,
   'lib/components/ThemeBadge.svelte': themeBadgeSrc,
-  'components/TagBoardCard.svelte': tagBoardCardSrc,
   'lib/components/Breadcrumb.svelte': breadcrumbSrc,
 };
 
@@ -121,10 +119,6 @@ describe('Focus ring (issue #141) — source', () => {
     { file: 'views/CalendarView.svelte', selector: '.day-text:focus-visible' },
     { file: 'views/CalendarView.svelte', selector: '.legend-item:focus-visible' },
     { file: 'lib/components/ThemeBadge.svelte', selector: '.theme-badge:focus-visible' },
-    {
-      file: 'components/TagBoardCard.svelte',
-      selector: '.tag-board-card-title-bar.receded:focus-visible',
-    },
     {
       file: 'lib/components/Breadcrumb.svelte',
       selector: '.breadcrumb-link:focus-visible',

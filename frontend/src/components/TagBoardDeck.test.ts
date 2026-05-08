@@ -326,51 +326,30 @@ describe('TagBoardDeck', () => {
   });
 
   // ---------------------------------------------------------------------
-  // Issue #120 redesign: vertical-accordion stack.
+  // Foreground card rendering (issue #145).
   //
-  // The deck stacks all boards as title bars; only the selected board
-  // expands its content inline. Visual top-to-bottom order is the
-  // REVERSE of the strip order, so the rightmost-strip tag (`All`) sits
-  // at the top of the stack and the leftmost user tag at the bottom.
+  // The deck renders only the selected board as a foreground card. The
+  // strip is the canonical navigation surface; non-selected boards are
+  // not drawn inside the deck.
   // ---------------------------------------------------------------------
 
-  describe('vertical-accordion stack (issue #120 redesign)', () => {
-    function stackTitleBarLabels(c: HTMLElement): string[] {
-      return Array.from(
-        c.querySelectorAll<HTMLElement>('.tag-board-stack .tag-board-card-label'),
-      ).map(el => el.textContent?.trim() ?? '');
-    }
-
-    function stackCardOrder(c: HTMLElement): string[] {
-      // The top-to-bottom ordering of every rendered card in the stack.
-      // Non-selected entries no longer render in the deck (issue #120) —
-      // their visual indication is conveyed by the body peek frames'
-      // stair-stepped top / bottom edges.
-      return Array.from(
-        c.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
-      ).map(card => card.querySelector('.tag-board-card-label')?.textContent?.trim() ?? '');
-    }
-
-    it('renders only the foreground card in the stack (every non-selected board omitted)', async () => {
-      // makeTasks() user tags (alpha): personal, urgent, work; an
-      // untagged task exists. Strip order = [personal, urgent, work,
-      // Untagged, All]; visual order = [All, Untagged, work, urgent,
-      // personal] (reversed). Selected `All` foregrounded → only the
-      // foreground (All) renders in the flex stack; every non-selected
-      // entry is conveyed by the body peek frames behind the foreground.
+  describe('foreground card rendering (issue #145)', () => {
+    it('renders only the foreground card in the stack', async () => {
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
       });
       await tick();
 
-      expect(stackCardOrder(container)).toEqual(['All']);
-      expect(stackTitleBarLabels(container)).toEqual(['All']);
+      const cards = Array.from(
+        container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
+      );
+      expect(cards.length).toBe(1);
+      expect(cards[0].classList.contains('foreground')).toBe(true);
+      expect(cards[0].querySelector('.tag-board-card-label')?.textContent?.trim()).toBe('All');
     });
 
-    it('renders the selected board in foreground mode and no other cards in the deck', async () => {
-      // `work` selected — visual order = [All, Untagged, work, urgent,
-      // personal]. Only `work` renders as a card in the deck stack.
+    it('renders the selected board in foreground mode regardless of selection', async () => {
       render(TagBoardDeck, {
         target: container,
         props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
@@ -401,54 +380,9 @@ describe('TagBoardDeck', () => {
       expect(foreground?.querySelector('.board-content')).not.toBeNull();
     });
 
-    it('does not render any receded title bars in the deck (no clickable cards beyond the foreground)', async () => {
-      // Issue #120 simplification: the deck exposes selection only via
-      // the strip; non-selected boards no longer render as title-bar
-      // rows in the deck. Verify that no receded card is present.
-      render(TagBoardDeck, {
-        target: container,
-        props: {
-          tasks: makeTasks(),
-          selectedTag: 'All',
-          board: boardSnippet(),
-        },
-      });
-      await tick();
-
-      const recededCards = container.querySelectorAll(
-        '.tag-board-stack .tag-board-card.receded',
-      );
-      expect(recededCards.length).toBe(0);
-    });
-
-    it('does NOT render the currently-foregrounded tag anywhere as a receded title bar', async () => {
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      const recededLabels = Array.from(
-        container.querySelectorAll('.tag-board-stack .tag-board-card.receded .tag-board-card-label'),
-      ).map(el => el.textContent?.trim());
-      expect(recededLabels).not.toContain('work');
-    });
-
-    it('does not render an Untagged row in the deck regardless of untagged-task presence', async () => {
-      // Even when untagged tasks exist, the deck renders no row for
-      // them — `Untagged` is reachable only via the strip.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(stackTitleBarLabels(container)).not.toContain('Untagged');
-    });
-
     it('foreground is the sole card in the deck irrespective of selection or focus', async () => {
       // Probe several selections; only the foreground card ever renders
-      // inside the deck stack. No before-/after-foreground siblings.
+      // inside the deck stack.
       for (const tag of ['All', 'Untagged', 'work', 'urgent', 'personal']) {
         container.innerHTML = '';
         render(TagBoardDeck, {
@@ -462,310 +396,7 @@ describe('TagBoardDeck', () => {
         );
         expect(cards.length).toBe(1);
         expect(cards[0].classList.contains('foreground')).toBe(true);
-        expect(cards[0].classList.contains('before-foreground')).toBe(false);
-        expect(cards[0].classList.contains('after-foreground')).toBe(false);
       }
-    });
-
-    it('does not render any focus-marked title bar for non-selected focus tags (deck has no receded rows)', async () => {
-      // Focus = ['work']. With `personal` selected, `work` is omitted
-      // from the deck entirely (no title bar). Selecting `work` puts the
-      // focus marker on the foreground; verifying that here as well.
-      render(TagBoardDeck, {
-        target: container,
-        props: {
-          tasks: makeTasks(),
-          selectedTag: 'personal',
-          focusTags: ['work'],
-          board: boardSnippet(),
-        },
-      });
-      await tick();
-
-      const focusedBars = Array.from(
-        container.querySelectorAll<HTMLElement>('.tag-board-stack .tag-board-card-title-bar.focused'),
-      ).map(el => el.querySelector('.tag-board-card-label')?.textContent?.trim());
-
-      // `personal` is not in focus, so no focused title bar in the deck.
-      expect(focusedBars).toEqual([]);
-    });
-
-    it('projects --stack-x-offset = 0px on the foreground (the sole card in the deck)', async () => {
-      // Only the foreground renders in the deck (issue #120). The
-      // foreground always sits at offset 0 — it is the fan centre.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      const cards = Array.from(
-        container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
-      );
-      expect(cards.length).toBe(1);
-      expect(cards[0].style.getPropertyValue('--stack-x-offset')).toBe('0px');
-    });
-
-    it('does NOT project a --stack-y-offset on the foreground card', async () => {
-      // The foreground stays in its natural flex-flow Y position. The
-      // body peek frames are translated diagonally as a unit (via
-      // `--peek-y-offset` in TagBoardCard) so their L-shaped
-      // protrusions stair-step on all four corners.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      const cards = Array.from(
-        container.querySelectorAll<HTMLElement>('.tag-board-stack > .tag-board-card'),
-      );
-      expect(cards.length).toBe(1);
-      expect(cards[0].style.getPropertyValue('--stack-y-offset')).toBe('');
-    });
-
-    it('foreground always has --stack-x-offset = 0px (it is the fan centre)', async () => {
-      // The foreground sits at the centre of the symmetric fan
-      // regardless of its position in the visual order. Probe several
-      // selections to confirm the invariant.
-      for (const tag of ['All', 'Untagged', 'work', 'urgent', 'personal']) {
-        container.innerHTML = '';
-        render(TagBoardDeck, {
-          target: container,
-          props: { tasks: makeTasks(), selectedTag: tag, board: boardSnippet() },
-        });
-        await tick();
-        const fg = container.querySelector('.tag-board-card.foreground') as HTMLElement;
-        expect(fg.style.getPropertyValue('--stack-x-offset')).toBe('0px');
-      }
-    });
-
-    // -------------------------------------------------------------------
-    // Body peeks (issue #120). The deck emits one peek per non-selected
-    // board into the foreground TagBoardCard, with `depth = |i -
-    // foregroundIndex|`, `xOffset = (i - foregroundIndex) * 2px`, and
-    // `yOffset = (i - foregroundIndex) * 5px`. The peeks render as
-    // `.board-body-peek` siblings inside the foreground card; their
-    // inline styles encode the per-peek depth and diagonal translation
-    // for the deck contract.
-    // -------------------------------------------------------------------
-
-    function peekDescriptors(c: HTMLElement): Array<{ depth: number; xOffset: number; yOffset: number }> {
-      return Array.from(
-        c.querySelectorAll<HTMLElement>('.tag-board-card.foreground .board-body-peek'),
-      ).map(el => ({
-        depth: parseInt(el.style.getPropertyValue('--peek-depth'), 10),
-        xOffset: parseInt(el.style.getPropertyValue('--peek-x-offset'), 10),
-        yOffset: parseInt(el.style.getPropertyValue('--peek-y-offset'), 10),
-      }));
-    }
-
-    it('emits peeks behind the foreground for every non-selected board', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
-      // with `work` selected (foregroundIndex = 2). Four peeks expected.
-      // Each peek is the same size as the foreground and translated
-      // diagonally by (signedDist × 2px, signedDist × 5px):
-      // i=0 (All)      → depth 2, xOffset -4, yOffset -10
-      // i=1 (Untagged) → depth 1, xOffset -2, yOffset  -5
-      // i=3 (urgent)   → depth 1, xOffset +2, yOffset  +5
-      // i=4 (personal) → depth 2, xOffset +4, yOffset +10
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(peekDescriptors(container)).toEqual([
-        { depth: 2, xOffset: -4, yOffset: -10 },
-        { depth: 1, xOffset: -2, yOffset: -5 },
-        { depth: 1, xOffset: 2, yOffset: 5 },
-        { depth: 2, xOffset: 4, yOffset: 10 },
-      ]);
-    });
-
-    it('emits peeks with positive xOffset and positive yOffset when the foreground is at index 0 of the visual order', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] with
-      // `All` selected → foregroundIndex = 0. Every non-selected board
-      // sits BELOW the foreground, so every peek shifts down-right by
-      // (+N×2px, +N×5px). Issue #126: descriptor emission is unchanged
-      // for this case — every non-selected board still gets a peek
-      // descriptor; the bottom-left "ear" artefact is suppressed at
-      // the CSS layer (clip-path on `.board-body-peek.shift-positive`)
-      // rather than by dropping descriptors.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(peekDescriptors(container)).toEqual([
-        { depth: 1, xOffset: 2, yOffset: 5 },
-        { depth: 2, xOffset: 4, yOffset: 10 },
-        { depth: 3, xOffset: 6, yOffset: 15 },
-        { depth: 4, xOffset: 8, yOffset: 20 },
-      ]);
-    });
-
-    it('marks every down-right peek with `shift-positive` so the L-clip CSS hides its left-of-foreground reveal (issue #126)', async () => {
-      // Issue #126 invariant. With the leftmost-strip tag foregrounded
-      // (`selectedTag === 'All'` → foregroundIndex = 0), every peek
-      // shifts down-right (positive xOffset). The deck must mark each
-      // such peek with the `.shift-positive` class so the clip-path
-      // polygon defined in `TagBoardCard.svelte` removes the peek's
-      // top-left rectangle — the area that previously revealed a small
-      // "ear" through the foreground's bottom-left rounded corner. Only
-      // the bottom + right L-strip remains visible.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
-      });
-      await tick();
-
-      const peeks = Array.from(
-        container.querySelectorAll<HTMLElement>('.tag-board-card.foreground .board-body-peek'),
-      );
-      expect(peeks.length).toBe(4);
-      for (const peek of peeks) {
-        expect(peek.classList.contains('shift-positive')).toBe(true);
-        expect(peek.classList.contains('shift-negative')).toBe(false);
-        // The clip-path consumes the unsigned magnitude so the polygon
-        // vertices are well-defined regardless of the sign of the
-        // translation.
-        const xSigned = parseInt(peek.style.getPropertyValue('--peek-x-offset'), 10);
-        const ySigned = parseInt(peek.style.getPropertyValue('--peek-y-offset'), 10);
-        const xAbs = parseInt(peek.style.getPropertyValue('--peek-abs-x-offset'), 10);
-        const yAbs = parseInt(peek.style.getPropertyValue('--peek-abs-y-offset'), 10);
-        expect(xAbs).toBe(Math.abs(xSigned));
-        expect(yAbs).toBe(Math.abs(ySigned));
-      }
-    });
-
-    it('marks up-left peeks with `shift-negative` and down-right peeks with `shift-positive` for a middle selection (issue #126)', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] with
-      // `work` selected → foregroundIndex = 2. The two peeks above
-      // (All, Untagged) shift up-left → `.shift-negative`. The two
-      // peeks below (urgent, personal) shift down-right →
-      // `.shift-positive`. The clip-path applied via these classes
-      // keeps each peek's L-protrusion on the side it translates
-      // toward and removes its overlap with the foreground rectangle.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      const peeks = Array.from(
-        container.querySelectorAll<HTMLElement>('.tag-board-card.foreground .board-body-peek'),
-      );
-      expect(peeks.length).toBe(4);
-
-      const classes = peeks.map(p => ({
-        positive: p.classList.contains('shift-positive'),
-        negative: p.classList.contains('shift-negative'),
-        xOffset: parseInt(p.style.getPropertyValue('--peek-x-offset'), 10),
-      }));
-      // Order in DOM matches visualOrder index order:
-      // i=0 (All)      xOffset=-4 → negative
-      // i=1 (Untagged) xOffset=-2 → negative
-      // i=3 (urgent)   xOffset=+2 → positive
-      // i=4 (personal) xOffset=+4 → positive
-      expect(classes).toEqual([
-        { positive: false, negative: true, xOffset: -4 },
-        { positive: false, negative: true, xOffset: -2 },
-        { positive: true, negative: false, xOffset: 2 },
-        { positive: true, negative: false, xOffset: 4 },
-      ]);
-    });
-
-    it('emits peeks with negative xOffset and negative yOffset when the foreground is at the end of the visual order', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] with
-      // `personal` selected → foregroundIndex = 4. Every non-selected
-      // board sits ABOVE the foreground, so every peek shifts up-left
-      // by (-N×2px, -N×5px).
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'personal', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(peekDescriptors(container)).toEqual([
-        { depth: 4, xOffset: -8, yOffset: -20 },
-        { depth: 3, xOffset: -6, yOffset: -15 },
-        { depth: 2, xOffset: -4, yOffset: -10 },
-        { depth: 1, xOffset: -2, yOffset: -5 },
-      ]);
-    });
-
-    it('does not render any receded cards in the deck (peeks only emit on the foreground)', async () => {
-      // Issue #120 simplification: only the foreground card mounts in
-      // the deck, so there is no receded-card surface that could carry
-      // a `.board-body-peek`. The peeks only ever live inside the
-      // foreground card.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      const recededCards = container.querySelectorAll(
-        '.tag-board-stack .tag-board-card.receded',
-      );
-      expect(recededCards.length).toBe(0);
-    });
-
-    // -------------------------------------------------------------------
-    // Dynamic stack padding (issue #120). Body peek frames extend past
-    // the foreground edge by N × 5 px where N is the worst-case above /
-    // below depth. The deck must project matching padding via
-    // `--stack-padding-top` / `--stack-padding-bottom` so peek
-    // extensions stay inside the stack's bounds.
-    // -------------------------------------------------------------------
-
-    function stackPadding(c: HTMLElement): { top: string; bottom: string } {
-      const stack = c.querySelector('.tag-board-stack') as HTMLElement;
-      return {
-        top: stack.style.getPropertyValue('--stack-padding-top'),
-        bottom: stack.style.getPropertyValue('--stack-padding-bottom'),
-      };
-    }
-
-    it('projects zero top padding when foreground sits at the top of the visual order', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
-      // with `All` selected → foregroundIndex = 0. maxAboveDepth = 0 →
-      // padding-top = 0; maxBelowDepth = 4 → padding-bottom = 4*5 = 20.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'All', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(stackPadding(container)).toEqual({ top: '0px', bottom: '20px' });
-    });
-
-    it('projects symmetric stack padding when foreground sits in the middle of the visual order', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
-      // with `work` selected → foregroundIndex = 2. maxAboveDepth = 2 →
-      // padding-top = 2*5 = 10; maxBelowDepth = 2 → padding-bottom = 10.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'work', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(stackPadding(container)).toEqual({ top: '10px', bottom: '10px' });
-    });
-
-    it('projects zero bottom padding when foreground sits at the bottom of the visual order', async () => {
-      // Visual order = [All, Untagged, work, urgent, personal] (length 5)
-      // with `personal` selected → foregroundIndex = 4. maxAboveDepth = 4
-      // → padding-top = 4*5 = 20; maxBelowDepth = 0 → padding-bottom = 0.
-      render(TagBoardDeck, {
-        target: container,
-        props: { tasks: makeTasks(), selectedTag: 'personal', board: boardSnippet() },
-      });
-      await tick();
-
-      expect(stackPadding(container)).toEqual({ top: '20px', bottom: '0px' });
     });
 
     it('marks the foreground title bar as focused when the selected board is in focus', async () => {
@@ -784,6 +415,24 @@ describe('TagBoardDeck', () => {
         '.tag-board-card.foreground .tag-board-card-title-bar',
       );
       expect(fg?.classList.contains('focused')).toBe(true);
+    });
+
+    it('does not mark the foreground title bar as focused when the selected board is not in focus', async () => {
+      render(TagBoardDeck, {
+        target: container,
+        props: {
+          tasks: makeTasks(),
+          selectedTag: 'personal',
+          focusTags: ['work'],
+          board: boardSnippet(),
+        },
+      });
+      await tick();
+
+      const fg = container.querySelector(
+        '.tag-board-card.foreground .tag-board-card-title-bar',
+      );
+      expect(fg?.classList.contains('focused')).toBe(false);
     });
   });
 
