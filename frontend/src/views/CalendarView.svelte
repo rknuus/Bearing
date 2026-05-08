@@ -8,7 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
-  import { ChevronLeft, ChevronRight } from 'lucide-svelte';
+  import { ChevronLeft, ChevronRight } from '@lucide/svelte';
   import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern, type Routine, ROUTINE_COLOR } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';

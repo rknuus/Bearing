@@ -9,7 +9,7 @@
    */
 
   import { onMount, onDestroy, untrack } from 'svelte';
-  import { ChevronDown } from 'lucide-svelte';
+  import { ChevronDown } from '@lucide/svelte';
   import EisenhowerQuadrant, { type PendingTask } from './EisenhowerQuadrant.svelte';
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
