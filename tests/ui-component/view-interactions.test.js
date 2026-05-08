@@ -683,15 +683,22 @@ export async function runTests() {
         throw new Error(`Expected 3 prioritize buttons, got ${addButtons.length}`)
       }
 
-      // Verify all buttons have the short label "Prioritize to ⬇"
-      const buttonTexts = await page.$$eval('.btn-add', els => els.map(el => el.textContent.trim()))
-      for (const text of buttonTexts) {
-        if (text !== 'Prioritize to ⬇') {
-          throw new Error(`Expected button text "Prioritize to ⬇", got "${text}"`)
+      // Verify all buttons have the short label "Prioritize to" followed by a
+      // chevron icon (Lucide ChevronDown SVG, replacing the legacy ⬇ glyph).
+      const buttonStates = await page.$$eval('.btn-add', els => els.map(el => ({
+        text: el.textContent.trim(),
+        hasIcon: !!el.querySelector('svg'),
+      })))
+      for (const { text, hasIcon } of buttonStates) {
+        if (text !== 'Prioritize to') {
+          throw new Error(`Expected button text "Prioritize to", got "${text}"`)
+        }
+        if (!hasIcon) {
+          throw new Error('Expected chevron icon (svg) inside Prioritize button')
         }
       }
 
-      reporter.pass('Create dialog has 3 prioritize buttons with "Prioritize to ⬇" label')
+      reporter.pass('Create dialog has 3 prioritize buttons with "Prioritize to" label and chevron icon')
     } catch (err) {
       reporter.fail(err)
     }
