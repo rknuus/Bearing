@@ -8,6 +8,7 @@
    */
 
   import { SvelteMap } from 'svelte/reactivity';
+  import { ChevronLeft, ChevronRight } from 'lucide-svelte';
   import { type LifeTheme, type DayFocus, type RoutineOccurrence, type RepeatPattern, type Routine, ROUTINE_COLOR } from '../lib/wails-mock';
   import { Dialog, Button, ErrorBanner, TagEditor, ThemeOKRTree } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
@@ -686,11 +687,11 @@
   <!-- Header -->
   <div class="calendar-header">
     <button class="nav-button" onclick={prevYear} aria-label="Previous year">
-      ⬅️
+      <ChevronLeft size={20} />
     </button>
     <h1 class="year-title">{year}</h1>
     <button class="nav-button" onclick={nextYear} aria-label="Next year">
-      ➡️
+      <ChevronRight size={20} />
     </button>
     <button class="today-button" onclick={goToCurrentYear}>
       Current year
@@ -795,7 +796,7 @@
           onclick={() => tagSectionOpen = !tagSectionOpen}
           aria-expanded={tagSectionOpen}
         >
-          <span class="expand-icon">{tagSectionOpen ? '\u25BC' : '\u25B6'}</span>
+          <span class="expand-icon"><ChevronRight size={16} /></span>
           <span class="form-label">Tags</span>
         </button>
         {#if tagSectionOpen}
@@ -1196,8 +1197,13 @@
   }
 
   .collapsible-header .expand-icon {
-    font-size: 0.625rem;
+    display: inline-flex;
     color: var(--color-gray-500);
+    transition: transform 200ms ease;
+  }
+
+  .collapsible-header[aria-expanded="true"] .expand-icon {
+    transform: rotate(90deg);
   }
 
   .collapsible-header .form-label {
