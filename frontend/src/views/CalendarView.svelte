@@ -702,26 +702,18 @@
     <ErrorBanner message={error} ondismiss={() => error = null} />
   {/if}
 
-    <!--
-      Calendar Grid.
-
-      During load (`loading=true`) the grid still renders structurally —
-      header row + 12 × 31 cells — to preserve the page's layout
-      footprint and avoid CLS. Per-cell content (theme color, day text,
-      today indicator, sunday tint, routine dot) is gated on `!loading`,
-      so cells render as neutral placeholders while data is in flight.
-    -->
+  {#if loading}
+    <div class="loading">Loading calendar...</div>
+  {:else}
+    <!-- Calendar Grid -->
     <div class="calendar-container">
       <div
         class="calendar-grid"
-        class:loading
         style="grid-template-rows: auto repeat(31, 1.5rem);"
-        aria-busy={loading ? 'true' : undefined}
-        aria-label={loading ? 'Loading calendar' : undefined}
       >
         <!-- Header row: month names spanning 3 cols each -->
         {#each monthNames as name (name)}
-          <div class="header-cell month-header">{loading ? '' : name}</div>
+          <div class="header-cell month-header">{name}</div>
         {/each}
 
         <!-- Day cells for each month -->
@@ -731,79 +723,70 @@
             {@const numCol = 2 + monthIdx * 3}
             {@const textCol = 3 + monthIdx * 3}
             {@const gridRow = cell.row + 2}
-            {@const bgValue = !loading ? themeColorsToBackground(cell.colors) : ''}
+            {@const bgValue = themeColorsToBackground(cell.colors)}
             {@const textBg = bgValue ? (bgValue.startsWith('linear-gradient') ? `background: ${bgValue};` : `background-color: ${bgValue};`) : ''}
-            {@const textColor = (!loading && cell.colors.length > 0) ? `color: ${textColorForBg(cell.colors[0])};` : ''}
-            {@const sundayBg = (!loading && cell.sunday) ? 'background-color: #eef2ff;' : ''}
-            {@const showToday = !loading && cell.today}
+            {@const textColor = cell.colors.length > 0 ? `color: ${textColorForBg(cell.colors[0])};` : ''}
+            {@const sundayBg = cell.sunday ? 'background-color: #eef2ff;' : ''}
 
             <!-- Weekday abbreviation cell -->
             <div
               class="day-weekday"
-              class:today={showToday}
-              style="grid-row: {gridRow}; grid-column: {wdayCol}; {showToday ? '' : sundayBg}"
+              class:today={cell.today}
+              style="grid-row: {gridRow}; grid-column: {wdayCol}; {cell.today ? '' : sundayBg}"
             >
-              {loading ? '' : cell.weekdayName}
+              {cell.weekdayName}
             </div>
 
             <!-- Day number cell -->
             <button
               class="day-num"
-              class:today={showToday}
-              style="grid-row: {gridRow}; grid-column: {numCol}; {showToday ? '' : sundayBg}"
+              class:today={cell.today}
+              style="grid-row: {gridRow}; grid-column: {numCol}; {cell.today ? '' : sundayBg}"
               ondblclick={() => handleDayClick(cell.month, cell.day)}
               title={displayDate(cell.month, cell.day)}
-              disabled={loading}
             >
-              {loading ? '' : cell.day}
+              {cell.day}
             </button>
 
             <!--
-              Text cell. The cell is a grid item that wraps the click-target
-              button and a sibling hover-revealed pencil button (#146). The
-              wrapper carries the grid placement so the inner buttons can
-              participate in normal layout. The pencil sits at the top-right
-              of the cell; existing click-to-select and double-click-to-edit
-              semantics on the text button are preserved.
+              Text cell. Wraps the click-target button and a sibling
+              hover-revealed pencil button (#146). The wrapper carries the
+              grid placement so the inner buttons can participate in normal
+              layout. The pencil sits at the top-right of the cell;
+              existing click-to-select and double-click-to-edit semantics
+              on the text button are preserved.
             -->
             <div
               class="day-text-cell"
-              class:loading-cell={loading}
               style="grid-row: {gridRow}; grid-column: {textCol};"
             >
               <button
                 class="day-text"
-                class:selected={!loading && isCellSelected(cell.month, cell.day)}
+                class:selected={isCellSelected(cell.month, cell.day)}
                 style="{textBg || sundayBg} {textColor}"
                 onclick={(e: MouseEvent) => handleTextCellClick(cell.month, cell.day, e)}
                 ondblclick={() => handleDayClick(cell.month, cell.day)}
                 title={cell.text || displayDate(cell.month, cell.day)}
-                disabled={loading}
               >
-                {#if !loading}
-                  <span class="day-text-content">{cell.text}</span>
-                  {#if cell.routineStatus}
-                    <span class="routine-dot {cell.routineStatus}" title={cell.routineTooltip}></span>
-                  {/if}
+                <span class="day-text-content">{cell.text}</span>
+                {#if cell.routineStatus}
+                  <span class="routine-dot {cell.routineStatus}" title={cell.routineTooltip}></span>
                 {/if}
               </button>
-              {#if !loading}
-                <button
-                  type="button"
-                  class="day-edit-btn"
-                  onclick={(e) => { e.stopPropagation(); handleDayClick(cell.month, cell.day); }}
-                  aria-label="Edit day"
-                  title="Edit day"
-                  tabindex="0"
-                ><Pencil size={12} /></button>
-              {/if}
+              <button
+                type="button"
+                class="day-edit-btn"
+                onclick={(e) => { e.stopPropagation(); handleDayClick(cell.month, cell.day); }}
+                aria-label="Edit day"
+                title="Edit day"
+                tabindex="0"
+              ><Pencil size={12} /></button>
             </div>
           {/each}
         {/each}
       </div>
     </div>
 
-  {#if !loading}
     <!-- Theme Legend -->
     <div class="theme-legend">
       <span class="legend-label">Themes:</span>
@@ -992,42 +975,14 @@
     background: var(--color-primary-700);
   }
 
-  /*
-   * Loading state — applied to the grid as `class:loading` while data
-   * is in flight. The grid still renders structurally (header row +
-   * 12 × 31 cells); cells just lack content. We tint the empty cells so
-   * the eye reads them as placeholders rather than empty days.
-   */
-  .calendar-grid.loading .day-weekday,
-  .calendar-grid.loading .day-num,
-  .calendar-grid.loading .day-text {
-    background-color: var(--color-gray-100);
-  }
-
-  /* Hide the hover-pencil while the grid is in skeleton-loading mode. */
-  .calendar-grid.loading .day-edit-btn {
-    display: none;
-  }
-
-  .calendar-grid.loading .header-cell.month-header {
-    background-color: var(--color-gray-200);
-    border-radius: 4px;
-  }
-
-  .calendar-grid.loading .day-num,
-  .calendar-grid.loading .day-text {
-    cursor: default;
-  }
-
-  @media (prefers-reduced-motion: no-preference) {
-    .calendar-grid.loading {
-      animation: calendar-skeleton-pulse 1.6s ease-in-out infinite;
-    }
-  }
-
-  @keyframes calendar-skeleton-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.7; }
+  /* Loading state — centered text shown while data loads. */
+  .loading {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-gray-500);
   }
 
   /* Calendar Container */

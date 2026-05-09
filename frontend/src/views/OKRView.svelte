@@ -10,7 +10,7 @@
   import { onMount, untrack } from 'svelte';
   import { SvelteSet } from 'svelte/reactivity';
   import { Trash2, Pencil, Check, CheckCircle, X, RotateCcw, Archive, Calendar, Clipboard, Plus } from '@lucide/svelte';
-  import { Button, Dialog, ErrorBanner, Skeleton, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
+  import { Button, Dialog, ErrorBanner, TagBadges, TagEditor, ThemeOKRTree } from '../lib/components';
 
   import AdvisorChat from '../components/AdvisorChat.svelte';
   import TagSelection from '../components/TagSelection.svelte';
@@ -1377,31 +1377,7 @@
     </div>
 
   {#if loading}
-    <div class="loading skeleton-tree" aria-busy="true" aria-live="polite" aria-label="Loading themes">
-      {#each [0, 1, 2] as i (i)}
-        <div class="skeleton-theme">
-          <div class="skeleton-theme-header">
-            <Skeleton width="1rem" height="1rem" rounded="2px" />
-            <Skeleton width="9rem" height="1.25rem" rounded="pill" />
-            <Skeleton width="3rem" height="0.85rem" />
-            <Skeleton width="6rem" height="0.5rem" rounded="pill" />
-          </div>
-          <div class="skeleton-objective">
-            <Skeleton width="1rem" height="1rem" rounded="2px" />
-            <Skeleton width="14rem" height="1rem" />
-            <Skeleton width="3rem" height="0.85rem" />
-          </div>
-          <div class="skeleton-kr">
-            <Skeleton width="1rem" height="1rem" rounded="2px" />
-            <Skeleton width="18rem" height="0.9rem" />
-          </div>
-          <div class="skeleton-kr">
-            <Skeleton width="1rem" height="1rem" rounded="2px" />
-            <Skeleton width="16rem" height="0.9rem" />
-          </div>
-        </div>
-      {/each}
-    </div>
+    <div class="loading">Loading themes...</div>
   {:else}
     {#if availableObjectiveTags.length > 0}
       <TagSelection
@@ -2101,41 +2077,6 @@
     text-align: center;
     padding: 2rem;
     color: var(--color-gray-500);
-  }
-
-  /*
-   * Skeleton tree shell — mirrors the loaded theme/objective/KR tree
-   * geometry so no layout shift happens when data arrives.
-   */
-  .skeleton-tree {
-    text-align: left;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .skeleton-theme {
-    background-color: var(--color-gray-50);
-    border-radius: 6px;
-    padding: 0.5rem 0;
-  }
-
-  .skeleton-theme-header,
-  .skeleton-objective,
-  .skeleton-kr {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.5rem 1rem;
-  }
-
-  .skeleton-objective {
-    padding-left: 2.5rem;
-  }
-
-  .skeleton-kr {
-    padding-left: 4rem;
   }
 
   .item-header {

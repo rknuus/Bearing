@@ -7,7 +7,6 @@ export { default as Button } from './Button.svelte';
 export { default as Dialog } from './Dialog.svelte';
 export { default as ErrorBanner } from './ErrorBanner.svelte';
 export { default as MarkdownContent } from './MarkdownContent.svelte';
-export { default as Skeleton } from './Skeleton.svelte';
 export { default as TagBadges } from './TagBadges.svelte';
 export { default as TagEditor } from './TagEditor.svelte';
 export { default as ThemeBadge } from './ThemeBadge.svelte';

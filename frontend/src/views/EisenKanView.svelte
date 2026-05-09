@@ -12,7 +12,7 @@
   import { SvelteSet } from 'svelte/reactivity';
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Archive } from '@lucide/svelte';
-  import { Button, ErrorBanner, Skeleton } from '../lib/components';
+  import { Button, ErrorBanner } from '../lib/components';
 
   import TagBoardDeck from '../components/TagBoardDeck.svelte';
   import EditTaskDialog from '../components/EditTaskDialog.svelte';
@@ -1286,41 +1286,8 @@
   {/if}
 
   {#if loading}
-    <!--
-      Skeleton board: tag-board strip + foreground deck card with a kanban
-      column structure inside. The columns mirror the default board
-      (todo / doing / done) and each holds a few neutral task-card
-      placeholders, so the eye doesn't have to relocate elements once the
-      real data arrives.
-    -->
-    <div class="loading-state" aria-busy="true" aria-label="Loading tasks">
-      <div class="skeleton-tag-strip">
-        {#each [0, 1, 2, 3, 4] as i (i)}
-          <Skeleton width="6rem" height="1.75rem" rounded="pill" />
-        {/each}
-      </div>
-      <div class="skeleton-deck-card">
-        <div class="skeleton-board">
-          {#each [0, 1, 2] as colIdx (colIdx)}
-            <div class="skeleton-column">
-              <div class="skeleton-column-header">
-                <Skeleton width="6rem" height="1rem" />
-                <Skeleton width="2rem" height="0.85rem" rounded="pill" />
-              </div>
-              {#each [0, 1, 2] as cardIdx (cardIdx)}
-                <div class="skeleton-task-card">
-                  <Skeleton width="80%" height="0.95rem" />
-                  <Skeleton width="55%" height="0.75rem" />
-                  <div class="skeleton-task-card-tags">
-                    <Skeleton width="3rem" height="0.85rem" rounded="pill" />
-                    <Skeleton width="4rem" height="0.85rem" rounded="pill" />
-                  </div>
-                </div>
-              {/each}
-            </div>
-          {/each}
-        </div>
-      </div>
+    <div class="loading-state">
+      <p>Loading tasks...</p>
     </div>
   {:else}
     <TagBoardDeck tasks={deckTasks} {selectedTag} focusTags={todayFocusTags} onSelectionChange={handleDeckSelect}>
@@ -1638,71 +1605,12 @@
     color: var(--color-gray-500);
   }
 
-  /*
-   * Skeleton board: matches the loaded layout (tag-board strip on top,
-   * deck card with kanban columns below) so view-mount is layout-stable.
-   */
   .loading-state {
     display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    gap: 0.75rem;
-  }
-
-  .skeleton-tag-strip {
-    display: flex;
-    gap: 0.5rem;
-    padding: 0.5rem 0;
-  }
-
-  .skeleton-deck-card {
-    flex: 1;
-    min-height: 0;
-    background-color: white;
-    border-radius: 8px;
-    padding: 0.75rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-    overflow: hidden;
-  }
-
-  .skeleton-board {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    height: 100%;
-  }
-
-  .skeleton-column {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    background-color: var(--color-gray-100);
-    border-radius: 8px;
-    padding: 0.75rem;
-    min-width: 0;
-  }
-
-  .skeleton-column-header {
-    display: flex;
+    justify-content: center;
     align-items: center;
-    justify-content: space-between;
-    padding-bottom: 0.5rem;
-  }
-
-  .skeleton-task-card {
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-    background-color: white;
-    border-radius: 6px;
-    padding: 0.6rem 0.75rem;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-  }
-
-  .skeleton-task-card-tags {
-    display: flex;
-    gap: 0.35rem;
+    flex: 1;
+    color: var(--color-gray-500);
   }
 
   .kanban-board {

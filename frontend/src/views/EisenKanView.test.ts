@@ -189,23 +189,6 @@ describe('EisenKanView', () => {
     return result;
   }
 
-  it('renders a skeleton board with aria-busy while loading', async () => {
-    // Hang the configuration fetch so the loading branch stays mounted.
-    // The skeleton replaces the centered "Loading tasks..." string with
-    // neutral column/card placeholders so the board geometry is stable
-    // when real data arrives.
-    mockGetBoardConfiguration.mockReturnValue(new Promise(() => {}));
-
-    render(EisenKanView, { target: container });
-    await tick();
-
-    const loadingEl = container.querySelector('.loading-state');
-    expect(loadingEl).toBeTruthy();
-    expect(loadingEl?.getAttribute('aria-busy')).toBe('true');
-    expect(loadingEl?.querySelector('.skeleton')).toBeTruthy();
-    expect(loadingEl?.querySelector('.skeleton-board')).toBeTruthy();
-  });
-
   it('fetches board configuration on mount', async () => {
     await renderView();
     expect(mockGetBoardConfiguration).toHaveBeenCalledOnce();

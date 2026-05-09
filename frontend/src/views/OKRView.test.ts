@@ -99,23 +99,6 @@ describe('OKRView', () => {
     await tick();
   }
 
-  it('renders a skeleton tree with aria-busy while loading', async () => {
-    // Hang the data fetch so the loading branch stays mounted long enough
-    // to inspect. The skeleton replaces the centered "Loading themes..."
-    // string with neutral layout-shaped placeholders so the view does not
-    // jump when data arrives.
-    mockBindings.GetHierarchy.mockReturnValue(new Promise(() => {}));
-
-    render(OKRView, { target: container });
-    await tick();
-
-    const loadingEl = container.querySelector('.loading');
-    expect(loadingEl).toBeTruthy();
-    expect(loadingEl?.getAttribute('aria-busy')).toBe('true');
-    // Skeleton primitive renders inside the loading shell.
-    expect(loadingEl?.querySelector('.skeleton')).toBeTruthy();
-  });
-
   it('renders theme name and header', async () => {
     await renderView();
 

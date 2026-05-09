@@ -374,14 +374,9 @@ describe('CalendarView', () => {
     });
     await tick();
 
-    // The grid renders structurally even while loading (skeleton pattern):
-    // it carries the .loading class and aria-busy="true" so assistive tech
-    // is informed, but the surrounding 12 × 31 layout is preserved to avoid
-    // a CLS jump when data arrives.
-    const grid = container.querySelector('.calendar-grid');
-    expect(grid).toBeTruthy();
-    expect(grid?.classList.contains('loading')).toBe(true);
-    expect(grid?.getAttribute('aria-busy')).toBe('true');
+    const loadingEl = container.querySelector('.loading');
+    expect(loadingEl).toBeTruthy();
+    expect(loadingEl?.textContent).toContain('Loading');
   });
 
   it('shows error banner on fetch failure', async () => {
@@ -1891,25 +1886,5 @@ describe('CalendarView', () => {
       expect(container.querySelectorAll('.day-text.selected').length).toBe(0);
     });
 
-    it('pencil buttons are not rendered while the calendar grid is in the loading state', async () => {
-      // Render synchronously and inspect the DOM before data resolves.
-      // While the grid is still in `class:loading`, the pencil button
-      // must not be rendered (we hide it via the `{#if !loading}` block).
-      render(CalendarView, {
-        target: container,
-        props: { year: 2025 },
-      });
-      await tick();
-      // The grid renders structurally during loading.
-      expect(container.querySelector('.calendar-grid.loading')).toBeTruthy();
-      expect(container.querySelectorAll('.day-edit-btn').length).toBe(0);
-      // After data resolves the buttons appear.
-      await vi.waitFor(() => {
-        if (container.querySelector('.calendar-grid.loading'))
-          throw new Error('still loading');
-      });
-      await tick();
-      expect(container.querySelectorAll('.day-edit-btn').length).toBe(365);
-    });
   });
 });
