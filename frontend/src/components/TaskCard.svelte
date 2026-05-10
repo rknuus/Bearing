@@ -318,7 +318,7 @@
 
   .archive-btn:hover {
     color: var(--color-success-600, #16a34a);
-    background-color: var(--color-success-100, #dcfce7);
+    background-color: var(--color-success-100);
   }
 
   .restore-btn {

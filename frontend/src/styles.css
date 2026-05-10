@@ -50,6 +50,7 @@ body {
   --color-primary-700: #1d4ed8;
 
   /* Success (green) */
+  --color-success-100: #dcfce7;
   --color-success-500: #10b981;
   --color-success-600: #059669;
 
