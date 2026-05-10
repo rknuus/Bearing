@@ -8,6 +8,7 @@
 
   import { dndzone, TRIGGERS, SOURCES, type DndEvent } from 'svelte-dnd-action';
   import { Trash2, Pencil } from '@lucide/svelte';
+  import Button from '../lib/components/Button.svelte';
   import TagBadges from '../lib/components/TagBadges.svelte';
 
   import type { LifeTheme } from '../lib/wails-mock';
@@ -113,11 +114,12 @@
         <TagBadges tags={task.tags} />
         {#if onTaskDelete}
           <div class="task-footer">
-            <button
-              class="delete-btn"
+            <Button
+              variant="icon"
+              color="delete"
               onclick={(e) => { e.stopPropagation(); onTaskDelete(task.id); }}
               aria-label="Remove task"
-            ><Trash2 size={16} /></button>
+            ><Trash2 size={16} /></Button>
           </div>
         {/if}
       </div>
@@ -258,23 +260,6 @@
     justify-content: space-between;
     align-items: center;
     margin-top: 0.5rem;
-  }
-
-  .delete-btn {
-    background: none;
-    border: none;
-    color: var(--color-gray-600);
-    font-size: var(--font-size-md);
-    line-height: 1;
-    cursor: pointer;
-    padding: 0 0.25rem;
-    border-radius: 4px;
-    transition: color 0.15s, background-color 0.15s;
-  }
-
-  .delete-btn:hover {
-    color: var(--color-error-600);
-    background-color: var(--color-error-100, rgba(239, 68, 68, 0.1));
   }
 
   .task-title {

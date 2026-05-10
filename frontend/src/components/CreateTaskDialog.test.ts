@@ -580,7 +580,7 @@ describe('CreateTaskDialog', () => {
       mockSaveTaskDrafts.mockClear();
 
       // Click the x button on the second task
-      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-2"] .delete-btn');
+      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-2"] button[aria-label="Remove task"]');
       expect(deleteBtn).toBeTruthy();
       await fireEvent.click(deleteBtn!);
       await tick();
@@ -603,7 +603,7 @@ describe('CreateTaskDialog', () => {
 
       await renderDialog();
 
-      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-1"] .delete-btn');
+      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-1"] button[aria-label="Remove task"]');
       await fireEvent.click(deleteBtn!);
       await tick();
 
@@ -618,7 +618,7 @@ describe('CreateTaskDialog', () => {
 
       await renderDialog();
 
-      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-1"] .delete-btn');
+      const deleteBtn = container.querySelector('[data-testid="pending-task-pending-1"] button[aria-label="Remove task"]');
       await fireEvent.click(deleteBtn!);
       await tick();
 

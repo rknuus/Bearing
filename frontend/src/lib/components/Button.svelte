@@ -163,4 +163,27 @@
     color: var(--color-primary-600);
     background-color: var(--color-primary-50);
   }
+
+  /*
+   * Per-color hover tints for the call sites swept onto <Button variant="icon">
+   * (TaskCard delete/archive/restore + EisenhowerQuadrant delete — #150). The
+   * default `.btn-icon:hover` rule above only tints the background to
+   * `--color-gray-100`; these rules deepen `color` to the -600 family and
+   * align the background with the matching -100 token so the swept buttons
+   * preserve the visual the per-component CSS had before the sweep.
+   */
+  .btn-icon.icon-delete:hover {
+    color: var(--color-error-600);
+    background-color: var(--color-error-100);
+  }
+
+  .btn-icon.icon-archive:hover {
+    color: var(--color-success-600);
+    background-color: var(--color-success-100);
+  }
+
+  .btn-icon.icon-reopen:hover {
+    color: var(--color-gray-700);
+    background-color: var(--color-gray-300);
+  }
 </style>

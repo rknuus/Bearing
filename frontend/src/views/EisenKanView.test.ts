@@ -297,7 +297,7 @@ describe('EisenKanView', () => {
     await renderView();
 
 
-    const deleteButtons = container.querySelectorAll<HTMLButtonElement>('.delete-btn');
+    const deleteButtons = container.querySelectorAll<HTMLButtonElement>('button[aria-label="Delete task"]');
     const initialCardCount = container.querySelectorAll('.task-card').length;
     expect(initialCardCount).toBe(4);
 
@@ -850,15 +850,15 @@ describe('EisenKanView', () => {
       const columns = container.querySelectorAll('.kanban-column');
 
       // Todo column (sectioned) should have no archive buttons
-      const todoArchiveBtns = columns[0].querySelectorAll('.archive-btn');
+      const todoArchiveBtns = columns[0].querySelectorAll('button[aria-label="Archive task"]');
       expect(todoArchiveBtns.length).toBe(0);
 
       // Doing column should have no archive buttons
-      const doingArchiveBtns = columns[1].querySelectorAll('.archive-btn');
+      const doingArchiveBtns = columns[1].querySelectorAll('button[aria-label="Archive task"]');
       expect(doingArchiveBtns.length).toBe(0);
 
       // Done column should have archive button on each task card
-      const doneArchiveBtns = columns[2].querySelectorAll('.archive-btn');
+      const doneArchiveBtns = columns[2].querySelectorAll('button[aria-label="Archive task"]');
       expect(doneArchiveBtns.length).toBe(1);
     });
 
@@ -877,7 +877,7 @@ describe('EisenKanView', () => {
 
 
       const columns = container.querySelectorAll('.kanban-column');
-      const archiveBtn = columns[2].querySelector<HTMLButtonElement>('.archive-btn')!;
+      const archiveBtn = columns[2].querySelector<HTMLButtonElement>('button[aria-label="Archive task"]')!;
       archiveBtn.click();
       await tick();
 
@@ -1074,7 +1074,7 @@ describe('EisenKanView', () => {
       await renderView();
 
 
-      const restoreBtn = container.querySelector<HTMLButtonElement>('.archived-column .restore-btn')!;
+      const restoreBtn = container.querySelector<HTMLButtonElement>('.archived-column button[aria-label="Restore task"]')!;
       expect(restoreBtn.getAttribute('aria-label')).toBe('Restore task');
       restoreBtn.click();
       await tick();
@@ -1276,7 +1276,7 @@ describe('EisenKanView', () => {
       // Temporarily break mockDeleteTask so it does NOT update currentTasks
       mockDeleteTask.mockResolvedValue(undefined);
 
-      const deleteButtons = container.querySelectorAll<HTMLButtonElement>('.delete-btn');
+      const deleteButtons = container.querySelectorAll<HTMLButtonElement>('button[aria-label="Delete task"]');
       deleteButtons[0].click();
       await tick();
 

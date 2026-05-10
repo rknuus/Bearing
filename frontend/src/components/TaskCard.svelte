@@ -9,7 +9,7 @@
    */
 
   import { type TaskWithStatus, type LifeTheme } from '../lib/wails-mock';
-  import { TagBadges } from '../lib/components';
+  import { Button, TagBadges } from '../lib/components';
   import { getTheme, getThemeColor } from '../lib/utils/theme-helpers';
   import { priorityLabels, priorityColors } from '../lib/constants/priorities';
   import TaskActionMenu from './TaskActionMenu.svelte';
@@ -151,39 +151,48 @@
   <TagBadges tags={task.tags} />
   <div class="task-footer">
     {#if onDelete}
-      <button
-        type="button"
-        class="delete-btn"
-        use:stopDragStart
-        onclick={(e) => { e.stopPropagation(); onDelete(); }}
-        aria-label="Delete task"
-      >
-        <Trash2 size={16} />
-      </button>
+      <!--
+        `use:stopDragStart` only attaches to DOM elements, not components, so
+        each <Button> is wrapped in a `display: contents` span that hosts the
+        native mousedown/touchstart/pointerdown stoppers (svelte-dnd-action
+        defense — see the action's comment block above).
+      -->
+      <span class="footer-btn-wrap" use:stopDragStart>
+        <Button
+          variant="icon"
+          color="delete"
+          onclick={(e) => { e.stopPropagation(); onDelete(); }}
+          aria-label="Delete task"
+        >
+          <Trash2 size={16} />
+        </Button>
+      </span>
     {/if}
     {#if onArchive}
-      <button
-        type="button"
-        class="archive-btn"
-        use:stopDragStart
-        onclick={(e) => { e.stopPropagation(); onArchive(); }}
-        aria-label="Archive task"
-        title="Archive task"
-      >
-        <Archive size={16} />
-      </button>
+      <span class="footer-btn-wrap" use:stopDragStart>
+        <Button
+          variant="icon"
+          color="archive"
+          onclick={(e) => { e.stopPropagation(); onArchive(); }}
+          aria-label="Archive task"
+          title="Archive task"
+        >
+          <Archive size={16} />
+        </Button>
+      </span>
     {/if}
     {#if onRestore}
-      <button
-        type="button"
-        class="restore-btn"
-        use:stopDragStart
-        onclick={(e) => { e.stopPropagation(); onRestore(); }}
-        aria-label="Restore task"
-        title="Restore to done"
-      >
-        <RotateCcw size={16} />
-      </button>
+      <span class="footer-btn-wrap" use:stopDragStart>
+        <Button
+          variant="icon"
+          color="reopen"
+          onclick={(e) => { e.stopPropagation(); onRestore(); }}
+          aria-label="Restore task"
+          title="Restore to done"
+        >
+          <RotateCcw size={16} />
+        </Button>
+      </span>
     {/if}
   </div>
 </div>
@@ -287,53 +296,13 @@
     opacity: 0.85;
   }
 
-  .delete-btn {
-    background: none;
-    border: none;
-    color: var(--color-gray-600);
-    font-size: var(--font-size-md);
-    cursor: pointer;
-    padding: 0.25rem;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.2s;
-  }
-
-  .delete-btn:hover {
-    color: var(--color-error-600);
-    background-color: var(--color-error-100);
-  }
-
-  .archive-btn {
-    background: none;
-    border: none;
-    color: var(--color-gray-600);
-    font-size: var(--font-size-md);
-    cursor: pointer;
-    padding: 0.25rem;
-    line-height: 1;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.2s;
-  }
-
-  .archive-btn:hover {
-    color: var(--color-success-600, #16a34a);
-    background-color: var(--color-success-100);
-  }
-
-  .restore-btn {
-    background: none;
-    border: 1px solid var(--color-gray-300);
-    color: var(--color-gray-500);
-    font-size: var(--font-size-xs);
-    cursor: pointer;
-    padding: 0.125rem 0.5rem;
-    border-radius: 4px;
-    transition: color 0.2s, background-color 0.2s;
-  }
-
-  .restore-btn:hover {
-    color: var(--color-gray-700);
-    background-color: var(--color-gray-300);
+  /*
+   * `display: contents` wrapper that hosts `use:stopDragStart` for each
+   * footer Button. It produces no visual box, so the swept Buttons sit
+   * directly inside `.task-footer` exactly like the previous bare <button>
+   * elements did.
+   */
+  .footer-btn-wrap {
+    display: contents;
   }
 </style>

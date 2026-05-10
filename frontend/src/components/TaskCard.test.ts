@@ -118,7 +118,7 @@ describe('TaskCard', () => {
     });
     await tick();
 
-    const button = container.querySelector<HTMLButtonElement>('button.restore-btn');
+    const button = container.querySelector<HTMLButtonElement>('button[aria-label="Restore task"]');
     expect(button).toBeTruthy();
 
     await fireEvent.mouseDown(button!);
@@ -218,7 +218,7 @@ describe('TaskCard', () => {
     await tick();
     expect(container.querySelector('button[aria-label="Delete task"]')).toBeTruthy();
     expect(container.querySelector('button[aria-label="Archive task"]')).toBeNull();
-    expect(container.querySelector('button.restore-btn')).toBeNull();
+    expect(container.querySelector('button[aria-label="Restore task"]')).toBeNull();
     unmount1();
 
     const detached = document.createElement('div');
