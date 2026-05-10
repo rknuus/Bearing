@@ -683,22 +683,31 @@ export async function runTests() {
         throw new Error(`Expected 3 prioritize buttons, got ${addButtons.length}`)
       }
 
-      // Verify all buttons have the short label "Prioritize to" followed by a
-      // chevron icon (Lucide ChevronDown SVG, replacing the legacy ⬇ glyph).
+      // Verify all buttons have the short label "Prioritize to <CODE>" followed
+      // by a chevron icon (Lucide ChevronDown SVG, replacing the legacy ⬇
+      // glyph). The priority code (I&U / nI&U / I&nU) is redundant with the
+      // background color so CVD users can distinguish the three buttons.
       const buttonStates = await page.$$eval('.btn-add', els => els.map(el => ({
-        text: el.textContent.trim(),
+        text: el.textContent.replace(/\s+/g, ' ').trim(),
+        code: el.querySelector('strong')?.textContent?.trim() ?? '',
         hasIcon: !!el.querySelector('svg'),
       })))
-      for (const { text, hasIcon } of buttonStates) {
-        if (text !== 'Prioritize to') {
-          throw new Error(`Expected button text "Prioritize to", got "${text}"`)
+      const expectedCodes = ['I&U', 'nI&U', 'I&nU']
+      buttonStates.forEach(({ text, code, hasIcon }, idx) => {
+        const expectedCode = expectedCodes[idx]
+        const expectedText = `Prioritize to ${expectedCode}`
+        if (text !== expectedText) {
+          throw new Error(`Expected button text "${expectedText}", got "${text}"`)
+        }
+        if (code !== expectedCode) {
+          throw new Error(`Expected priority code "${expectedCode}" inside <strong>, got "${code}"`)
         }
         if (!hasIcon) {
           throw new Error('Expected chevron icon (svg) inside Prioritize button')
         }
-      }
+      })
 
-      reporter.pass('Create dialog has 3 prioritize buttons with "Prioritize to" label and chevron icon')
+      reporter.pass('Create dialog has 3 prioritize buttons with "Prioritize to <code>" label and chevron icon')
     } catch (err) {
       reporter.fail(err)
     }

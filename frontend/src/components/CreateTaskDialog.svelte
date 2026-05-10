@@ -14,6 +14,7 @@
   import TaskFormFields from './TaskFormFields.svelte';
   import { Dialog, Button, ErrorBanner, TagEditor } from '../lib/components';
   import { getBindings, extractError } from '../lib/utils/bindings';
+  import { priorityLabels } from '../lib/constants/priorities';
 
   import type { LifeTheme, Task } from '../lib/wails-mock';
 
@@ -367,7 +368,7 @@
             style="background-color: {q.color};"
             onclick={() => handleAddTask(q.id)}
             disabled={isSubmitting || !newTaskTitle.trim()}
-          ><span class="btn-add-label">Prioritize to <ChevronDown size={12} /></span></button>
+          ><span class="btn-add-label">Prioritize to <strong>{priorityLabels[q.id]}</strong> <ChevronDown size={12} /></span></button>
         {/each}
       </div>
     </fieldset>
@@ -480,6 +481,10 @@
     display: inline-flex;
     align-items: center;
     gap: 4px;
+  }
+
+  .btn-add-label strong {
+    font-weight: 700;
   }
 
   .btn-add:hover:not(:disabled) {
