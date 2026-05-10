@@ -166,3 +166,32 @@ body {
 .bg-themed-subtle {
   background-color: color-mix(in srgb, var(--theme-color, var(--default-theme-color)) 10%, white);
 }
+
+/* ==========================================================================
+   Reduced Motion (accessibility)
+   ==========================================================================
+
+   Honor the user's "Reduce Motion" preference. Neutralizes animation and
+   transition durations globally for every element, including pseudo-elements.
+   Transforms are deliberately left untouched because some are positional
+   (e.g. the TaskActionMenu portal uses transform for placement) and must
+   continue to work even when motion is reduced.
+
+   Targeted opt-outs follow this base rule for animations that look broken
+   when frozen at a single keyframe (e.g. a spinner stuck mid-rotation).
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  /* Spinner / pulse animations look broken if they run a single iteration
+     and freeze at an arbitrary angle. Disable them entirely under reduced
+     motion — the visual cue is conveyed through other means (text, etc.). */
+  .spinner,
+  .dot {
+    animation: none !important;
+  }
+}
