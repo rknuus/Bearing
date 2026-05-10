@@ -194,6 +194,41 @@ function diskArchivedTitles(dataDir) {
   return readDiskState(dataDir).archived.map(t => t.title).sort()
 }
 
+/**
+ * Wait until the on-disk task state satisfies `predicate`.
+ *
+ * Closes a real race: `clickArchiveAndWait` (and the inline waitForFunction
+ * in Scenario B) wait for the DOM, which converges via the optimistic UI
+ * update — that update is committed BEFORE the IPC call returns and so
+ * BEFORE the backend's os.Renames + git commit complete. Reading disk
+ * immediately after the DOM wait can therefore race the backend on a
+ * loaded system. Poll the disk state and block until it actually reflects
+ * the expected post-archive shape before asserting on it.
+ *
+ * @param {string} dataDir
+ * @param {(state: {done: Array, archived: Array}) => boolean} predicate
+ * @param {string} description  Used in the timeout error message.
+ * @param {{timeout?: number, pollInterval?: number}} options
+ * @returns the final disk state once predicate is satisfied.
+ */
+async function waitForDiskConvergence(dataDir, predicate, description, options = {}) {
+  const timeout = options.timeout ?? 10000
+  const pollInterval = options.pollInterval ?? 50
+  const start = Date.now()
+  let lastState
+  while (Date.now() - start < timeout) {
+    lastState = readDiskState(dataDir)
+    if (predicate(lastState)) return lastState
+    await new Promise(resolve => setTimeout(resolve, pollInterval))
+  }
+  const doneTitles = lastState ? lastState.done.map(t => t.title) : []
+  const archivedTitles = lastState ? lastState.archived.map(t => t.title) : []
+  throw new Error(
+    `waitForDiskConvergence timeout (${timeout}ms): ${description}. ` +
+    `Last state: done=${JSON.stringify(doneTitles)}, archived=${JSON.stringify(archivedTitles)}`,
+  )
+}
+
 function assertSameSet(actual, expected, label) {
   const a = [...actual].sort()
   const e = [...expected].sort()
@@ -392,9 +427,21 @@ export async function runTests() {
 
     reporter.startTest('All scope: tasks/done is empty of seeded titles and all 4 are under tasks/archived')
     try {
+      const seeded = [TASK_HOME, TASK_WORK, TASK_HOME_WORK, TASK_UNTAGGED]
+      // Wait for the backend's os.Renames + git commit to land before
+      // reading disk — the DOM wait above only synchronises with the
+      // optimistic UI update, not with the IPC call.
+      await waitForDiskConvergence(
+        DATA_DIR,
+        (state) => {
+          const doneTitles = state.done.map(t => t.title)
+          const archivedTitles = state.archived.map(t => t.title)
+          return seeded.every(t => !doneTitles.includes(t) && archivedTitles.includes(t))
+        },
+        'all four seeded done tasks moved from tasks/done/ to tasks/archived/',
+      )
       const done = diskDoneTitles(DATA_DIR)
       const archived = diskArchivedTitles(DATA_DIR)
-      const seeded = [TASK_HOME, TASK_WORK, TASK_HOME_WORK, TASK_UNTAGGED]
       for (const t of seeded) {
         if (done.includes(t)) {
           throw new Error(`Disk: expected "${t}" not under tasks/done/, but it is. tasks/done=${JSON.stringify(done)}`)
@@ -493,6 +540,23 @@ export async function runTests() {
         throw new Error(`Did not expect "${TASK_UNTAGGED}" still on All board's Done column, got ${JSON.stringify(all)}`)
       }
 
+      // Wait for the backend to finish persisting the Untagged archive
+      // before asserting disk state. The earlier DOM wait synchronised
+      // with the optimistic update only.
+      await waitForDiskConvergence(
+        DATA_DIR,
+        (state) => {
+          const doneTitles = state.done.map(t => t.title)
+          const archivedTitles = state.archived.map(t => t.title)
+          return (
+            !doneTitles.includes(TASK_UNTAGGED) &&
+            archivedTitles.includes(TASK_UNTAGGED) &&
+            expectedTagged.every(t => doneTitles.includes(t))
+          )
+        },
+        'TASK_UNTAGGED moved to tasks/archived/ while tagged done tasks remain under tasks/done/',
+      )
+
       // Disk: the three tagged done tasks remain under tasks/done/, the
       // untagged seeded task is under tasks/archived/.
       const done = diskDoneTitles(DATA_DIR)
@@ -575,6 +639,26 @@ export async function runTests() {
 
     reporter.startTest(`Specific tag scope: tasks without "${TAG_HOME}" remain in done (UI + disk)`)
     try {
+      // Wait for the backend to persist the home-scoped archive before
+      // reading disk — DOM wait above synchronises with the optimistic
+      // update only.
+      await waitForDiskConvergence(
+        DATA_DIR,
+        (state) => {
+          const doneTitles = state.done.map(t => t.title)
+          const archivedTitles = state.archived.map(t => t.title)
+          return (
+            archivedTitles.includes(TASK_HOME) &&
+            archivedTitles.includes(TASK_HOME_WORK) &&
+            !doneTitles.includes(TASK_HOME) &&
+            !doneTitles.includes(TASK_HOME_WORK) &&
+            doneTitles.includes(TASK_WORK) &&
+            doneTitles.includes(TASK_UNTAGGED)
+          )
+        },
+        'home-tagged done tasks moved to tasks/archived/ while TASK_WORK and TASK_UNTAGGED remain under tasks/done/',
+      )
+
       // Disk: TASK_HOME and TASK_HOME_WORK now under tasks/archived/;
       // TASK_WORK and TASK_UNTAGGED still under tasks/done/.
       const done = diskDoneTitles(DATA_DIR)
