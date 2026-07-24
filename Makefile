@@ -204,6 +204,11 @@ fmt: ## Format Go code
 	@echo "Formatting Go code..."
 	go fmt ./...
 
+.PHONY: vulncheck
+vulncheck: ## Scan Go module tree for known vulnerabilities (govulncheck)
+	@echo "Running govulncheck..."
+	go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
 # Render macOS app icon from simplified SVG with squircle clipping and Apple HIG padding.
 # Output: 1024x1024 PNG with 824x824 squircle content centered (100px transparent padding).
 #
