@@ -16,6 +16,14 @@ WAILS := go tool github.com/wailsapp/wails/v2/cmd/wails
 # Version can be set via environment variable: make build VERSION=1.0.0
 VERSION ?= dev
 
+# Code-signing identity for `make install-app`. Defaults to ad-hoc ("-"), which
+# is sufficient for running Bearing locally from /Applications on the machine
+# that built it (Gatekeeper trusts locally-built, ad-hoc-signed apps). To
+# produce a distributable/notarizable build, set this to a "Developer ID
+# Application" identity present in your login keychain, e.g.:
+#   make install-app CODESIGN_IDENTITY="Developer ID Application: Jane Doe (ABCDE12345)"
+CODESIGN_IDENTITY ?= -
+
 # Build flags to suppress duplicate library warnings on macOS
 ifeq ($(shell uname),Darwin)
 	BUILD_FLAGS := -ldflags "-X main.version=$(VERSION) -w"
@@ -82,6 +90,26 @@ build: generate frontend-lint build/appicon.png ## Build Wails desktop applicati
 	@rm -rf build/bin/Bearing.app
 	$(WAILS) build -ldflags "-X main.version=$(VERSION)"
 	@echo "Build complete: $(OUTPUT)"
+
+# Build, code-sign, and install Bearing.app into /Applications so it launches
+# from Spotlight/Launchpad like any native app. Ad-hoc signs by default (see
+# CODESIGN_IDENTITY above); pass a Developer ID identity to sign for
+# distribution. `rm -rf` before copy gives the bundle a fresh inode so macOS
+# Icon Services picks up the new icon (same rationale as build/appicon.png).
+# Notarization is intentionally not wired up — this target targets personal,
+# local use. No sudo is needed on a standard single-user admin Mac; if your
+# /Applications is not user-writable, run: sudo make install-app.
+.PHONY: install-app
+install-app: build ## Build, sign, and install Bearing.app into /Applications
+	@echo "Code-signing Bearing.app (identity: $(CODESIGN_IDENTITY))..."
+	codesign --force --deep --sign "$(CODESIGN_IDENTITY)" build/bin/Bearing.app
+	@echo "Verifying signature..."
+	codesign --verify --deep --strict --verbose=2 build/bin/Bearing.app
+	@echo "Installing to /Applications/Bearing.app..."
+	@rm -rf /Applications/Bearing.app
+	cp -R build/bin/Bearing.app /Applications/Bearing.app
+	@echo "Installed: /Applications/Bearing.app"
+	@echo "Launch from Spotlight/Launchpad, or run: open -a Bearing"
 
 .PHONY: build-go
 build-go: ## Build Go binary only (without frontend)
