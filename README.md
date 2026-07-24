@@ -45,6 +45,7 @@ Development:
 
 Build:
   make build              Build Wails desktop application
+  make install-app        Build, sign, and install Bearing.app into /Applications
   make build-go           Build Go binary only (without frontend)
   make clean              Clean build artifacts
 
@@ -89,6 +90,35 @@ make build
 ```
 
 The built application will be in `build/bin/bearing`.
+
+### Install to /Applications
+
+To run Bearing like a normal installed app (launchable from Spotlight/Launchpad):
+
+```bash
+make install-app
+```
+
+This builds `Bearing.app`, code-signs it, and copies it to `/Applications/Bearing.app`.
+
+**Signing.** By default the app is *ad-hoc* signed (`codesign --sign -`), which is sufficient for running Bearing locally on the machine that built it — no Apple Developer account or notarization is required, and macOS Gatekeeper trusts locally-built, ad-hoc-signed apps.
+
+To sign with a real Developer ID (for distributing the app to other Macs), pass an identity from your login keychain:
+
+```bash
+make install-app CODESIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)"
+```
+
+> Distributing to other Macs also requires Apple *notarization* + stapling, which this target does not perform — it only signs. Notarization is out of scope for the local-use workflow.
+
+**Verify the install:**
+
+```bash
+codesign --verify --deep --strict /Applications/Bearing.app   # signature is intact
+spctl -a -vvv /Applications/Bearing.app                        # Gatekeeper assessment
+```
+
+`codesign --verify` succeeds for both ad-hoc and Developer ID signatures. Note that `spctl -a` (the Gatekeeper *assessment*) reports "rejected" for an ad-hoc-signed app because it is not notarized — this is expected and does **not** prevent the app from launching on the machine that built it. A notarized Developer ID build is what makes `spctl` report "accepted".
 
 ## Testing
 
