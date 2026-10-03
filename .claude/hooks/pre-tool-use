@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# theagent2 pre-tool-use hook
+# Invoked by Claude Code on every tool call.
+# Gates the call against the workflow's (phase, role) tool allowlist.
+# The CLI is resolved by theagent2-cli.sh — never a bare `exec theagent2`, which
+# bash resolves against the cwd and which therefore ran the theagent2/ DIRECTORY
+# and killed every hook duty in a container without the CLI installed (#890).
+set -uo pipefail
+lib="$(dirname -- "${BASH_SOURCE[0]}")/theagent2-cli.sh"
+if [ ! -r "$lib" ]; then
+  printf 'theagent2 hook %s: FATAL — missing %s. Run `theagent2 sync` (#890).\n' pre-tool-use "$lib" >&2
+  exit 127
+fi
+# shellcheck source=theagent2-cli.sh
+. "$lib"
+theagent2_hook_exec pre-tool-use "$@"

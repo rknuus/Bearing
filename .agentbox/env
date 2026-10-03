@@ -1,0 +1,5 @@
+# agentbox per-project knobs (AGENTBOX_* keys only) — see 'agentbox help'
+AGENTBOX_IMAGE=agentbox-toolchain:latest
+AGENTBOX_MEM=20g
+AGENTBOX_CPUS=12
+AGENTBOX_PIDS=4096

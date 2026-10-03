@@ -1,0 +1,45 @@
+# The spec of a project's `docs/` tree — ADR-030 §4, shaped by the Diamond
+# Process (ADR-040).
+#
+# `theagent2 init` installs this file as the project's `docs/.structure.yaml`
+# and creates every directory below it (each with a `.gitkeep`), then renders
+# the human-readable `docs/STRUCTURE.md` from it. The yaml is the single
+# original: a project that grows a directory adds it HERE and re-runs
+# `theagent2 init`; `STRUCTURE.md` is regenerated and never hand-edited.
+#
+# `purpose` is one sentence, written for someone opening the tree for the
+# first time. Ids inside a directory (`BP##`, `SIxx.yy`, `CCxx.yy`,
+# `SQxx.yy.zz`) are the `design-artifact-conventions` skill's business, not
+# this file's.
+version: 1
+directories:
+  - path: 00_Design-Book
+    purpose: The generated Design Book (ADR-052) — the front door onto everything below.
+  - path: 01_Planning
+    purpose: Transcripts, interview notes and the charter — what the stakeholders actually said.
+  - path: 02_Business
+    purpose: The business design — what the system does, in the stakeholders' terms.
+  - path: 02_Business/01_Business-Processes
+    purpose: One `BP##_<Name>.md` per business process, with the BPMN diagrams behind it.
+  - path: 02_Business/02_System-Interactions
+    purpose: The use cases — `SIxx.yy_<Name>` markdown and activity diagrams, filed under their BP.
+  - path: 02_Business/03_Sequence-Map
+    purpose: The sequence map — one row per use case, read at the Blueprint gate.
+  - path: 02_Business/05_Business-Map
+    purpose: The business map — the consolidated view of processes, actors and their artifacts.
+  - path: 02_Business/06_Screen-Models
+    purpose: The screen models the mockup and the scaffolder both read.
+  - path: 03_Technology
+    purpose: The system design — how the system is built.
+  - path: 03_Technology/01_System-Design
+    purpose: Components, their contracts, and the decomposition diagrams.
+  - path: 03_Technology/02_Call-Chains
+    purpose: Call chains `CCxx.yy` and sequences `SQxx.yy.zz`, grouped by facet.
+  - path: 03_Technology/02_Spec
+    purpose: The component specifications (ADR-033) settled at the Contract gate.
+  - path: 03_Technology/03_Validation
+    purpose: Validation reports and sequence-diagram reviews.
+  - path: 03_Technology/04_Resources
+    purpose: One protocol sheet per resource seam (ADR-065).
+  - path: 04_Gates
+    purpose: The gate dossiers (ADR-051) — one directory per gate, named for the gate.

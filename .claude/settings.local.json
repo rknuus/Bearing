@@ -1,0 +1,5 @@
+{
+  "env": {
+    "BPMN_DSL": "/home/agent/src/claude-zulli-marketplace/plugins/bpmn-tools/skills/bpmn-dsl/bin/bpmn-dsl.mjs"
+  }
+}
