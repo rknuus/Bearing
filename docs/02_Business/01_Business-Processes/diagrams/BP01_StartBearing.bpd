@@ -1,0 +1,148 @@
+@startbpmn BP01_StartBearing
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "01_detailed/BP01_StartBearing.bpmn"
+output L2 "02_detailed/BP01_StartBearing.bpmn"
+
+' Single source for BOTH detailed levels:
+'   bpmn-dsl build BP01_StartBearing.bpd --outputs
+'
+' Provenance (never in a drawn note, lint rule 5):
+'   - the four folder states and the refusal of a foreign repository: BR-80, ruled 2026-10-06 (QB-30)
+'   - telling the user before any of their data is touched: BR-81
+'   - the starter themes and the skippable two-step wizard: BR-82
+'   - the starter set is Health / Career / Learning / Relationships / Personal: QB-08, answered 2026-10-06
+'   - landing on Focus after completion: BR-48, ruled 2026-10-06 (QB-04)
+'   - no migration from v1; within-v2 migration is a later concern: QB-30
+' The speaking name is the REQUEST in the requester's words, never the system's internal work:
+' the compiler puts "<call-site id> · <speaking name>" on the request arrow and DISCARDS the
+' authored `send` label, so the arrow drawn in the User pool is the only place that name appears
+' to a stakeholder. "Resolve the data folder" is what the system does inside the block; what the
+' user asks for is to start up.
+'
+' The start event names the TRIGGER, not the first act: launching is the first act and the task
+' "Launch Bearing" is where it belongs. A start labelled "Bearing launched" restated it, in the past
+' tense, before it had happened.
+'
+' Scope finding (for the Software Architect): this draws EVERY launch, because three of the four
+' folder states are ordinary returning-user launches. §5 names the process "Start Bearing for the
+' first time" with the trigger "App launch with no usable data folder", which is narrower than its
+' own interaction list. Either the name and trigger widen to "Start Bearing" / "App launch", or
+' states 1-2 move out into a process of their own.
+
+' ===== The user: launches, disambiguates, and walks the wizard =====
+pool "User" {
+  start "Something to plan or do"
+  :Launch Bearing;
+  send "Start up" to bootIn
+  receive "Start-up outcome" as outcome
+
+  if "Versioned by this Bearing, or brought under version control?" then "usable data"
+    goto inUse
+  elseif "A repository Bearing did not create?" then "refused"
+    :Move the folder aside by hand;
+    note "Recovery is a filesystem operation outside Bearing. There is no folder picker and no adoption of a repository Bearing did not create."
+    end "Bearing closed"
+  else "a new, empty data folder"
+    :Read the new-data-folder notice;
+  endif
+
+  if "Was existing data expected at this path?" then "yes — it is lost or elsewhere"
+    :Quit and restore the backup folder;
+    note "The user is the only disambiguator between a first run and lost data. Quitting is safe: the fresh folder is empty and overwrites nothing."
+    end "Bearing closed"
+  else "no — this is a first run"
+    :Continue to onboarding;
+    send "Start onboarding" to seedIn
+  endif
+
+  receive "Starter themes" as themesShown
+  task "Review the starter themes" as review
+  if "Adjust the starter set?" then "yes"
+    :Amend a starter theme;
+    multiInstance
+    note "Edit, remove or add, inline on the onboarding screen. One instance per adjustment."
+    send "Amend the starter set" to amendIn
+    receive "Starter set updated" as amended
+  else "no"
+    :Keep the starter set;
+  endif
+
+  if "State a vision and mission?" then "yes"
+    :Write vision and mission;
+    send "Record vision and mission" to vmIn
+    receive "Vision and mission recorded" as vmDone
+  else "skip — the Themes tab offers it later"
+    :Skip the step;
+  endif
+
+  :Finish onboarding;
+  send "Finish onboarding" to doneIn
+  receive "Bearing ready on Focus" as ready
+  task "Work in Bearing" as inUse
+  end "Bearing in use"
+}
+
+' ===== The system: one chain per request, each a single synchronous call =====
+system pool "Bearing" {
+  messageStart "Start-up requested" as bootIn
+  call "BP01.01_StartUp" "Start up" {
+    :Resolve the conventional data-folder path;
+    :Inspect the data folder;
+    if "Versioned by this Bearing?" rule BR-80 then "this Bearing's data"
+      :Load the data;
+    elseif "Present but not versioned?" rule BR-80 then "unversioned data"
+      :Bring the folder under version control;
+      :Load the newly versioned data;
+    elseif "Versioned by something else?" rule BR-80 then "foreign repository"
+      :Refuse to adopt the folder;
+    else "missing or unreachable"
+      :Create the data folder;
+      :Version-control the new folder;
+    endif
+    :Report the start-up outcome;
+    rule BR-81
+  }
+  send "Start-up outcome" to outcome
+  note "One synchronous call per launch. The four folder states are variations of one operation, not four operations. An unreachable symlink target counts as missing."
+  end "Start-up answered"
+
+  messageStart "Onboarding requested" as seedIn
+  call "BP01.02_StartOnboarding" "Start onboarding" {
+    :Create the starter themes;
+    rule BR-82
+    :Return the starter set;
+  }
+  send "Starter themes" to themesShown
+  note "Health, Career, Learning, Relationships, Personal — five, so the product is never empty."
+
+  end "Starter set returned"
+
+  messageStart "Starter-set amendment requested" as amendIn
+  call "BP01.03_AmendTheStarterSet" "Amend the starter set" {
+    :Apply the amendment;
+    :Return the starter set;
+  }
+  send "Starter set updated" to amended
+  end "Amendment answered"
+
+  messageStart "Vision and mission submitted" as vmIn
+  call "BP01.04_RecordVisionAndMission" "Record vision and mission" {
+    :Store the vision and the mission;
+    :Confirm what was stored;
+  }
+  send "Vision and mission recorded" to vmDone
+  end "Vision and mission answered"
+
+  messageStart "Onboarding finish requested" as doneIn
+  call "BP01.05_CompleteOnboarding" "Complete onboarding" {
+    :Record that onboarding is complete;
+    :Open the Focus tab;
+    rule BR-48
+  }
+  send "Bearing ready on Focus" to ready
+  note "Reached from either wizard step: skipping is the same act as completing, minus what was skipped."
+  end "Onboarding answered"
+}
+
+@endbpmn
