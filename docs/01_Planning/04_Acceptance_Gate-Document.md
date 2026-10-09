@@ -11,6 +11,11 @@
 > That material is captured here in full, because it is of no use to any earlier gate and would be
 > lost otherwise.
 
+**Citations.** Sources are cited inline by prefix and the source document's own heading number —
+`wf §…` (`sources/ui-wireframes.md`, which carries most of this gate's material), `funnel §…`
+(`sources/funnel.md`), `arch §…` (`sources/architecture.md`), `inv` (`sources/ui-inventory.md`, which
+takes no section number). The index's Sources table is the legend.
+
 ---
 
 ## 1. Why so much of the UI sketch lands here
@@ -35,14 +40,14 @@ The one flow the product exists for. Acceptance should walk it end to end, on re
 
 | Step | Criterion |
 |---|---|
-| 1 | **Set the day's focus.** Open the app; land on the default tab; see today's date with its `(Today)` chip; see every selectable grouped under its theme with its colour; select tags and routines; see the selected set in the sticky summary bar. |
+| 1 | **Set the day's focus.** Open the app; land on **Focus** (BR-48); see the current week with its `(This week)` chip and today marked; select today; see every selectable grouped under its theme with its colour; select tags and routines; see the selected set in the sticky summary bar. *(Week is the smallest focus scope and the day is edited from within a period view — Intent BR-93, BR-40.)* |
 | 2 | **Routine tasks appear.** Selecting a routine spawns its task on the Routines board — and the UI receives **one** envelope for the whole gesture, never the partial state between the focus write and the task write (`arch §5 Pivot 4`). |
 | 3 | **Jump to execution.** `[ Open Execution → ]` lands on the most-recently-active tag board for the day, not on `All`; the funnel context header reads `● <Theme> › Goal: <objective> › #<tag>`. |
 | 4 | **Work the board.** Drag a task between sections and between columns; the Eisenhower chip follows it out of Backlog; send it back to Backlog and it lands in its previously-set section. |
 | 5 | **Capture an idea mid-execution** — the opportunistic step. Switch to Ideation, capture an idea with a tag, return; the Execution board is unchanged and the new tag is available in the task-creation picker. |
 | 6 | **Capture tasks in a batch.** Stage several tasks across the three sections; close the dialog; reopen it and find the staged set restored; commit; every task is in Backlog in the section it was staged into. |
 | 7 | **Check out the day.** The completed and in-progress lists match what actually happened; the notes auto-save; archiving the completed tasks and resetting the in-progress ones does what the checkboxes say; re-running the check-out updates the same day log rather than creating a second one. |
-| 8 | **Review goals out of band.** Check in on a numeric KR and on a boolean KR; the history renders in the right vocabulary for each type; the goal row's progress visual matches. |
+| 8 | **Review goals out of band.** Check in on a numeric progress measure and on a boolean one; the history renders in the right vocabulary for each type; the goal row's progress visual matches. |
 
 ### 2.2 Per-business-process acceptance criteria
 
@@ -56,14 +61,14 @@ criterion set here.
 
 | Flow | Criteria |
 |---|---|
-| **First run** | Fresh machine → the data folder is created at the OS-conventional path and git-initialized → the new-data-folder notification appears **before any app content** → `[ Continue ]` leads to onboarding → themes are pre-seeded and editable inline → Vision & Mission is offered and skippable → the app lands on the default tab. |
+| **First run** | Fresh machine → the data folder is created at the OS-conventional path and git-initialized → the new-data-folder notification appears **before any app content** → `[ Continue ]` leads to onboarding → themes are pre-seeded and editable inline → Vision & Mission is offered and skippable → the app lands on **Focus** (BR-48). |
 | **Data loss recovery** | Delete the data folder with the app closed → relaunch → the notification appears → `[ Quit ]` exits cleanly → restore a backup at the same path → relaunch → the restored data loads and **nothing was overwritten**. |
 | **Broken symlink** | Point the data folder at an unmounted volume → relaunch → the same path as data-loss recovery. |
-| **Goal close-out** | Check out a goal with mixed KR outcomes → the auto-inferred labels match the thresholds → an override sticks → the retro and per-KR notes are saved → the goal archives → carry-forward seeds a follow-up with only the Partial and Missed KRs, progress reset, the `"Continue: "` objective, and a back-reference to the check-out. |
+| **Goal close-out** | Check out a goal with mixed measure outcomes → the auto-inferred labels match the thresholds → an override sticks → the retro and per-measure notes are saved → the goal archives → carry-forward seeds a follow-up with only the Partial and Missed measures, progress reset, the `"Continue: "` objective, and a back-reference to the check-out. |
 | **Archive round trip** | Archive an idea, a goal and a task by their three different triggers → each disappears from its active view and appears in its archive view with the right metadata → unarchive each → each returns to the position it would have occupied. |
 | **Cascade** | Delete a theme, an idea, a routine and a column, each with and without cascade → the consequence statement matched what happened → no cascade left an orphan → no declined cascade destroyed anything → the column case rejected rather than detaching. |
 | **Advisor** | Ask a question → thinking indicator → streaming cards → apply one, dismiss one, leave one pending → a revised suggestion for the same target supersedes the older card and only the new one carries buttons → a cross-tab apply commits silently and offers the jump in a toast → disconnect the network and the failure is inline with a working retry. |
-| **Day rollover** | Leave the app open across local midnight → Day mode advances → the new day's routines spawn → the previous day's log is immutable history reachable from the overviews → every relative-time chip re-evaluates. |
+| **Day rollover** | Leave the app open across local midnight → the current day advances → **the day focus in play becomes the new date's and is empty**, so the focused tags are gone and the boards they put in play are gone with them (BR-50, BR-51) → the visible period view re-marks today and an open day editor follows it → **no task was created, none archived, none moved** (BR-44) → the previous day's focus and its log are intact as history, reachable from the overviews → every relative-time chip re-evaluates. |
 
 ---
 
@@ -77,7 +82,7 @@ Each of these is a claim the design makes about itself. Acceptance is where the 
 | A-02 | **The journal is replayable.** | `git checkout <sha>` of an arbitrary earlier commit yields a loadable, coherent state. |
 | A-03 | **Each transaction is one commit and one journal line** — not several. | A multi-write use case (day check-out with N task mutations) produces exactly one commit. |
 | A-04 | **Mutations are atomic under rapid fire.** | Drag tasks and toggle focus selections as fast as the UI allows; no commit is partial, no document is half-written, no version is skipped. |
-| A-05 | **The backend is authoritative.** | Force a divergence; the UI rewrites to the backend's state (never the reverse), logs the detail, and **reports a state-mismatch error to the Planner**. |
+| A-05 | **The backend is authoritative.** | Force a divergence; the UI rewrites to the backend's state (never the reverse), logs the detail, and **reports a state-mismatch error to the user**. |
 | A-06 | **One envelope shape.** | Every mutation response carries `{ version, mutated, invariants_checked }`. |
 | A-07 | **A saga emits one envelope.** | Setting the daily focus produces one client-visible update, not two. |
 | A-08 | **The UI never polls.** | With the app idle, there is no read traffic. |
@@ -122,8 +127,8 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 |---|---|
 | VS-11 | **Focus is returned** after any transient surface closes — to the element that opened it. |
 | VS-12 | **Focus is positioned meaningfully** when a surface opens, per the landing table below. |
-| VS-13 | **Focus persists across non-destructive view changes** — Focus-mode switches, card expand/collapse, section and column folding never reset it. |
-| VS-14 | **Modal dialogs trap Tab** (Shift-Tab cycles backward); the Planner cannot Tab out to the underlying content. **The advisor panel is the explicit exception** — it is non-modal, Tab flows between it and the view, and its internal order is context strip → focus chips → conversation history → card buttons → chat input → Send. |
+| VS-13 | **Focus persists across non-destructive view changes** — focus-scope switches, card expand/collapse, section and column folding never reset it. |
+| VS-14 | **Modal dialogs trap Tab** (Shift-Tab cycles backward); the user cannot Tab out to the underlying content. **The advisor panel is the explicit exception** — it is non-modal, Tab flows between it and the view, and its internal order is context strip → focus chips → conversation history → card buttons → chat input → Send. |
 | VS-15 | **Tab order follows visual order**, top-to-bottom and left-to-right, ending with the secondary then the primary button. Never columns-first. Concrete orders are specified for the editor dialogs, the delete confirmation, both check-outs, the batch task creation (including per-row `⋮⋮` then `[×]`), and the suggestion-card area. |
 | VS-16 | **Esc is the safe-cancel action on every dialog, modal and panel** — dismisses without committing, returns focus to the trigger. The only documented exception is the data-path dialog, which has no Esc route because the app cannot function without a decision (⚠ and which contradicts the new-data-folder dialog's own "Esc closes via `[ × ]`, treated as Continue" — **QA-01**). |
 
@@ -131,11 +136,11 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 
 | Transition | Focus lands on |
 |---|---|
-| App open / first launch | The landing tab's `[ + … ]` button, else its first interactive element |
+| App open / first launch | Focus's first interactive element (BR-48); on first run, onboarding's |
 | Tab switch (click or `⌘1`–`⌘5`) | The tab's `[ + … ]` button when present, else the first interactive element in the content area |
 | Open an editor dialog (Theme / Routine / Idea / Goal / Task / V&M) | The first text input (`Name *` / `Title *`) |
-| Open KR check-in (numeric) | The numeric value field |
-| Open KR check-in (boolean) | The currently-set radio (`Not done` if never set) |
+| Open progress check-in (numeric) | The numeric value field |
+| Open progress check-in (boolean) | The currently-set radio (`Not done` if never set) |
 | Open Goal check-out | The outcome radio, pre-selected to the auto-inferred value |
 | Open Day check-out | The day-notes textarea |
 | Open Task creation | `Title *` |
@@ -144,8 +149,10 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 | Close any dialog or panel | The element that opened it |
 | `[ Show archived <type>… ]` | `[ ← Back to active … ]`; the next Tab reaches the filter input |
 | `[ ← Back to active … ]` | The `[ Show archived <type>… ]` button — closing the loop |
-| Focus-mode switch (Day ↔ Week ↔ Month ↔ Year) | The cell for the currently-visible day, else today |
-| Day-navigator step | Stays on the navigator buttons, so stepping continues |
+| Focus-scope switch (Week ↔ Month ↔ Year) — *source says Day ↔ Week ↔ Month ↔ Year; Day dropped per Intent BR-93* | The cell for the currently-visible day, else today |
+| Open the day focus editor from a period cell | The first selectable of the first theme group |
+| Close the day focus editor | The period cell it was opened from |
+| Period-navigator step | Stays on the navigator buttons, so stepping continues |
 | Card fold / unfold | Stays on the chevron |
 | Ideation sidebar entry click | The first idea card in the filtered pane — Tab continues **into** content, not back into the sidebar |
 | Suggestion `[ Apply ]` or `[ Dismiss ]` | The next pending card's primary action; if none, the chat input |
@@ -158,9 +165,9 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 
 | # | Rule |
 |---|---|
-| VS-17 | The full keymap of `wf §7.4` works and matches the dialog that documents it: `⌘1`–`⌘5` tabs · `⌘N` context-aware create · `⌘E` edit · `⌘⌫` delete · `⌘K` quick search · `?` help · `⌘⇧→/←` move a task between columns · `⌘⇧↑/↓` reorder within a section or column · `1`/`2`/`3` set the Eisenhower section · `[`/`]` fold/unfold · in task creation `⌘1`/`⌘2`/`⌘3` stage, `⌘↩` done, `Esc` close (drafts persist) · in Focus `D`/`W`/`M`/`Y`, `⌘⇧T` jump to the current period, `←`/`→` step · `⌘⇧A` toggle the advisor, `⌘⇧↩` apply all, `⌘⇧⌫` dismiss all · `⌘⇧↑/↓` reorder a theme card. |
+| VS-17 | The full keymap of `wf §7.4` works and matches the dialog that documents it: `⌘1`–`⌘5` tabs · `⌘N` context-aware create · `⌘E` edit · `⌘⌫` delete · `⌘K` quick search · `?` help · `⌘⇧→/←` move a task between columns · `⌘⇧↑/↓` reorder within a section or column · `1`/`2`/`3` set the Eisenhower section · `[`/`]` fold/unfold · in task creation `⌘1`/`⌘2`/`⌘3` stage, `⌘↩` done, `Esc` close (drafts persist) · in Focus `W`/`M`/`Y` switch scope (source also lists `D`; dropped with the day view, Intent BR-93), `⌘⇧T` jump to the current period, `←`/`→` step · `⌘⇧A` toggle the advisor, `⌘⇧↩` apply all, `⌘⇧⌫` dismiss all · `⌘⇧↑/↓` reorder a theme card. |
 | VS-18 | **`?` opens the shortcuts dialog**, and it shows both the Mac and the non-Mac binding. |
-| VS-19 | **Keyboard reorder is everywhere drag is** — `⌘⇧↑`/`⌘⇧↓` on a focused row for themes, routines, ideas, goals, KRs and staged tasks. |
+| VS-19 | **Keyboard reorder is everywhere drag is** — `⌘⇧↑`/`⌘⇧↓` on a focused row for themes, routines, ideas, goals, progress measures and staged tasks. |
 | VS-20 | **Combobox affordances are standard** in the tag picker: `↑`/`↓` walks, `Enter` picks, `Esc` closes without committing. |
 
 ### 4.5 Layout and window
@@ -190,7 +197,7 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 | VS-36 | **Empty Backlog sections stay visible, folded, with `(0)`** — never disappear. Counts render everywhere even at zero, so the structure stays legible. |
 | VS-37 | **Toasts** live bottom-right, do not steal focus, auto-dismiss after ~3 s for success, stay until clicked or actioned for errors, stack to a maximum of 3 (newest on top, a 4th displacing the oldest), and keep per-toast timers and actions. |
 | VS-38 | **Errors live near their source** — inline next to the field, card or button that produced them. Toasts are only for transient acknowledgment. |
-| VS-39 | **Write-triggering buttons disable with a pending indicator** while in flight; **Cancel-equivalents stay active** so the Planner can abort. |
+| VS-39 | **Write-triggering buttons disable with a pending indicator** while in flight; **Cancel-equivalents stay active** so the user can abort. |
 | VS-40 | **Theme colour propagates consistently** to goals, routines, ideas, focus chips, board chips and task priority chips — and the colour dot is leftmost on every row, so scanning by colour works. |
 
 ---
@@ -208,7 +215,7 @@ Recorded so that an absent feature reads as a decision, not a defect.
 | A Settings view, a settings icon, or any in-app preference | `wf §7.2` |
 | Backup/restore UI, import/export between tools, in-app folder picking, in-app "use a different folder" | `wf §7.2`, `wf §7.7` |
 | Routine skip-on-holiday rules, streak goals, reminders, notifications | `funnel §Routines` |
-| Nested goals (parent/child OKRs) and KR roll-up | `funnel §3` |
+| Nested goals (parent/child OKRs) and progress roll-up across them | `funnel §3` |
 | Labels on ideas; boolean search operators anywhere | `wf §3.1`, `wf §7.8` |
 | A fourth Eisenhower quadrant | `funnel §5` |
 | Filters on the Goals tab | `wf §4.1` |
@@ -225,7 +232,7 @@ Recorded so that an absent feature reads as a decision, not a defect.
 | # | Owed |
 |---|---|
 | AC-01 | **The acceptance criteria themselves**, per blessed business process, derived from the approved walkthroughs. Blocked on Intent G-07. |
-| AC-02 | **Who performs acceptance.** The Planner, the stakeholder and the Software Architect are the same person. Acceptance as a distinct act therefore needs a deliberate shape — a ruling, not an assumption (**QA-02**). |
+| AC-02 | **Who performs acceptance.** The user, the stakeholder and the Software Architect are the same person. Acceptance as a distinct act therefore needs a deliberate shape — a ruling, not an assumption (**QA-02**). |
 | AC-03 | **Who performs the visual sampling**, and against what — this document is the brief, but the sampler is an agent whose dispatch is the conducting side's business. |
 | AC-04 | **How the advisor's output quality is judged.** It has no mechanical oracle: a suggestion can be schema-valid, applied successfully, and still bad advice. The product's single most visible surface is the one Acceptance cannot assert on. A sampling protocol is owed (**QA-03**). |
 | AC-05 | **Client-tier E2E** — the OTel trace of every run diffed against the model's sequences, with derived display assertions (ADR-037). Depends on the UI anchors from the Specification stage. |
@@ -239,10 +246,10 @@ Recorded so that an absent feature reads as a decision, not a defect.
 | # | Question | Blocks |
 |---|---|---|
 | QA-01 | **Does the data-path dialog respond to Esc or not?** Guideline #17 names it as the one dialog with no Esc route; `wf §7.7` says Esc closes it via `[ × ]`, treated as Continue. | VS-16, the bootstrap flow |
-| QA-02 | **What shape does acceptance take when the stakeholder, the Planner and the Software Architect are one person?** A separate sitting, a delegate, a written checklist run cold? | AC-02, the gate's conduct |
+| QA-02 | **What shape does acceptance take when the stakeholder, the user and the Software Architect are one person?** A separate sitting, a delegate, a written checklist run cold? | AC-02, the gate's conduct |
 | QA-03 | **How is advisor output quality judged at acceptance**, given that it has no mechanical oracle? | AC-04, the visual sampling brief |
 | QA-04 | **Which platforms must pass acceptance?** Three data-folder conventions are specified; whether all three must be exercised, or one plus a smoke test, is unstated. | A-12, the acceptance environment |
-| QA-05 | **Is there an acceptance criterion for the journal's human usefulness** — can the Planner actually answer "what did I change last Tuesday and why" from git plus the op-log? The two-layer journal is justified by exactly that question, so it is worth testing rather than assuming. | A-01, A-02 |
+| QA-05 | **Is there an acceptance criterion for the journal's human usefulness** — can the user actually answer "what did I change last Tuesday and why" from git plus the op-log? The two-layer journal is justified by exactly that question, so it is worth testing rather than assuming. | A-01, A-02 |
 
 ---
 

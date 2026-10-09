@@ -14,6 +14,11 @@ Contract-grade — exact thresholds, exact error texts, idempotency statements, 
 Classifying it here keeps it out of the Intent gate (where it would over-constrain the business
 review) without losing it.
 
+**Citations.** Sources are cited inline by prefix and the source document's own heading number —
+`funnel §…` (`sources/funnel.md`), `arch §…` (`sources/architecture.md`), `wf §…`
+(`sources/ui-wireframes.md`), `inv` (`sources/ui-inventory.md`, which takes no section number). The
+index's Sources table is the legend.
+
 ---
 
 ## 1. Technology intent on record
@@ -46,16 +51,16 @@ hosting-free (ADR-048 §1).
 | DV-01 | `DV:VersionedDocumentAccess` | Resource **kind** and **product** for the document store | Kind: local versioned document store. Product: **git** today, with jj / fossil / a content-addressed store named as the tomorrow-candidates the Access exists to absorb (`arch §3`) | — |
 | DV-02 | `DV:AdvisorClientAccess` | Resource **kind**, **product**, **protocol** and **transport** for the advisor | None. `arch §12 Q9` enumerates the axes: provider (Anthropic / OpenAI-compatible / local model / mixed), protocol (HTTP / stdio / subprocess bridge), transport (direct SDK / CLI wrapper / compatible endpoint). Earlier "Claude SDK via TS bridge" speculation was **retracted 2026-05-17**; the predecessor's approach is explicitly **not authoritative** | QB-19 (offline tolerance), Q6 (advisor use cases), Q12 (persistence), licence terms, latency budget, future MCP ambitions |
 | DV-03 | `DV:hosting` — topology shape | Single process on one desktop machine; queued Manager-to-Manager calls degenerate to in-process dispatch (~µs) | The contract is identical for a distributed deployment (~ms+); **only the transport changes** (`arch §5 Pivot 4`) | — |
-| DV-04 | `DV:hosting` — target class | Desktop application on macOS, Linux and Windows, each with its own data-folder convention; hard window floor 1024 × 640 | `wf §7.2`, `wf §7.9` | — |
-| DV-05 | `DV:hosting` — cost envelope and operator | Operator is the Planner. The **only** running cost is advisor inference; no envelope is stated anywhere | — | DV-02 |
+| DV-04 | `DV:hosting` — target class | Desktop application on macOS, Linux and Windows, each with its own data-folder convention; minimum window size 1024 × 640, no maximum beyond the display | `wf §7.2`, `wf §7.9` | — |
+| DV-05 | `DV:hosting` — cost envelope and operator | Operator is the user. The **only** running cost is advisor inference; no envelope is stated anywhere | — | DV-02 |
 | DV-06 | `DV:hosting` — shell technology | Unresolved: every shell-level statement in the sources is Go/Wails (inherited from v1) while the stated back end is C#. Either the shell stays Go and the C# backend is hosted behind it, or the Wails-specific statements (`MinSize`, event emission, `os.UserConfigDir()`) are v1 residue to be restated | `wf §7.9`, `wf §7.2`, `arch §4`, `arch §11` | — |
-| DV-07 | `DV:hosting` — partial deployment | The app must be **fully functional offline**; only the advisor degrades, with an inline error and a retry. Needs confirming as a deployment decision, not just a UI state | `wf §7.7` | QB-19 |
+| DV-07 | `DV:hosting` — partial deployment | The app must be **fully functional offline**; only the advisor degrades, with an inline error and a retry. **Confirmed 2026-10-06 (QB-19): offline behaviour follows the configured model** — a local model works offline, an online one does not, and the inline error plus retry is the whole of it. No queuing, no fallback model | `wf §7.7` | QB-19 |
 
 ---
 
 ## 3. Resource Protocol Sheets owed (ADR-059)
 
-**Two sheets, one per ResourceAccess**, authored after the DV rulings and **blessed by a human at this
+**One sheet per ResourceAccess** — how many that is follows from the decomposition, which the Design stage settles — authored after the DV rulings and **blessed by a human at this
 gate** — standing dossier evidence, OPEN when absent. Each is `resource-protocol/1`: resource shape,
 contract-field fates, per-use-case effect allowlist. They live in `docs/03_Technology/04_Resources/`.
 From the Construction stage onward the spec runner enforces the sheet, so the reviewed artifact and
@@ -67,27 +72,42 @@ The document-type registry (Blueprint document §3.3) is the store-seam interfac
 sheet will need on top of it:
 
 - **Resource shape.** A git repository rooted at the OS application-data folder; one JSON document
-  per entity at the registered path; one append-only JSONL file per month for the operation log; a
-  gitignored `.scratch/` subtree for the two draft types.
+  per entity at the registered path; one append-only JSONL file per month for the operation log.
+  **Nothing excluded from version control is reached through this Access** (SA 2026-10-05) — drafts and
+  remembered interface state live behind a different seam (Blueprint §3.3), so they are outside this
+  sheet entirely.
 - **Transaction semantics.** One transaction in flight at a time (or transactional batching); one
   transaction → one atomic file write set + one git commit + one journal line + one version bump
   (`arch §5 Pivot 2`).
-- **Contract-field fates.** The provisional path schemes for `Goal`, `KeyResult`, `KRCheckIn`, `Task`,
+- **Contract-field fates.** The provisional path schemes for `Goal`, `ProgressMeasure`, `ProgressCheckIn`, `Task`,
   `Board` and `DayLog` are explicitly **internal to the Access** (`arch §4`) — the sheet is where
   those fates get settled, and where the claim "changing them does not ripple into Managers, Engines
   or the op-log" becomes a reviewable statement rather than an assertion.
-- **Effect allowlist.** The versioned tier is journaled; the scratch tier is not; the op-log itself is
-  **never double-journaled**.
+- **Effect allowlist.** Every document this Access writes is journaled; the op-log itself is **never
+  double-journaled**. There is no unjournaled write here — that is now the defining line of the seam
+  rather than a tier within it.
 - **Fault taxonomy** (per the `csharp-access-conventions` discipline — the RA holds the one sanctioned
   catch in the system): a concurrency or lock contention is retried then rethrown; a missing document
   is an *answer*, not an exception; a malformed document on disk is a bug; a git failure (dirty tree,
   detached head, no write permission, exhausted disk) needs a stated class — **none of this exists yet**.
-- **Open storage questions to settle in the sheet:** whether KRs and check-ins nest under the goal
+- **Open storage questions to settle in the sheet:** whether measures and check-ins nest under the goal
   folder or live flat; whether tasks group by board / tag / date or stay flat; whether a board keys by
   tag string or by stable id (a tag rename is a file rename if by string — Blueprint F-5); whether day
   logs shard by year.
 
-### 3.2 `AdvisorClientAccess` — blocked
+### 3.2 The non-versioned seam — a requirement without a home yet
+
+Drafts and remembered interface state persist to disk, are **excluded from version control**, and are
+**not reached through `VersionedDocumentAccess`** (SA 2026-10-05). Whichever component ends up owning
+that seam is a Design-stage question (Blueprint F-11), and whether it is a ResourceAccess at all decides
+whether ADR-059 owes it a sheet. Recorded here so the requirement is not lost in the meantime: the
+exclusion from version control is a **guarantee the seam owes**, not a convenience — Intent BR-92
+depends on it — along with no journaling, no participation in the versioned store's transaction,
+last-write-wins semantics, and a fault table in which a missing or unreadable file is an *answer*:
+interface state that cannot be read is simply state the product does not have, and must never fail a
+user action.
+
+### 3.3 `AdvisorClientAccess` — blocked
 
 Nothing can be authored until DV-02 is ruled. What the sheet will have to cover regardless: the wire
 DTOs kept distinct from the contract DTOs; the auth seam; idempotency for any write-shaped call; the
@@ -111,19 +131,19 @@ document's.
 | V-01 | Tag normalization | Lowercase; non-alphanumeric → `-`; hyphens and underscores preserved. (`wf §3.2` states it as "spaces replaced with hyphens, non-alphanumeric *stripped*" — **narrower than `funnel.md`'s "replaced by `-`". Reconcile.**) | `funnel`, `wf §3.2` |
 | V-02 | Tag required | Non-empty. Save disabled while empty. | `wf §3.2` |
 | V-03 | Tag unique | Across **all** ideas, active and archived. Error names the colliding idea. | `funnel`, `wf §3.2` |
-| V-04 | Tag reserved | `{routine, untagged, all}` per `arch §8 UC3`; `{routine}` per the two UI documents. **QB-02.** | `arch §8` |
+| V-04 | Tag reserved | `{routine, untagged, all}` (BR-07, QB-02 answered 2026-10-06) | `arch §8` |
 | V-05 | Validation timing | On **blur** and on **Save attempt** — never on every keystroke. | `wf §3.2` |
 | V-06 | Normalization preview | Shown **only when normalization changes the input**. Informational, not a warning. | `wf §3.2` |
 | V-07 | Goal theme | Required; `[ + Goal ]` with zero themes is intercepted. | `funnel`, `wf §7.6` |
 | V-08 | Routine theme | Required; pre-filled from the parent card, changeable. | `funnel`, `wf §2.3` |
 | V-09 | Theme fields | Name and colour both required. | `wf §2.2` |
-| V-10 | Goal fields | Theme, objective, time horizon and at least one key result required; horizon defaults to the current quarter. | `wf §4.2` |
+| V-10 | Goal fields | Theme, objective and at least one progress measure required; a time horizon is optional (Intent BR-04/BR-31) and defaults to the current quarter when given. | `wf §4.2` |
 | V-11 | Priority required in Backlog | `column.role == Backlog ⇒ priority is required`. | `arch §8 UC2` |
 | V-12 | One Backlog per board | Invariant. | `arch §10` |
 | V-13 | Focus selectables | Ideas must be non-archived; routines must be active. | `arch §8 UC1` |
 | V-14 | Column delete | `cascade=false` ∧ tasks non-empty → reject with `TasksWouldOrphan(count)`. | `arch §8` |
 | V-15 | Vision / Mission | Both optional; saving with both empty is a valid state. | `wf §2.5` |
-| V-16 | `change_priority` suggestion | Rejected at Apply time if the task is no longer in Backlog. | `wf §7.5` |
+| V-16 | `change_priority` proposal | Rejected at Apply time if the task is no longer in Backlog. | `wf §7.5` |
 | V-17 | `modify_idea` with `new_tag` | Runs the full V-01…V-04 path; a collision fails the Apply and leaves the card pending with `⚠ Tag conflict with "<other idea>"`. | `wf §7.5` |
 
 ### 4.2 Thresholds and defaults, verbatim
@@ -140,7 +160,7 @@ document's.
 | Backlog sections | Exactly 3, ordered Important & Urgent · Not Important & Urgent · Important & Not Urgent |
 | Toast stack | Max **3** visible, newest on top; a 4th dismisses the oldest immediately; success auto-dismiss ≈ **3 s**; error-with-retry is sticky but still displaceable; the cap may drop to 2 on short windows |
 | Pre-seeded themes | 3–5: Work / Health / Learning / Relationships / Personal |
-| Window floor | 1024 × 640 px (hard, shell-enforced); comfortable ≈ 1280 × 720; with the advisor ≈ 1600 × 720 |
+| Window floor | **Minimum** 1024 × 640 px (hard, shell-enforced — the window cannot go smaller); **no maximum** beyond the display; comfortable ≈ 1280 × 720; with the advisor ≈ 1600 × 720 |
 | Advisor split min-widths | ≈ 500 px content · ≈ 400 px advisor; the divider cannot pass either floor; below ≈ 1000 px window width, opening the advisor auto-closes the Boards strip's secondary chips |
 | Dialog max-widths | ≈ 720 px typical · ≈ 840 px for the Goal editor, batch Task creation and Goal check-out; full-bleed minus 24 px below 800 px window width |
 | Ideation sidebar | Fixed ≈ 180 px at every window width |
@@ -148,6 +168,7 @@ document's.
 | Focus ring | 2 px solid outline at 2 px offset, `:focus-visible` only, sized to the **hit target**, not the glyph |
 | Hit target | ≥ 44 × 44 px for every interactive control, including inline glyphs |
 | Day rollover | Local midnight, hardcoded |
+| Default landing tab | `Focus` (BR-48); first run opens on onboarding |
 | Default landing board | `All`, unless today has a focus selection → the most-recently-active tag board |
 | Archive view default sort | Archived-date descending |
 | Ideation sort options | Manual (canonical, default) · Recently added · Recently edited · Alphabetical |
@@ -181,15 +202,18 @@ they are where the real logic lives:
 
 1. **Tag normalization** — a pure string function.
 2. **KR auto-infer** — a pure function of (KR type, progress) → label.
-3. **Routine spawn** — a pure function of (date, recurrence, frequency, preferred days, already-spawned
-   set) → tasks to create. **Blocked on QB-10**, which is precisely why it is worth modelling.
+3. **Due / overdue** — a pure function of (date, recurrence, preferred days, the dates the routine was
+   selected on) → due on this date, and overdue if it was due earlier and not selected then (BR-91).
+   The companion rule belongs beside it: selecting a routine ensures **exactly one** outstanding task
+   and creates no second one (BR-42), and the clock creates nothing — neither by recurrence nor at
+   rollover (BR-44).
 4. **Board visibility** — a pure function of (tags with tasks, today's focus, routine tasks in flight,
    orphan tasks) → the boards strip.
 
 ### 4.5 Seed-row candidates
 
 The Intent document's §9 carries a single coherent dataset — themes, ideas with tags, goals with four
-typed KRs and three dated check-ins, four routines with distinct recurrences, a full day of tasks
+typed progress measures and three dated check-ins, four routines with distinct recurrences, a full day of tasks
 across four columns and three sections, a day check-out, a goal check-out with mixed outcomes, and
 three archived goals. It is **business-sourced rather than test-engineer-invented**, which is the
 whole point of ADR-040 §2's capture, but it is **candidate data**: the mockup's outputs are simulated
@@ -205,7 +229,7 @@ fixed and should be read as constraints on the anchor scheme:
 - **Tab-header button order, invariant across all five tabs:** `[ Show archived <type>… ]` ·
   view-mode controls (search, sort) · `[ ✦ Advisor ]` · `[ + … ]`. The advisor button is always
   immediately before the create button when both are present; the create button is always rightmost.
-- **Board strip naming:** `All`, `Routines`, `Untagged` are capitalized; tag boards are lowercase and
+- **Board strip naming:** `All`, `Routines`, `Untagged` are capitalized; tag boards are lowercase and Ideation's theme-less section is **Unthemed**, not “Untagged” (BR-03, QB-21).
   match the tag string exactly.
 - **Abbreviation rule:** `Imp. & Urgent`-style abbreviation is permitted **only** where horizontal
   width forces it (column headers, narrow chips) — never in body prose, button labels or design notes.
@@ -220,16 +244,15 @@ Every failure the sources specify, with its surface and its exact user-facing sh
 |---|---|---|---|
 | E-01 | Tag collision | Idea editor | `⚠ This tag is already used by "<title>".` + *"Pick a different tag — each idea owns a unique tag."* Save disabled. |
 | E-02 | Reserved tag | Idea editor | `⚠ "routine" is reserved — it identifies the Routines board.` + a constructive alternative. Save disabled. |
-| E-03 | Save in flight | Every editor, confirmation, batch creation | Primary button → `[ Saving… ⟳ ]`, disabled; secondary buttons (Cancel, Close) stay **active** so the Planner can abort. |
+| E-03 | Save in flight | Every editor, confirmation, batch creation | Primary button → `[ Saving… ⟳ ]`, disabled; secondary buttons (Cancel, Close) stay **active** so the user can abort. |
 | E-04 | Save failed | Same | Inline, next to the field or button that produced it. Toasts are reserved for transient acknowledgments. |
 | E-05 | Advisor unreachable | Advisor conversation | Inline **in place of the response that did not arrive**: `⚠ Couldn't reach the advisor. Check your connection.` + `[ Retry ]`, which re-sends without re-typing. History stays intact. |
 | E-06 | Apply failed — target gone | Suggestion card | `⚠ Target no longer exists.` The `[ Apply ]` button is **removed**; `[ Dismiss ]` remains. The card stays pending. This is the partial-failure mode `[ Apply all ]` falls back to. |
 | E-07 | Apply failed — tag conflict | Suggestion card | `⚠ Tag conflict with "<other idea>"`; the card stays pending. |
 | E-08 | Apply failed — priority not applicable | Suggestion card | `change_priority` on a task no longer in Backlog is rejected with an inline error. |
-| E-09 | Advisor payload unrecognized type | Advisor conversation | Render the `prose` field as a plain message — **no card, no Apply**. Log for telemetry (**QB-07**). This is the graceful-degradation path that lets the catalog evolve. |
-| E-10 | Advisor payload schema-invalid | Advisor conversation | **Drop the suggestion entirely**; show a discreet toast *"Advisor returned an unparseable suggestion — try rephrasing your question"*. Log for telemetry. |
-| E-11 | Column delete would orphan | Delete confirmation | Reject, surfaced as a **hard error with the cascade prompt highlighted**; the Planner either cascades or cancels. Backend: `TasksWouldOrphan(count)`. |
-| E-12 | Optimistic-UI mismatch | Anywhere | The UI **rewrites to the backend's state**, logs the details for debugging, and **reports a state-mismatch error to the Planner**. |
+| E-09 | Advisor returned a proposal the product cannot act on — an unrecognized `type`, or a recognized one missing required fields | Advisor conversation | **One path for both** (Intent BR-75, SA 2026-10-05): the proposal is **not rendered as a card and not rendered as prose**; the user is told it could not be used. ⚠ This **replaces the sources' two-way split**, which rendered an unrecognized type's `prose` as a plain message and dropped only the schema-invalid case. That split rested on not breaking "older clients" — a rationale that does not apply to a single-user product whose advisor integration ships with it — and in practice gave a hallucinated type a route onto the screen looking like advice. |
+| E-11 | Column delete would orphan | Delete confirmation | Reject, surfaced as a **hard error with the cascade prompt highlighted**; the user either cascades or cancels. Backend: `TasksWouldOrphan(count)`. |
+| E-12 | Optimistic-UI mismatch | Anywhere | The UI **rewrites to the backend's state**, logs the details for debugging, and **reports a state-mismatch error to the user**. |
 | E-13 | Data folder missing or unreachable symlink | App launch, before any content | Create (or replace) the folder, `git init`, then the modal new-data-folder notification with `[ Quit ]` / `[ Continue ]`. No folder picker, no in-app restore. |
 | E-14 | Batch apply, mid-sequence failure | Advisor | **Abort on first failure** — the UI's loop breaks; later suggestions are not attempted. Policy lives in UX code, never in the backend. ⚠ `wf §7.5` also says *"the other cards still apply and the conflicting one stays pending"* — **contradiction, DV/spec ruling owed (QC-01).** |
 
@@ -256,6 +279,12 @@ spec-ready artifact in the whole source set.
 `type` and `target_type` are required for every suggestion. `target_id` is required for every
 `modify_*`, `move_*`, `change_priority`, `archive_*` and `link_*` type, and **null** for `create_*`.
 
+> **A note on the names.** The catalog's keys (`modify_kr`, `add_kr`) and its `target_type` value `kr`
+> carry OKR vocabulary, while the business term settled at Intent is **progress measure** (Intent §3).
+> The keys are a wire contract between the product and the advisor, so renaming them is a Contract-gate
+> decision with a cost (prompt, schema and fallback all move together) — not a vocabulary one. Recorded
+> so the mismatch is a choice rather than an oversight.
+
 ### 6.2 The ten types
 
 | `type` | `target_type` | Required fields | Apply label |
@@ -265,7 +294,7 @@ spec-ready artifact in the whole source set.
 | `modify_objective` | `objective` | `target_id` (the goal), `new_objective` | `Apply → Objective` |
 | `create_goal` | `goal` | `theme_id`, `objective`, `time_horizon`, `key_results[]`; optional `linked_idea_ids[]` | `Apply → New goal: <summary>` |
 | `create_task` | `task` | `tag`, `title`, `description?`, `eisenhower_quadrant` (one of the three valid sections) | `Apply → New task on #<tag>` |
-| `create_routine` | `routine` | `theme_id`, `name`, `recurrence`, `frequency`; optional `preferred_days[]` | `Apply → New routine "<name>"` |
+| `create_routine` | `routine` | `theme_id`, `name`, `recurrence` (`daily`/`weekly`/`monthly`/`yearly` — BR-94, no `custom`), `frequency`; optional `preferred_days[]` | `Apply → New routine "<name>"` |
 | `modify_idea` | `idea` | `target_id` + at least one of `new_title`, `new_notes`, `new_theme_id`, `new_tag` | `Apply → Idea "<title>"` |
 | `link_idea_to_goal` | `goal` | `target_id` (the goal), `idea_id` | `Apply → Link #<tag> to <goal>` |
 | `move_task` | `task` | `target_id`, `new_column` (`backlog`/`to_do`/`in_progress`/`done`); `new_section` only when `new_column = backlog` | `Apply → Move "<title>" to <column>` |
@@ -285,14 +314,16 @@ spec-ready artifact in the whole source set.
 
 `create_idea` (ideation is human territory) · `set_focus_today` (daily focus is an explicit human
 commitment) · every `archive_*` (archive is a conscious gesture) · `set_routine_active`
-(pause/resume is the Planner's call) · bulk operations (out of scope for v1). The advisor may suggest
+(pause/resume is the user's call) · bulk operations (out of scope for v1). The advisor may suggest
 any of these **in prose, without a card**.
 
-### 6.5 Evolution rule
+### 6.5 Growing the catalog
 
-New types ship as new `type` values with their required-field spec; E-09's unrecognized-type fallback
-guarantees that an older client meeting a newer advisor degrades to prose instead of breaking. **This
-is a versioning contract and belongs in the spec layer explicitly**, not only in a design note.
+New types ship as new `type` values with their required-field spec — prompt, schema and the product's
+handling move together, because they are one release. There is **no forward-compatibility mode**: the
+sources' graceful-degradation path for an unrecognized type was removed on 2026-10-05 (Intent BR-75),
+since a single-user product's advisor integration ships with the product, so a type it does not
+recognize is not a newer catalog entry but a malformed answer — and E-09 now treats it as one.
 
 ---
 
@@ -314,9 +345,9 @@ the practical argument for not skipping them.
 | QC-01 | **Batch-apply failure policy contradicts itself** — `arch §5 Pivot 3` says *abort on first failure, later suggestions not attempted*; `wf §7.5` says *the other cards still apply and the conflicting one stays pending*. One of them is the contract. | E-14, the Apply-all spec, the advisor panel |
 | QC-02 | **Tag normalization has two definitions** — "non-alphanumeric **replaced by** `-`" (`funnel`) vs. "spaces replaced with hyphens, non-alphanumeric **stripped**" (`wf §3.2`). These produce different tags for the same input. | V-01, P-01, the reference model |
 | QC-03 | **What is the fault taxonomy of the git seam?** Dirty tree, detached head, no write permission, disk full, a lock held by an external `git` process. Which are answers, which are retried, which are bugs? | the `VersionedDocumentAccess` protocol sheet |
-| QC-04 | **Is the op-log queryable, and at what cost?** `arch §12 Q3` proposes answering "what completed today" from the journal. If so, the Access owns a query surface the registry does not describe. | the protocol sheet, Blueprint F-4 |
+| ~~QC-04~~ | ~~Is the op-log queryable, and at what cost?~~ **ANSWERED 2026-10-06 (QB-23): the question is moot** — the check-out lists read current board state, so nothing queries the journal and the Access needs no query surface. | Blueprint Q3 (dissolved) |
 | QC-05 | **What is the advisor's streaming contract?** The UI renders cards incrementally and enables each card's Apply as it completes. That is a wire-level requirement on `AdvisorClientAccess`. | the `AdvisorClientAccess` protocol sheet, DV-02 |
-| QC-06 | **Is there a telemetry sink at all?** Two failure paths say "log for telemetry" in a product with no operator and no backend. | E-09, E-10, QB-07 |
+| ~~QC-06~~ | ~~Is there a telemetry sink at all?~~ **ANSWERED 2026-10-06 (QB-07): a local log file** — no backend, no operator. The slot the deployment decisions owe is the log's path and rotation, not a sink. | E-09 |
 | QC-07 | **How is a `TaskCreationDraft`'s `{sessionId}` defined, given that drafts must survive app restarts?** | the registry, Blueprint F-10 |
 | QC-08 | **Which shell technology?** See DV-06 — every shell-level statement in the sources is Go/Wails while the back end is stated as C#. | DV-06, the UI anchors, the window floor enforcement |
 
@@ -330,7 +361,7 @@ Per ADR-040's amendments, the Contract gate's agenda is not only the spec layer:
 |---|---|
 | The ADR-033 §7B spec layer | **NOT REACHED** |
 | Suite-strength evidence (ADR-054 Part A) — mutation score, survivor dispositions, fuzz findings | **NOT REACHED** |
-| One blessed Resource Protocol Sheet per ResourceAccess (ADR-059) — 2 expected | **OPEN** (absent) |
+| One blessed Resource Protocol Sheet per ResourceAccess (ADR-059) — count follows the decomposition | **OPEN** (absent) |
 | `deployment_decisions` block with named reviewer and verbatim rulings (ADR-071) | **OPEN** (absent) |
 | Q&A ledger deployment tier `DV:*` — fails **here** only | **OPEN** (7 entries owed, §2) |
 | `construction-entry-check` [S5] | **NOT REACHED** |

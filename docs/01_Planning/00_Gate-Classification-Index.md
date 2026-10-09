@@ -2,7 +2,8 @@
 
 > **What this is.** The Software Architect (who is also Bearing's domain expert and its only
 > stakeholder) sketched Bearing v2 *before* the factory was available. His input therefore does not
-> arrive as interview transcripts but as four authored design documents. This index records how
+> arrive as interview transcripts but as four authored design documents — this project's recordings
+> (QB-01). This index records how
 > every piece of that input was classified across the Diamond Process's four gates (ADR-040 §1,
 > ADR-064 naming), and points at the four gate documents that hold the classified material.
 >
@@ -17,15 +18,28 @@
 | **Contract** | the spec layer (ADR-033 §7B) + deployment decisions (ADR-071) + resource protocol sheets (ADR-059) — the last human review before acceptance | human | [`03_Contract_Gate-Document.md`](03_Contract_Gate-Document.md) |
 | **Acceptance** | the verified system | human (+ ui-designer sampling) | [`04_Acceptance_Gate-Document.md`](04_Acceptance_Gate-Document.md) |
 
+Alongside the four, **[`05_UX-Directives.md`](05_UX-Directives.md)** holds surface decisions the
+Software Architect has already made. It is **not** a gate document and no gate freezes it: the Intent
+gate's rules are about behaviour, the Acceptance gate's brief is about craft, and a decision about
+*which control, where* belongs to neither. It is a holding pen until the screen models exist to absorb
+it.
+
 ## Sources
 
-| Source | Lines | Role |
-|---|---|---|
-| `sources/funnel.md` | 346 | The basic idea of the rewrite — the five-stage funnel, the linking model, the stage semantics |
-| `sources/architecture.md` | 465 | The foreseen IDesign decomposition, the pivots, and 11 parked questions |
-| `sources/ui-inventory.md` | 67 | Hierarchical inventory of UI surfaces at view/dialog level |
-| `sources/ui-wireframes.md` | 2226 | ASCII wireframe + design notes per surface, plus 19 cross-document UX guidelines |
-| `tmp/Bearing-v1/` | — | The predecessor app (Go + Wails + Svelte). Design provenance only; v2 is a separate codebase (wireframes guideline #18). |
+| Source | Cited as | Lines | Role |
+|---|---|---|---|
+| `sources/funnel.md` | `funnel §…` | 346 | The basic idea of the rewrite — the five-stage funnel, the linking model, the stage semantics |
+| `sources/architecture.md` | `arch §…` | 465 | The foreseen IDesign decomposition, the pivots, and 11 parked questions |
+| `sources/ui-inventory.md` | `inv` | 67 | Hierarchical inventory of UI surfaces at view/dialog level |
+| `sources/ui-wireframes.md` | `wf §…` | 2226 | ASCII wireframe + design notes per surface, plus 19 cross-document UX guidelines |
+| `tmp/Bearing-v1/` | — | — | The predecessor app (Go + Wails + Svelte). Design provenance only; v2 is a separate codebase (wireframes guideline #18). |
+
+**Reading a citation.** The four gate documents cite their source inline by the prefix above plus the
+source document's **own heading number** — so `wf §5.1.a` is the wireframes' "Day mode" sub-section,
+`arch §12 Q9` is question 9 in the architecture document's parked-questions table, and
+`funnel §Day rollover` is a heading that carries a name rather than a number. `inv` takes no section
+number: the inventory is one flat list. A citation never points at a line number, so it survives the
+source being edited.
 
 The four paths above are relative to this directory: the sources live in
 `docs/01_Planning/sources/` and are **committed** — they are this project's substitute for the
@@ -148,7 +162,7 @@ is Intent; its *schema* (`type`, `target_id`, required fields per type) is Contr
 
 ## Open questions raised by the classification
 
-The classification surfaced **23 business questions** (`QB-01 … QB-23`, including eight genuine
+The classification surfaced **32 business questions** (`QB-01 … QB-32`, all thirty-two now answered, including eight genuine
 contradictions between the source documents) and re-filed `architecture.md`'s eleven parked questions
 across the gates. They live in:
 

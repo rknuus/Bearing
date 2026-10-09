@@ -9,8 +9,10 @@
 > and re-negotiable once Intent closes.
 
 **Source.** `sources/architecture.md` in its entirety, plus the entity reference fields
-from `sources/funnel.md` and three design-relevant statements from the wireframes. Cited as `arch §…`,
-`funnel §…`, `wf §…`.
+from `sources/funnel.md` and three design-relevant statements from the wireframes. Cited inline by
+prefix and the source document's own heading number — `arch §…` (`sources/architecture.md`),
+`funnel §…` (`sources/funnel.md`), `wf §…` (`sources/ui-wireframes.md`). The index's Sources table is
+the legend.
 
 **Not in the model store.** `Bearing.method/` holds only `project.yaml` and `architecture.yaml` from
 onboarding. Nothing below has been registered via `sns-cli`; no components, contracts, DTOs, use cases
@@ -31,7 +33,7 @@ Not features: constraints that shape every Manager operation and every Access wr
 
 **Neither layer alone is sufficient** — git is opaque about operation intent (you infer from diffs);
 the op-log is opaque about resulting state. Together they constitute the journal, and **the journal is
-load-bearing**: it is the audit trail and the version-controlled history of the Planner's planning.
+load-bearing**: it is the audit trail and the version-controlled history of the user's planning.
 
 **Why not full event sourcing** (`arch §2`): Bearing is state-first by the user's own mental model
 ("my themes", "my focus today"), single-consumer, and git already supplies the temporal dimension.
@@ -45,7 +47,7 @@ do not apply at this scale. The two-layer model buys ~80% of the audit/replay va
   UI's pre-mutation speculation is a *prediction*; the backend's post-mutation state is *canonical*.
   The frontend predicts the expected state and compares it against the canonical state the backend
   returns; on mismatch the UI **rewrites to the backend's state**, logs the details, and reports a
-  state-mismatch error to the Planner. Without this axiom, "reconciliation" has no defined direction.
+  state-mismatch error to the user. Without this axiom, "reconciliation" has no defined direction.
 - **Uniform mutation envelope** — every mutation returns `{ version, mutated: [...entities], invariants_checked: [...] }`.
   One reconciliation routine in the UI; new operations need no new reconciliation code.
 
@@ -84,13 +86,13 @@ IDesign expectation.
 
 | Manager | Owns |
 |---|---|
-| **PlanManager** | Themes, Vision/Mission, Routines, Ideas, Goals, KRs, Focus selection |
+| **PlanManager** | Themes, Vision/Mission, Routines, Ideas, Goals, progress measures, Focus selection |
 | **ExecutionManager** | Tasks, Boards (columns), Day check-out / DayLog |
 | **AdviceManager** | Advice — the suggestion lifecycle `generated → presented → applied / dismissed` — and apply-orchestration |
 
 **Naming rationale** (`arch §4`): `PlanningManager` → **`PlanManager`**, because gerunds are
 activities and belong to Engines; Managers are nouns, and the Plan is the artifact (themes + ideas +
-goals + KRs + routines + focus). `AdvisorManager` → **`AdviceManager`**, managing the *artifact*
+goals + progress measures + routines + focus). `AdvisorManager` → **`AdviceManager`**, managing the *artifact*
 (advice), not the *actor* (advisor) — the same logic. `ExecutionManager` stands, "execution" being a
 deverbal noun of the same class as "production" or "distribution".
 
@@ -114,16 +116,16 @@ recognized as one.
   user-driven today — batch `[ Prioritize to ⬇ ]`, drag-to-section, the `PrioritizeTask` operation.
   The author's own lean is to **drop it** unless a non-human priority producer emerges. A component
   nothing changes is exactly what a Blueprint review is meant to catch.
-- **`RecurrenceEngine`**'s job is unclear (`arch §12 Q2`): selection authority beats recurrence in the
-  focus use case, so the Engine currently fires nowhere. Candidate homes: pre-suggesting today's
-  routines, the coverage views, advisor nudges ("you missed your Wednesday slot"). Its real
-  justification depends on **QB-10** — the routine spawn rule nobody has stated yet.
+- **`RecurrenceEngine`** has a job and a firing point as of 2026-10-06 (**QB-10**): it computes
+  **due** for a date and **overdue** for a routine from the fixed schedule (BR-91), and it is called
+  by the day-selectables read, which marks each routine. It still creates nothing — only selection
+  does (BR-42). Whether that one computation earns an Engine is the open question now (`arch §12 Q2`).
 
 ### 3.3 Resource Access (2) — encapsulate mechanism *and* schema
 
 | Access | Encapsulates |
 |---|---|
-| **VersionedDocumentAccess** | Atomic, transactional read/write of structured documents across two tiers (versioned + scratch). Hides the VCS choice (git today) **and the on-disk schema**. |
+| **VersionedDocumentAccess** | Atomic, transactional read/write of the **version-controlled** documents. Hides the VCS choice (git today) **and the on-disk schema**. ⚠ The sources give it a second, *scratch* tier for unversioned data; the Software Architect ruled on 2026-10-05 that **unversioned data is not reached through this Access** — see §3.3. |
 | **AdvisorClientAccess** | The external advisor service. LLM provider, protocol and transport are **undecided** (`arch §12 Q9` → Contract gate). The Access encapsulates that volatility regardless of the eventual choice. |
 
 **One Access for storage, not one per entity** (`arch §4`). The predecessor had `theme_access.go`,
@@ -131,49 +133,62 @@ recognized as one.
 **one Access encapsulating the storage mechanism and the on-disk schema as a whole**: *"schema is the
 Access's secret."*
 
-#### The two-tier model
+#### The document-type registry, and the seam it does *not* cover
 
 `VersionedDocumentAccess` exposes a uniform `tx.write(doc)` and routes internally by document type
 through a static registry fixed at initialization:
 
 ```
-Theme              → { tier: versioned, journaled: true,  path: "themes/{id}.json" }
-Idea               → { tier: versioned, journaled: true,  path: "ideas/{id}.json" }
-Goal               → { tier: versioned, journaled: true,  path: "goals/{id}.json" }
-KeyResult          → { tier: versioned, journaled: true,  path: "goals/{goalId}/krs/{id}.json" }
-KRCheckIn          → { tier: versioned, journaled: true,  path: "goals/{goalId}/checkins/{ts}.json" }
-Routine            → { tier: versioned, journaled: true,  path: "routines/{id}.json" }
-Task               → { tier: versioned, journaled: true,  path: "tasks/{id}.json" }
-Board              → { tier: versioned, journaled: true,  path: "boards/{tag}.json" }
-DayFocus           → { tier: versioned, journaled: true,  path: "focus/{date}.json" }
-DayLog             → { tier: versioned, journaled: true,  path: "daylogs/{date}.json" }
-OperationLogEntry  → { tier: versioned, journaled: false, path: "journal/{yyyy-mm}/{date}-ops.jsonl", append: true }
-─────────────────────────────────────────────────────────────────────────────────────
-DayLogDraft        → { tier: scratch,   journaled: false, path: ".scratch/daylog-drafts/{date}.json" }
-TaskCreationDraft  → { tier: scratch,   journaled: false, path: ".scratch/task-drafts/{sessionId}.json" }
+Theme              → { journaled: true,  path: "themes/{id}.json" }
+Idea               → { journaled: true,  path: "ideas/{id}.json" }
+Goal               → { journaled: true,  path: "goals/{id}.json" }
+ProgressMeasure    → { journaled: true,  path: "goals/{goalId}/measures/{id}.json" }
+ProgressCheckIn    → { journaled: true,  path: "goals/{goalId}/checkins/{ts}.json" }
+Routine            → { journaled: true,  path: "routines/{id}.json" }
+Task               → { journaled: true,  path: "tasks/{id}.json" }
+Board              → { journaled: true,  path: "boards/{tag}.json" }
+DayFocus           → { journaled: true,  path: "focus/{date}.json" }
+DayLog             → { journaled: true,  path: "daylogs/{date}.json" }
+OperationLogEntry  → { journaled: false, path: "journal/{yyyy-mm}/{date}-ops.jsonl", append: true }
 ```
 
-- **Versioned tier** — git-backed, atomic, journaled. One transaction → one commit + one journal line.
-- **Scratch tier** — gitignored, atomic file writes, not journaled. Survives crashes; does not pollute
-  history.
-- **The Manager is tier-agnostic.** A new document type means defining the schema and registering it;
+- Every document here is git-backed, atomic and journaled. One transaction → one commit + one journal
+  line. ⚠ One tier is **missing**: the advisor conversation is journaled but **not** version-controlled
+  (QB-20, 2026-10-06), so `journaled: true` must become separable from git-backed. **The op-log is never double-journaled** — it *is* the journal.
+- **The Manager is schema-agnostic.** A new document type means defining the schema and registering it;
   the Access handles the routing. This is **data-source resolution by static type lookup, not policy
   synthesis** — the Access decides storage routing, never business outcomes.
-- **The op-log is never double-journaled** — it *is* the journal.
-- **The path schemes for Goal, KeyResult, KRCheckIn, Task, Board and DayLog are illustrative and
-  provisional.** Open storage-organization questions — whether KRs and check-ins nest under the goal
-  folder or live flat; whether tasks group by board / tag / date or stay flat; whether a board keys by
-  tag string (rename = file rename) or by stable id; whether day logs shard by year — are **internal
-  to the Access**. Changing them must not ripple into Managers, Engines or the op-log; that
-  non-rippling *is* the encapsulation claim, and it is testable.
-- **Keep changes minimal** (`arch §4`): a column or section schema holds a **list of task ids**, not
-  the tasks themselves, so reordering within a column writes one small document rather than N.
+- **The path schemes for `Goal`, `ProgressMeasure`, `ProgressCheckIn`, `Task`, `Board` and `DayLog` are
+  illustrative and provisional.** Open storage-organization questions — whether measures and check-ins
+  nest under the goal folder or live flat; whether tasks group by board / tag / date or stay flat;
+  whether a board keys by tag string (rename = file rename) or by stable id; whether day logs shard by
+  year — are **internal to the Access**. Changing them must not ripple into Managers, Engines or the
+  op-log; that non-rippling *is* the encapsulation claim, and it is testable.
+- **Keep changes minimal** (`arch §4`): a column or section schema holds a **list of task ids**, not the
+  tasks themselves, so reordering within a column writes one small document rather than N.
+
+**The unversioned seam is not this Access.** `arch §4` put unversioned data in a second *scratch tier*
+**inside** `VersionedDocumentAccess`, routed by the same registry (`DayLogDraft`, `TaskCreationDraft`,
+both under a gitignored `.scratch/`). The Software Architect ruled on **2026-10-05** that
+**non-version-controlled data is not accessed through `VersionedDocumentAccess`**. That is a structural
+correction, not a detail:
+
+- The data is real and must persist — the two draft types, plus **remembered interface state** (Intent
+  BR-92), whose whole point is to be excluded from version control.
+- So the two-tier model collapses: this Access encapsulates *one* mechanism (a versioned document
+  store), which is what made it a single volatility in the first place. A tier that is explicitly
+  **not** versioned and **not** journaled was a second mechanism wearing the same contract.
+- **Pivot 2 is scoped accordingly** (§4): it governs *version-controlled* state. A draft save and an
+  interface-state write are not journaled, carry no version, and have no business inside a use case's
+  transaction. `arch §8`'s `SaveDayLogDraft` (drawn as a `transact(tx) … commit` against this Access) is
+  drawn wrongly as a result.
+- **Which component owns the unversioned store is a Design-stage question**, not one to settle here.
 
 **Three document types are missing from the registry** and must be added or explained during Design:
 
 | Entity | Where it comes from | Status |
 |---|---|---|
-| `GoalCheckout` | `funnel §Entity reference fields`, `wf §4.4` — an entity with its own id, outcome, per-KR statuses, retro text, and a follow-up back-reference | **not registered** |
+| `GoalCheckout` | `funnel §Entity reference fields`, `wf §4.4` — an entity with its own id, outcome, per-measure statuses, retro text, and a follow-up back-reference | **not registered** |
 | Vision / Mission | `funnel §1`, `wf §2.5` — persistent Markdown prose, presumably a workspace singleton | **not registered** |
 | `Suggestion` / advice | `arch §4` AdviceManager "owns the suggestion lifecycle" | **not registered** — depends on `arch §12 Q12` (persistent vs. ephemeral) |
 
@@ -205,7 +220,8 @@ ad-hoc returns. The UI has one reconciliation routine that swaps mutated entitie
 and bumps the version. Adding operations requires no new reconciliation code.
 
 ### Pivot 2 — Single mutation serialization point
-All state-changing operations funnel through `VersionedDocumentAccess`, which guarantees atomicity
+**All changing operations of version-controlled state** funnel through `VersionedDocumentAccess`,
+which guarantees atomicity
 (one transaction in flight, or transactional batching). **The Manager owns the use case as the
 transaction boundary**: it accumulates writes against a `tx` handle over the course of the use case,
 and the Access commits them as one atomic operation — one git commit, one journal line, one version bump.
@@ -220,7 +236,7 @@ access.transact(ctx, (tx) => {
 
 ### Pivot 3 — The advisor is a Manager peer, not a sidecar
 `AdviceManager` calls `PlanManager` and `ExecutionManager` **through the same operations the UI uses**.
-There is no parallel write path: applying a suggestion is identical to the Planner clicking the same
+There is no parallel write path: applying a suggestion is identical to the user clicking the same
 control. This kills a whole class of "the advisor wrote bad state" bugs and keeps the journal clean.
 
 - **On batch apply.** Each `ApplySuggestion(suggestionId)` is its own use case making one queued
@@ -400,8 +416,10 @@ The Manager accumulates one `DayLog` plus N task mutations **inside one transact
       └─► commit
 ```
 
-Sibling operation — draft auto-save, scratch tier, idempotent (last write wins per date), promoted to
-the versioned `DayLog` on check-out and then cleaned up:
+Sibling operation — draft auto-save, idempotent (last write wins per date), promoted to the versioned
+`DayLog` on check-out and then cleaned up. ⚠ **Drawn wrongly as written:** it runs a
+`VersionedDocumentAccess.transact(tx)`, which the 2026-10-05 ruling forbids for unversioned data (§3.3,
+F-11). The operation stands; its callee does not:
 
 ```
 ExecutionManager.SaveDayLogDraft(date, notesMd)
@@ -438,9 +456,11 @@ ExecutionManager.SaveDayLogDraft(date, notesMd)
 - **Sagas drawn:** S1 (UC1 + UC5)
 - **Single-Manager use cases drawn:** UC2 (three operations), UC3 (assuming **lazy** board creation per
   `arch §12 Q11`), UC4 (+ `SaveDayLogDraft`), `DeleteColumn`
-- **Undrawn use cases that will be sagas:** `DeleteTheme(cascade=true)` (Plan write + Execution task
-  and board deletions) · `DeleteIdea(cascade=true)` (Plan write + board and task deletions) ·
-  `DeleteRoutine(cascade=true)` (Plan write + task deletions) · `ApplyAdvisorSuggestion` — *iff*
+- **Undrawn use cases that will be sagas:** `DeleteTheme` when its **tasks** flag is set (Plan write +
+  Execution task and board deletions — its other two flags stay inside Plan) ·
+  `DeleteIdea(cascade=true)` (Plan write + board and task deletions) ·
+  `DeleteRoutine(cascade=true)` (Plan write + task deletions) · `DeleteGoal` stays single-Manager even
+  with its cascade set, since it reaches only ideas (BR-15) · `ApplyAdvisorSuggestion` — *iff*
   `AdviceManager` has persistent state (`arch §12 Q12`); if suggestions are ephemeral it is a pure
   dispatch.
 
@@ -450,14 +470,24 @@ ExecutionManager.SaveDayLogDraft(date, notesMd)
 journal records cause and effect in lockstep), **idempotent** (N calls ≡ 1 call), and
 **additive-only** (creates what is missing; never deletes for "no longer needed").
 
-**Cascade pattern** — a binary `cascade: bool` **per call**, off by default in the UI. Theme / Idea /
-Routine with `cascade=false` → **detach**; Column with `cascade=false` and non-empty → **reject**
-(the unique case: `task.column` is required, so there is no clean detach state); Goal and Task have no
-cascade option. **No configuration layer** for cascade defaults. ⚠ "Detach" conflicts with the
-required `theme_id` on goals and routines — **C-1 / QB-03**.
+**Cascade pattern** — cascade flags **per call**, every one off by default in the UI, with **no
+configuration layer** for the defaults. The sources' single binary `cascade: bool` no longer fits
+every delete; the business rules set the arity per entity:
+
+| Delete | Cascade flags | `cascade=false` |
+|---|---|---|
+| Theme | **three, independent** — goals-and-routines · ideas · those ideas' tasks (BR-13) | kept ideas lose their theme; **rejected** if goals or routines would be orphaned, since `theme_id` is required (BR-21) |
+| Idea | one — its board and tasks (BR-14) | the idea and its tag go; linked goals survive minus the link |
+| Goal | one — its **linked ideas** (BR-15) | the goal, its measures and its check-in history go; tasks are never reached from a goal |
+| Routine | one — the task occurrences it produced (BR-16) | it stops producing new ones |
+| Column | one (BR-18) | **rejected** when non-empty, since `task.column` is required |
+| Task | none (BR-17) | — |
+
+⚠ Two consequences for the operation signatures: `DeleteTheme` takes **three** booleans, not one,
+and `DeleteGoal` takes one where the sources gave it none (BR-15 overturned them on 2026-10-04).
 
 **Optimistic-UI / authority** — the UI predicts, the backend confirms; on mismatch the UI reverts to
-backend state and reports an error to the Planner.
+backend state and reports an error to the user.
 
 ---
 
@@ -504,8 +534,8 @@ the Design stage's core work. Grouped by owner, the undrawn surface is:
 
 | Manager | Undrawn operation families |
 |---|---|
-| **PlanManager** | Theme CRUD + reorder + delete-with-cascade · Vision/Mission read + write · Routine CRUD + pause/resume + reorder + delete-with-cascade · Idea amend, notes auto-save, re-affiliate, reorder, archive, unarchive, delete-with-cascade · Idea tag validation (the Collision / Reserved query behind `wf §3.2`) · Goal CRUD + reorder + archive + unarchive + delete · KR add/amend/remove/reorder · KR check-in (numeric + boolean) · Goal check-out + carry-forward seeding · Focus clear / copy / set-for-another-date (the UC-family question, `arch §12 Q10`) · Ideation read projections (filter / sort / theme scope / archive view) |
-| **ExecutionManager** | Task amend · Task archive / unarchive / delete · Task-draft stage / amend / reorder / discard / discard-all / commit · Column rename / insert / reorder / role-change / archive-all · Board read projections (boards strip, funnel context header, All-board aggregate) · Day rollover (`arch §12 Q1`) · Archived-tasks view |
+| **PlanManager** | Theme CRUD + reorder + delete-with-cascade · Vision/Mission read + write · Routine CRUD + pause/resume + reorder + delete-with-cascade · Idea amend, notes auto-save, re-affiliate, reorder, archive, unarchive, delete-with-cascade · Idea tag validation (the Collision / Reserved query behind `wf §3.2`) · Goal CRUD + reorder + archive + unarchive + delete · KR add/amend/remove/reorder · KR check-in (numeric + boolean) · Goal check-out + carry-forward seeding · Focus clear / copy / set-for-another-date (the UC-family question, `arch §12 Q10`) · Day rollover (`arch §12 Q1`) — *moved here from ExecutionManager 2026-10-06: rollover advances the current day and the day focus in play, and writes no task (BR-44), so it is focus state, not board state. Final allocation is the Design stage's call* · Ideation read projections (filter / sort / theme scope / archive view) |
+| **ExecutionManager** | Task amend · Task archive / unarchive / delete · Task-draft stage / amend / reorder / discard / discard-all / commit · Column rename / insert / reorder / role-change / archive-all · Board read projections (boards strip, funnel context header, All-board aggregate) · Archived-tasks view |
 | **AdviceManager** | Open conversation with context + selection · Ask · Apply (ten catalog types) · Dismiss · Clear · Supersession bookkeeping (if suggestions persist) |
 | **Cross** | Bootstrap / first-run (`wf §7.2` steps 1–5) · Pre-seed default themes · Onboarding completion |
 
@@ -524,17 +554,17 @@ the gate that actually owns it. The author's own lean is preserved.
 
 | # | Question | Owning gate | Lean / note |
 |---|---|---|---|
-| Q1 | **Day-rollover trigger** — who fires the new-day routine spawn? | **Blueprint** | Client-driven `RolloverDay(date)`, invoked when the client detects a new local day; avoids a backend timer thread. Interacts with BR-44 and with the BPMN's `scheduler pool`. |
-| Q2 | **What is `RecurrenceEngine`'s actual job**, given that selection authority beats recurrence in UC1? | **Blueprint** | Pre-suggesting today's routines; coverage views; advisor nudges. **Blocked on QB-10** (the spawn rule is a business question first). |
-| Q3 | **"Completed today" / "in progress today" predicates** for day check-out, with no timestamp fields on Task | **Blueprint**, then Contract | Read the journal (purer) or add a `lastEnteredAt`-style denormalization (faster). A query-efficiency decision, not a correctness one — but **QB-23** must state the business predicate first. |
+| Q1 | **Day-rollover trigger** — who fires the rollover? *(The original wording asked who fires “the new-day routine spawn”; there is no such spawn — rollover advances the current day and writes no task, BR-44.)* | **Blueprint** | Client-driven `RolloverDay(date)`, invoked when the client detects a new local day; avoids a backend timer thread. Interacts with BR-44 and with the BPMN's `scheduler pool`. What it advances is day-focus state, which is why its operation now sits with **PlanManager** in §10. |
+| Q2 | **What is `RecurrenceEngine`'s actual job?** | **Blueprint** | Settled 2026-10-06 (QB-10): compute due/overdue from the fixed schedule for the day-selectables read (BR-91). What is left is whether one pure computation justifies an Engine. |
+| ~~Q3~~ | ~~“Completed today” / “in progress today” predicates for day check-out, with no timestamp fields on Task~~ | — | **DISSOLVED 2026-10-06 (QB-23)** — both lists are current-state predicates: *in a Done column*, and *past Backlog and not Done*. No journal query, no `lastEnteredAt`, no timestamp field. |
 | Q4 | **`ChangeColumnRole`** — full pseudocode and consequence handling | **Blueprint** | Defer to a board-management use-case pass. |
 | Q6 | **The advisor-apply use case** — exercises queued Manager-to-Manager and the apply-via-same-operations contract | **Blueprint** | Not yet drawn. Gates Q9 and Q12. |
-| Q7 | **Goal check-out + theme cascade** — validates the `GoalCheckout` facet and theme-level cascade | **Blueprint** | Not yet drawn. Will surface **C-1 / QB-03** concretely. |
+| Q7 | **Goal check-out + theme cascade** — validates the `GoalCheckout` facet and theme-level cascade | **Blueprint** | Not yet drawn. The reject-vs-detach question behind it is settled (BR-21). |
 | Q8 | **Is `PrioritizationEngine` justified?** No facets, no callers, no system-driven priority logic | **Blueprint** | Drop unless a non-human priority producer emerges. If priority stays a human decision the Engine is dead weight. |
 | Q9 | **Advisor backend** — provider (Anthropic / OpenAI-compatible / local / mixed), protocol (HTTP / stdio / subprocess bridge), transport (direct SDK / CLI wrapper / compatible endpoint) | **Contract** (ADR-071 `DV:` tier) | No decision made; earlier speculation was retracted 2026-05-17 and the predecessor's approach is not authoritative. Depends on licence terms, the single-machine constraint, offline tolerance (**QB-19**), the latency budget, and whether an MCP server is eventually wanted. `AdvisorClientAccess` encapsulates it regardless. |
 | Q10 | **Is `SetDailyFocus` still a "core" use case, or are UC1 + UC5 too granular?** Both halves feel implementation-shaped rather than user-shaped after the split | **Blueprint** | Park until more focus use cases surface; if variants emerge (set / clear / copy-from-yesterday / set-for-a-future-date / advisor-adjusted), promote to a use-case family. |
 | Q11 | **Board creation: eager (saga) or lazy (materialize on first use)?** | **Blueprint** | Lean **lazy** — symmetric with the funnel's "show when there's something to show", avoids materializing boards for ideas that die, keeps UC3 a clean single-Manager use case. Requires the UI to fall back to default columns for a tag with no board document. |
-| Q12 | **Does `AdviceManager` have persistent state, or are suggestions ephemeral?** | **Blueprint** | Persistence buys audit ("show past suggestions and how I decided") and makes `ApplySuggestion` a saga; ephemeral makes `AdviceManager` a thin dispatcher. Determines what it actually *manages* — and whether a `Suggestion` document type exists at all. Business input in **QB-20**. |
+| Q12 | **Does `AdviceManager` have persistent state?** | **Blueprint** | **Yes** — the conversation is journaled but kept out of version control (QB-20, 2026-10-06). So `ApplySuggestion` is a saga and a `Suggestion` document type exists; what is left is its schema and the git-excluded storage tier it needs, which the registry does not currently have. |
 
 ---
 
@@ -545,16 +575,17 @@ with them in hand rather than rediscovering them.
 
 | # | Finding |
 |---|---|
-| F-1 | **Three entities have no document type** — `GoalCheckout`, Vision/Mission, and `Suggestion` (§3.3). The first two are certain to be persistent; the registry as written cannot store them. |
+| F-1 | **Three entities have no document type** — `GoalCheckout`, Vision/Mission and `Suggestion` (§3.3). All three are persistent — `Suggestion` as of QB-20 — and the registry as written cannot store them. `Suggestion` also needs a tier the registry lacks: **journaled but not version-controlled**. (Remembered interface state is a fourth persistent thing with no home, but after the 2026-10-05 ruling it is not *this* registry's gap — see F-11.) |
 | F-2 | **`PrioritizationEngine` has no caller and no facet** (Q8). A component that nothing changes contradicts volatility-based decomposition. |
-| F-3 | **`RecurrenceEngine` has no firing point** (Q2) and its subject matter — the spawn rule — is not specified anywhere (**QB-10**). An Engine encapsulating an unstated policy cannot be reviewed. |
-| F-4 | **The journal-as-query-source assumption is untested.** Q3 proposes reading the op-log to answer "what completed today". The op-log is append-only JSONL sharded by month; a per-day predicate over it is a scan. The Access would then own a *query* surface over the journal, which the two-tier registry does not describe. |
+| F-3 | **`RecurrenceEngine` is now specified but may be too thin.** Its subject matter is settled — due/overdue from the fixed schedule (BR-91, QB-10) — and its caller is the day-selectables read. The review question flips from “unstated policy” to “one pure function: Engine, or a helper on the Manager?” |
+| ~~F-4~~ | ~~The journal-as-query-source assumption is untested.~~ **WITHDRAWN 2026-10-06** — Q3 dissolved (QB-23): the check-out predicates read current board state, so the Access needs no query surface over the op-log. |
 | F-5 | **`Board` keyed by tag string makes a tag rename a file rename** (§3.3) while `wf §3.2` promises that renaming a tag silently re-keys the board and updates every task's tag. That is a multi-document write inside one transaction, and possibly a saga (Plan write + Execution re-key) — undrawn, and in tension with the "lazy board creation" lean of Q11. |
-| F-6 | **Deletion sagas are named but undrawn** (§7), and all three carry the detach-vs-required-FK contradiction (C-1). They are also the three use cases most likely to need the task/board reach that crosses the Manager boundary. |
+| F-6 | **Deletion sagas are named but undrawn** (§7). C-1 no longer applies — declining a cascade rejects where the child's parent is required (BR-21) — but the sagas must now draw that rejection. They are also the three use cases most likely to need the task/board reach that crosses the Manager boundary. |
 | F-7 | **Reads are under-specified relative to writes.** Pivot 5 names exactly one pull-on-entry query (`GetBoardSummary`); the UI needs read projections for every view (boards strip, funnel context, All-board aggregate, coverage strips, archive views, Ideation filter/sort). "Reads return data + version" is the only stated contract. |
-| F-8 | **The envelope's `invariants_checked` field has no consumer.** Pivot 1 includes it in every mutation response; nothing in the UI contract or the reconciliation routine reads it. Either it is evidence for the Planner-visible error path, or it is ceremony. |
-| F-9 | **The op-log's `actor` field has exactly two possible values** (the Planner, the advisor) in a single-user product — and under Pivot 3 the advisor's writes go through the same operations, so `actor` must be threaded through the queued call to stay meaningful. |
+| F-8 | **The envelope's `invariants_checked` field has no consumer.** Pivot 1 includes it in every mutation response; nothing in the UI contract or the reconciliation routine reads it. Either it is evidence for the user-visible error path, or it is ceremony. |
+| F-9 | **The op-log's `actor` field has exactly two possible values** (the user, the advisor) in a single-user product — and under Pivot 3 the advisor's writes go through the same operations, so `actor` must be threaded through the queued call to stay meaningful. |
 | F-10 | **Draft scoping.** `TaskCreationDraft` keys by `{sessionId}`, but nothing in the design defines a session, and `wf §6.2` promises drafts survive app restarts. A restart-surviving draft keyed by a session id needs the session to be durable — or the key to be something else. |
+| F-11 | **Nothing owns the unversioned store.** Drafts and remembered interface state must persist, must stay out of version control, and are not reached through `VersionedDocumentAccess` (SA 2026-10-05) — so some component owns that seam and none is named. Recorded, not resolved: which one it is is a Design-stage decision. |
 
 ---
 
