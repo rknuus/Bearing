@@ -14,6 +14,13 @@ output L2 "02_detailed/BP01_StartBearing.bpmn"
 '   - the starter set is Health / Career / Learning / Relationships / Personal: QB-08, answered 2026-10-06
 '   - landing on Focus after completion: BR-48, ruled 2026-10-06 (QB-04)
 '   - no migration from v1; within-v2 migration is a later concern: QB-30
+'   - the Chores board is created at the first start-up and never archived or deleted: BR-102
+'   - the wizard is skippable in its entirety, and then nothing is seeded: BR-82
+'   - a user who skips everything can capture ideas and work non-project tasks at once: BR-82
+'   - the remembered interface state is restored on a launch onto usable data: BR-92
+'   - a launch lands on Focus; a first run lands there once onboarding completes: BR-48
+'   - start-up sets the day in play to the current date, from no day rather than a previous one: BR-44, SA 2026-10-10
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
 ' The speaking name is the REQUEST in the requester's words, never the system's internal work:
 ' the compiler puts "<call-site id> · <speaking name>" on the request arrow and DISCARDS the
 ' authored `send` label, so the arrow drawn in the User pool is the only place that name appears
@@ -24,11 +31,10 @@ output L2 "02_detailed/BP01_StartBearing.bpmn"
 ' "Launch Bearing" is where it belongs. A start labelled "Bearing launched" restated it, in the past
 ' tense, before it had happened.
 '
-' Scope finding (for the Software Architect): this draws EVERY launch, because three of the four
-' folder states are ordinary returning-user launches. §5 names the process "Start Bearing for the
-' first time" with the trigger "App launch with no usable data folder", which is narrower than its
-' own interaction list. Either the name and trigger widen to "Start Bearing" / "App launch", or
-' states 1-2 move out into a process of their own.
+' Scope (ruled 2026-10-09): this draws EVERY launch, because three of the four folder states are
+' ordinary returning-user launches. The Software Architect widened the process to match what it
+' draws - name "Start Bearing", trigger "App launch" - rather than splitting states 1-2 into a
+' process of their own. Intent §5 and §6 carry the widened name.
 
 ' ===== The user: launches, disambiguates, and walks the wizard =====
 pool "User" {
@@ -53,23 +59,42 @@ pool "User" {
     end "Bearing closed"
   else "no — this is a first run"
     :Continue to onboarding;
-    send "Start onboarding" to seedIn
   endif
 
-  receive "Starter themes" as themesShown
-  task "Review the starter themes" as review
-  if "Adjust the starter set?" then "yes"
-    :Amend a starter theme;
-    multiInstance
-    note "Edit, remove or add, inline on the onboarding screen. One instance per adjustment."
-    send "Amend the starter set" to amendIn
-    receive "Starter set updated" as amended
-  else "no"
-    :Keep the starter set;
+  if "Set up life areas now?" rule BR-82 then "yes"
+    :Ask for a starter set;
+    send "Seed the starter themes" to seedIn
+    receive "Starter themes" as themesShown
+    task "Review the starter themes" as review
+    if "Adjust the starter set?" then "rename or recolour one"
+      :Amend a starter theme;
+      multiInstance
+      send "Amend a starter theme" to amendIn
+      receive "Starter set updated" as amended
+    elseif "Adjust the starter set?" then "drop one"
+      :Remove a starter theme;
+      multiInstance
+      note "A starter theme has nothing under it yet, so removing one takes nothing with it."
+      send "Remove a starter theme" to removeIn
+      receive "Starter set updated" as removed
+    elseif "Adjust the starter set?" then "add one"
+      :Add a life area of my own;
+      multiInstance
+      send "Add a theme" to addIn
+      receive "Starter set updated" as added
+    else "no"
+      :Keep the starter set;
+    endif
+  else "skip — the Themes tab offers it later"
+    :Skip the themes step;
+    note "Nothing is seeded. The Chores board exists from the first start-up, so ideas and non-project tasks can be worked straight away."
   endif
 
   if "State a vision and mission?" then "yes"
     :Write vision and mission;
+    multiInstance
+    send "Draft the wizard input" to wizDraftIn
+    :Submit the prose;
     send "Record vision and mission" to vmIn
     receive "Vision and mission recorded" as vmDone
   else "skip — the Themes tab offers it later"
@@ -99,32 +124,68 @@ system pool "Bearing" {
     else "missing or unreachable"
       :Create the data folder;
       :Version-control the new folder;
+      :Create the Chores board with its default columns;
+      rule BR-102
+    endif
+    :Set the day in play to the current date;
+    rule BR-44
+    if "Any data loaded?" rule BR-48 then "yes"
+      :Restore the remembered interface state;
+      rule BR-92
+      :Open the Focus tab;
+    else "no"
+      :Leave the landing to onboarding;
     endif
     :Report the start-up outcome;
     rule BR-81
   }
   send "Start-up outcome" to outcome
-  note "One synchronous call per launch. The four folder states are variations of one operation, not four operations. An unreachable symlink target counts as missing."
+  note "One synchronous call per launch. The four folder states are variations of one operation, not four operations. An unreachable symlink target counts as missing. Creating the folder is what brings the Chores board into existence. The day in play is set to the current date here, from no day rather than from a previous one. A launch onto usable data lands on Focus; a first run lands there when onboarding completes."
   end "Start-up answered"
 
-  messageStart "Onboarding requested" as seedIn
-  call "BP01.02_StartOnboarding" "Start onboarding" {
+  messageStart "Starter set requested" as seedIn
+  call "BP01.02_SeedTheStarterThemes" "Seed the starter themes" {
     :Create the starter themes;
     rule BR-82
     :Return the starter set;
   }
   send "Starter themes" to themesShown
-  note "Health, Career, Learning, Relationships, Personal — five, so the product is never empty."
-
+  note "Health, Career, Learning, Relationships, Personal — five, enough to start with. The chain runs only when the user asks for a starter set."
   end "Starter set returned"
 
-  messageStart "Starter-set amendment requested" as amendIn
-  call "BP01.03_AmendTheStarterSet" "Amend the starter set" {
-    :Apply the amendment;
+  messageStart "Starter-theme amendment requested" as amendIn
+  call "BP01.03_AmendAStarterTheme" "Amend a starter theme" {
+    :Apply the name and colour as given;
     :Return the starter set;
   }
   send "Starter set updated" to amended
+  note "Editing, removing and adding are three operations, not three variations of one, so the wizard's inline edits are three call sites."
   end "Amendment answered"
+
+  messageStart "Starter-theme removal requested" as removeIn
+  call "BP01.06_RemoveAStarterTheme" "Remove a starter theme" {
+    :Delete the theme;
+    :Return the starter set;
+  }
+  send "Starter set updated" to removed
+  end "Removal answered"
+
+  messageStart "Theme addition requested" as addIn
+  call "BP01.07_AddATheme" "Add a theme" {
+    :Store the theme with its name and colour;
+    :Place it last in the order;
+    :Return the starter set;
+  }
+  send "Starter set updated" to added
+  end "Addition answered"
+
+  messageStart "Wizard draft submitted" as wizDraftIn
+  call "BP01.08_DraftTheWizardInput" "Draft the wizard input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Wizard draft kept"
 
   messageStart "Vision and mission submitted" as vmIn
   call "BP01.04_RecordVisionAndMission" "Record vision and mission" {

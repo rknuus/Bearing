@@ -1,0 +1,206 @@
+@startbpmn BP12_ManageBoardColumns
+lang en
+
+output L1 "01_detailed/BP12_ManageBoardColumns.bpmn"
+output L2 "02_detailed/BP12_ManageBoardColumns.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a column carries a role and a name, and they are different things: BR-58
+'   - four roles, no neutral escape hatch; the advisor and check-out read the role: BR-58
+'   - one Backlog column and at least one Done column per template: BR-59
+'   - the Backlog role cannot change; a Done role only while another Done remains: BR-60
+'   - the consequences of a legal role change are the user's: BR-60
+'   - columns come from a template, one per project plus Chores's own: BR-108
+'   - the template governs every board of its project with no deviation inside it, so a
+'     write here lands on every one of them at once: BR-108, BR-97
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'   - archiving a whole column's worth of tasks is one of the three archiving acts: BR-23
+'   - declining a column deletion's cascade rejects it rather than detaching: BR-18, BR-21
+'   - an empty column deletes cleanly: BR-18
+'   - the archive is no shield from a deletion: BR-117
+'   - there is no in-app undo: BR-20
+'
+' Scope: this process shapes the lanes. What travels through them is BP11's, and nothing here
+' touches a task's priority or its order.
+'
+' Call-site collapsing: inserting before and inserting after a column are two variations of one
+' request. Configuring a project's template and configuring Chores's own template are likewise
+' one request: the gesture is the same and only the owner differs.
+
+pool "User" {
+  start "The lanes no longer fit the work"
+  task "Open the column settings of a board" as columns
+  send "Read the column template" to templateIn
+  receive "The columns with their roles and what may change" as template
+  note "One template governs every board of a project with no deviation inside it. Chores owns a template of its own, governing that one board."
+
+  if "What needs doing?" then "rename one"
+    :Type a new name;
+    send "Rename a column" to renameIn
+    receive "Column renamed" as renamed
+    note "A name is the user's word for the lane. Renaming never changes what the lane means."
+
+  elseif "What needs doing?" then "add a lane"
+    :Name the new column and pick its role;
+    multiInstance
+    send "Draft the column input" to columnDraftIn
+    :Place it before or after an existing one;
+    send "Insert a column" to insertIn
+    receive "Column inserted" as inserted
+    note "One request inserts before and after alike. The new column carries a role from the outset."
+
+  elseif "What needs doing?" then "reorder them"
+    :Drag a column into place;
+    send "Reorder columns" to reorderIn
+    receive "Order recorded" as reordered
+
+  elseif "What needs doing?" then "change what a lane means"
+    :Pick a column whose role may change;
+    send "Change a column's role" to roleIn
+    receive "Role recorded" as roleSet
+    note "InProgress to Done makes its tasks count as completed, and Done to InProgress unwinds completions that were already counted."
+
+  elseif "What needs doing?" then "clear out a lane"
+    :Archive everything in the column on this board;
+    send "Archive a column's tasks" to archiveIn
+    receive "Tasks archived" as archived
+    note "This is the archiving act that takes a whole column's worth at once, on the board in front of the user. The column itself stays."
+
+  else "remove a lane"
+    :Choose a column to delete;
+    send "See what deleting a column takes" to impactIn
+    receive "What the deletion will take" as impact
+    if "Approve what the deletion takes?" rule BR-18 then "approve"
+      :Confirm the deletion;
+      send "Delete a column" to deleteIn
+      receive "Column deleted" as deleted
+      note "There is no in-app undo. Recovery is from version control."
+    else "abandon"
+      :Abandon the deletion;
+      note "Nothing is deleted and nothing is moved."
+      goto columns
+    endif
+  endif
+
+  if "Anything else about these lanes?" then "yes"
+    goto columns
+  else "no"
+    :Leave the column settings;
+  endif
+
+  end "Lanes fit the work"
+}
+
+system pool "Bearing" {
+  messageStart "Column draft submitted" as columnDraftIn
+  call "BP12.09_DraftTheColumnInput" "Draft the column input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Template requested" as templateIn
+  call "BP12.01_ReadTheColumnTemplate" "Read the column template" {
+    :Read the template that governs the board;
+    rule BR-108
+    :Report how many boards that template governs;
+    rule BR-97
+    :Read each column with its role and its name;
+    rule BR-58
+    :Report which role changes are legal;
+    rule BR-60
+    :Report which columns carry tasks, across every board the template governs;
+  }
+  send "The columns with their roles and what may change" to template
+  note "The Backlog column's role is reported as fixed, and a Done column's as changeable only while another Done column remains. The user is told what may change instead of being refused after the fact. An activity-based project's template governs one board per activity, so the count says how far any change here reaches."
+  end "Template answered"
+
+  messageStart "Rename submitted" as renameIn
+  call "BP12.02_RenameColumn" "Rename a column" {
+    :Apply the name as given;
+    rule BR-58
+  }
+  send "Column renamed" to renamed
+  note "The role is untouched. Day check-out and the advisor read the role, never the name."
+  end "Rename answered"
+
+  messageStart "Insertion submitted" as insertIn
+  call "BP12.03_InsertColumn" "Insert a column" {
+    if "Would the insertion break the invariant?" rule BR-59 then "yes"
+      :Refuse the insertion and say why;
+    else "no"
+      :Place the column at the position the request names;
+      :Store its role and its name;
+      rule BR-58
+    endif
+    :Report the outcome;
+  }
+  send "Column inserted" to inserted
+  note "One Backlog column and at least one Done column, enforced once per template rather than once per board. A second Backlog is refused with its reason. The new lane appears on every board the template governs."
+  end "Insertion answered"
+
+  messageStart "Column reordering requested" as reorderIn
+  call "BP12.04_ReorderColumns" "Reorder columns" {
+    :Record the new left-to-right order in the template;
+  }
+  send "Order recorded" to reordered
+  end "Column reordering answered"
+
+  messageStart "Role submitted" as roleIn
+  call "BP12.05_ChangeColumnRole" "Change a column's role" {
+    if "Is the change within the two limits?" rule BR-60 then "yes"
+      :Record the column's new role;
+      rule BR-58
+      :Recount what the board's Done columns now hold;
+    else "no"
+      :Refuse the change and say why;
+      rule BR-59
+    endif
+    :Report the outcome;
+  }
+  send "Role recorded" to roleSet
+  note "The Backlog role never changes. The last Done column cannot leave the role. Within those limits the consequences are the user's."
+  end "Role answered"
+
+  messageStart "Column archiving requested" as archiveIn
+  call "BP12.06_ArchiveColumnTasks" "Archive a column's tasks" {
+    :Archive every task in the column on the board the user is on;
+    rule BR-23
+    :Leave the column in the template;
+  }
+  send "Tasks archived" to archived
+  note "Archiving is a conscious gesture here as everywhere: no task archives itself. This act reaches the one board the user is on, unlike a change to the template itself."
+  end "Column archiving answered"
+
+  messageStart "Deletion impact requested" as impactIn
+  call "BP12.07_ReadTheColumnDeletionImpact" "See what deleting a column takes" {
+    :Collect the tasks in that column on every board the template governs;
+    rule BR-108
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the deletion will take, board by board;
+    rule BR-18
+  }
+  send "What the deletion will take" to impact
+  note "A task cannot be left without a column, so the cascade is approve-or-abandon and detaching is not offered. Deleting a lane deletes it on every board the template governs, so the disclosure counts all of them. A column empty everywhere has nothing to disclose and deletes cleanly."
+  end "Impact answered"
+
+  messageStart "Column deletion requested" as deleteIn
+  call "BP12.08_DeleteColumn" "Delete a column" {
+    if "Is the column one the invariant protects?" rule BR-59 then "yes"
+      :Refuse the deletion and say why;
+    else "no"
+      :Delete the tasks it held on every board the template governs;
+      rule BR-18
+      :Delete the column from the template;
+      rule BR-108
+    endif
+    :Report the outcome;
+  }
+  send "Column deleted" to deleted
+  note "The Backlog column and the last Done column are refused with their reason, for the same reason their roles cannot change."
+  end "Column deletion answered"
+}
+
+@endbpmn

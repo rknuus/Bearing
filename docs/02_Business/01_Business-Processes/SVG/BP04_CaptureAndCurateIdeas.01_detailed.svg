@@ -1,0 +1,613 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3328" height="2849" viewBox="0 0 3328 2849">
+<rect width="3328" height="2849" fill="#fff"/>
+<rect x="24" y="206" width="3280" height="1220" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="206" x2="54" y2="1426" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="820.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 816)">User</text>
+<rect x="24" y="1466" width="3280" height="980" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1466" x2="54" y2="2446" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1960.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1956)">Bearing</text>
+<polyline points="152,326 254,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 326 L 246 329.36 L 246 322.64 Z" fill="#000"/>
+<polyline points="354,326 796,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 326 L 788 329.36 L 788 322.64 Z" fill="#000"/>
+<polyline points="832,326 959,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 326 L 951 329.36 L 951 322.64 Z" fill="#000"/>
+<polyline points="1204,326 1476,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 326 L 1468 329.36 L 1468 322.64 Z" fill="#000"/>
+<polyline points="1009,326 1104,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 326 L 1096 329.36 L 1096 322.64 Z" fill="#000"/>
+<polyline points="1204,446 1306,446" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 446 L 1298 449.36 L 1298 442.64 Z" fill="#000"/>
+<polyline points="1009,326 1039,326 1039,446 1104,446" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 446 L 1096 449.36 L 1096 442.64 Z" fill="#000"/>
+<polyline points="1204,566 1274,566" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 566 L 1266 569.36 L 1266 562.64 Z" fill="#000"/>
+<polyline points="1374,566 1646,566" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 566 L 1638 569.36 L 1638 562.64 Z" fill="#000"/>
+<polyline points="1009,326 1039,326 1039,566 1104,566" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 566 L 1096 569.36 L 1096 562.64 Z" fill="#000"/>
+<polyline points="1009,326 1039,326 1039,686 1104,686" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 686 L 1096 689.36 L 1096 682.64 Z" fill="#000"/>
+<polyline points="1204,806 1306,806" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 806 L 1298 809.36 L 1298 802.64 Z" fill="#000"/>
+<polyline points="1009,326 1039,326 1039,806 1104,806" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 806 L 1096 809.36 L 1096 802.64 Z" fill="#000"/>
+<polyline points="1204,926 1816,926" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1816 926 L 1808 929.36 L 1808 922.64 Z" fill="#000"/>
+<polyline points="1852,926 1979,926" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1979 926 L 1971 929.36 L 1971 922.64 Z" fill="#000"/>
+<polyline points="2224,926 2666,926" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2666 926 L 2658 929.36 L 2658 922.64 Z" fill="#000"/>
+<polyline points="2029,926 2124,926" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 926 L 2116 929.36 L 2116 922.64 Z" fill="#000"/>
+<polyline points="2029,926 2059,926 2059,1046 2124,1046" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 1046 L 2116 1049.36 L 2116 1042.64 Z" fill="#000"/>
+<polyline points="1009,326 1039,326 1039,926 1104,926" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 926 L 1096 929.36 L 1096 922.64 Z" fill="#000"/>
+<polyline points="1204,1046 1816,1046" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1816 1046 L 1808 1049.36 L 1808 1042.64 Z" fill="#000"/>
+<polyline points="1852,1046 1979,1046" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1979 1046 L 1971 1049.36 L 1971 1042.64 Z" fill="#000"/>
+<polyline points="2224,1166 2666,1166" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2666 1166 L 2658 1169.36 L 2658 1162.64 Z" fill="#000"/>
+<polyline points="2029,1046 2059,1046 2059,1166 2124,1166" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 1166 L 2116 1169.36 L 2116 1162.64 Z" fill="#000"/>
+<polyline points="2029,1046 2059,1046 2059,1286 2124,1286" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 1286 L 2116 1289.36 L 2116 1282.64 Z" fill="#000"/>
+<polyline points="1009,326 1039,326 1039,1046 1104,1046" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 1046 L 1096 1049.36 L 1096 1042.64 Z" fill="#000"/>
+<polyline points="1512,326 2829,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2829 326 L 2821 329.36 L 2821 322.64 Z" fill="#000"/>
+<polyline points="1342,446 1409,446 1409,291 2854,291 2854,301" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2854 301 L 2850.64 293 L 2857.36 293 Z" fill="#000"/>
+<polyline points="1682,566 1919,566 1919,266 2854,266 2854,301" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2854 301 L 2850.64 293 L 2857.36 293 Z" fill="#000"/>
+<polyline points="1342,806 1409,806 1409,291 2854,291 2854,301" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2854 301 L 2850.64 293 L 2857.36 293 Z" fill="#000"/>
+<polyline points="2702,926 2732,926 2732,326 2829,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2829 326 L 2821 329.36 L 2821 322.64 Z" fill="#000"/>
+<polyline points="2702,1166 2939,1166 2939,266 2854,266 2854,301" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2854 301 L 2850.64 293 L 2857.36 293 Z" fill="#000"/>
+<polyline points="2879,326 2974,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2974 326 L 2966 329.36 L 2966 322.64 Z" fill="#000"/>
+<polyline points="3074,326 3176,326" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3176 326 L 3168 329.36 L 3168 322.64 Z" fill="#000"/>
+<polyline points="1204,686 1239,686 1239,277 304,277 304,286" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 304 286 L 300.64 278 L 307.36 278 Z" fill="#000"/>
+<polyline points="2224,1046 2259,1046 2259,879 304,879 304,366" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 304 366 L 307.36 374 L 300.64 374 Z" fill="#000"/>
+<polyline points="2224,1286 2259,1286 2259,879 304,879 304,366" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 304 366 L 307.36 374 L 300.64 374 Z" fill="#000"/>
+<polyline points="2879,326 2939,326 2939,399 304,399 304,366" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 304 366 L 307.36 374 L 300.64 374 Z" fill="#000"/>
+<polyline points="524,1586 594,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1586 L 586 1589.36 L 586 1582.64 Z" fill="#000"/>
+<polyline points="694,1586 764,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1586 L 756 1589.36 L 756 1582.64 Z" fill="#000"/>
+<polyline points="322,1586 424,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 1586 L 416 1589.36 L 416 1582.64 Z" fill="#000"/>
+<polyline points="864,1586 966,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1586 L 958 1589.36 L 958 1582.64 Z" fill="#000"/>
+<polyline points="1374,1586 1444,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 1586 L 1436 1589.36 L 1436 1582.64 Z" fill="#000"/>
+<polyline points="1172,1586 1274,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1586 L 1266 1589.36 L 1266 1582.64 Z" fill="#000"/>
+<polyline points="1544,1586 1646,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1586 L 1638 1589.36 L 1638 1582.64 Z" fill="#000"/>
+<polyline points="1172,1706 1274,1706" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1706 L 1266 1709.36 L 1266 1702.64 Z" fill="#000"/>
+<polyline points="1374,1706 1476,1706" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 1706 L 1468 1709.36 L 1468 1702.64 Z" fill="#000"/>
+<polyline points="1374,1826 1444,1826" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 1826 L 1436 1829.36 L 1436 1822.64 Z" fill="#000"/>
+<polyline points="1172,1826 1274,1826" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1826 L 1266 1829.36 L 1266 1822.64 Z" fill="#000"/>
+<polyline points="1544,1826 1646,1826" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1826 L 1638 1829.36 L 1638 1822.64 Z" fill="#000"/>
+<polyline points="1544,1946 1614,1946" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 1946 L 1606 1949.36 L 1606 1942.64 Z" fill="#000"/>
+<polyline points="1342,1946 1444,1946" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 1946 L 1436 1949.36 L 1436 1942.64 Z" fill="#000"/>
+<polyline points="1714,1946 1816,1946" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1816 1946 L 1808 1949.36 L 1808 1942.64 Z" fill="#000"/>
+<polyline points="1172,1946 1202,1946 1202,2066 1274,2066" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 2066 L 1266 2069.36 L 1266 2062.64 Z" fill="#000"/>
+<polyline points="1374,2066 1476,2066" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 2066 L 1468 2069.36 L 1468 2062.64 Z" fill="#000"/>
+<polyline points="1374,2186 1444,2186" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 2186 L 1436 2189.36 L 1436 2182.64 Z" fill="#000"/>
+<polyline points="1544,2186 1614,2186" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 2186 L 1606 2189.36 L 1606 2182.64 Z" fill="#000"/>
+<polyline points="1714,2186 1784,2186" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 2186 L 1776 2189.36 L 1776 2182.64 Z" fill="#000"/>
+<polyline points="1172,2066 1202,2066 1202,2186 1274,2186" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 2186 L 1266 2189.36 L 1266 2182.64 Z" fill="#000"/>
+<polyline points="1884,2186 1986,2186" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1986 2186 L 1978 2189.36 L 1978 2182.64 Z" fill="#000"/>
+<polyline points="2394,1586 2464,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2464 1586 L 2456 1589.36 L 2456 1582.64 Z" fill="#000"/>
+<polyline points="2564,1586 2634,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2634 1586 L 2626 1589.36 L 2626 1582.64 Z" fill="#000"/>
+<polyline points="2192,1586 2294,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2294 1586 L 2286 1589.36 L 2286 1582.64 Z" fill="#000"/>
+<polyline points="2734,1586 2836,1586" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2836 1586 L 2828 1589.36 L 2828 1582.64 Z" fill="#000"/>
+<polyline points="1374,2306 1444,2306" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 2306 L 1436 2309.36 L 1436 2302.64 Z" fill="#000"/>
+<polyline points="1544,2306 1614,2306" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 2306 L 1606 2309.36 L 1606 2302.64 Z" fill="#000"/>
+<polyline points="1714,2306 1784,2306" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 2306 L 1776 2309.36 L 1776 2302.64 Z" fill="#000"/>
+<polyline points="1172,2186 1202,2186 1202,2306 1274,2306" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 2306 L 1266 2309.36 L 1266 2302.64 Z" fill="#000"/>
+<polyline points="1884,2306 1986,2306" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1986 2306 L 1978 2309.36 L 1978 2302.64 Z" fill="#000"/>
+<polyline points="2394,1706 2464,1706" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2464 1706 L 2456 1709.36 L 2456 1702.64 Z" fill="#000"/>
+<polyline points="2564,1706 2634,1706" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2634 1706 L 2626 1709.36 L 2626 1702.64 Z" fill="#000"/>
+<polyline points="2192,1706 2294,1706" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2294 1706 L 2286 1709.36 L 2286 1702.64 Z" fill="#000"/>
+<polyline points="2734,1706 2836,1706" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2836 1706 L 2828 1709.36 L 2828 1702.64 Z" fill="#000"/>
+<polyline points="304,366 304,1568" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 307.78 1559 L 304 1568 L 300.22 1559" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="304" cy="366" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1144,366 1144,378 1229,378 1229,1556 1144,1556 1144,1568" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1147.78 1559 L 1144 1568 L 1140.22 1559" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1144" cy="366" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1144,486 1144,498 1229,498 1229,1676 1144,1676 1144,1688" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1147.78 1679 L 1144 1688 L 1140.22 1679" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1144" cy="486" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1149,606 1149,618 1234,618 1234,1796 1149,1796 1149,1808" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1152.78 1799 L 1149 1808 L 1145.22 1799" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1149" cy="606" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1324,606 1324,618 1409,618 1409,1916 1324,1916 1324,1928" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1327.78 1919 L 1324 1928 L 1320.22 1919" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="606" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1159,846 1159,858 1244,858 1244,1916 1159,1916 1159,1928" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1162.78 1919 L 1159 1928 L 1155.22 1919" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1159" cy="846" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1164,966 1164,978 1249,978 1249,2036 1164,2036 1164,2048" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1167.78 2039 L 1164 2048 L 1160.22 2039" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1164" cy="966" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2169,966 2169,978 2254,978 2254,1556 2169,1556 2169,1568" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2172.78 1559 L 2169 1568 L 2165.22 1559" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2169" cy="966" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1164,1086 1164,1098 1249,1098 1249,2156 1164,2156 1164,2168" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1167.78 2159 L 1164 2168 L 1160.22 2159" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1164" cy="1086" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2179,1206 2179,1218 2264,1218 2264,1676 2179,1676 2179,1688" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2182.78 1679 L 2179 1688 L 2175.22 1679" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2179" cy="1206" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,1546 814,344" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 810.22 353 L 814 344 L 817.78 353" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="1546" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,1546 1494,344" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1490.22 353 L 1494 344 L 1497.78 353" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="1546" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1314,1666 1314,1654 1399,1654 1399,476 1314,476 1314,464" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1310.22 473 L 1314 464 L 1317.78 473" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1314" cy="1666" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1664,1906 1664,1894 1749,1894 1749,596 1664,596 1664,584" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1660.22 593 L 1664 584 L 1667.78 593" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1664" cy="1906" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1334,2026 1334,2014 1419,2014 1419,836 1334,836 1334,824" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1330.22 833 L 1334 824 L 1337.78 833" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1334" cy="2026" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1829,2146 1829,2134 1914,2134 1914,956 1829,956 1829,944" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1825.22 953 L 1829 944 L 1832.78 953" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1829" cy="2146" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2679,1546 2679,1534 2934,1534 2934,956 2679,956 2679,944" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2675.22 953 L 2679 944 L 2682.78 953" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2679" cy="1546" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1839,2266 1839,2254 1924,2254 1924,1076 1839,1076 1839,1064" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1835.22 1073 L 1839 1064 L 1842.78 1073" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1839" cy="2266" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2689,1666 2689,1654 2774,1654 2774,1196 2689,1196 2689,1184" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2685.22 1193 L 2689 1184 L 2692.78 1193" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2689" cy="1666" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1154,526 1154,516 1094,516 1094,274" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,646 1154,636 1024,636 1024,163 1034,163" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,428 1324,128" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,788 1324,756 1024,756 1024,47 1204,47" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,308 1494,288" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1664,548 1664,528" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2174,1006 2174,996 2114,996 2114,874" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2174,1246 2174,1236 2044,1236 2044,796 2054,796" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2684,1148 2684,1128" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="474,1626 474,1646" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1626 1324,1636 1264,1636 1264,2358" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1746 1324,1756 1194,1756 1194,2436 1204,2436" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1866 1324,1876 1194,1876 1194,2538 1204,2538" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,2226 1324,2236 1194,2236 1194,2649 1204,2649" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,2346 1194,2346 1194,2722 1204,2722" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,1986 1494,1996 1554,1996 1554,2764" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2344,1626 2344,1636 2284,1636 2284,1758" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2344,1746 2214,1746 2214,1839 2224,1839" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="326" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="358" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">An idea worth</text>
+<text x="92" y="368.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">keeping, or a list</text>
+<text x="92" y="379.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">worth tidying</text>
+<rect x="254" y="286" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="322.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open the Ideation</text>
+<text x="304" y="334.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">tab</text>
+<circle cx="814" cy="326" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="326" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="320.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 320.06 L 814 326 L 823 320.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="358" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Ideas, filtered and</text>
+<text x="772" y="368.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">sorted</text>
+<path d="M 984 301 L 1009 326 L 984 351 L 959 326 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 315.5 L 994.5 336.5 M 973.5 336.5 L 994.5 315.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="365" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="1104" y="286" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="328.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Write the idea down</text>
+<circle cx="1494" cy="326" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="326" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="320.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 320.06 L 1494 326 L 1503 320.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="358" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea captured</text>
+<rect x="1104" y="406" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="448.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Amend the idea</text>
+<circle cx="1324" cy="446" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="446" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="440.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 440.06 L 1324 446 L 1333 440.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="478" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea amended</text>
+<rect x="1104" y="526" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="1149.5" y1="589" x2="1158.5" y2="589" stroke="#000" stroke-width="1.4"/>
+<line x1="1149.5" y1="592" x2="1158.5" y2="592" stroke="#000" stroke-width="1.4"/>
+<line x1="1149.5" y1="595" x2="1158.5" y2="595" stroke="#000" stroke-width="1.4"/>
+<text x="1154" y="562.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Write into the idea</text>
+<text x="1154" y="574.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">notes</text>
+<rect x="1274" y="526" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="562.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the notes</text>
+<text x="1324" y="574.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">editor</text>
+<circle cx="1664" cy="566" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1664" cy="566" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1655" y="560.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1655 560.06 L 1664 566 L 1673 560.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1622" y="598" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Notes committed</text>
+<rect x="1104" y="646" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="682.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Change the filter or</text>
+<text x="1154" y="694.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the ordering in force</text>
+<rect x="1104" y="766" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="802.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Drag an idea into</text>
+<text x="1154" y="814.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">place</text>
+<circle cx="1324" cy="806" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="806" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="800.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 800.06 L 1324 806 L 1333 800.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="838" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Order recorded</text>
+<rect x="1104" y="886" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="922.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Choose an idea to</text>
+<text x="1154" y="934.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archive</text>
+<circle cx="1834" cy="926" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1834" cy="926" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1825" y="920.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1825 920.06 L 1834 926 L 1843 920.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1792" y="958" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the archiving</text>
+<text x="1792" y="968.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 2004 901 L 2029 926 L 2004 951 L 1979 926 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1993.5 915.5 L 2014.5 936.5 M 1993.5 936.5 L 2014.5 915.5" stroke="#000" stroke-width="1"/>
+<text x="1962" y="965" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="1962" y="975.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">archiving takes?</text>
+<rect x="2124" y="886" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2174" y="922.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the</text>
+<text x="2174" y="934.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archiving</text>
+<circle cx="2684" cy="926" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="2684" cy="926" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="2675" y="920.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2675 920.06 L 2684 926 L 2693 920.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2642" y="958" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea archived</text>
+<rect x="2124" y="1006" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2174" y="1042.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Abandon the</text>
+<text x="2174" y="1054.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archiving</text>
+<rect x="1104" y="1006" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="1042.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Choose an idea to</text>
+<text x="1154" y="1054.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">delete</text>
+<circle cx="1834" cy="1046" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1834" cy="1046" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1825" y="1040.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1825 1040.06 L 1834 1046 L 1843 1040.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1792" y="1078" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the deletion</text>
+<text x="1792" y="1088.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 2004 1021 L 2029 1046 L 2004 1071 L 1979 1046 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1993.5 1035.5 L 2014.5 1056.5 M 1993.5 1056.5 L 2014.5 1035.5" stroke="#000" stroke-width="1"/>
+<text x="1962" y="1085" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="1962" y="1095.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">deletion takes?</text>
+<rect x="2124" y="1126" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2174" y="1168.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the deletion</text>
+<circle cx="2684" cy="1166" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="2684" cy="1166" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="2675" y="1160.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2675 1160.06 L 2684 1166 L 2693 1160.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2642" y="1198" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea deleted</text>
+<rect x="2124" y="1246" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2174" y="1282.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Abandon the</text>
+<text x="2174" y="1294.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">deletion</text>
+<path d="M 2854 301 L 2879 326 L 2854 351 L 2829 326 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 2843.5 315.5 L 2864.5 336.5 M 2843.5 336.5 L 2864.5 315.5" stroke="#000" stroke-width="1"/>
+<text x="2812" y="365" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Anything else on this</text>
+<text x="2812" y="375.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">tab?</text>
+<rect x="2974" y="286" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3024" y="328.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the tab</text>
+<circle cx="3194" cy="326" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="3152" y="358" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Ideation current</text>
+<circle cx="304" cy="1586" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="295" y="1580.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 295 1580.06 L 304 1586 L 313 1580.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="262" y="1618" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Ideation overview</text>
+<text x="262" y="1628.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="424" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="474" y="1582.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read the ideas the</text>
+<text x="474" y="1594.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">filter admits</text>
+<rect x="594" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1582.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Apply the ordering in</text>
+<text x="644" y="1594.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">force</text>
+<rect x="764" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1576.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Group the</text>
+<text x="814" y="1588.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">theme-less ideas as</text>
+<text x="814" y="1600.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Unthemed</text>
+<circle cx="984" cy="1586" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1618" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Overview answered</text>
+<circle cx="1154" cy="1586" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1580.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1580.06 L 1154 1586 L 1163 1580.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1618" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea capture</text>
+<text x="1112" y="1628.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<rect x="1274" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1582.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store the idea with</text>
+<text x="1324" y="1594.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">its title</text>
+<rect x="1444" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1582.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Affiliate it to the</text>
+<text x="1494" y="1594.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">theme given</text>
+<circle cx="1664" cy="1586" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1618" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Capture answered</text>
+<circle cx="1154" cy="1706" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1700.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1700.06 L 1154 1706 L 1163 1700.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1738" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea amendment</text>
+<text x="1112" y="1748.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="1666" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1702.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Apply the title and</text>
+<text x="1324" y="1714.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">theme as given</text>
+<circle cx="1494" cy="1706" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1452" y="1738" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Amendment</text>
+<text x="1452" y="1748.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="1826" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1820.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1820.06 L 1154 1826 L 1163 1820.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1858" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea draft submitted</text>
+<rect x="1274" y="1786" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1816.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep what is typed</text>
+<text x="1324" y="1828.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">for a live idea as a</text>
+<text x="1324" y="1840.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">draft</text>
+<rect x="1444" y="1786" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1822.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Hold the draft out of</text>
+<text x="1494" y="1834.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">version control</text>
+<circle cx="1664" cy="1826" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1858" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Draft kept</text>
+<circle cx="1324" cy="1946" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1940.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1940.06 L 1324 1946 L 1333 1940.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1978" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Notes commit</text>
+<text x="1282" y="1988.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1444" y="1906" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1942.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store the drafted</text>
+<text x="1494" y="1954.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">notes on the idea</text>
+<rect x="1614" y="1906" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="1948.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Discard the draft</text>
+<circle cx="1834" cy="1946" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1792" y="1978" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Notes answered</text>
+<circle cx="1154" cy="1946" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1940.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1940.06 L 1154 1946 L 1163 1940.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1978" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea reordering</text>
+<text x="1112" y="1988.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="2026" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="2062.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Record the new</text>
+<text x="1324" y="2074.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">relative order</text>
+<circle cx="1494" cy="2066" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1452" y="2098" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Reordering</text>
+<text x="1452" y="2108.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="2066" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="2060.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 2060.06 L 1154 2066 L 1163 2060.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="2098" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving impact</text>
+<text x="1112" y="2108.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="2146" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="2182.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect the projects</text>
+<text x="1324" y="2194.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">parented on the idea</text>
+<rect x="1444" y="2146" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="2182.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect their</text>
+<text x="1494" y="2194.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">activities and tasks</text>
+<rect x="1614" y="2146" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="2182.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Include the archived</text>
+<text x="1664" y="2194.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">ones in the count</text>
+<rect x="1784" y="2146" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1834" y="2182.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report what the</text>
+<text x="1834" y="2194.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archiving will take</text>
+<circle cx="2004" cy="2186" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1962" y="2218" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving impact</text>
+<text x="1962" y="2228.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="2174" cy="1586" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="2165" y="1580.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2165 1580.06 L 2174 1586 L 2183 1580.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2132" y="1618" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea archiving</text>
+<text x="2132" y="1628.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="2294" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2344" y="1576.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive the projects</text>
+<text x="2344" y="1588.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">that came from the</text>
+<text x="2344" y="1600.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">idea</text>
+<rect x="2464" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2514" y="1588.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive the idea</text>
+<rect x="2634" y="1546" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2684" y="1570.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Withdraw the</text>
+<text x="2684" y="1582.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archived boards</text>
+<text x="2684" y="1594.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">from the focus</text>
+<text x="2684" y="1606.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">selectables</text>
+<circle cx="2854" cy="1586" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2812" y="1618" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving answered</text>
+<circle cx="1154" cy="2186" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="2180.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 2180.06 L 1154 2186 L 1163 2180.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="2218" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="1112" y="2228.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="2266" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="2302.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect the projects</text>
+<text x="1324" y="2314.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">parented on the idea</text>
+<rect x="1444" y="2266" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="2302.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect the goals</text>
+<text x="1494" y="2314.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">that link the idea</text>
+<rect x="1614" y="2266" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="2302.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Include the archived</text>
+<text x="1664" y="2314.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">ones in the count</text>
+<rect x="1784" y="2266" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1834" y="2302.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report what the</text>
+<text x="1834" y="2314.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">deletion will take</text>
+<circle cx="2004" cy="2306" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1962" y="2338" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="1962" y="2348.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="2174" cy="1706" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="2165" y="1700.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2165 1700.06 L 2174 1706 L 2183 1700.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2132" y="1738" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Idea deletion</text>
+<text x="2132" y="1748.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="2294" y="1666" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2344" y="1702.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete the projects</text>
+<text x="2344" y="1714.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">parented on the idea</text>
+<rect x="2464" y="1666" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2514" y="1696.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Unlink the idea from</text>
+<text x="2514" y="1708.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">every goal that links</text>
+<text x="2514" y="1720.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">it</text>
+<rect x="2634" y="1666" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2684" y="1708.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete the idea</text>
+<circle cx="2854" cy="1706" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2812" y="1738" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion answered</text>
+<path d="M 1040 198 H 1034 V 274 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="210" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The notes are kept as a draft while the user writes, one</text>
+<text x="1043" y="220.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">instance per keystroke batch, and the draft survives a</text>
+<text x="1043" y="231.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">crash and a restart.</text>
+<path d="M 1040 140 H 1034 V 186 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="152" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Both are remembered between sessions, so the next</text>
+<text x="1043" y="162.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">read uses them.</text>
+<path d="M 1210 82 H 1204 V 128 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="94" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The title and the theme affiliation are one request.</text>
+<path d="M 1210 24 H 1204 V 70 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The order groups related ideas. It carries no priority.</text>
+<path d="M 1380 227 H 1374 V 288 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="239" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A theme is optional at capture. A theme-less idea is</text>
+<text x="1383" y="249.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">grouped under Unthemed.</text>
+<path d="M 1550 467 H 1544 V 528 H 1550" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1553" y="479" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Leaving the editor is the commit. Nothing is in the</text>
+<text x="1553" y="489.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">planning history before it.</text>
+<path d="M 2060 830 H 2054 V 874 H 2060" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2063" y="842" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Nothing is archived.</text>
+<path d="M 2060 774 H 2054 V 818 H 2060" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2063" y="786" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Nothing is deleted.</text>
+<path d="M 2570 1082 H 2564 V 1128 H 2570" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2573" y="1094" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">There is no in-app undo. Recovery is from version</text>
+<text x="2573" y="1104.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">control.</text>
+<path d="M 360 1646 H 354 V 1692 H 360" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="363" y="1658" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Archived ideas are not in the working view.</text>
+<path d="M 1210 2358 H 1204 V 2402 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="2370" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The theme may be absent.</text>
+<path d="M 1210 2414 H 1204 V 2458 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="2426" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">An archived idea is not editable.</text>
+<path d="M 1210 2470 H 1204 V 2606 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="2482" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Every form on this surface drafts as it is filled in — the</text>
+<text x="1213" y="2492.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">capture form, the title and theme, and the notes as they</text>
+<text x="1213" y="2503.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">are written. The draft is one-way: nothing waits for it to</text>
+<text x="1213" y="2513.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">be kept, it changes nothing on the idea, and whichever</text>
+<text x="1213" y="2524.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">write commits the form discards it.</text>
+<path d="M 1210 2618 H 1204 V 2679 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="2630" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Nothing below a project can be left behind, so the</text>
+<text x="1213" y="2640.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">gesture is approve-or-abandon.</text>
+<path d="M 1210 2691 H 1204 V 2752 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="2703" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Keeping a project behind is not offered. A goal that links</text>
+<text x="1213" y="2713.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the idea survives minus the link.</text>
+<path d="M 1380 2764 H 1374 V 2825 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="2776" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The commit is what enters the planning history, and the</text>
+<text x="1383" y="2786.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">draft is dropped once it is in.</text>
+<path d="M 2230 1758 H 2224 V 1804 H 2230" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2233" y="1770" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Unarchiving restores the whole bundle.</text>
+<path d="M 2230 1816 H 2224 V 1862 H 2230" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2233" y="1828" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A goal left with no linked idea is flagged on its current</text>
+<text x="2233" y="1838.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">state.</text>
+<rect x="1011" y="327" width="89.87" height="11.5" fill="#fff"/>
+<text x="1012" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">capture something new</text>
+<rect x="1041" y="327" width="46.42" height="11.5" fill="#fff"/>
+<text x="1042" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">change one</text>
+<rect x="1041" y="327" width="57.75" height="11.5" fill="#fff"/>
+<text x="1042" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">think it through</text>
+<rect x="1041" y="327" width="94.58" height="11.5" fill="#fff"/>
+<text x="1042" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">narrow or reorder the list</text>
+<rect x="1041" y="327" width="106.42" height="11.5" fill="#fff"/>
+<text x="1042" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">group related ones together</text>
+<rect x="2031" y="927" width="32.71" height="11.5" fill="#fff"/>
+<text x="2032" y="936.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="2061" y="927" width="35.08" height="11.5" fill="#fff"/>
+<text x="2062" y="936.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">abandon</text>
+<rect x="1041" y="327" width="35.07" height="11.5" fill="#fff"/>
+<text x="1042" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">park one</text>
+<rect x="2061" y="1047" width="32.71" height="11.5" fill="#fff"/>
+<text x="2062" y="1056.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="2061" y="1047" width="35.08" height="11.5" fill="#fff"/>
+<text x="2062" y="1056.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">abandon</text>
+<rect x="1041" y="327" width="69.1" height="11.5" fill="#fff"/>
+<text x="1042" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">drop one for good</text>
+<rect x="2881" y="327" width="11.45" height="11.5" fill="#fff"/>
+<text x="2882" y="336.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="2941" y="400" width="15.23" height="11.5" fill="#fff"/>
+<text x="2942" y="409.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="306" y="367" width="104.52" height="20.73" fill="#fff"/>
+<text x="307" y="375.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.01</text>
+<text x="307" y="385.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Read the ideation overview</text>
+<rect x="1231" y="379" width="62.48" height="20.73" fill="#fff"/>
+<text x="1232" y="387.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.02</text>
+<text x="1232" y="397.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Capture an idea</text>
+<rect x="1231" y="499" width="59.17" height="20.73" fill="#fff"/>
+<text x="1232" y="507.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.03</text>
+<text x="1232" y="517.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Amend an idea</text>
+<rect x="1236" y="619" width="73.82" height="20.73" fill="#fff"/>
+<text x="1237" y="627.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.04</text>
+<text x="1237" y="637.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Draft the idea input</text>
+<rect x="1411" y="619" width="87.03" height="20.73" fill="#fff"/>
+<text x="1412" y="627.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.10</text>
+<text x="1412" y="637.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Commit the idea notes</text>
+<rect x="1246" y="859" width="55.38" height="20.73" fill="#fff"/>
+<text x="1247" y="867.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.05</text>
+<text x="1247" y="877.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder ideas</text>
+<rect x="1251" y="979" width="126.73" height="20.73" fill="#fff"/>
+<text x="1252" y="987.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.06</text>
+<text x="1252" y="997.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what archiving an idea takes</text>
+<rect x="2256" y="979" width="60.58" height="20.73" fill="#fff"/>
+<text x="2257" y="987.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.07</text>
+<text x="2257" y="997.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Archive an idea</text>
+<rect x="1251" y="1099" width="122.49" height="20.73" fill="#fff"/>
+<text x="1252" y="1107.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.08</text>
+<text x="1252" y="1117.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what deleting an idea takes</text>
+<rect x="2266" y="1219" width="56.81" height="20.73" fill="#fff"/>
+<text x="2267" y="1227.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP04.09</text>
+<text x="2267" y="1237.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete an idea</text>
+<rect x="816" y="1547" width="95.55" height="11.5" fill="#fff"/>
+<text x="817" y="1556.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Ideas, filtered and sorted</text>
+<rect x="1496" y="1547" width="53.98" height="11.5" fill="#fff"/>
+<text x="1497" y="1556.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Idea captured</text>
+<rect x="1401" y="1655" width="56.34" height="11.5" fill="#fff"/>
+<text x="1402" y="1664.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Idea amended</text>
+<rect x="1751" y="1895" width="65.77" height="11.5" fill="#fff"/>
+<text x="1752" y="1904.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Notes committed</text>
+<rect x="1421" y="2015" width="59.63" height="11.5" fill="#fff"/>
+<text x="1422" y="2024.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Order recorded</text>
+<rect x="1916" y="2135" width="104.98" height="11.5" fill="#fff"/>
+<text x="1917" y="2144.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the archiving will take</text>
+<rect x="2936" y="1535" width="53.03" height="11.5" fill="#fff"/>
+<text x="2937" y="1544.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Idea archived</text>
+<rect x="1926" y="2255" width="100.74" height="11.5" fill="#fff"/>
+<text x="1927" y="2264.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the deletion will take</text>
+<rect x="2776" y="1655" width="48.78" height="11.5" fill="#fff"/>
+<text x="2777" y="1664.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Idea deleted</text>
+</svg>

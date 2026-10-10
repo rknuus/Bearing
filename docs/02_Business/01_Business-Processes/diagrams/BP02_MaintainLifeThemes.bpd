@@ -1,0 +1,218 @@
+@startbpmn BP02_MaintainLifeThemes
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "01_detailed/BP02_MaintainLifeThemes.bpmn"
+output L2 "02_detailed/BP02_MaintainLifeThemes.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a theme is never archivable, only deleted or kept: BR-23
+'   - the theme deletion offers two cascades, goals-and-routines and ideas: BR-13
+'   - a goal and a routine cannot be kept theme-less, so declining is not offered there: BR-21, BR-01, BR-02
+'   - a routine taken by the deletion is still governed by its own rule, so its task
+'     occurrences stay a declinable cascade: BR-12, BR-16, BR-19
+'   - an idea kept through the cascade simply becomes theme-less: BR-03
+'   - every cascade the user may legally decline is off by default: BR-19
+'   - the deletion discloses what it will take before it takes it: BR-12
+'   - there is no in-app undo; the data is under version control: BR-20
+'   - the overview counts active goals and routines only: BR-95
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'   - colour propagates from the theme downstream: BR-09
+'   - vision and mission are optional prose above themes, reset by emptying: section 3
+'
+' Call-site collapsing (ADR-069, design-artifact-conventions): rename and recolour are two
+' variations of one amend request, not two chains - the variation is a permutation of the
+' operation, discovered at Design, and never a second call site here. Cross-process duplication
+' is the opposite case and stays uncollapsed: BP01 also records vision and mission, and whether
+' the two call sites resolve to one System Interaction is a Design finding.
+
+' ===== The user: opens the Themes tab and performs one act =====
+pool "User" {
+  start "A life area needs attention"
+  task "Open the Themes tab" as themesTab
+  send "Read the themes overview" to overviewIn
+  receive "Themes with their goal and routine counts" as overview
+
+  if "What needs doing?" then "add a life area"
+    :Name and colour a new theme;
+    multiInstance
+    send "Draft the theme input" to themeDraftIn
+    :Submit the new theme;
+    send "Create a theme" to createIn
+    receive "Theme created" as created
+
+  elseif "What needs doing?" then "rename or recolour one"
+    :Amend the theme;
+    send "Amend a theme" to amendIn
+    receive "Theme amended" as amended
+    note "Renaming and recolouring are one request. The colour the user picks is what propagates downstream."
+
+  elseif "What needs doing?" then "reorder them"
+    :Drag a theme into place;
+    send "Reorder themes" to reorderIn
+    receive "Order recorded" as reordered
+
+  elseif "What needs doing?" then "start over with a starter set"
+    :Ask for the starter set again;
+    send "Seed the starter themes" to seedIn
+    receive "Starter themes" as seeded
+    note "Open to a user who skipped the wizard, or who deleted every theme."
+
+  elseif "What needs doing?" then "retire one for good"
+    :Choose a theme to delete;
+    send "See what deleting a theme takes" to impactIn
+    receive "What the deletion will take" as impact
+    if "Let the ideas go too?" rule BR-19 then "yes, take them as well"
+      :Include the ideas in the cascade;
+      goto confirmDeletion
+    elseif "Let the ideas go too?" rule BR-19 then "no, keep them theme-less"
+      :Leave the ideas out of the cascade;
+      note "A kept idea loses only its theme affiliation and stays legitimate."
+      goto confirmDeletion
+    else "abandon the deletion"
+      :Abandon the deletion;
+      note "Nothing is deleted and nothing is changed."
+      goto themesTab
+    endif
+    if "Let the routines' tasks go too?" rule BR-19 then "yes, take them as well"
+      :Include the task occurrences in the cascade;
+    else "no, leave them on Chores"
+      :Leave the task occurrences out of the cascade;
+      note "The routines go either way. Their tasks stay on Chores, with nothing producing new ones."
+    endif
+    task "Confirm the deletion" as confirmDeletion
+    send "Delete a theme" to deleteIn
+    receive "Theme deleted" as deleted
+    note "The goals and routines cannot be kept, so confirming takes them. There is no in-app undo; recovery is from version control."
+
+  else "state who I want to become"
+    :Expand the vision and mission section;
+    send "Read vision and mission" to vmReadIn
+    receive "Vision and mission" as vmShown
+    :Write vision and mission;
+    send "Record vision and mission" to vmIn
+    receive "Vision and mission recorded" as vmDone
+    note "Emptying both fields is how they are unset. Nothing else depends on them."
+  endif
+
+  if "Anything else on this tab?" then "yes"
+    goto themesTab
+  else "no"
+    :Leave the tab;
+  endif
+
+  end "Life areas current"
+}
+
+' ===== The system: one chain per request, each a single synchronous call =====
+system pool "Bearing" {
+  messageStart "Themes overview requested" as overviewIn
+  call "BP02.01_ReadTheThemesOverview" "Read the themes overview" {
+    :Read the themes in their recorded order;
+    :Count the active goals and routines per theme;
+    rule BR-95
+    :Report whether a vision and a mission are set;
+  }
+  send "Themes with their goal and routine counts" to overview
+  note "Archived goals are not counted. The count states what is live under the theme today. Whether the prose is set is what distinguishes a collapsed section from one never written; the prose itself is read on expanding it."
+  end "Overview answered"
+
+  messageStart "Theme draft submitted" as themeDraftIn
+  call "BP02.10_DraftTheThemeInput" "Draft the theme input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Theme creation requested" as createIn
+  call "BP02.02_CreateTheme" "Create a theme" {
+    :Store the theme with its name and colour;
+    :Place it last in the order;
+  }
+  send "Theme created" to created
+  end "Creation answered"
+
+  messageStart "Theme amendment requested" as amendIn
+  call "BP02.03_AmendTheme" "Amend a theme" {
+    :Apply the name and colour as given;
+    rule BR-09
+  }
+  send "Theme amended" to amended
+  note "One request covers the name, the colour or both. The colour reaches every entity under the theme."
+  end "Amendment answered"
+
+  messageStart "Theme reordering requested" as reorderIn
+  call "BP02.04_ReorderThemes" "Reorder themes" {
+    :Record the new relative order;
+  }
+  send "Order recorded" to reordered
+  note "Order is relative, so a theme's place is never a stored index."
+  end "Reordering answered"
+
+  messageStart "Deletion impact requested" as impactIn
+  call "BP02.05_ReadTheDeletionImpact" "See what deleting a theme takes" {
+    :Collect the goals and routines under the theme;
+    :Collect what those goals reach;
+    rule BR-15
+    :Collect the task occurrences those routines produced;
+    rule BR-16
+    :Collect the ideas affiliated to the theme;
+    :Collect what those ideas would reach;
+    rule BR-14
+    :Include the archived ones in the count;
+    rule BR-117
+    if "Any goal or routine under the theme?" rule BR-21 then "yes"
+      :Mark the goals and routines as not declinable;
+      :Mark their task occurrences as declinable;
+      rule BR-16
+    else "no"
+      :Mark the ideas cascade as declinable;
+      rule BR-19
+    endif
+    :Report what the deletion will take;
+  }
+  send "What the deletion will take" to impact
+  note "A goal and a routine each require a theme, so keeping one is not a legal outcome: the gesture is then approve-or-abandon. An idea may stay behind theme-less, so that cascade is the one real choice and starts off. The disclosure reaches two levels down, because a deleted goal takes its projects and measures with it, and so does an included idea. An archived descendant is counted like a live one."
+  end "Impact answered"
+
+  messageStart "Theme deletion requested" as deleteIn
+  call "BP02.06_DeleteTheme" "Delete a theme" {
+    :Delete the goals and routines under the theme;
+    rule BR-13
+    :Delete the ideas the user included;
+    :Leave the remaining ideas theme-less;
+    rule BR-03
+    :Delete the theme;
+  }
+  send "Theme deleted" to deleted
+  note "The request carries the cascade the user approved. What happens below a deleted goal or idea is that entity's own rule, applied where the deletion reaches it."
+  end "Deletion answered"
+
+  messageStart "Starter set requested" as seedIn
+  call "BP02.09_SeedTheStarterThemes" "Seed the starter themes" {
+    :Create the starter themes;
+    rule BR-83
+    :Return the themes overview;
+  }
+  send "Starter themes" to seeded
+  note "The only thing in the product with a default worth seeding. BP01 seeds the same set at a first run; whether the two call sites are one System Interaction is a Design finding."
+  end "Starter set returned"
+
+  messageStart "Vision and mission requested" as vmReadIn
+  call "BP02.07_ReadVisionAndMission" "Read vision and mission" {
+    :Read the vision and the mission;
+  }
+  send "Vision and mission" to vmShown
+  end "Vision and mission answered"
+
+  messageStart "Vision and mission submitted" as vmIn
+  call "BP02.08_RecordVisionAndMission" "Record vision and mission" {
+    :Store the vision and the mission;
+    :Confirm what was stored;
+  }
+  send "Vision and mission recorded" to vmDone
+  note "Both fields are optional. Empty text is the unset state."
+  end "Record answered"
+}
+
+@endbpmn

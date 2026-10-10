@@ -1,13 +1,14 @@
 # Bearing v2 — Gate Classification Index
 
-> **What this is.** The Software Architect (who is also Bearing's domain expert and its only
-> stakeholder) sketched Bearing v2 *before* the factory was available. His input therefore does not
-> arrive as interview transcripts but as four authored design documents — this project's recordings
-> (QB-01). This index records how
-> every piece of that input was classified across the Diamond Process's four gates (ADR-040 §1,
-> ADR-064 naming), and points at the four gate documents that hold the classified material.
+> **What this is.** The Software Architect, who is also Bearing's domain expert and its only
+> stakeholder, sketched Bearing v2 before the factory was available. His input therefore does not
+> arrive as interview transcripts but as five authored design documents — this project's recordings
+> (QB-01), the fifth of them authored for him from his own statements because the other four are
+> silent on activities. This index records how every piece of that input was classified across the
+> Diamond Process's four gates (ADR-040 §1, ADR-064 naming), and points at the four gate documents
+> that hold the classified material.
 >
-> **Stage.** Discovery / Mockup — **before the Intent gate**. Nothing here is const.
+> **Stage.** Discovery / Mockup, before the Intent gate. Nothing here is const.
 
 ## The four gates (ADR-040 §1)
 
@@ -18,11 +19,10 @@
 | **Contract** | the spec layer (ADR-033 §7B) + deployment decisions (ADR-071) + resource protocol sheets (ADR-059) — the last human review before acceptance | human | [`03_Contract_Gate-Document.md`](03_Contract_Gate-Document.md) |
 | **Acceptance** | the verified system | human (+ ui-designer sampling) | [`04_Acceptance_Gate-Document.md`](04_Acceptance_Gate-Document.md) |
 
-Alongside the four, **[`05_UX-Directives.md`](05_UX-Directives.md)** holds surface decisions the
-Software Architect has already made. It is **not** a gate document and no gate freezes it: the Intent
-gate's rules are about behaviour, the Acceptance gate's brief is about craft, and a decision about
-*which control, where* belongs to neither. It is a holding pen until the screen models exist to absorb
-it.
+Alongside the four, [`05_UX-Directives.md`](05_UX-Directives.md) holds surface decisions the Software
+Architect has already made. It is not a gate document and no gate freezes it: the Intent gate's rules
+are about behaviour, the Acceptance gate's brief is about craft, and a decision about *which control,
+where* belongs to neither. It is a holding pen until the screen models exist to absorb it.
 
 ## Sources
 
@@ -32,30 +32,31 @@ it.
 | `sources/architecture.md` | `arch §…` | 465 | The foreseen IDesign decomposition, the pivots, and 11 parked questions |
 | `sources/ui-inventory.md` | `inv` | 67 | Hierarchical inventory of UI surfaces at view/dialog level |
 | `sources/ui-wireframes.md` | `wf §…` | 2226 | ASCII wireframe + design notes per surface, plus 19 cross-document UX guidelines |
+| `sources/activity-planning.md` | `act §…` | 566 | Not authored by the Software Architect — written for him from his statements over nine interview rounds, every line marked SA or INFERRED. Projects, the Course page, activities and their dependencies, and the scoping of Löwy's project design down to what a single-person tool can use |
 | `tmp/Bearing-v1/` | — | — | The predecessor app (Go + Wails + Svelte). Design provenance only; v2 is a separate codebase (wireframes guideline #18). |
 
 **Reading a citation.** The four gate documents cite their source inline by the prefix above plus the
-source document's **own heading number** — so `wf §5.1.a` is the wireframes' "Day mode" sub-section,
+source document's own heading number — so `wf §5.1.a` is the wireframes' "Day mode" sub-section,
 `arch §12 Q9` is question 9 in the architecture document's parked-questions table, and
 `funnel §Day rollover` is a heading that carries a name rather than a number. `inv` takes no section
 number: the inventory is one flat list. A citation never points at a line number, so it survives the
 source being edited.
 
-The four paths above are relative to this directory: the sources live in
-`docs/01_Planning/sources/` and are **committed** — they are this project's substitute for the
+The source paths above are relative to this directory: the sources live in
+`docs/01_Planning/sources/` and are committed — they are this project's substitute for the
 interview transcripts `docs/01_Planning/` is meant to hold, and the only record of the business
 intent. Keeping them in the repository satisfies ADR-051 §3, which requires every path a gate dossier
 claims to exist under the project root.
 
-> ⚠ `tmp/Bearing-v1/` is **not** in the repository — `tmp/` is git-excluded
+> ⚠ `tmp/Bearing-v1/` is not in the repository — `tmp/` is git-excluded
 > (`.git/info/exclude`). Nothing in the business design depends on it: it is cited as provenance for
 > inherited UI patterns only, never as a constraint (wireframes guideline #18). No gate artifact may
 > claim a path under `tmp/`.
 
 ## Classification rule
 
-Each unit of source information was assigned to the gate **whose artifact class it belongs to** — not
-to the gate where it happens to be convenient:
+Each unit of source information was assigned to the gate whose artifact class it belongs to, not to
+the gate where it happens to be convenient:
 
 1. **Intent** — anything a stakeholder can confirm or refute without knowing how the system is built:
    the funnel, the entities as *business vocabulary*, business rules and invariants, the screens and
@@ -70,7 +71,7 @@ to the gate where it happens to be convenient:
    no mechanical oracle: focus behaviour, animation, hit targets, visual conventions, and the
    end-to-end flows as acceptance criteria.
 
-Where one source paragraph carries two layers, it was **split**, and both halves are cross-referenced.
+Where one source paragraph carries two layers, it was split, and both halves are cross-referenced.
 Example: the advisor suggestion catalog's *policy* ("the advisor may not archive on the user's behalf")
 is Intent; its *schema* (`type`, `target_id`, required fields per type) is Contract.
 
@@ -155,21 +156,26 @@ is Intent; its *schema* (`type`, `target_id`, required fields per type) is Contr
 
 | Gate | Material available now | Principal gaps |
 |---|---|---|
-| **Intent** | Substantial — the funnel, ~50 business rules, the full screen inventory with wireframes and states, a coherent example dataset | No BPMNs; no SIs (ids mint at Mockup); no screen models in the project's own format; no business map / price tags; no behavioural spike; no walkthrough capture; no Q&A ledger; no recorded stakeholder sessions (provenance ruling owed) |
+| **Intent** | Substantial — the funnel, 116 business rules, the full screen inventory with wireframes and states, a coherent example dataset, and all eighteen business processes drawn with their 125 call sites minted | No activity diagrams per call site; no System Interactions (their ids mint at Design, ADR-069); no screen models in the project's own format; no business map / price tags; no behavioural spike; no walkthrough capture; no Q&A ledger |
 | **Blueprint** | Substantial for a pre-Intent stage — 10 services, 5 pivots, 6 use cases drawn, the closed-architecture rules | Model not in the `.method` store; most operations undrawn; 4 sagas named but undrawn; 11 parked questions; several contradictions against the business docs (see §9 of the Blueprint document) |
 | **Contract** | Fragmentary but real — stack intent, resource slots, concrete thresholds, failure contracts, seed-data candidates | Advisor product undecided (Q9); no deployment-decision rulings; no resource protocol sheets; no spec layer |
 | **Acceptance** | Rich on UI craft — 19 guidelines, the focus-landing table, the keymap, the glyph and naming conventions, the responsive policy | No acceptance criteria written against blessed flows (they depend on the walkthroughs); visual sampling not yet briefed |
 
 ## Open questions raised by the classification
 
-The classification surfaced **32 business questions** (`QB-01 … QB-32`, all thirty-two now answered, including eight genuine
-contradictions between the source documents) and re-filed `architecture.md`'s eleven parked questions
-across the gates. They live in:
+The classification surfaced 47 business questions (`QB-01`…`QB-47`) and nine contradictions between
+the source documents (`C-1`…`C-9`). **No question is open:** `QB-44`, whether a project may migrate
+between its simple and activity-based kinds, was answered *no* on 2026-10-10, and `QB-45`, how the
+board strip folds, is re-filed to the screen models as a UI question, so nothing at the Intent gate
+waits on it. Every
+other question is answered and every contradiction is resolved; each answer is recorded with the
+question. The classification also re-filed `architecture.md`'s eleven parked questions across the
+gates. They live in:
 
 - `01_Intent_Gate-Document.md` §12 — business tier, Q&A-ledger candidates
 - `02_Blueprint_Gate-Document.md` §8 — design tier, incl. Q1–Q12 re-classified
 - `03_Contract_Gate-Document.md` §2 — deployment tier (`DV:<slot>`, `DV:hosting` per ADR-071)
 
-None of these are in `Bearing.method/qa.yaml` yet — **the ledger does not exist**. Creating it and
+None of these are in `Bearing.method/qa.yaml` yet: the ledger does not exist. Creating it and
 appending the business-tier entries is the next mechanical step, because `qa check` enforces "no open
 Q&A-ledger entry blocking a promoted element" at the Intent gate.

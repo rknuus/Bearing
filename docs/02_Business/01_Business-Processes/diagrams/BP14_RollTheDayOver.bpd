@@ -1,0 +1,78 @@
+@startbpmn BP14_RollTheDayOver
+lang en
+
+output L1 "01_detailed/BP14_RollTheDayOver.bpmn"
+output L2 "02_detailed/BP14_RollTheDayOver.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the day rolls at local midnight and that is not configurable: BR-44
+'   - rollover advances which day is current and nothing else: BR-44
+'   - everything that follows from the day focus follows it, Chores included: BR-41, BR-50, BR-107
+'   - the previous day's focus and log become history, reachable from the period views: BR-44
+'   - rollover creates nothing: no task is spawned, only selecting a routine does that: BR-42, BR-44
+'   - rollover archives nothing and closes nothing: BR-44, BR-45
+'   - a day never checked out stays checkable out: BR-45
+'   - where the new day's focus is empty, its day focus editor is offered: BR-40, BR-44
+'   - the offer never interrupts what the user is doing, a drag included: BR-44, BR-66
+'   - ignoring the offer leaves the day unfocused: BR-44
+'
+' Scope: this process advances the date. Setting the new day's focus is BP08, which the offer hands
+' over to; reading the previous day as history is BP09; settling it is BP13, and an unchecked day
+' stays checkable out afterwards.
+'
+' Cut: Intent section 5 records this as a process of its own and flags that it may read better as a
+' start event inside BP08 - the Software Architect's call. Drawn standalone, which is the cut as it
+' stands. Section 5 also says "no user lane": the drawing has one, because BR-44's offer is made to
+' the user and ignoring it is a legitimate answer that nothing else can represent.
+'
+' Call-site collapsing: advancing the date and offering the empty day's editor are one request.
+' The offer is what the one write reports, not a second chain.
+
+scheduler pool "Clock" {
+  timerStart "Local midnight"
+  :Reach the next date;
+  send "Roll the day over" to rollIn
+  end "Date advanced"
+}
+
+system pool "Bearing" {
+  messageStart "Rollover due" as rollIn
+  call "BP14.01_RollTheDayOver" "Roll the day over" {
+    :Advance which date is current;
+    rule BR-44
+    :Put the new date's focus in play, empty until it is set;
+    rule BR-41
+    :Carry the previous date's focus and log into history;
+    rule BR-45
+    :Report whether the new date's focus is empty;
+    rule BR-40
+  }
+  send "The day rolled over" to rolled
+  note "Rollover creates nothing and destroys nothing: no task is spawned, nothing is archived and nothing is closed. A date never checked out stays checkable out. Chores follows the new date on its own while it carries work that is not done."
+  end "Rollover answered"
+}
+
+pool "User" {
+  start "At work in Bearing"
+  task "Work on whatever is open" as working
+  receive "The day rolled over" as rolled
+  note "The board in front of the user stays open and a gesture already under way, a drag included, is unaffected."
+
+  if "Is the new date's focus empty?" rule BR-44 then "yes"
+    :Read the offer to set the day's focus;
+    if "Take the offer?" rule BR-44 then "take it"
+      :Open the day focus editor;
+      note "Setting the focus is its own process. The offer only opens it."
+    else "ignore it"
+      :Carry on with what was open;
+      note "The offer changes nothing by itself. Ignoring it leaves the day unfocused."
+      goto working
+    endif
+  else "no"
+    :Carry on with the new date in play;
+  endif
+
+  end "New day in play"
+}
+
+@endbpmn

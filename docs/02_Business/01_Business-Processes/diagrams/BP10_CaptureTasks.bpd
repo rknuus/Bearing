@@ -1,0 +1,145 @@
+@startbpmn BP10_CaptureTasks
+lang en
+
+output L1 "01_detailed/BP10_CaptureTasks.bpmn"
+output L2 "02_detailed/BP10_CaptureTasks.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - task capture is a batch gesture, staged then committed together: BR-63
+'   - staged work is a draft and survives leaving the gesture, a crash and a restart: section 3
+'   - drafts are not version-controlled: section 3
+'   - discarding a draft is an explicit act: BR-63
+'   - exactly three triage buckets, no fourth: BR-53
+'   - new tasks always enter at the Backlog, in the bucket they were captured into: BR-55
+'   - a task sits on exactly one board: BR-103
+'   - a capture may name no board at all, and the task lands on Chores: BR-90
+'   - Chores is never offered as a destination: BR-62
+'   - capturing a task never creates a board: BR-65
+'
+' Call-site collapsing: discarding one staged draft and discarding all of them are two
+' variations of one request. Capture is opportunistic and happens during execution, so the
+' gesture is reachable wherever the user is.
+
+pool "User" {
+  start "Work worth writing down"
+  :Open task capture;
+  send "Read the staged batch" to draftsIn
+  receive "The staged batch, if any" as drafts
+  if "A batch left from before?" then "yes"
+    :Pick up where the batch was left;
+    note "A staged batch survives leaving the gesture, a crash and a restart, so capture resumes it rather than starting over."
+  else "no"
+    :Start a fresh batch;
+  endif
+
+  :Open the board picker;
+  send "Read the selectable boards" to boardsIn
+  receive "The boards that exist" as boards
+
+  :Stage a task in its triage bucket;
+  multiInstance
+  send "Stage a task draft" to stageIn
+  receive "Draft staged" as staged
+  note "One instance per task. The bucket is Important and Urgent, Not Important and Urgent, or Important and Not Urgent."
+
+  task "Look over the batch" as tidy
+  if "Anything to tidy before committing?" then "change a staged task"
+    :Amend the staged draft;
+    send "Amend a staged draft" to amendIn
+    receive "Draft amended" as amended
+    goto tidy
+  elseif "Anything to tidy before committing?" then "reorder them"
+    :Drag a staged draft into place;
+    send "Reorder staged drafts" to reorderIn
+    receive "Order recorded" as reordered
+    goto tidy
+  elseif "Anything to tidy before committing?" then "throw one away, or all of them"
+    :Discard the staged drafts;
+    send "Discard staged drafts" to discardIn
+    receive "Drafts discarded" as discarded
+    goto tidy
+  else "no"
+    :Leave the batch as it stands;
+  endif
+
+  task "Commit or leave it" as decide
+  if "Commit the batch now?" then "commit"
+    :Commit the staged tasks;
+    send "Commit the staged tasks" to commitIn
+    receive "Tasks on their boards" as committed
+    end "Tasks captured"
+  else "leave it for later"
+    :Leave the gesture;
+    note "The staged batch survives as a draft. Nothing it describes takes effect until the batch is committed."
+    end "Batch left as a draft"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Staged batch requested" as draftsIn
+  call "BP10.07_ReadTheStagedBatch" "Read the staged batch" {
+    :Read the drafts staged and not yet committed;
+  }
+  send "The staged batch, if any" to drafts
+  note "The answer is empty where nothing was left staged. A draft is kept outside version control."
+  end "Staged batch answered"
+
+  messageStart "Board list requested" as boardsIn
+  call "BP10.01_ReadTheSelectableBoards" "Read the selectable boards" {
+    :Read the boards that exist, grouped by project;
+    rule BR-103
+    :Leave Chores out of the offer;
+    rule BR-62
+  }
+  send "The boards that exist" to boards
+  note "Chores is never a destination the user picks. Naming no board at all is what sends a task there. The answer is empty until the first project exists, and then naming no board is the only legal capture."
+  end "Board list answered"
+
+  messageStart "Draft staged" as stageIn
+  call "BP10.02_StageTaskDraft" "Stage a task draft" {
+    :Store the draft with its title and bucket;
+    rule BR-53
+    :Place it last in its bucket;
+  }
+  send "Draft staged" to staged
+  note "A staged draft is not a commit. It is kept outside version control."
+  end "Staging answered"
+
+  messageStart "Draft amendment requested" as amendIn
+  call "BP10.03_AmendStagedDraft" "Amend a staged draft" {
+    :Apply the title, bucket and board as given;
+  }
+  send "Draft amended" to amended
+  end "Draft amendment answered"
+
+  messageStart "Draft reordering requested" as reorderIn
+  call "BP10.04_ReorderStagedDrafts" "Reorder staged drafts" {
+    :Record the new relative order within the bucket;
+  }
+  send "Order recorded" to reordered
+  end "Draft reordering answered"
+
+  messageStart "Discard requested" as discardIn
+  call "BP10.05_DiscardStagedDrafts" "Discard staged drafts" {
+    :Delete the drafts the request names;
+  }
+  send "Drafts discarded" to discarded
+  note "One request discards a single draft and the whole batch alike."
+  end "Discard answered"
+
+  messageStart "Batch commit requested" as commitIn
+  call "BP10.06_CommitStagedTasks" "Commit the staged tasks" {
+    :Place each task on the board it names;
+    rule BR-103
+    :Place each board-less task on Chores;
+    rule BR-90
+    :Enter every task at the Backlog in its bucket;
+    rule BR-55
+    :Discard the drafts the batch came from;
+  }
+  send "Tasks on their boards" to committed
+  note "Capturing a task never creates a board. The batch commits as one act."
+  end "Commit answered"
+}
+
+@endbpmn

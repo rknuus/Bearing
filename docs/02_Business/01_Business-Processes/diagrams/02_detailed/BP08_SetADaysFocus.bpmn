@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP08_SetADaysFocus" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP08_SetADaysFocus">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP08.01 · Read the day's selectables" sourceRef="T_2" targetRef="selectablesIn" />
+    <bpmn:messageFlow id="MF_2" name="BP08.02 · Set the day's focus" sourceRef="T_8" targetRef="setIn" />
+    <bpmn:messageFlow id="MF_3" name="BP08.03 · Read the day's focus" sourceRef="T_10" targetRef="readIn" />
+    <bpmn:messageFlow id="MF_4" name="Selectable boards and routines" sourceRef="BP08.01_ReadTheDaysSelectables" targetRef="selectables" />
+    <bpmn:messageFlow id="MF_5" name="The day's focus" sourceRef="BP08.02_SetTheDaysFocus" targetRef="focusSet" />
+    <bpmn:messageFlow id="MF_6" name="The day's focus as committed" sourceRef="BP08.03_ReadTheDaysFocus" targetRef="focusRead" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>Zero to many projects. Activities are grouped by their project, routines by theme.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_3" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Zero to many per project. The ready ones are offered first; nothing forces one at a time.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="T_5" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>Chores is never picked. It joins the day on its own while it carries work that is not done.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="focusSet" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>Archived projects and paused routines are not offered. A ready activity is one with no unfinished predecessor. Any date is focusable: a past day, today or a future day.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="BP08.01_ReadTheDaysSelectables" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>A commit replaces the date's previous selection rather than adding to it, so the boards in play are exactly what was last committed. A routine that already owes a task gets no second one, on any date. Due and overdue are treated the same. Dropping a routine leaves a task already created where it is.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="BP08.02_SetTheDaysFocus" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>The Chores membership is derived at read time and never stored.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="BP08.03_ReadTheDaysFocus" targetRef="TextAnnotation_X6" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A day to commit to">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Open the day focus editor">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_selectables</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="selectables" name="Selectable boards and routines">
+      <bpmn:incoming>SF_T_2_selectables</bpmn:incoming>
+      <bpmn:outgoing>SF_selectables_T_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_selectables" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_3" name="Pick or drop the projects to work on">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_selectables_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_Gw_4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_4" name="Any activity-based project among them?">
+      <bpmn:incoming>SF_T_3_Gw_4</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_4_T_5</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_T_6</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_5" name="Pick or drop the activities inside each project">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_T_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_6" name="Take each simple project's own board">
+      <bpmn:incoming>SF_Gw_4_T_6</bpmn:incoming>
+      <bpmn:outgoing>SF_T_6_T_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_7" name="Pick or drop the routines to keep up">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_T_5_T_7</bpmn:incoming>
+      <bpmn:incoming>SF_T_6_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_T_8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_8" name="Commit the day's focus">
+      <bpmn:incoming>SF_T_7_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_focusSet</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="focusSet" name="The day's focus">
+      <bpmn:incoming>SF_T_8_focusSet</bpmn:incoming>
+      <bpmn:outgoing>SF_focusSet_Gw_9</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_focusSet" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_9" name="Review what was committed?">
+      <bpmn:incoming>SF_focusSet_Gw_9</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_9_T_10</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_9_T_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_10" name="Read the day's focus summary">
+      <bpmn:incoming>SF_Gw_9_T_10</bpmn:incoming>
+      <bpmn:outgoing>SF_T_10_focusRead</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="focusRead" name="The day's focus as committed">
+      <bpmn:incoming>SF_T_10_focusRead</bpmn:incoming>
+      <bpmn:outgoing>SF_focusRead_End_12</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_focusRead" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_11" name="Start working">
+      <bpmn:incoming>SF_Gw_9_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_End_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_12" name="Day committed">
+      <bpmn:incoming>SF_focusRead_End_12</bpmn:incoming>
+      <bpmn:incoming>SF_T_11_End_12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_selectables" sourceRef="T_2" targetRef="selectables" />
+    <bpmn:sequenceFlow id="SF_selectables_T_3" sourceRef="selectables" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_3_Gw_4" sourceRef="T_3" targetRef="Gw_4" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_5" name="yes" sourceRef="Gw_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_6" name="no" sourceRef="Gw_4" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_T_5_T_7" sourceRef="T_5" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_6_T_7" sourceRef="T_6" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_7_T_8" sourceRef="T_7" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_T_8_focusSet" sourceRef="T_8" targetRef="focusSet" />
+    <bpmn:sequenceFlow id="SF_focusSet_Gw_9" sourceRef="focusSet" targetRef="Gw_9" />
+    <bpmn:sequenceFlow id="SF_T_10_focusRead" sourceRef="T_10" targetRef="focusRead" />
+    <bpmn:sequenceFlow id="SF_Gw_9_T_10" name="yes" sourceRef="Gw_9" targetRef="T_10" />
+    <bpmn:sequenceFlow id="SF_Gw_9_T_11" name="no" sourceRef="Gw_9" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_focusRead_End_12" sourceRef="focusRead" targetRef="End_12" />
+    <bpmn:sequenceFlow id="SF_T_11_End_12" sourceRef="T_11" targetRef="End_12" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="selectablesIn" name="Selectables requested">
+      <bpmn:outgoing>SF_selectablesIn_BP08.01_ReadTheDaysSelectables</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_selectablesIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP08.01_ReadTheDaysSelectables" name="Read the day's selectables">
+      <bpmn:incoming>SF_selectablesIn_BP08.01_ReadTheDaysSelectables</bpmn:incoming>
+      <bpmn:outgoing>SF_BP08.01_ReadTheDaysSelectables_End_17</bpmn:outgoing>
+      <bpmn:startEvent id="BP08.01_ReadTheDaysSelectables_s" name="Start">
+        <bpmn:outgoing>SF_BP08.01_ReadTheDaysSelectables_s_T_13</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_13" name="Read the non-archived projects with their kind">
+        <bpmn:incoming>SF_BP08.01_ReadTheDaysSelectables_s_T_13</bpmn:incoming>
+        <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_14" name="Read each activity-based project's activities">
+        <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+        <bpmn:outgoing>SF_T_14_T_15</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_15" name="Mark the activities whose predecessors are all done">
+        <bpmn:incoming>SF_T_14_T_15</bpmn:incoming>
+        <bpmn:outgoing>SF_T_15_T_16</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_16" name="Read the active routines grouped by theme">
+        <bpmn:incoming>SF_T_15_T_16</bpmn:incoming>
+        <bpmn:outgoing>SF_T_16_BP08.01_ReadTheDaysSelectables_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP08.01_ReadTheDaysSelectables_e" name="fertig">
+        <bpmn:incoming>SF_T_16_BP08.01_ReadTheDaysSelectables_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+      <bpmn:sequenceFlow id="SF_T_14_T_15" sourceRef="T_14" targetRef="T_15" />
+      <bpmn:sequenceFlow id="SF_T_15_T_16" sourceRef="T_15" targetRef="T_16" />
+      <bpmn:sequenceFlow id="SF_BP08.01_ReadTheDaysSelectables_s_T_13" sourceRef="BP08.01_ReadTheDaysSelectables_s" targetRef="T_13" />
+      <bpmn:sequenceFlow id="SF_T_16_BP08.01_ReadTheDaysSelectables_e" sourceRef="T_16" targetRef="BP08.01_ReadTheDaysSelectables_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_17" name="Selectables answered">
+      <bpmn:incoming>SF_BP08.01_ReadTheDaysSelectables_End_17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="setIn" name="Day focus submitted">
+      <bpmn:outgoing>SF_setIn_BP08.02_SetTheDaysFocus</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_setIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP08.02_SetTheDaysFocus" name="Set the day's focus">
+      <bpmn:incoming>SF_setIn_BP08.02_SetTheDaysFocus</bpmn:incoming>
+      <bpmn:outgoing>SF_BP08.02_SetTheDaysFocus_End_22</bpmn:outgoing>
+      <bpmn:startEvent id="BP08.02_SetTheDaysFocus_s" name="Start">
+        <bpmn:outgoing>SF_BP08.02_SetTheDaysFocus_s_T_18</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_18" name="Replace the date's board selection with what was committed">
+        <bpmn:incoming>SF_BP08.02_SetTheDaysFocus_s_T_18</bpmn:incoming>
+        <bpmn:outgoing>SF_T_18_T_19</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_19" name="Replace the date's routine selection with what was committed">
+        <bpmn:incoming>SF_T_18_T_19</bpmn:incoming>
+        <bpmn:outgoing>SF_T_19_T_20</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_20" name="Ensure one outstanding task per selected routine">
+        <bpmn:incoming>SF_T_19_T_20</bpmn:incoming>
+        <bpmn:outgoing>SF_T_20_T_21</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_21" name="Return the day's focus">
+        <bpmn:incoming>SF_T_20_T_21</bpmn:incoming>
+        <bpmn:outgoing>SF_T_21_BP08.02_SetTheDaysFocus_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP08.02_SetTheDaysFocus_e" name="fertig">
+        <bpmn:incoming>SF_T_21_BP08.02_SetTheDaysFocus_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_18_T_19" sourceRef="T_18" targetRef="T_19" />
+      <bpmn:sequenceFlow id="SF_T_19_T_20" sourceRef="T_19" targetRef="T_20" />
+      <bpmn:sequenceFlow id="SF_T_20_T_21" sourceRef="T_20" targetRef="T_21" />
+      <bpmn:sequenceFlow id="SF_BP08.02_SetTheDaysFocus_s_T_18" sourceRef="BP08.02_SetTheDaysFocus_s" targetRef="T_18" />
+      <bpmn:sequenceFlow id="SF_T_21_BP08.02_SetTheDaysFocus_e" sourceRef="T_21" targetRef="BP08.02_SetTheDaysFocus_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_22" name="Day focus answered">
+      <bpmn:incoming>SF_BP08.02_SetTheDaysFocus_End_22</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="readIn" name="Day focus read requested">
+      <bpmn:outgoing>SF_readIn_BP08.03_ReadTheDaysFocus</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_readIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP08.03_ReadTheDaysFocus" name="Read the day's focus">
+      <bpmn:incoming>SF_readIn_BP08.03_ReadTheDaysFocus</bpmn:incoming>
+      <bpmn:outgoing>SF_BP08.03_ReadTheDaysFocus_End_25</bpmn:outgoing>
+      <bpmn:startEvent id="BP08.03_ReadTheDaysFocus_s" name="Start">
+        <bpmn:outgoing>SF_BP08.03_ReadTheDaysFocus_s_T_23</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_23" name="Read the boards and routines committed for the date">
+        <bpmn:incoming>SF_BP08.03_ReadTheDaysFocus_s_T_23</bpmn:incoming>
+        <bpmn:outgoing>SF_T_23_T_24</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_24" name="Add Chores while it carries a task that is not done">
+        <bpmn:incoming>SF_T_23_T_24</bpmn:incoming>
+        <bpmn:outgoing>SF_T_24_BP08.03_ReadTheDaysFocus_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP08.03_ReadTheDaysFocus_e" name="fertig">
+        <bpmn:incoming>SF_T_24_BP08.03_ReadTheDaysFocus_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_23_T_24" sourceRef="T_23" targetRef="T_24" />
+      <bpmn:sequenceFlow id="SF_BP08.03_ReadTheDaysFocus_s_T_23" sourceRef="BP08.03_ReadTheDaysFocus_s" targetRef="T_23" />
+      <bpmn:sequenceFlow id="SF_T_24_BP08.03_ReadTheDaysFocus_e" sourceRef="T_24" targetRef="BP08.03_ReadTheDaysFocus_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_25" name="Day focus read answered">
+      <bpmn:incoming>SF_BP08.03_ReadTheDaysFocus_End_25</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_selectablesIn_BP08.01_ReadTheDaysSelectables" sourceRef="selectablesIn" targetRef="BP08.01_ReadTheDaysSelectables" />
+    <bpmn:sequenceFlow id="SF_BP08.01_ReadTheDaysSelectables_End_17" sourceRef="BP08.01_ReadTheDaysSelectables" targetRef="End_17" />
+    <bpmn:sequenceFlow id="SF_setIn_BP08.02_SetTheDaysFocus" sourceRef="setIn" targetRef="BP08.02_SetTheDaysFocus" />
+    <bpmn:sequenceFlow id="SF_BP08.02_SetTheDaysFocus_End_22" sourceRef="BP08.02_SetTheDaysFocus" targetRef="End_22" />
+    <bpmn:sequenceFlow id="SF_readIn_BP08.03_ReadTheDaysFocus" sourceRef="readIn" targetRef="BP08.03_ReadTheDaysFocus" />
+    <bpmn:sequenceFlow id="SF_BP08.03_ReadTheDaysFocus_End_25" sourceRef="BP08.03_ReadTheDaysFocus" targetRef="End_25" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP08_SetADaysFocus">
+    <bpmndi:BPMNPlane id="P_BP08_SetADaysFocus" bpmnElement="Collaboration_BP08_SetADaysFocus">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2260" height="380" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="500" width="2260" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="selectables_di" bpmnElement="selectables">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_4_di" bpmnElement="Gw_4">
+        <dc:Bounds x="925" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_6_di" bpmnElement="T_6">
+        <dc:Bounds x="1070" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="1240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="1410" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="focusSet_di" bpmnElement="focusSet">
+        <dc:Bounds x="1612" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_9_di" bpmnElement="Gw_9">
+        <dc:Bounds x="1775" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_10_di" bpmnElement="T_10">
+        <dc:Bounds x="1920" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="focusRead_di" bpmnElement="focusRead">
+        <dc:Bounds x="2122" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="1920" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_12_di" bpmnElement="End_12">
+        <dc:Bounds x="2292" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="selectablesIn_di" bpmnElement="selectablesIn">
+        <dc:Bounds x="422" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.01_ReadTheDaysSelectables_di" bpmnElement="BP08.01_ReadTheDaysSelectables" isExpanded="false">
+        <dc:Bounds x="540" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_17_di" bpmnElement="End_17">
+        <dc:Bounds x="762" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="setIn_di" bpmnElement="setIn">
+        <dc:Bounds x="1442" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.02_SetTheDaysFocus_di" bpmnElement="BP08.02_SetTheDaysFocus" isExpanded="false">
+        <dc:Bounds x="1560" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_22_di" bpmnElement="End_22">
+        <dc:Bounds x="1782" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="readIn_di" bpmnElement="readIn">
+        <dc:Bounds x="1952" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.03_ReadTheDaysFocus_di" bpmnElement="BP08.03_ReadTheDaysFocus" isExpanded="false">
+        <dc:Bounds x="2070" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_25_di" bpmnElement="End_25">
+        <dc:Bounds x="2292" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_selectables_di" bpmnElement="SF_T_2_selectables">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_selectables_T_3_di" bpmnElement="SF_selectables_T_3">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_Gw_4_di" bpmnElement="SF_T_3_Gw_4">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="925" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_5_di" bpmnElement="SF_Gw_4_T_5">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_6_di" bpmnElement="SF_Gw_4_T_6">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1005" y="200" />
+        <di:waypoint x="1005" y="320" />
+        <di:waypoint x="1070" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_T_7_di" bpmnElement="SF_T_5_T_7">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_6_T_7_di" bpmnElement="SF_T_6_T_7">
+        <di:waypoint x="1170" y="320" />
+        <di:waypoint x="1200" y="320" />
+        <di:waypoint x="1200" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_T_8_di" bpmnElement="SF_T_7_T_8">
+        <di:waypoint x="1340" y="200" />
+        <di:waypoint x="1410" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_focusSet_di" bpmnElement="SF_T_8_focusSet">
+        <di:waypoint x="1510" y="200" />
+        <di:waypoint x="1612" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_focusSet_Gw_9_di" bpmnElement="SF_focusSet_Gw_9">
+        <di:waypoint x="1648" y="200" />
+        <di:waypoint x="1775" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_10_focusRead_di" bpmnElement="SF_T_10_focusRead">
+        <di:waypoint x="2020" y="200" />
+        <di:waypoint x="2122" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_9_T_10_di" bpmnElement="SF_Gw_9_T_10">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1920" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_9_T_11_di" bpmnElement="SF_Gw_9_T_11">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1855" y="200" />
+        <di:waypoint x="1855" y="320" />
+        <di:waypoint x="1920" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_focusRead_End_12_di" bpmnElement="SF_focusRead_End_12">
+        <di:waypoint x="2158" y="200" />
+        <di:waypoint x="2292" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_End_12_di" bpmnElement="SF_T_11_End_12">
+        <di:waypoint x="2020" y="320" />
+        <di:waypoint x="2055" y="320" />
+        <di:waypoint x="2055" y="140" />
+        <di:waypoint x="2310" y="140" />
+        <di:waypoint x="2310" y="182" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_selectablesIn_BP08.01_ReadTheDaysSelectables_di" bpmnElement="SF_selectablesIn_BP08.01_ReadTheDaysSelectables">
+        <di:waypoint x="458" y="620" />
+        <di:waypoint x="540" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.01_ReadTheDaysSelectables_End_17_di" bpmnElement="SF_BP08.01_ReadTheDaysSelectables_End_17">
+        <di:waypoint x="680" y="620" />
+        <di:waypoint x="762" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_setIn_BP08.02_SetTheDaysFocus_di" bpmnElement="SF_setIn_BP08.02_SetTheDaysFocus">
+        <di:waypoint x="1478" y="620" />
+        <di:waypoint x="1560" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.02_SetTheDaysFocus_End_22_di" bpmnElement="SF_BP08.02_SetTheDaysFocus_End_22">
+        <di:waypoint x="1700" y="620" />
+        <di:waypoint x="1782" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_readIn_BP08.03_ReadTheDaysFocus_di" bpmnElement="SF_readIn_BP08.03_ReadTheDaysFocus">
+        <di:waypoint x="1988" y="620" />
+        <di:waypoint x="2070" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.03_ReadTheDaysFocus_End_25_di" bpmnElement="SF_BP08.03_ReadTheDaysFocus_End_25">
+        <di:waypoint x="2210" y="620" />
+        <di:waypoint x="2292" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1460" y="240" />
+        <di:waypoint x="1460" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="1970" y="240" />
+        <di:waypoint x="1970" y="252" />
+        <di:waypoint x="2055" y="252" />
+        <di:waypoint x="2055" y="590" />
+        <di:waypoint x="1970" y="590" />
+        <di:waypoint x="1970" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="610" y="575" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="1630" y="575" />
+        <di:waypoint x="1630" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="2140" y="575" />
+        <di:waypoint x="2140" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="660" y="79" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="780" y="160" /><di:waypoint x="780" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1000" y="79" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1120" y="160" /><di:waypoint x="1120" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1510" y="87" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1630" y="182" /><di:waypoint x="1630" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="490" y="685" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="610" y="665" /><di:waypoint x="610" y="685" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="1510" y="685" width="240" height="151" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="1630" y="665" /><di:waypoint x="1630" y="685" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="2020" y="685" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="2140" y="665" /><di:waypoint x="2140" y="685" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP08_SetADaysFocus_BP0801ReadTheDaysSelectables">
+    <bpmndi:BPMNPlane id="P_BP0801ReadTheDaysSelectables" bpmnElement="BP08.01_ReadTheDaysSelectables">
+      <bpmndi:BPMNShape id="BP08.01_ReadTheDaysSelectables_s_di" bpmnElement="BP08.01_ReadTheDaysSelectables_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.01_ReadTheDaysSelectables_e_di" bpmnElement="BP08.01_ReadTheDaysSelectables_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_T_15_di" bpmnElement="SF_T_14_T_15">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_T_16_di" bpmnElement="SF_T_15_T_16">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.01_ReadTheDaysSelectables_s_T_13_di" bpmnElement="SF_BP08.01_ReadTheDaysSelectables_s_T_13">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_BP08.01_ReadTheDaysSelectables_e_di" bpmnElement="SF_T_16_BP08.01_ReadTheDaysSelectables_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP08_SetADaysFocus_BP0802SetTheDaysFocus">
+    <bpmndi:BPMNPlane id="P_BP0802SetTheDaysFocus" bpmnElement="BP08.02_SetTheDaysFocus">
+      <bpmndi:BPMNShape id="BP08.02_SetTheDaysFocus_s_di" bpmnElement="BP08.02_SetTheDaysFocus_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_19_di" bpmnElement="T_19">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_20_di" bpmnElement="T_20">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.02_SetTheDaysFocus_e_di" bpmnElement="BP08.02_SetTheDaysFocus_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_18_T_19_di" bpmnElement="SF_T_18_T_19">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_19_T_20_di" bpmnElement="SF_T_19_T_20">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_20_T_21_di" bpmnElement="SF_T_20_T_21">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.02_SetTheDaysFocus_s_T_18_di" bpmnElement="SF_BP08.02_SetTheDaysFocus_s_T_18">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_21_BP08.02_SetTheDaysFocus_e_di" bpmnElement="SF_T_21_BP08.02_SetTheDaysFocus_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP08_SetADaysFocus_BP0803ReadTheDaysFocus">
+    <bpmndi:BPMNPlane id="P_BP0803ReadTheDaysFocus" bpmnElement="BP08.03_ReadTheDaysFocus">
+      <bpmndi:BPMNShape id="BP08.03_ReadTheDaysFocus_s_di" bpmnElement="BP08.03_ReadTheDaysFocus_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.03_ReadTheDaysFocus_e_di" bpmnElement="BP08.03_ReadTheDaysFocus_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_23_T_24_di" bpmnElement="SF_T_23_T_24">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.03_ReadTheDaysFocus_s_T_23_di" bpmnElement="SF_BP08.03_ReadTheDaysFocus_s_T_23">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_BP08.03_ReadTheDaysFocus_e_di" bpmnElement="SF_T_24_BP08.03_ReadTheDaysFocus_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

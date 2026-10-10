@@ -1,0 +1,1452 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP06_MeasureGoalProgress" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP06_MeasureGoalProgress">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP06.08 · Read the goal's progress measures" sourceRef="goalOpen" targetRef="measuresIn" />
+    <bpmn:messageFlow id="MF_2" name="BP06.09 · Draft the measure input" sourceRef="T_5" targetRef="measureDraftIn" />
+    <bpmn:messageFlow id="MF_3" name="BP06.03 · Add a progress measure" sourceRef="T_6" targetRef="addIn" />
+    <bpmn:messageFlow id="MF_4" name="BP06.04 · Amend a progress measure" sourceRef="T_7" targetRef="amendIn" />
+    <bpmn:messageFlow id="MF_5" name="BP06.05 · Reorder progress measures" sourceRef="T_8" targetRef="reorderIn" />
+    <bpmn:messageFlow id="MF_6" name="BP06.06 · See what removing a measure takes" sourceRef="T_9" targetRef="impactIn" />
+    <bpmn:messageFlow id="MF_7" name="BP06.07 · Remove a progress measure" sourceRef="T_11" targetRef="removeIn" />
+    <bpmn:messageFlow id="MF_8" name="BP06.01 · Read a measure's check-in history" sourceRef="T_13" targetRef="historyIn" />
+    <bpmn:messageFlow id="MF_9" name="BP06.02 · Record a progress check-in" sourceRef="T_15" targetRef="checkInIn" />
+    <bpmn:messageFlow id="MF_10" name="The measures with their types and targets" sourceRef="BP06.08_ReadAGoalsProgressMeasures" targetRef="measures" />
+    <bpmn:messageFlow id="MF_11" name="The measure's check-ins over time" sourceRef="BP06.01_ReadTheCheckInHistory" targetRef="history" />
+    <bpmn:messageFlow id="MF_12" name="Check-in recorded" sourceRef="BP06.02_RecordProgressCheckIn" targetRef="recorded" />
+    <bpmn:messageFlow id="MF_13" name="Measure added" sourceRef="BP06.03_AddProgressMeasure" targetRef="added" />
+    <bpmn:messageFlow id="MF_14" name="Measure amended" sourceRef="BP06.04_AmendProgressMeasure" targetRef="amended" />
+    <bpmn:messageFlow id="MF_15" name="Order recorded" sourceRef="BP06.05_ReorderProgressMeasures" targetRef="reordered" />
+    <bpmn:messageFlow id="MF_16" name="What the removal will take" sourceRef="BP06.06_ReadTheMeasureRemovalImpact" targetRef="impact" />
+    <bpmn:messageFlow id="MF_17" name="Measure removed" sourceRef="BP06.07_RemoveProgressMeasure" targetRef="removed" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>The type is amendable like the target and the unit, and the recorded check-ins are left as they stand.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="amended" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>The check-in history hangs on the measure's identity, never on its position.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="reordered" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>Numeric carries a target, a unit and a direction. Boolean carries done and not done.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="added" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>Nothing is removed.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="T_12" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>Numeric takes the value reached. Boolean takes done and not done. A note is optional either way.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="recorded" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>An archived goal is frozen, its measures and their check-ins included. Unarchiving it is what makes any of this possible again.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="T_3" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="BP06.09_DraftTheMeasureInput" targetRef="TextAnnotation_X7" />
+    <bpmn:textAnnotation id="TextAnnotation_X8"><bpmn:text>The history hangs on the measure's identity, so reordering the measures never disturbs it. The goal is known to be live by now: the freeze is answered at the entry.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X8" associationDirection="None" sourceRef="BP06.01_ReadTheCheckInHistory" targetRef="TextAnnotation_X8" />
+    <bpmn:textAnnotation id="TextAnnotation_X9"><bpmn:text>The type is amendable like the target and the unit. Each check-in keeps the type it was recorded under, so the history is never rewritten.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X9" associationDirection="None" sourceRef="BP06.04_AmendProgressMeasure" targetRef="TextAnnotation_X9" />
+    <bpmn:textAnnotation id="TextAnnotation_X10"><bpmn:text>The check-in history goes unasked. The projects are a cascade the user approves or abandons.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X10" associationDirection="None" sourceRef="BP06.06_ReadTheMeasureRemovalImpact" targetRef="TextAnnotation_X10" />
+    <bpmn:textAnnotation id="TextAnnotation_X11"><bpmn:text>There is no untyped measure.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X11" associationDirection="None" sourceRef="BP06.03_AddProgressMeasure" targetRef="TextAnnotation_X11" />
+    <bpmn:textAnnotation id="TextAnnotation_X12"><bpmn:text>The history is append-only, so a date that already carries a check-in takes another and each is its own data point. A check-in records a data point and infers no status.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X12" associationDirection="None" sourceRef="BP06.02_RecordProgressCheckIn" targetRef="TextAnnotation_X12" />
+    <bpmn:textAnnotation id="TextAnnotation_X13"><bpmn:text>The goals overview carries no measures, so this is where they are read. An archived goal is reported as such, and nothing here can change while it is.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X13" associationDirection="None" sourceRef="BP06.08_ReadAGoalsProgressMeasures" targetRef="TextAnnotation_X13" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A commitment to measure, or progress to record">
+      <bpmn:outgoing>SF_Start_1_goalOpen</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="goalOpen" name="Open a goal's progress measures">
+      <bpmn:incoming>SF_Start_1_goalOpen</bpmn:incoming>
+      <bpmn:incoming>SF_T_12_goalOpen</bpmn:incoming>
+      <bpmn:incoming>SF_Gw_17_goalOpen</bpmn:incoming>
+      <bpmn:outgoing>SF_goalOpen_measures</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="measures" name="The measures with their types and targets">
+      <bpmn:incoming>SF_goalOpen_measures</bpmn:incoming>
+      <bpmn:outgoing>SF_measures_Gw_2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_measures" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_2" name="Is the goal archived?">
+      <bpmn:incoming>SF_measures_Gw_2</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_2_T_3</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_3" name="Read why nothing here can change">
+      <bpmn:incoming>SF_Gw_2_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_leaving</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_4" name="What needs doing?">
+      <bpmn:outgoing>SF_Gw_4_T_5</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_T_8</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_T_9</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_T_13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_5" name="Type the measure and set its target">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_T_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_6" name="Submit the measure">
+      <bpmn:incoming>SF_T_5_T_6</bpmn:incoming>
+      <bpmn:outgoing>SF_T_6_added</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="added" name="Measure added">
+      <bpmn:incoming>SF_T_6_added</bpmn:incoming>
+      <bpmn:outgoing>SF_added_leaving</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_added" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_7" name="Amend the measure">
+      <bpmn:incoming>SF_Gw_4_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_amended</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="amended" name="Measure amended">
+      <bpmn:incoming>SF_T_7_amended</bpmn:incoming>
+      <bpmn:outgoing>SF_amended_leaving</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_amended" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_8" name="Drag a measure into place">
+      <bpmn:incoming>SF_Gw_4_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_reordered</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="reordered" name="Order recorded">
+      <bpmn:incoming>SF_T_8_reordered</bpmn:incoming>
+      <bpmn:outgoing>SF_reordered_leaving</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reordered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_9" name="Choose a measure to remove">
+      <bpmn:incoming>SF_Gw_4_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_impact</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="impact" name="What the removal will take">
+      <bpmn:incoming>SF_T_9_impact</bpmn:incoming>
+      <bpmn:outgoing>SF_impact_Gw_10</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_impact" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_10" name="Approve what the removal takes?">
+      <bpmn:incoming>SF_impact_Gw_10</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_10_T_11</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_10_T_12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_11" name="Confirm the removal">
+      <bpmn:incoming>SF_Gw_10_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_removed</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="removed" name="Measure removed">
+      <bpmn:incoming>SF_T_11_removed</bpmn:incoming>
+      <bpmn:outgoing>SF_removed_leaving</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_removed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_12" name="Abandon the removal">
+      <bpmn:incoming>SF_Gw_10_T_12</bpmn:incoming>
+      <bpmn:outgoing>SF_T_12_goalOpen</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_13" name="Open a progress measure">
+      <bpmn:incoming>SF_Gw_4_T_13</bpmn:incoming>
+      <bpmn:outgoing>SF_T_13_history</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="history" name="The measure's check-ins over time">
+      <bpmn:incoming>SF_T_13_history</bpmn:incoming>
+      <bpmn:outgoing>SF_history_Gw_14</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_history" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_14" name="Anything to record?">
+      <bpmn:incoming>SF_history_Gw_14</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_14_T_15</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_14_T_16</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_15" name="State the value reached">
+      <bpmn:incoming>SF_Gw_14_T_15</bpmn:incoming>
+      <bpmn:outgoing>SF_T_15_recorded</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="recorded" name="Check-in recorded">
+      <bpmn:incoming>SF_T_15_recorded</bpmn:incoming>
+      <bpmn:outgoing>SF_recorded_leaving</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_recorded" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_16" name="Read the trend and leave it">
+      <bpmn:incoming>SF_Gw_14_T_16</bpmn:incoming>
+      <bpmn:outgoing>SF_T_16_leaving</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="leaving" name="Take stock">
+      <bpmn:incoming>SF_added_leaving</bpmn:incoming>
+      <bpmn:incoming>SF_amended_leaving</bpmn:incoming>
+      <bpmn:incoming>SF_reordered_leaving</bpmn:incoming>
+      <bpmn:incoming>SF_removed_leaving</bpmn:incoming>
+      <bpmn:incoming>SF_recorded_leaving</bpmn:incoming>
+      <bpmn:incoming>SF_T_16_leaving</bpmn:incoming>
+      <bpmn:incoming>SF_T_3_leaving</bpmn:incoming>
+      <bpmn:outgoing>SF_leaving_Gw_17</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_17" name="Anything else on this goal?">
+      <bpmn:incoming>SF_leaving_Gw_17</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_17_T_18</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_17_goalOpen</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_18" name="Leave the goal">
+      <bpmn:incoming>SF_Gw_17_T_18</bpmn:incoming>
+      <bpmn:outgoing>SF_T_18_End_19</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_19" name="Progress measured">
+      <bpmn:incoming>SF_T_18_End_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_goalOpen" sourceRef="Start_1" targetRef="goalOpen" />
+    <bpmn:sequenceFlow id="SF_goalOpen_measures" sourceRef="goalOpen" targetRef="measures" />
+    <bpmn:sequenceFlow id="SF_measures_Gw_2" sourceRef="measures" targetRef="Gw_2" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_3" name="archived" sourceRef="Gw_2" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_5_T_6" sourceRef="T_5" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_T_6_added" sourceRef="T_6" targetRef="added" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_5" name="say what counts" sourceRef="Gw_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_7_amended" sourceRef="T_7" targetRef="amended" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_7" name="change what counts" sourceRef="Gw_4" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_8_reordered" sourceRef="T_8" targetRef="reordered" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_8" name="reorder them" sourceRef="Gw_4" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_T_9_impact" sourceRef="T_9" targetRef="impact" />
+    <bpmn:sequenceFlow id="SF_impact_Gw_10" sourceRef="impact" targetRef="Gw_10" />
+    <bpmn:sequenceFlow id="SF_T_11_removed" sourceRef="T_11" targetRef="removed" />
+    <bpmn:sequenceFlow id="SF_Gw_10_T_11" name="approve" sourceRef="Gw_10" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_Gw_10_T_12" name="abandon" sourceRef="Gw_10" targetRef="T_12" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_9" name="drop one" sourceRef="Gw_4" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_13_history" sourceRef="T_13" targetRef="history" />
+    <bpmn:sequenceFlow id="SF_history_Gw_14" sourceRef="history" targetRef="Gw_14" />
+    <bpmn:sequenceFlow id="SF_T_15_recorded" sourceRef="T_15" targetRef="recorded" />
+    <bpmn:sequenceFlow id="SF_Gw_14_T_15" name="yes" sourceRef="Gw_14" targetRef="T_15" />
+    <bpmn:sequenceFlow id="SF_Gw_14_T_16" name="no" sourceRef="Gw_14" targetRef="T_16" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_13" name="record where one stands" sourceRef="Gw_4" targetRef="T_13" />
+    <bpmn:sequenceFlow id="SF_added_leaving" sourceRef="added" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_amended_leaving" sourceRef="amended" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_reordered_leaving" sourceRef="reordered" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_removed_leaving" sourceRef="removed" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_recorded_leaving" sourceRef="recorded" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_T_16_leaving" sourceRef="T_16" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_leaving_Gw_17" sourceRef="leaving" targetRef="Gw_17" />
+    <bpmn:sequenceFlow id="SF_Gw_17_T_18" name="no" sourceRef="Gw_17" targetRef="T_18" />
+    <bpmn:sequenceFlow id="SF_T_18_End_19" sourceRef="T_18" targetRef="End_19" />
+    <bpmn:sequenceFlow id="SF_T_3_leaving" sourceRef="T_3" targetRef="leaving" />
+    <bpmn:sequenceFlow id="SF_T_12_goalOpen" sourceRef="T_12" targetRef="goalOpen" />
+    <bpmn:sequenceFlow id="SF_Gw_17_goalOpen" name="yes" sourceRef="Gw_17" targetRef="goalOpen" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="measureDraftIn" name="Measure draft submitted">
+      <bpmn:outgoing>SF_measureDraftIn_BP06.09_DraftTheMeasureInput</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_measureDraftIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.09_DraftTheMeasureInput" name="Draft the measure input">
+      <bpmn:incoming>SF_measureDraftIn_BP06.09_DraftTheMeasureInput</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.09_DraftTheMeasureInput_End_21</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.09_DraftTheMeasureInput_s" name="Start">
+        <bpmn:outgoing>SF_BP06.09_DraftTheMeasureInput_s_T_20</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_20" name="Keep what is typed as a draft">
+        <bpmn:incoming>SF_BP06.09_DraftTheMeasureInput_s_T_20</bpmn:incoming>
+        <bpmn:outgoing>SF_T_20_BP06.09_DraftTheMeasureInput_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.09_DraftTheMeasureInput_e" name="fertig">
+        <bpmn:incoming>SF_T_20_BP06.09_DraftTheMeasureInput_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP06.09_DraftTheMeasureInput_s_T_20" sourceRef="BP06.09_DraftTheMeasureInput_s" targetRef="T_20" />
+      <bpmn:sequenceFlow id="SF_T_20_BP06.09_DraftTheMeasureInput_e" sourceRef="T_20" targetRef="BP06.09_DraftTheMeasureInput_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_21" name="Draft kept">
+      <bpmn:incoming>SF_BP06.09_DraftTheMeasureInput_End_21</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="measuresIn" name="Measure list requested">
+      <bpmn:outgoing>SF_measuresIn_BP06.08_ReadAGoalsProgressMeasures</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_measuresIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.08_ReadAGoalsProgressMeasures" name="Read the goal's progress measures">
+      <bpmn:incoming>SF_measuresIn_BP06.08_ReadAGoalsProgressMeasures</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.08_ReadAGoalsProgressMeasures_End_25</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.08_ReadAGoalsProgressMeasures_s" name="Start">
+        <bpmn:outgoing>SF_BP06.08_ReadAGoalsProgressMeasures_s_T_22</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_22" name="Read the goal's measures in their recorded order">
+        <bpmn:incoming>SF_BP06.08_ReadAGoalsProgressMeasures_s_T_22</bpmn:incoming>
+        <bpmn:outgoing>SF_T_22_T_23</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_23" name="Read each measure's type, target and latest check-in">
+        <bpmn:incoming>SF_T_22_T_23</bpmn:incoming>
+        <bpmn:outgoing>SF_T_23_T_24</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_24" name="Report whether the goal is archived">
+        <bpmn:incoming>SF_T_23_T_24</bpmn:incoming>
+        <bpmn:outgoing>SF_T_24_BP06.08_ReadAGoalsProgressMeasures_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.08_ReadAGoalsProgressMeasures_e" name="fertig">
+        <bpmn:incoming>SF_T_24_BP06.08_ReadAGoalsProgressMeasures_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_22_T_23" sourceRef="T_22" targetRef="T_23" />
+      <bpmn:sequenceFlow id="SF_T_23_T_24" sourceRef="T_23" targetRef="T_24" />
+      <bpmn:sequenceFlow id="SF_BP06.08_ReadAGoalsProgressMeasures_s_T_22" sourceRef="BP06.08_ReadAGoalsProgressMeasures_s" targetRef="T_22" />
+      <bpmn:sequenceFlow id="SF_T_24_BP06.08_ReadAGoalsProgressMeasures_e" sourceRef="T_24" targetRef="BP06.08_ReadAGoalsProgressMeasures_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_25" name="Measure list answered">
+      <bpmn:incoming>SF_BP06.08_ReadAGoalsProgressMeasures_End_25</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="historyIn" name="Check-in history requested">
+      <bpmn:outgoing>SF_historyIn_BP06.01_ReadTheCheckInHistory</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_historyIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.01_ReadTheCheckInHistory" name="Read a measure's check-in history">
+      <bpmn:incoming>SF_historyIn_BP06.01_ReadTheCheckInHistory</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.01_ReadTheCheckInHistory_End_28</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.01_ReadTheCheckInHistory_s" name="Start">
+        <bpmn:outgoing>SF_BP06.01_ReadTheCheckInHistory_s_T_26</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_26" name="Read the measure with its type and target">
+        <bpmn:incoming>SF_BP06.01_ReadTheCheckInHistory_s_T_26</bpmn:incoming>
+        <bpmn:outgoing>SF_T_26_T_27</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_27" name="Read its check-ins in date order">
+        <bpmn:incoming>SF_T_26_T_27</bpmn:incoming>
+        <bpmn:outgoing>SF_T_27_BP06.01_ReadTheCheckInHistory_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.01_ReadTheCheckInHistory_e" name="fertig">
+        <bpmn:incoming>SF_T_27_BP06.01_ReadTheCheckInHistory_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_26_T_27" sourceRef="T_26" targetRef="T_27" />
+      <bpmn:sequenceFlow id="SF_BP06.01_ReadTheCheckInHistory_s_T_26" sourceRef="BP06.01_ReadTheCheckInHistory_s" targetRef="T_26" />
+      <bpmn:sequenceFlow id="SF_T_27_BP06.01_ReadTheCheckInHistory_e" sourceRef="T_27" targetRef="BP06.01_ReadTheCheckInHistory_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_28" name="History answered">
+      <bpmn:incoming>SF_BP06.01_ReadTheCheckInHistory_End_28</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="checkInIn" name="Check-in submitted">
+      <bpmn:outgoing>SF_checkInIn_BP06.02_RecordProgressCheckIn</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_checkInIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.02_RecordProgressCheckIn" name="Record a progress check-in">
+      <bpmn:incoming>SF_checkInIn_BP06.02_RecordProgressCheckIn</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.02_RecordProgressCheckIn_End_34</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.02_RecordProgressCheckIn_s" name="Start">
+        <bpmn:outgoing>SF_BP06.02_RecordProgressCheckIn_s_Gw_29</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:exclusiveGateway id="Gw_29" name="Numeric measure?">
+        <bpmn:incoming>SF_BP06.02_RecordProgressCheckIn_s_Gw_29</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_29_T_30</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_29_T_31</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:task id="T_30" name="Store the value reached against the target">
+        <bpmn:incoming>SF_Gw_29_T_30</bpmn:incoming>
+        <bpmn:outgoing>SF_T_30_T_32</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_31" name="Store done or not done">
+        <bpmn:incoming>SF_Gw_29_T_31</bpmn:incoming>
+        <bpmn:outgoing>SF_T_31_T_32</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_32" name="Append the dated check-in with its note">
+        <bpmn:incoming>SF_T_30_T_32</bpmn:incoming>
+        <bpmn:incoming>SF_T_31_T_32</bpmn:incoming>
+        <bpmn:outgoing>SF_T_32_T_33</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_33" name="Confirm what was recorded">
+        <bpmn:incoming>SF_T_32_T_33</bpmn:incoming>
+        <bpmn:outgoing>SF_T_33_BP06.02_RecordProgressCheckIn_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.02_RecordProgressCheckIn_e" name="fertig">
+        <bpmn:incoming>SF_T_33_BP06.02_RecordProgressCheckIn_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_Gw_29_T_30" name="numeric" sourceRef="Gw_29" targetRef="T_30" />
+      <bpmn:sequenceFlow id="SF_Gw_29_T_31" name="boolean" sourceRef="Gw_29" targetRef="T_31" />
+      <bpmn:sequenceFlow id="SF_T_30_T_32" sourceRef="T_30" targetRef="T_32" />
+      <bpmn:sequenceFlow id="SF_T_31_T_32" sourceRef="T_31" targetRef="T_32" />
+      <bpmn:sequenceFlow id="SF_T_32_T_33" sourceRef="T_32" targetRef="T_33" />
+      <bpmn:sequenceFlow id="SF_BP06.02_RecordProgressCheckIn_s_Gw_29" sourceRef="BP06.02_RecordProgressCheckIn_s" targetRef="Gw_29" />
+      <bpmn:sequenceFlow id="SF_T_33_BP06.02_RecordProgressCheckIn_e" sourceRef="T_33" targetRef="BP06.02_RecordProgressCheckIn_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_34" name="Check-in answered">
+      <bpmn:incoming>SF_BP06.02_RecordProgressCheckIn_End_34</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="addIn" name="Measure submitted">
+      <bpmn:outgoing>SF_addIn_BP06.03_AddProgressMeasure</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_addIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.03_AddProgressMeasure" name="Add a progress measure">
+      <bpmn:incoming>SF_addIn_BP06.03_AddProgressMeasure</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.03_AddProgressMeasure_End_37</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.03_AddProgressMeasure_s" name="Start">
+        <bpmn:outgoing>SF_BP06.03_AddProgressMeasure_s_T_35</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_35" name="Store the measure with its type and target">
+        <bpmn:incoming>SF_BP06.03_AddProgressMeasure_s_T_35</bpmn:incoming>
+        <bpmn:outgoing>SF_T_35_T_36</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_36" name="Place it last in the goal's order">
+        <bpmn:incoming>SF_T_35_T_36</bpmn:incoming>
+        <bpmn:outgoing>SF_T_36_BP06.03_AddProgressMeasure_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.03_AddProgressMeasure_e" name="fertig">
+        <bpmn:incoming>SF_T_36_BP06.03_AddProgressMeasure_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_35_T_36" sourceRef="T_35" targetRef="T_36" />
+      <bpmn:sequenceFlow id="SF_BP06.03_AddProgressMeasure_s_T_35" sourceRef="BP06.03_AddProgressMeasure_s" targetRef="T_35" />
+      <bpmn:sequenceFlow id="SF_T_36_BP06.03_AddProgressMeasure_e" sourceRef="T_36" targetRef="BP06.03_AddProgressMeasure_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_37" name="Measure answered">
+      <bpmn:incoming>SF_BP06.03_AddProgressMeasure_End_37</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="amendIn" name="Measure amendment requested">
+      <bpmn:outgoing>SF_amendIn_BP06.04_AmendProgressMeasure</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_amendIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.04_AmendProgressMeasure" name="Amend a progress measure">
+      <bpmn:incoming>SF_amendIn_BP06.04_AmendProgressMeasure</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.04_AmendProgressMeasure_End_40</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.04_AmendProgressMeasure_s" name="Start">
+        <bpmn:outgoing>SF_BP06.04_AmendProgressMeasure_s_T_38</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_38" name="Apply the type, the target and the unit as given">
+        <bpmn:incoming>SF_BP06.04_AmendProgressMeasure_s_T_38</bpmn:incoming>
+        <bpmn:outgoing>SF_T_38_T_39</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_39" name="Leave the recorded check-ins as they stand">
+        <bpmn:incoming>SF_T_38_T_39</bpmn:incoming>
+        <bpmn:outgoing>SF_T_39_BP06.04_AmendProgressMeasure_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.04_AmendProgressMeasure_e" name="fertig">
+        <bpmn:incoming>SF_T_39_BP06.04_AmendProgressMeasure_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_38_T_39" sourceRef="T_38" targetRef="T_39" />
+      <bpmn:sequenceFlow id="SF_BP06.04_AmendProgressMeasure_s_T_38" sourceRef="BP06.04_AmendProgressMeasure_s" targetRef="T_38" />
+      <bpmn:sequenceFlow id="SF_T_39_BP06.04_AmendProgressMeasure_e" sourceRef="T_39" targetRef="BP06.04_AmendProgressMeasure_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_40" name="Measure amendment answered">
+      <bpmn:incoming>SF_BP06.04_AmendProgressMeasure_End_40</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="reorderIn" name="Measure reordering requested">
+      <bpmn:outgoing>SF_reorderIn_BP06.05_ReorderProgressMeasures</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reorderIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.05_ReorderProgressMeasures" name="Reorder progress measures">
+      <bpmn:incoming>SF_reorderIn_BP06.05_ReorderProgressMeasures</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.05_ReorderProgressMeasures_End_42</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.05_ReorderProgressMeasures_s" name="Start">
+        <bpmn:outgoing>SF_BP06.05_ReorderProgressMeasures_s_T_41</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_41" name="Record the new relative order within the goal">
+        <bpmn:incoming>SF_BP06.05_ReorderProgressMeasures_s_T_41</bpmn:incoming>
+        <bpmn:outgoing>SF_T_41_BP06.05_ReorderProgressMeasures_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.05_ReorderProgressMeasures_e" name="fertig">
+        <bpmn:incoming>SF_T_41_BP06.05_ReorderProgressMeasures_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP06.05_ReorderProgressMeasures_s_T_41" sourceRef="BP06.05_ReorderProgressMeasures_s" targetRef="T_41" />
+      <bpmn:sequenceFlow id="SF_T_41_BP06.05_ReorderProgressMeasures_e" sourceRef="T_41" targetRef="BP06.05_ReorderProgressMeasures_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_42" name="Measure reordering answered">
+      <bpmn:incoming>SF_BP06.05_ReorderProgressMeasures_End_42</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="impactIn" name="Removal impact requested">
+      <bpmn:outgoing>SF_impactIn_BP06.06_ReadTheMeasureRemovalImpact</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_impactIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.06_ReadTheMeasureRemovalImpact" name="See what removing a measure takes">
+      <bpmn:incoming>SF_impactIn_BP06.06_ReadTheMeasureRemovalImpact</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.06_ReadTheMeasureRemovalImpact_End_47</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.06_ReadTheMeasureRemovalImpact_s" name="Start">
+        <bpmn:outgoing>SF_BP06.06_ReadTheMeasureRemovalImpact_s_T_43</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_43" name="Collect the projects parented on the measure">
+        <bpmn:incoming>SF_BP06.06_ReadTheMeasureRemovalImpact_s_T_43</bpmn:incoming>
+        <bpmn:outgoing>SF_T_43_T_44</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_44" name="Collect the measure's check-in history">
+        <bpmn:incoming>SF_T_43_T_44</bpmn:incoming>
+        <bpmn:outgoing>SF_T_44_T_45</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_45" name="Include the archived ones in the count">
+        <bpmn:incoming>SF_T_44_T_45</bpmn:incoming>
+        <bpmn:outgoing>SF_T_45_T_46</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_46" name="Report what the removal will take">
+        <bpmn:incoming>SF_T_45_T_46</bpmn:incoming>
+        <bpmn:outgoing>SF_T_46_BP06.06_ReadTheMeasureRemovalImpact_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.06_ReadTheMeasureRemovalImpact_e" name="fertig">
+        <bpmn:incoming>SF_T_46_BP06.06_ReadTheMeasureRemovalImpact_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_43_T_44" sourceRef="T_43" targetRef="T_44" />
+      <bpmn:sequenceFlow id="SF_T_44_T_45" sourceRef="T_44" targetRef="T_45" />
+      <bpmn:sequenceFlow id="SF_T_45_T_46" sourceRef="T_45" targetRef="T_46" />
+      <bpmn:sequenceFlow id="SF_BP06.06_ReadTheMeasureRemovalImpact_s_T_43" sourceRef="BP06.06_ReadTheMeasureRemovalImpact_s" targetRef="T_43" />
+      <bpmn:sequenceFlow id="SF_T_46_BP06.06_ReadTheMeasureRemovalImpact_e" sourceRef="T_46" targetRef="BP06.06_ReadTheMeasureRemovalImpact_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_47" name="Removal impact answered">
+      <bpmn:incoming>SF_BP06.06_ReadTheMeasureRemovalImpact_End_47</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="removeIn" name="Measure removal requested">
+      <bpmn:outgoing>SF_removeIn_BP06.07_RemoveProgressMeasure</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_removeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP06.07_RemoveProgressMeasure" name="Remove a progress measure">
+      <bpmn:incoming>SF_removeIn_BP06.07_RemoveProgressMeasure</bpmn:incoming>
+      <bpmn:outgoing>SF_BP06.07_RemoveProgressMeasure_End_50</bpmn:outgoing>
+      <bpmn:startEvent id="BP06.07_RemoveProgressMeasure_s" name="Start">
+        <bpmn:outgoing>SF_BP06.07_RemoveProgressMeasure_s_T_48</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_48" name="Delete the projects parented on the measure">
+        <bpmn:incoming>SF_BP06.07_RemoveProgressMeasure_s_T_48</bpmn:incoming>
+        <bpmn:outgoing>SF_T_48_T_49</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_49" name="Delete the measure with its check-in history">
+        <bpmn:incoming>SF_T_48_T_49</bpmn:incoming>
+        <bpmn:outgoing>SF_T_49_BP06.07_RemoveProgressMeasure_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP06.07_RemoveProgressMeasure_e" name="fertig">
+        <bpmn:incoming>SF_T_49_BP06.07_RemoveProgressMeasure_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_48_T_49" sourceRef="T_48" targetRef="T_49" />
+      <bpmn:sequenceFlow id="SF_BP06.07_RemoveProgressMeasure_s_T_48" sourceRef="BP06.07_RemoveProgressMeasure_s" targetRef="T_48" />
+      <bpmn:sequenceFlow id="SF_T_49_BP06.07_RemoveProgressMeasure_e" sourceRef="T_49" targetRef="BP06.07_RemoveProgressMeasure_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_50" name="Removal answered">
+      <bpmn:incoming>SF_BP06.07_RemoveProgressMeasure_End_50</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_measureDraftIn_BP06.09_DraftTheMeasureInput" sourceRef="measureDraftIn" targetRef="BP06.09_DraftTheMeasureInput" />
+    <bpmn:sequenceFlow id="SF_BP06.09_DraftTheMeasureInput_End_21" sourceRef="BP06.09_DraftTheMeasureInput" targetRef="End_21" />
+    <bpmn:sequenceFlow id="SF_measuresIn_BP06.08_ReadAGoalsProgressMeasures" sourceRef="measuresIn" targetRef="BP06.08_ReadAGoalsProgressMeasures" />
+    <bpmn:sequenceFlow id="SF_BP06.08_ReadAGoalsProgressMeasures_End_25" sourceRef="BP06.08_ReadAGoalsProgressMeasures" targetRef="End_25" />
+    <bpmn:sequenceFlow id="SF_historyIn_BP06.01_ReadTheCheckInHistory" sourceRef="historyIn" targetRef="BP06.01_ReadTheCheckInHistory" />
+    <bpmn:sequenceFlow id="SF_BP06.01_ReadTheCheckInHistory_End_28" sourceRef="BP06.01_ReadTheCheckInHistory" targetRef="End_28" />
+    <bpmn:sequenceFlow id="SF_checkInIn_BP06.02_RecordProgressCheckIn" sourceRef="checkInIn" targetRef="BP06.02_RecordProgressCheckIn" />
+    <bpmn:sequenceFlow id="SF_BP06.02_RecordProgressCheckIn_End_34" sourceRef="BP06.02_RecordProgressCheckIn" targetRef="End_34" />
+    <bpmn:sequenceFlow id="SF_addIn_BP06.03_AddProgressMeasure" sourceRef="addIn" targetRef="BP06.03_AddProgressMeasure" />
+    <bpmn:sequenceFlow id="SF_BP06.03_AddProgressMeasure_End_37" sourceRef="BP06.03_AddProgressMeasure" targetRef="End_37" />
+    <bpmn:sequenceFlow id="SF_amendIn_BP06.04_AmendProgressMeasure" sourceRef="amendIn" targetRef="BP06.04_AmendProgressMeasure" />
+    <bpmn:sequenceFlow id="SF_BP06.04_AmendProgressMeasure_End_40" sourceRef="BP06.04_AmendProgressMeasure" targetRef="End_40" />
+    <bpmn:sequenceFlow id="SF_reorderIn_BP06.05_ReorderProgressMeasures" sourceRef="reorderIn" targetRef="BP06.05_ReorderProgressMeasures" />
+    <bpmn:sequenceFlow id="SF_BP06.05_ReorderProgressMeasures_End_42" sourceRef="BP06.05_ReorderProgressMeasures" targetRef="End_42" />
+    <bpmn:sequenceFlow id="SF_impactIn_BP06.06_ReadTheMeasureRemovalImpact" sourceRef="impactIn" targetRef="BP06.06_ReadTheMeasureRemovalImpact" />
+    <bpmn:sequenceFlow id="SF_BP06.06_ReadTheMeasureRemovalImpact_End_47" sourceRef="BP06.06_ReadTheMeasureRemovalImpact" targetRef="End_47" />
+    <bpmn:sequenceFlow id="SF_removeIn_BP06.07_RemoveProgressMeasure" sourceRef="removeIn" targetRef="BP06.07_RemoveProgressMeasure" />
+    <bpmn:sequenceFlow id="SF_BP06.07_RemoveProgressMeasure_End_50" sourceRef="BP06.07_RemoveProgressMeasure" targetRef="End_50" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress">
+    <bpmndi:BPMNPlane id="P_BP06_MeasureGoalProgress" bpmnElement="Collaboration_BP06_MeasureGoalProgress">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2260" height="1100" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="1220" width="2260" height="860" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="goalOpen_di" bpmnElement="goalOpen">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="measures_di" bpmnElement="measures">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_2_di" bpmnElement="Gw_2">
+        <dc:Bounds x="1435" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="1580" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_4_di" bpmnElement="Gw_4">
+        <dc:Bounds x="245" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="390" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_6_di" bpmnElement="T_6">
+        <dc:Bounds x="560" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="added_di" bpmnElement="added">
+        <dc:Bounds x="762" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="390" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amended_di" bpmnElement="amended">
+        <dc:Bounds x="592" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="390" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reordered_di" bpmnElement="reordered">
+        <dc:Bounds x="592" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="390" y="640" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="impact_di" bpmnElement="impact">
+        <dc:Bounds x="592" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_10_di" bpmnElement="Gw_10">
+        <dc:Bounds x="755" y="655" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="710" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="900" y="640" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="removed_di" bpmnElement="removed">
+        <dc:Bounds x="1102" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="900" y="760" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="390" y="760" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="history_di" bpmnElement="history">
+        <dc:Bounds x="592" y="782" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="823" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_14_di" bpmnElement="Gw_14">
+        <dc:Bounds x="755" y="775" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="830" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="900" y="880" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="recorded_di" bpmnElement="recorded">
+        <dc:Bounds x="1102" y="902" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="943" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="900" y="1000" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="leaving_di" bpmnElement="leaving">
+        <dc:Bounds x="1750" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_17_di" bpmnElement="Gw_17">
+        <dc:Bounds x="1945" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="2090" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_19_di" bpmnElement="End_19">
+        <dc:Bounds x="2292" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="measureDraftIn_di" bpmnElement="measureDraftIn">
+        <dc:Bounds x="422" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.09_DraftTheMeasureInput_di" bpmnElement="BP06.09_DraftTheMeasureInput" isExpanded="false">
+        <dc:Bounds x="540" y="1295" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_21_di" bpmnElement="End_21">
+        <dc:Bounds x="762" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="measuresIn_di" bpmnElement="measuresIn">
+        <dc:Bounds x="1102" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.08_ReadAGoalsProgressMeasures_di" bpmnElement="BP06.08_ReadAGoalsProgressMeasures" isExpanded="false">
+        <dc:Bounds x="1220" y="1295" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_25_di" bpmnElement="End_25">
+        <dc:Bounds x="1442" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="historyIn_di" bpmnElement="historyIn">
+        <dc:Bounds x="422" y="1802" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1843" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.01_ReadTheCheckInHistory_di" bpmnElement="BP06.01_ReadTheCheckInHistory" isExpanded="false">
+        <dc:Bounds x="540" y="1895" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_28_di" bpmnElement="End_28">
+        <dc:Bounds x="762" y="1922" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1963" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="checkInIn_di" bpmnElement="checkInIn">
+        <dc:Bounds x="932" y="1562" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="1603" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.02_RecordProgressCheckIn_di" bpmnElement="BP06.02_RecordProgressCheckIn" isExpanded="false">
+        <dc:Bounds x="1050" y="1535" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_34_di" bpmnElement="End_34">
+        <dc:Bounds x="1272" y="1562" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="1603" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="addIn_di" bpmnElement="addIn">
+        <dc:Bounds x="592" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="1483" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.03_AddProgressMeasure_di" bpmnElement="BP06.03_AddProgressMeasure" isExpanded="false">
+        <dc:Bounds x="710" y="1415" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_37_di" bpmnElement="End_37">
+        <dc:Bounds x="932" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="1483" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amendIn_di" bpmnElement="amendIn">
+        <dc:Bounds x="422" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1483" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.04_AmendProgressMeasure_di" bpmnElement="BP06.04_AmendProgressMeasure" isExpanded="false">
+        <dc:Bounds x="540" y="1535" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_40_di" bpmnElement="End_40">
+        <dc:Bounds x="762" y="1562" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1603" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reorderIn_di" bpmnElement="reorderIn">
+        <dc:Bounds x="422" y="1562" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1603" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.05_ReorderProgressMeasures_di" bpmnElement="BP06.05_ReorderProgressMeasures" isExpanded="false">
+        <dc:Bounds x="540" y="1655" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_42_di" bpmnElement="End_42">
+        <dc:Bounds x="762" y="1682" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1723" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="impactIn_di" bpmnElement="impactIn">
+        <dc:Bounds x="422" y="1682" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1723" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.06_ReadTheMeasureRemovalImpact_di" bpmnElement="BP06.06_ReadTheMeasureRemovalImpact" isExpanded="false">
+        <dc:Bounds x="540" y="1775" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_47_di" bpmnElement="End_47">
+        <dc:Bounds x="762" y="1802" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1843" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="removeIn_di" bpmnElement="removeIn">
+        <dc:Bounds x="932" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.07_RemoveProgressMeasure_di" bpmnElement="BP06.07_RemoveProgressMeasure" isExpanded="false">
+        <dc:Bounds x="1050" y="1415" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_50_di" bpmnElement="End_50">
+        <dc:Bounds x="1272" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="1483" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_goalOpen_di" bpmnElement="SF_Start_1_goalOpen">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_goalOpen_measures_di" bpmnElement="SF_goalOpen_measures">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_measures_Gw_2_di" bpmnElement="SF_measures_Gw_2">
+        <di:waypoint x="1308" y="200" />
+        <di:waypoint x="1435" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_3_di" bpmnElement="SF_Gw_2_T_3">
+        <di:waypoint x="1485" y="200" />
+        <di:waypoint x="1580" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_T_6_di" bpmnElement="SF_T_5_T_6">
+        <di:waypoint x="490" y="320" />
+        <di:waypoint x="560" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_6_added_di" bpmnElement="SF_T_6_added">
+        <di:waypoint x="660" y="320" />
+        <di:waypoint x="762" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_5_di" bpmnElement="SF_Gw_4_T_5">
+        <di:waypoint x="295" y="320" />
+        <di:waypoint x="390" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_amended_di" bpmnElement="SF_T_7_amended">
+        <di:waypoint x="490" y="440" />
+        <di:waypoint x="592" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_7_di" bpmnElement="SF_Gw_4_T_7">
+        <di:waypoint x="295" y="320" />
+        <di:waypoint x="325" y="320" />
+        <di:waypoint x="325" y="440" />
+        <di:waypoint x="390" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_reordered_di" bpmnElement="SF_T_8_reordered">
+        <di:waypoint x="490" y="560" />
+        <di:waypoint x="592" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_8_di" bpmnElement="SF_Gw_4_T_8">
+        <di:waypoint x="295" y="320" />
+        <di:waypoint x="325" y="320" />
+        <di:waypoint x="325" y="560" />
+        <di:waypoint x="390" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_impact_di" bpmnElement="SF_T_9_impact">
+        <di:waypoint x="490" y="680" />
+        <di:waypoint x="592" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_impact_Gw_10_di" bpmnElement="SF_impact_Gw_10">
+        <di:waypoint x="628" y="680" />
+        <di:waypoint x="755" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_removed_di" bpmnElement="SF_T_11_removed">
+        <di:waypoint x="1000" y="680" />
+        <di:waypoint x="1102" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_T_11_di" bpmnElement="SF_Gw_10_T_11">
+        <di:waypoint x="805" y="680" />
+        <di:waypoint x="900" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_T_12_di" bpmnElement="SF_Gw_10_T_12">
+        <di:waypoint x="805" y="680" />
+        <di:waypoint x="835" y="680" />
+        <di:waypoint x="835" y="800" />
+        <di:waypoint x="900" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_9_di" bpmnElement="SF_Gw_4_T_9">
+        <di:waypoint x="295" y="320" />
+        <di:waypoint x="325" y="320" />
+        <di:waypoint x="325" y="680" />
+        <di:waypoint x="390" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_history_di" bpmnElement="SF_T_13_history">
+        <di:waypoint x="490" y="800" />
+        <di:waypoint x="592" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_history_Gw_14_di" bpmnElement="SF_history_Gw_14">
+        <di:waypoint x="628" y="800" />
+        <di:waypoint x="755" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_recorded_di" bpmnElement="SF_T_15_recorded">
+        <di:waypoint x="1000" y="920" />
+        <di:waypoint x="1102" y="920" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_14_T_15_di" bpmnElement="SF_Gw_14_T_15">
+        <di:waypoint x="805" y="800" />
+        <di:waypoint x="835" y="800" />
+        <di:waypoint x="835" y="920" />
+        <di:waypoint x="900" y="920" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_14_T_16_di" bpmnElement="SF_Gw_14_T_16">
+        <di:waypoint x="805" y="800" />
+        <di:waypoint x="835" y="800" />
+        <di:waypoint x="835" y="1040" />
+        <di:waypoint x="900" y="1040" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_13_di" bpmnElement="SF_Gw_4_T_13">
+        <di:waypoint x="295" y="320" />
+        <di:waypoint x="325" y="320" />
+        <di:waypoint x="325" y="800" />
+        <di:waypoint x="390" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_added_leaving_di" bpmnElement="SF_added_leaving">
+        <di:waypoint x="798" y="320" />
+        <di:waypoint x="865" y="320" />
+        <di:waypoint x="865" y="143" />
+        <di:waypoint x="1800" y="143" />
+        <di:waypoint x="1800" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_amended_leaving_di" bpmnElement="SF_amended_leaving">
+        <di:waypoint x="628" y="440" />
+        <di:waypoint x="865" y="440" />
+        <di:waypoint x="865" y="143" />
+        <di:waypoint x="1800" y="143" />
+        <di:waypoint x="1800" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reordered_leaving_di" bpmnElement="SF_reordered_leaving">
+        <di:waypoint x="628" y="560" />
+        <di:waypoint x="865" y="560" />
+        <di:waypoint x="865" y="143" />
+        <di:waypoint x="1800" y="143" />
+        <di:waypoint x="1800" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_removed_leaving_di" bpmnElement="SF_removed_leaving">
+        <di:waypoint x="1138" y="680" />
+        <di:waypoint x="1375" y="680" />
+        <di:waypoint x="1375" y="143" />
+        <di:waypoint x="1800" y="143" />
+        <di:waypoint x="1800" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_recorded_leaving_di" bpmnElement="SF_recorded_leaving">
+        <di:waypoint x="1138" y="920" />
+        <di:waypoint x="1375" y="920" />
+        <di:waypoint x="1375" y="143" />
+        <di:waypoint x="1800" y="143" />
+        <di:waypoint x="1800" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_leaving_di" bpmnElement="SF_T_16_leaving">
+        <di:waypoint x="1000" y="1040" />
+        <di:waypoint x="1375" y="1040" />
+        <di:waypoint x="1375" y="143" />
+        <di:waypoint x="1800" y="143" />
+        <di:waypoint x="1800" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_leaving_Gw_17_di" bpmnElement="SF_leaving_Gw_17">
+        <di:waypoint x="1850" y="200" />
+        <di:waypoint x="1945" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_17_T_18_di" bpmnElement="SF_Gw_17_T_18">
+        <di:waypoint x="1995" y="200" />
+        <di:waypoint x="2090" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_End_19_di" bpmnElement="SF_T_18_End_19">
+        <di:waypoint x="2190" y="200" />
+        <di:waypoint x="2292" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_leaving_di" bpmnElement="SF_T_3_leaving">
+        <di:waypoint x="1680" y="200" />
+        <di:waypoint x="1750" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_12_goalOpen_di" bpmnElement="SF_T_12_goalOpen">
+        <di:waypoint x="1000" y="800" />
+        <di:waypoint x="1375" y="800" />
+        <di:waypoint x="1375" y="140" />
+        <di:waypoint x="1120" y="140" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_17_goalOpen_di" bpmnElement="SF_Gw_17_goalOpen">
+        <di:waypoint x="1995" y="200" />
+        <di:waypoint x="2055" y="200" />
+        <di:waypoint x="2055" y="143" />
+        <di:waypoint x="1120" y="143" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_measureDraftIn_BP06.09_DraftTheMeasureInput_di" bpmnElement="SF_measureDraftIn_BP06.09_DraftTheMeasureInput">
+        <di:waypoint x="458" y="1340" />
+        <di:waypoint x="540" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.09_DraftTheMeasureInput_End_21_di" bpmnElement="SF_BP06.09_DraftTheMeasureInput_End_21">
+        <di:waypoint x="680" y="1340" />
+        <di:waypoint x="762" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_measuresIn_BP06.08_ReadAGoalsProgressMeasures_di" bpmnElement="SF_measuresIn_BP06.08_ReadAGoalsProgressMeasures">
+        <di:waypoint x="1138" y="1340" />
+        <di:waypoint x="1220" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.08_ReadAGoalsProgressMeasures_End_25_di" bpmnElement="SF_BP06.08_ReadAGoalsProgressMeasures_End_25">
+        <di:waypoint x="1360" y="1340" />
+        <di:waypoint x="1442" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_historyIn_BP06.01_ReadTheCheckInHistory_di" bpmnElement="SF_historyIn_BP06.01_ReadTheCheckInHistory">
+        <di:waypoint x="458" y="1820" />
+        <di:waypoint x="488" y="1820" />
+        <di:waypoint x="488" y="1940" />
+        <di:waypoint x="540" y="1940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.01_ReadTheCheckInHistory_End_28_di" bpmnElement="SF_BP06.01_ReadTheCheckInHistory_End_28">
+        <di:waypoint x="680" y="1940" />
+        <di:waypoint x="762" y="1940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_checkInIn_BP06.02_RecordProgressCheckIn_di" bpmnElement="SF_checkInIn_BP06.02_RecordProgressCheckIn">
+        <di:waypoint x="968" y="1580" />
+        <di:waypoint x="1050" y="1580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.02_RecordProgressCheckIn_End_34_di" bpmnElement="SF_BP06.02_RecordProgressCheckIn_End_34">
+        <di:waypoint x="1190" y="1580" />
+        <di:waypoint x="1272" y="1580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_addIn_BP06.03_AddProgressMeasure_di" bpmnElement="SF_addIn_BP06.03_AddProgressMeasure">
+        <di:waypoint x="628" y="1460" />
+        <di:waypoint x="710" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.03_AddProgressMeasure_End_37_di" bpmnElement="SF_BP06.03_AddProgressMeasure_End_37">
+        <di:waypoint x="850" y="1460" />
+        <di:waypoint x="932" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_amendIn_BP06.04_AmendProgressMeasure_di" bpmnElement="SF_amendIn_BP06.04_AmendProgressMeasure">
+        <di:waypoint x="458" y="1460" />
+        <di:waypoint x="488" y="1460" />
+        <di:waypoint x="488" y="1580" />
+        <di:waypoint x="540" y="1580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.04_AmendProgressMeasure_End_40_di" bpmnElement="SF_BP06.04_AmendProgressMeasure_End_40">
+        <di:waypoint x="680" y="1580" />
+        <di:waypoint x="762" y="1580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reorderIn_BP06.05_ReorderProgressMeasures_di" bpmnElement="SF_reorderIn_BP06.05_ReorderProgressMeasures">
+        <di:waypoint x="458" y="1580" />
+        <di:waypoint x="488" y="1580" />
+        <di:waypoint x="488" y="1700" />
+        <di:waypoint x="540" y="1700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.05_ReorderProgressMeasures_End_42_di" bpmnElement="SF_BP06.05_ReorderProgressMeasures_End_42">
+        <di:waypoint x="680" y="1700" />
+        <di:waypoint x="762" y="1700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_impactIn_BP06.06_ReadTheMeasureRemovalImpact_di" bpmnElement="SF_impactIn_BP06.06_ReadTheMeasureRemovalImpact">
+        <di:waypoint x="458" y="1700" />
+        <di:waypoint x="488" y="1700" />
+        <di:waypoint x="488" y="1820" />
+        <di:waypoint x="540" y="1820" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.06_ReadTheMeasureRemovalImpact_End_47_di" bpmnElement="SF_BP06.06_ReadTheMeasureRemovalImpact_End_47">
+        <di:waypoint x="680" y="1820" />
+        <di:waypoint x="762" y="1820" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_removeIn_BP06.07_RemoveProgressMeasure_di" bpmnElement="SF_removeIn_BP06.07_RemoveProgressMeasure">
+        <di:waypoint x="968" y="1340" />
+        <di:waypoint x="998" y="1340" />
+        <di:waypoint x="998" y="1460" />
+        <di:waypoint x="1050" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.07_RemoveProgressMeasure_End_50_di" bpmnElement="SF_BP06.07_RemoveProgressMeasure_End_50">
+        <di:waypoint x="1190" y="1460" />
+        <di:waypoint x="1272" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="1110" y="240" />
+        <di:waypoint x="1110" y="266" />
+        <di:waypoint x="1365" y="266" />
+        <di:waypoint x="1365" y="1283" />
+        <di:waypoint x="1110" y="1283" />
+        <di:waypoint x="1110" y="1322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="430" y="360" />
+        <di:waypoint x="430" y="372" />
+        <di:waypoint x="515" y="372" />
+        <di:waypoint x="515" y="1310" />
+        <di:waypoint x="430" y="1310" />
+        <di:waypoint x="430" y="1322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="600" y="360" />
+        <di:waypoint x="600" y="372" />
+        <di:waypoint x="685" y="372" />
+        <di:waypoint x="685" y="1430" />
+        <di:waypoint x="600" y="1430" />
+        <di:waypoint x="600" y="1442" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="430" y="480" />
+        <di:waypoint x="430" y="492" />
+        <di:waypoint x="515" y="492" />
+        <di:waypoint x="515" y="1430" />
+        <di:waypoint x="430" y="1430" />
+        <di:waypoint x="430" y="1442" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="440" y="600" />
+        <di:waypoint x="440" y="612" />
+        <di:waypoint x="525" y="612" />
+        <di:waypoint x="525" y="1550" />
+        <di:waypoint x="440" y="1550" />
+        <di:waypoint x="440" y="1562" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="450" y="720" />
+        <di:waypoint x="450" y="732" />
+        <di:waypoint x="535" y="732" />
+        <di:waypoint x="535" y="1670" />
+        <di:waypoint x="450" y="1670" />
+        <di:waypoint x="450" y="1682" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="945" y="720" />
+        <di:waypoint x="945" y="732" />
+        <di:waypoint x="1030" y="732" />
+        <di:waypoint x="1030" y="1310" />
+        <di:waypoint x="945" y="1310" />
+        <di:waypoint x="945" y="1322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="450" y="840" />
+        <di:waypoint x="450" y="852" />
+        <di:waypoint x="535" y="852" />
+        <di:waypoint x="535" y="1790" />
+        <di:waypoint x="450" y="1790" />
+        <di:waypoint x="450" y="1802" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="955" y="960" />
+        <di:waypoint x="955" y="972" />
+        <di:waypoint x="1040" y="972" />
+        <di:waypoint x="1040" y="1550" />
+        <di:waypoint x="955" y="1550" />
+        <di:waypoint x="955" y="1562" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="1290" y="1295" />
+        <di:waypoint x="1290" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_11_di" bpmnElement="MF_11">
+        <di:waypoint x="620" y="1895" />
+        <di:waypoint x="620" y="1883" />
+        <di:waypoint x="705" y="1883" />
+        <di:waypoint x="705" y="830" />
+        <di:waypoint x="620" y="830" />
+        <di:waypoint x="620" y="818" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_12_di" bpmnElement="MF_12">
+        <di:waypoint x="1130" y="1535" />
+        <di:waypoint x="1130" y="1523" />
+        <di:waypoint x="1215" y="1523" />
+        <di:waypoint x="1215" y="950" />
+        <di:waypoint x="1130" y="950" />
+        <di:waypoint x="1130" y="938" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_13_di" bpmnElement="MF_13">
+        <di:waypoint x="780" y="1415" />
+        <di:waypoint x="695" y="1415" />
+        <di:waypoint x="695" y="350" />
+        <di:waypoint x="780" y="350" />
+        <di:waypoint x="780" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_14_di" bpmnElement="MF_14">
+        <di:waypoint x="600" y="1535" />
+        <di:waypoint x="685" y="1535" />
+        <di:waypoint x="685" y="470" />
+        <di:waypoint x="600" y="470" />
+        <di:waypoint x="600" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_15_di" bpmnElement="MF_15">
+        <di:waypoint x="610" y="1655" />
+        <di:waypoint x="610" y="1643" />
+        <di:waypoint x="695" y="1643" />
+        <di:waypoint x="695" y="590" />
+        <di:waypoint x="610" y="590" />
+        <di:waypoint x="610" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_16_di" bpmnElement="MF_16">
+        <di:waypoint x="620" y="1775" />
+        <di:waypoint x="620" y="1763" />
+        <di:waypoint x="705" y="1763" />
+        <di:waypoint x="705" y="710" />
+        <di:waypoint x="620" y="710" />
+        <di:waypoint x="620" y="698" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_17_di" bpmnElement="MF_17">
+        <di:waypoint x="1120" y="1415" />
+        <di:waypoint x="1205" y="1415" />
+        <di:waypoint x="1205" y="710" />
+        <di:waypoint x="1120" y="710" />
+        <di:waypoint x="1120" y="698" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="490" y="207" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="610" y="422" /><di:waypoint x="610" y="412" /><di:waypoint x="550" y="412" /><di:waypoint x="550" y="268" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="490" y="134" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="610" y="542" /><di:waypoint x="610" y="532" /><di:waypoint x="740" y="532" /><di:waypoint x="740" y="165" /><di:waypoint x="730" y="165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="660" y="61" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="780" y="302" /><di:waypoint x="780" y="122" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="830" y="584" width="240" height="44" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="950" y="760" /><di:waypoint x="950" y="750" /><di:waypoint x="890" y="750" /><di:waypoint x="890" y="628" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="1000" y="511" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="1120" y="902" /><di:waypoint x="1120" y="892" /><di:waypoint x="1092" y="892" /><di:waypoint x="1092" y="572" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="1510" y="64" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="1630" y="160" /><di:waypoint x="1630" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="490" y="1997" width="240" height="121" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="610" y="1385" /><di:waypoint x="610" y="1395" /><di:waypoint x="530" y="1395" /><di:waypoint x="530" y="1997" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X8_di" bpmnElement="TextAnnotation_X8"><dc:Bounds x="490" y="2130" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X8_di" bpmnElement="Association_X8"><di:waypoint x="610" y="1985" /><di:waypoint x="480" y="1985" /><di:waypoint x="480" y="2176" /><di:waypoint x="490" y="2176" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X9_di" bpmnElement="TextAnnotation_X9"><dc:Bounds x="490" y="2233" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X9_di" bpmnElement="Association_X9"><di:waypoint x="610" y="1625" /><di:waypoint x="610" y="1635" /><di:waypoint x="480" y="1635" /><di:waypoint x="480" y="2279" /><di:waypoint x="490" y="2279" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X10_di" bpmnElement="TextAnnotation_X10"><dc:Bounds x="490" y="2336" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X10_di" bpmnElement="Association_X10"><di:waypoint x="610" y="1865" /><di:waypoint x="610" y="1875" /><di:waypoint x="480" y="1875" /><di:waypoint x="480" y="2367" /><di:waypoint x="490" y="2367" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X11_di" bpmnElement="TextAnnotation_X11"><dc:Bounds x="660" y="2409" width="240" height="44" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X11_di" bpmnElement="Association_X11"><di:waypoint x="780" y="1505" /><di:waypoint x="780" y="1515" /><di:waypoint x="759" y="1515" /><di:waypoint x="759" y="2409" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X12_di" bpmnElement="TextAnnotation_X12"><dc:Bounds x="1000" y="1645" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X12_di" bpmnElement="Association_X12"><di:waypoint x="1120" y="1625" /><di:waypoint x="1120" y="1645" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X13_di" bpmnElement="TextAnnotation_X13"><dc:Bounds x="1170" y="1748" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X13_di" bpmnElement="Association_X13"><di:waypoint x="1290" y="1385" /><di:waypoint x="1290" y="1395" /><di:waypoint x="1262" y="1395" /><di:waypoint x="1262" y="1748" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0609DraftTheMeasureInput">
+    <bpmndi:BPMNPlane id="P_BP0609DraftTheMeasureInput" bpmnElement="BP06.09_DraftTheMeasureInput">
+      <bpmndi:BPMNShape id="BP06.09_DraftTheMeasureInput_s_di" bpmnElement="BP06.09_DraftTheMeasureInput_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_20_di" bpmnElement="T_20">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.09_DraftTheMeasureInput_e_di" bpmnElement="BP06.09_DraftTheMeasureInput_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP06.09_DraftTheMeasureInput_s_T_20_di" bpmnElement="SF_BP06.09_DraftTheMeasureInput_s_T_20">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_20_BP06.09_DraftTheMeasureInput_e_di" bpmnElement="SF_T_20_BP06.09_DraftTheMeasureInput_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0608ReadAGoalsProgressMeasures">
+    <bpmndi:BPMNPlane id="P_BP0608ReadAGoalsProgressMeasures" bpmnElement="BP06.08_ReadAGoalsProgressMeasures">
+      <bpmndi:BPMNShape id="BP06.08_ReadAGoalsProgressMeasures_s_di" bpmnElement="BP06.08_ReadAGoalsProgressMeasures_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_22_di" bpmnElement="T_22">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.08_ReadAGoalsProgressMeasures_e_di" bpmnElement="BP06.08_ReadAGoalsProgressMeasures_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_22_T_23_di" bpmnElement="SF_T_22_T_23">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_23_T_24_di" bpmnElement="SF_T_23_T_24">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.08_ReadAGoalsProgressMeasures_s_T_22_di" bpmnElement="SF_BP06.08_ReadAGoalsProgressMeasures_s_T_22">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_BP06.08_ReadAGoalsProgressMeasures_e_di" bpmnElement="SF_T_24_BP06.08_ReadAGoalsProgressMeasures_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0601ReadTheCheckInHistory">
+    <bpmndi:BPMNPlane id="P_BP0601ReadTheCheckInHistory" bpmnElement="BP06.01_ReadTheCheckInHistory">
+      <bpmndi:BPMNShape id="BP06.01_ReadTheCheckInHistory_s_di" bpmnElement="BP06.01_ReadTheCheckInHistory_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_27_di" bpmnElement="T_27">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.01_ReadTheCheckInHistory_e_di" bpmnElement="BP06.01_ReadTheCheckInHistory_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_26_T_27_di" bpmnElement="SF_T_26_T_27">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.01_ReadTheCheckInHistory_s_T_26_di" bpmnElement="SF_BP06.01_ReadTheCheckInHistory_s_T_26">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_27_BP06.01_ReadTheCheckInHistory_e_di" bpmnElement="SF_T_27_BP06.01_ReadTheCheckInHistory_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0602RecordProgressCheckIn">
+    <bpmndi:BPMNPlane id="P_BP0602RecordProgressCheckIn" bpmnElement="BP06.02_RecordProgressCheckIn">
+      <bpmndi:BPMNShape id="BP06.02_RecordProgressCheckIn_s_di" bpmnElement="BP06.02_RecordProgressCheckIn_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_29_di" bpmnElement="Gw_29">
+        <dc:Bounds x="415" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_30_di" bpmnElement="T_30">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_31_di" bpmnElement="T_31">
+        <dc:Bounds x="560" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_32_di" bpmnElement="T_32">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_33_di" bpmnElement="T_33">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.02_RecordProgressCheckIn_e_di" bpmnElement="BP06.02_RecordProgressCheckIn_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Gw_29_T_30_di" bpmnElement="SF_Gw_29_T_30">
+        <di:waypoint x="465" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_29_T_31_di" bpmnElement="SF_Gw_29_T_31">
+        <di:waypoint x="465" y="200" />
+        <di:waypoint x="495" y="200" />
+        <di:waypoint x="495" y="320" />
+        <di:waypoint x="560" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_30_T_32_di" bpmnElement="SF_T_30_T_32">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_31_T_32_di" bpmnElement="SF_T_31_T_32">
+        <di:waypoint x="660" y="320" />
+        <di:waypoint x="690" y="320" />
+        <di:waypoint x="690" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_32_T_33_di" bpmnElement="SF_T_32_T_33">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.02_RecordProgressCheckIn_s_Gw_29_di" bpmnElement="SF_BP06.02_RecordProgressCheckIn_s_Gw_29">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="415" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_33_BP06.02_RecordProgressCheckIn_e_di" bpmnElement="SF_T_33_BP06.02_RecordProgressCheckIn_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0603AddProgressMeasure">
+    <bpmndi:BPMNPlane id="P_BP0603AddProgressMeasure" bpmnElement="BP06.03_AddProgressMeasure">
+      <bpmndi:BPMNShape id="BP06.03_AddProgressMeasure_s_di" bpmnElement="BP06.03_AddProgressMeasure_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_35_di" bpmnElement="T_35">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_36_di" bpmnElement="T_36">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.03_AddProgressMeasure_e_di" bpmnElement="BP06.03_AddProgressMeasure_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_35_T_36_di" bpmnElement="SF_T_35_T_36">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.03_AddProgressMeasure_s_T_35_di" bpmnElement="SF_BP06.03_AddProgressMeasure_s_T_35">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_36_BP06.03_AddProgressMeasure_e_di" bpmnElement="SF_T_36_BP06.03_AddProgressMeasure_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0604AmendProgressMeasure">
+    <bpmndi:BPMNPlane id="P_BP0604AmendProgressMeasure" bpmnElement="BP06.04_AmendProgressMeasure">
+      <bpmndi:BPMNShape id="BP06.04_AmendProgressMeasure_s_di" bpmnElement="BP06.04_AmendProgressMeasure_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_38_di" bpmnElement="T_38">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_39_di" bpmnElement="T_39">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.04_AmendProgressMeasure_e_di" bpmnElement="BP06.04_AmendProgressMeasure_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_38_T_39_di" bpmnElement="SF_T_38_T_39">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.04_AmendProgressMeasure_s_T_38_di" bpmnElement="SF_BP06.04_AmendProgressMeasure_s_T_38">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_39_BP06.04_AmendProgressMeasure_e_di" bpmnElement="SF_T_39_BP06.04_AmendProgressMeasure_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0605ReorderProgressMeasures">
+    <bpmndi:BPMNPlane id="P_BP0605ReorderProgressMeasures" bpmnElement="BP06.05_ReorderProgressMeasures">
+      <bpmndi:BPMNShape id="BP06.05_ReorderProgressMeasures_s_di" bpmnElement="BP06.05_ReorderProgressMeasures_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_41_di" bpmnElement="T_41">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.05_ReorderProgressMeasures_e_di" bpmnElement="BP06.05_ReorderProgressMeasures_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP06.05_ReorderProgressMeasures_s_T_41_di" bpmnElement="SF_BP06.05_ReorderProgressMeasures_s_T_41">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_41_BP06.05_ReorderProgressMeasures_e_di" bpmnElement="SF_T_41_BP06.05_ReorderProgressMeasures_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0606ReadTheMeasureRemovalImpact">
+    <bpmndi:BPMNPlane id="P_BP0606ReadTheMeasureRemovalImpact" bpmnElement="BP06.06_ReadTheMeasureRemovalImpact">
+      <bpmndi:BPMNShape id="BP06.06_ReadTheMeasureRemovalImpact_s_di" bpmnElement="BP06.06_ReadTheMeasureRemovalImpact_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_43_di" bpmnElement="T_43">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_44_di" bpmnElement="T_44">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_45_di" bpmnElement="T_45">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_46_di" bpmnElement="T_46">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.06_ReadTheMeasureRemovalImpact_e_di" bpmnElement="BP06.06_ReadTheMeasureRemovalImpact_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_43_T_44_di" bpmnElement="SF_T_43_T_44">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_44_T_45_di" bpmnElement="SF_T_44_T_45">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_45_T_46_di" bpmnElement="SF_T_45_T_46">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.06_ReadTheMeasureRemovalImpact_s_T_43_di" bpmnElement="SF_BP06.06_ReadTheMeasureRemovalImpact_s_T_43">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_46_BP06.06_ReadTheMeasureRemovalImpact_e_di" bpmnElement="SF_T_46_BP06.06_ReadTheMeasureRemovalImpact_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP06_MeasureGoalProgress_BP0607RemoveProgressMeasure">
+    <bpmndi:BPMNPlane id="P_BP0607RemoveProgressMeasure" bpmnElement="BP06.07_RemoveProgressMeasure">
+      <bpmndi:BPMNShape id="BP06.07_RemoveProgressMeasure_s_di" bpmnElement="BP06.07_RemoveProgressMeasure_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_48_di" bpmnElement="T_48">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_49_di" bpmnElement="T_49">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP06.07_RemoveProgressMeasure_e_di" bpmnElement="BP06.07_RemoveProgressMeasure_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_48_T_49_di" bpmnElement="SF_T_48_T_49">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP06.07_RemoveProgressMeasure_s_T_48_di" bpmnElement="SF_BP06.07_RemoveProgressMeasure_s_T_48">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_49_BP06.07_RemoveProgressMeasure_e_di" bpmnElement="SF_T_49_BP06.07_RemoveProgressMeasure_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

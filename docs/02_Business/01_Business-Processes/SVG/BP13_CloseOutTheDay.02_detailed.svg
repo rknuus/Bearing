@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2308" height="775" viewBox="0 0 2308 775">
+<rect width="2308" height="775" fill="#fff"/>
+<rect x="24" y="40" width="2260" height="380" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="40" x2="54" y2="420" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="234.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 230)">User</text>
+<rect x="24" y="460" width="2260" height="260" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="460" x2="54" y2="720" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="594.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 590)">Bearing</text>
+<polyline points="152,160 254,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 160 L 246 163.36 L 246 156.64 Z" fill="#000"/>
+<polyline points="354,160 456,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 456 160 L 448 163.36 L 448 156.64 Z" fill="#000"/>
+<polyline points="492,160 594,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 160 L 586 163.36 L 586 156.64 Z" fill="#000"/>
+<polyline points="694,160 764,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 160 L 756 163.36 L 756 156.64 Z" fill="#000"/>
+<polyline points="864,160 966,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 160 L 958 163.36 L 958 156.64 Z" fill="#000"/>
+<polyline points="1002,160 1129,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1129 160 L 1121 163.36 L 1121 156.64 Z" fill="#000"/>
+<polyline points="1179,160 1274,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 160 L 1266 163.36 L 1266 156.64 Z" fill="#000"/>
+<polyline points="1179,160 1209,160 1209,280 1274,280" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 280 L 1266 283.36 L 1266 276.64 Z" fill="#000"/>
+<polyline points="1374,160 1469,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1469 160 L 1461 163.36 L 1461 156.64 Z" fill="#000"/>
+<polyline points="1374,280 1404,280 1404,160 1469,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1469 160 L 1461 163.36 L 1461 156.64 Z" fill="#000"/>
+<polyline points="1519,160 1614,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 160 L 1606 163.36 L 1606 156.64 Z" fill="#000"/>
+<polyline points="1519,160 1549,160 1549,280 1614,280" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 280 L 1606 283.36 L 1606 276.64 Z" fill="#000"/>
+<polyline points="1714,160 1784,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 160 L 1776 163.36 L 1776 156.64 Z" fill="#000"/>
+<polyline points="1714,280 1744,280 1744,160 1784,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 160 L 1776 163.36 L 1776 156.64 Z" fill="#000"/>
+<polyline points="1884,160 1986,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1986 160 L 1978 163.36 L 1978 156.64 Z" fill="#000"/>
+<polyline points="2022,160 2156,160" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2156 160 L 2148 163.36 L 2148 156.64 Z" fill="#000"/>
+<polyline points="322,580 404,580" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 404 580 L 396 583.36 L 396 576.64 Z" fill="#000"/>
+<polyline points="544,580 626,580" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 626 580 L 618 583.36 L 618 576.64 Z" fill="#000"/>
+<polyline points="832,580 914,580" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 580 L 906 583.36 L 906 576.64 Z" fill="#000"/>
+<polyline points="1054,580 1136,580" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 580 L 1128 583.36 L 1128 576.64 Z" fill="#000"/>
+<polyline points="1852,580 1934,580" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1934 580 L 1926 583.36 L 1926 576.64 Z" fill="#000"/>
+<polyline points="2074,580 2156,580" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2156 580 L 2148 583.36 L 2148 576.64 Z" fill="#000"/>
+<polyline points="304,200 304,562" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 307.78 553 L 304 562 L 300.22 553" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="304" cy="200" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,200 814,562" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 817.78 553 L 814 562 L 810.22 553" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="200" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1834,200 1834,562" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1837.78 553 L 1834 562 L 1830.22 553" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1834" cy="200" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="474,535 474,178" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 470.22 187 L 474 178 L 477.78 187" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="474" cy="535" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,535 984,178" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 187 L 984 178 L 987.78 187" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="535" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2004,535 2004,178" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2000.22 187 L 2004 178 L 2007.78 187" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2004" cy="535" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,120 644,100" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,142 984,108" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,120 1324,100" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1664,120 1664,100" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2004,142 2004,108" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="474,625 474,645" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,625 984,645" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2004,625 2004,645" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="160" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="192" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A day to settle</text>
+<rect x="254" y="120" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="156.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open the day</text>
+<text x="304" y="168.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">check-out</text>
+<circle cx="474" cy="160" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="474" cy="160" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="465" y="154.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 465 154.06 L 474 160 L 483 154.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="432" y="192" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What is done and</text>
+<text x="432" y="202.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">what is still open</text>
+<rect x="594" y="120" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="156.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the account</text>
+<text x="644" y="168.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">as it stands</text>
+<rect x="764" y="120" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="809.5" y1="183" x2="818.5" y2="183" stroke="#000" stroke-width="1.4"/>
+<line x1="809.5" y1="186" x2="818.5" y2="186" stroke="#000" stroke-width="1.4"/>
+<line x1="809.5" y1="189" x2="818.5" y2="189" stroke="#000" stroke-width="1.4"/>
+<text x="814" y="162.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Write the day notes</text>
+<circle cx="984" cy="160" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="160" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="154.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 154.06 L 984 160 L 993 154.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="192" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Notes drafted</text>
+<path d="M 1154 135 L 1179 160 L 1154 185 L 1129 160 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1143.5 149.5 L 1164.5 170.5 M 1143.5 170.5 L 1164.5 149.5" stroke="#000" stroke-width="1"/>
+<text x="1112" y="199" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archive what is in</text>
+<text x="1112" y="209.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Done?</text>
+<rect x="1274" y="120" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="156.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep the archive</text>
+<text x="1324" y="168.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">action on</text>
+<rect x="1274" y="240" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="276.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Turn the archive</text>
+<text x="1324" y="288.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">action off</text>
+<path d="M 1494 135 L 1519 160 L 1494 185 L 1469 160 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1483.5 149.5 L 1504.5 170.5 M 1483.5 170.5 L 1504.5 149.5" stroke="#000" stroke-width="1"/>
+<text x="1452" y="199" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Reset what is still</text>
+<text x="1452" y="209.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">open?</text>
+<rect x="1614" y="120" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="156.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Turn the reset action</text>
+<text x="1664" y="168.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">on</text>
+<rect x="1614" y="240" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="276.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the reset</text>
+<text x="1664" y="288.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">action off</text>
+<rect x="1784" y="120" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1834" y="156.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Complete the</text>
+<text x="1834" y="168.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">check-out</text>
+<circle cx="2004" cy="160" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="2004" cy="160" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1995" y="154.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1995 154.06 L 2004 160 L 2013 154.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1962" y="192" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The day's log</text>
+<circle cx="2174" cy="160" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2132" y="192" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day settled</text>
+<circle cx="304" cy="580" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="295" y="574.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 295 574.06 L 304 580 L 313 574.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="262" y="612" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day account</text>
+<text x="262" y="622.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../../02_System-Interactions/BP13.01_ReadTheDaysAccount.md" target="_blank">
+<title>BP13.01_ReadTheDaysAccount — open the System-Interaction document</title>
+<rect x="404" y="535" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 529 542 H 533.8 L 536.8 545 V 552 H 529 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 533.8 542 V 545 H 536.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="530.56" y1="548.4" x2="535.24" y2="548.4" stroke="#000" stroke-width="0.7"/>
+<line x1="530.56" y1="550.6" x2="535.24" y2="550.6" stroke="#000" stroke-width="0.7"/>
+<rect x="469" y="606" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 474 607.8 V 614.2 M 470.8 611 H 477.2" stroke="#000" stroke-width="1"/>
+<text x="474" y="582.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read the day's account</text>
+</a>
+<circle cx="644" cy="580" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="602" y="612" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Account answered</text>
+<circle cx="814" cy="580" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="574.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 574.06 L 814 580 L 823 574.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="612" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day notes drafted</text>
+<a href="../../02_System-Interactions/BP13.02_DraftTheDayNotes.md" target="_blank">
+<title>BP13.02_DraftTheDayNotes — open the System-Interaction document</title>
+<rect x="914" y="535" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 542 H 1043.8 L 1046.8 545 V 552 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 542 V 545 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="548.4" x2="1045.24" y2="548.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="550.6" x2="1045.24" y2="550.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="606" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 607.8 V 614.2 M 980.8 611 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="582.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Draft the day notes</text>
+</a>
+<circle cx="1154" cy="580" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="612" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Notes answered</text>
+<circle cx="1834" cy="580" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1825" y="574.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1825 574.06 L 1834 580 L 1843 574.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1792" y="612" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-out submitted</text>
+<a href="../../02_System-Interactions/BP13.03_CloseOutTheDay.md" target="_blank">
+<title>BP13.03_CloseOutTheDay — open the System-Interaction document</title>
+<rect x="1934" y="535" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 2059 542 H 2063.8 L 2066.8 545 V 552 H 2059 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 2063.8 542 V 545 H 2066.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="2060.56" y1="548.4" x2="2065.24" y2="548.4" stroke="#000" stroke-width="0.7"/>
+<line x1="2060.56" y1="550.6" x2="2065.24" y2="550.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1999" y="606" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 2004 607.8 V 614.2 M 2000.8 611 H 2007.2" stroke="#000" stroke-width="1"/>
+<text x="2004" y="582.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Close out the day</text>
+</a>
+<circle cx="2174" cy="580" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2132" y="612" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-out answered</text>
+<path d="M 530 24 H 524 V 100 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Both lists are read from the boards as they stand, not</text>
+<text x="533" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">from when anything moved. The user confirms them</text>
+<text x="533" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">rather than editing them.</text>
+<path d="M 870 32 H 864 V 108 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="44" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The notes are a running journal started in the morning</text>
+<text x="873" y="54.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">and finished in the evening, so the draft is current at</text>
+<text x="873" y="65.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">every moment.</text>
+<path d="M 1210 39 H 1204 V 100 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="51" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The archive action takes every task in a Done column on</text>
+<text x="1213" y="61.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the day's boards and on Chores.</text>
+<path d="M 1550 39 H 1544 V 100 H 1550" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1553" y="51" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Reset returns the task to the top of its Backlog bucket,</text>
+<text x="1553" y="61.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">where its triage re-opens.</text>
+<path d="M 1890 47 H 1884 V 108 H 1890" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1893" y="59" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Running the check-out again on the same date updates</text>
+<text x="1893" y="69.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">that day's log rather than creating a second one.</text>
+<path d="M 360 645 H 354 V 751 H 360" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="363" y="657" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Chores is out of the account even while it is in play: a</text>
+<text x="363" y="667.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">chore being done is not progress on what was committed</text>
+<text x="363" y="678.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">to. A date with no focus has an empty account. A date</text>
+<text x="363" y="688.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">never checked out stays checkable out.</text>
+<path d="M 870 645 H 864 V 706 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="657" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A draft is not a commit. The notes enter the day's log</text>
+<text x="873" y="667.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">when the check-out completes.</text>
+<path d="M 1890 645 H 1884 V 736 H 1890" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1893" y="657" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The reset touches the day's chosen boards only. Chores</text>
+<text x="1893" y="667.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">tasks already archived by hand are simply not there to</text>
+<text x="1893" y="678.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">take. The log stays available as that day's explanation.</text>
+<rect x="1181" y="161" width="59.65" height="11.5" fill="#fff"/>
+<text x="1182" y="170.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes, the default</text>
+<rect x="1211" y="161" width="11.45" height="11.5" fill="#fff"/>
+<text x="1212" y="170.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="1521" y="161" width="15.23" height="11.5" fill="#fff"/>
+<text x="1522" y="170.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="1551" y="161" width="55.87" height="11.5" fill="#fff"/>
+<text x="1552" y="170.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no, the default</text>
+<rect x="306" y="201" width="90.56" height="20.73" fill="#fff"/>
+<text x="307" y="209.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP13.01</text>
+<text x="307" y="219.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Read the day's account</text>
+<rect x="816" y="201" width="73.82" height="20.73" fill="#fff"/>
+<text x="817" y="209.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP13.02</text>
+<text x="817" y="219.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Draft the day notes</text>
+<rect x="1836" y="201" width="68.15" height="20.73" fill="#fff"/>
+<text x="1837" y="209.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP13.03</text>
+<text x="1837" y="219.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Close out the day</text>
+<rect x="476" y="536" width="132.87" height="11.5" fill="#fff"/>
+<text x="477" y="545.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What is done and what is still open</text>
+<rect x="986" y="536" width="53.03" height="11.5" fill="#fff"/>
+<text x="987" y="545.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Notes drafted</text>
+<rect x="2006" y="536" width="52.29" height="11.5" fill="#fff"/>
+<text x="2007" y="545.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The day's log</text>
+</svg>

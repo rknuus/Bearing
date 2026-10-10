@@ -1,0 +1,1535 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP11_WorkTheBoard" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP11_WorkTheBoard">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP11.01 · Read the boards in play" sourceRef="execution" targetRef="stripIn" />
+    <bpmn:messageFlow id="MF_2" name="BP11.02 · Read a board" sourceRef="T_2" targetRef="boardIn" />
+    <bpmn:messageFlow id="MF_3" name="BP11.03 · Move a task" sourceRef="T_4" targetRef="moveIn" />
+    <bpmn:messageFlow id="MF_4" name="BP11.09 · Set the activity Done" sourceRef="T_8" targetRef="activityIn" />
+    <bpmn:messageFlow id="MF_5" name="BP11.04 · Prioritize a task" sourceRef="T_11" targetRef="prioritizeIn" />
+    <bpmn:messageFlow id="MF_6" name="BP11.05 · Rank a task" sourceRef="T_12" targetRef="rankIn" />
+    <bpmn:messageFlow id="MF_7" name="BP11.10 · Draft the task input" sourceRef="T_13" targetRef="taskDraftIn" />
+    <bpmn:messageFlow id="MF_8" name="BP11.06 · Amend a task" sourceRef="T_14" targetRef="amendIn" />
+    <bpmn:messageFlow id="MF_9" name="BP11.07 · Archive a task" sourceRef="T_15" targetRef="archiveIn" />
+    <bpmn:messageFlow id="MF_10" name="BP11.08 · Delete a task" sourceRef="T_16" targetRef="deleteIn" />
+    <bpmn:messageFlow id="MF_11" name="The board strip, focus first" sourceRef="BP11.01_ReadTheBoardsInPlay" targetRef="strip" />
+    <bpmn:messageFlow id="MF_12" name="The board with its columns, cards and lineage" sourceRef="BP11.02_ReadABoard" targetRef="board" />
+    <bpmn:messageFlow id="MF_13" name="Task moved" sourceRef="BP11.03_MoveTask" targetRef="moved" />
+    <bpmn:messageFlow id="MF_14" name="Priority recorded" sourceRef="BP11.04_PrioritizeTask" targetRef="prioritized" />
+    <bpmn:messageFlow id="MF_15" name="Rank recorded" sourceRef="BP11.05_RankTask" targetRef="ranked" />
+    <bpmn:messageFlow id="MF_16" name="Task amended" sourceRef="BP11.06_AmendTask" targetRef="amended" />
+    <bpmn:messageFlow id="MF_17" name="Task archived" sourceRef="BP11.07_ArchiveTask" targetRef="archived" />
+    <bpmn:messageFlow id="MF_18" name="Task deleted" sourceRef="BP11.08_DeleteTask" targetRef="deleted" />
+    <bpmn:messageFlow id="MF_19" name="Activity state recorded" sourceRef="BP11.09_SetTheActivityDone" targetRef="activitySet" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>Priority changes only while the task is in the Backlog. Work in motion is sent back there first, which re-opens its triage.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="prioritized" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Archiving is a conscious gesture. A task sitting in Done does not archive itself.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="archived" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>A task owns nothing, so there is nothing to disclose and no cascade to approve. There is no in-app undo; recovery is from version control.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="deleted" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>Content and placement are separate concerns, and the board is neither: a task stays on the board it was created on for its whole life.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="amended" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>Declining is a legitimate answer. The activity stays InProgress and is closed by hand on the Course page.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="T_9" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>The strip holds every board and the focus orders it. An out-of-focus activity-based project is one entry, opening to its activities on demand. Where the date has no focus, the first board in the strip is the one named.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="BP11.01_ReadTheBoardsInPlay" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>A board with no tasks is an empty board, not an empty page. A project's template governs its boards; the Chores board owns its template itself. The flag on an unfinished predecessor names it and clears itself when that predecessor completes.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="BP11.02_ReadABoard" targetRef="TextAnnotation_X7" />
+    <bpmn:textAnnotation id="TextAnnotation_X8"><bpmn:text>Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X8" associationDirection="None" sourceRef="BP11.10_DraftTheTaskInput" targetRef="TextAnnotation_X8" />
+    <bpmn:textAnnotation id="TextAnnotation_X9"><bpmn:text>One request moves a task between columns and sends it back to the Backlog alike. A task never moves to another board. Returning it to the Backlog re-opens its triage.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X9" associationDirection="None" sourceRef="BP11.03_MoveTask" targetRef="TextAnnotation_X9" />
+    <bpmn:textAnnotation id="TextAnnotation_X10"><bpmn:text>Triage happens at intake, so priority lives in the Backlog. The buckets are Important and Urgent, Not Important and Urgent, and Important and Not Urgent.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X10" associationDirection="None" sourceRef="BP11.04_PrioritizeTask" targetRef="TextAnnotation_X10" />
+    <bpmn:textAnnotation id="TextAnnotation_X11"><bpmn:text>This is one of the three acts that archive a task, and the one that takes a single card. A routine's task archives by these same acts and no others.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X11" associationDirection="None" sourceRef="BP11.07_ArchiveTask" targetRef="TextAnnotation_X11" />
+    <bpmn:textAnnotation id="TextAnnotation_X12"><bpmn:text>A task owns nothing, so nothing goes with it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X12" associationDirection="None" sourceRef="BP11.08_DeleteTask" targetRef="TextAnnotation_X12" />
+    <bpmn:textAnnotation id="TextAnnotation_X13"><bpmn:text>The board and the column are untouched by an amendment.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X13" associationDirection="None" sourceRef="BP11.06_AmendTask" targetRef="TextAnnotation_X13" />
+    <bpmn:textAnnotation id="TextAnnotation_X14"><bpmn:text>The Course page owns an activity's state; this is the completion offer answered from the board. A Done activity can be reopened there.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X14" associationDirection="None" sourceRef="BP11.09_SetTheActivityDone" targetRef="TextAnnotation_X14" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="Work to get done">
+      <bpmn:outgoing>SF_Start_1_execution</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="execution" name="Open the Execution page">
+      <bpmn:incoming>SF_Start_1_execution</bpmn:incoming>
+      <bpmn:incoming>SF_T_17_execution</bpmn:incoming>
+      <bpmn:outgoing>SF_execution_strip</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="strip" name="The board strip, focus first">
+      <bpmn:incoming>SF_execution_strip</bpmn:incoming>
+      <bpmn:outgoing>SF_strip_T_2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_strip" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_2" name="Open a board">
+      <bpmn:incoming>SF_strip_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_board</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="board" name="The board with its columns, cards and lineage">
+      <bpmn:incoming>SF_T_2_board</bpmn:incoming>
+      <bpmn:outgoing>SF_board_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_board" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="working" name="Work the board">
+      <bpmn:incoming>SF_board_working</bpmn:incoming>
+      <bpmn:incoming>SF_activitySet_working</bpmn:incoming>
+      <bpmn:incoming>SF_T_9_working</bpmn:incoming>
+      <bpmn:incoming>SF_T_10_working</bpmn:incoming>
+      <bpmn:incoming>SF_prioritized_working</bpmn:incoming>
+      <bpmn:incoming>SF_ranked_working</bpmn:incoming>
+      <bpmn:incoming>SF_amended_working</bpmn:incoming>
+      <bpmn:incoming>SF_archived_working</bpmn:incoming>
+      <bpmn:incoming>SF_deleted_working</bpmn:incoming>
+      <bpmn:outgoing>SF_working_Gw_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_3" name="What needs doing?">
+      <bpmn:incoming>SF_working_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_11</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_12</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_13</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_15</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_16</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_17</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="Drag a task to another column">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_moved</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="moved" name="Task moved">
+      <bpmn:incoming>SF_T_4_moved</bpmn:incoming>
+      <bpmn:outgoing>SF_moved_Gw_5</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_moved" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_5" name="Was that an activity's last task into Done?">
+      <bpmn:incoming>SF_moved_Gw_5</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_5_T_6</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_5_T_10</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_6" name="Answer the completion offer">
+      <bpmn:incoming>SF_Gw_5_T_6</bpmn:incoming>
+      <bpmn:outgoing>SF_T_6_Gw_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_7" name="Mark the activity Done?">
+      <bpmn:incoming>SF_T_6_Gw_7</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_7_T_8</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_7_T_9</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_8" name="Close the activity">
+      <bpmn:incoming>SF_Gw_7_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_activitySet</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="activitySet" name="Activity state recorded">
+      <bpmn:incoming>SF_T_8_activitySet</bpmn:incoming>
+      <bpmn:outgoing>SF_activitySet_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_activitySet" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_9" name="Leave the activity in progress">
+      <bpmn:incoming>SF_Gw_7_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_working</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_10" name="Carry on">
+      <bpmn:incoming>SF_Gw_5_T_10</bpmn:incoming>
+      <bpmn:outgoing>SF_T_10_working</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_11" name="Change the task's bucket">
+      <bpmn:incoming>SF_Gw_3_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_prioritized</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="prioritized" name="Priority recorded">
+      <bpmn:incoming>SF_T_11_prioritized</bpmn:incoming>
+      <bpmn:outgoing>SF_prioritized_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_prioritized" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_12" name="Drag a task within its bucket">
+      <bpmn:incoming>SF_Gw_3_T_12</bpmn:incoming>
+      <bpmn:outgoing>SF_T_12_ranked</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="ranked" name="Rank recorded">
+      <bpmn:incoming>SF_T_12_ranked</bpmn:incoming>
+      <bpmn:outgoing>SF_ranked_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_ranked" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_13" name="Retype the task's title or description">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_3_T_13</bpmn:incoming>
+      <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_14" name="Submit the amendment">
+      <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+      <bpmn:outgoing>SF_T_14_amended</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="amended" name="Task amended">
+      <bpmn:incoming>SF_T_14_amended</bpmn:incoming>
+      <bpmn:outgoing>SF_amended_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_amended" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_15" name="Archive the task">
+      <bpmn:incoming>SF_Gw_3_T_15</bpmn:incoming>
+      <bpmn:outgoing>SF_T_15_archived</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="archived" name="Task archived">
+      <bpmn:incoming>SF_T_15_archived</bpmn:incoming>
+      <bpmn:outgoing>SF_archived_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_archived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_16" name="Confirm the deletion">
+      <bpmn:incoming>SF_Gw_3_T_16</bpmn:incoming>
+      <bpmn:outgoing>SF_T_16_deleted</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="deleted" name="Task deleted">
+      <bpmn:incoming>SF_T_16_deleted</bpmn:incoming>
+      <bpmn:outgoing>SF_deleted_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_deleted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_17" name="Pick another board from the strip">
+      <bpmn:incoming>SF_Gw_3_T_17</bpmn:incoming>
+      <bpmn:outgoing>SF_T_17_execution</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_18" name="Work moved on" />
+    <bpmn:sequenceFlow id="SF_Start_1_execution" sourceRef="Start_1" targetRef="execution" />
+    <bpmn:sequenceFlow id="SF_execution_strip" sourceRef="execution" targetRef="strip" />
+    <bpmn:sequenceFlow id="SF_strip_T_2" sourceRef="strip" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_board" sourceRef="T_2" targetRef="board" />
+    <bpmn:sequenceFlow id="SF_board_working" sourceRef="board" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_working_Gw_3" sourceRef="working" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_T_4_moved" sourceRef="T_4" targetRef="moved" />
+    <bpmn:sequenceFlow id="SF_moved_Gw_5" sourceRef="moved" targetRef="Gw_5" />
+    <bpmn:sequenceFlow id="SF_T_6_Gw_7" sourceRef="T_6" targetRef="Gw_7" />
+    <bpmn:sequenceFlow id="SF_T_8_activitySet" sourceRef="T_8" targetRef="activitySet" />
+    <bpmn:sequenceFlow id="SF_Gw_7_T_8" name="yes" sourceRef="Gw_7" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_Gw_7_T_9" name="no" sourceRef="Gw_7" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_Gw_5_T_6" name="yes" sourceRef="Gw_5" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_Gw_5_T_10" name="no" sourceRef="Gw_5" targetRef="T_10" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="move work along" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_T_11_prioritized" sourceRef="T_11" targetRef="prioritized" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_11" name="re-triage something" sourceRef="Gw_3" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_T_12_ranked" sourceRef="T_12" targetRef="ranked" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_12" name="order what is waiting" sourceRef="Gw_3" targetRef="T_12" />
+    <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+    <bpmn:sequenceFlow id="SF_T_14_amended" sourceRef="T_14" targetRef="amended" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_13" name="fix what a task says" sourceRef="Gw_3" targetRef="T_13" />
+    <bpmn:sequenceFlow id="SF_T_15_archived" sourceRef="T_15" targetRef="archived" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_15" name="file one away" sourceRef="Gw_3" targetRef="T_15" />
+    <bpmn:sequenceFlow id="SF_T_16_deleted" sourceRef="T_16" targetRef="deleted" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_16" name="throw one away" sourceRef="Gw_3" targetRef="T_16" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_17" name="move to another board" sourceRef="Gw_3" targetRef="T_17" />
+    <bpmn:sequenceFlow id="SF_activitySet_working" sourceRef="activitySet" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_T_9_working" sourceRef="T_9" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_T_10_working" sourceRef="T_10" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_prioritized_working" sourceRef="prioritized" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_ranked_working" sourceRef="ranked" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_amended_working" sourceRef="amended" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_archived_working" sourceRef="archived" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_deleted_working" sourceRef="deleted" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_T_17_execution" sourceRef="T_17" targetRef="execution" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="taskDraftIn" name="Task draft submitted">
+      <bpmn:outgoing>SF_taskDraftIn_BP11.10_DraftTheTaskInput</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_taskDraftIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.10_DraftTheTaskInput" name="Draft the task input">
+      <bpmn:incoming>SF_taskDraftIn_BP11.10_DraftTheTaskInput</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.10_DraftTheTaskInput_End_20</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.10_DraftTheTaskInput_s" name="Start">
+        <bpmn:outgoing>SF_BP11.10_DraftTheTaskInput_s_T_19</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_19" name="Keep what is typed as a draft">
+        <bpmn:incoming>SF_BP11.10_DraftTheTaskInput_s_T_19</bpmn:incoming>
+        <bpmn:outgoing>SF_T_19_BP11.10_DraftTheTaskInput_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.10_DraftTheTaskInput_e" name="fertig">
+        <bpmn:incoming>SF_T_19_BP11.10_DraftTheTaskInput_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP11.10_DraftTheTaskInput_s_T_19" sourceRef="BP11.10_DraftTheTaskInput_s" targetRef="T_19" />
+      <bpmn:sequenceFlow id="SF_T_19_BP11.10_DraftTheTaskInput_e" sourceRef="T_19" targetRef="BP11.10_DraftTheTaskInput_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_20" name="Draft kept">
+      <bpmn:incoming>SF_BP11.10_DraftTheTaskInput_End_20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="stripIn" name="Board strip requested">
+      <bpmn:outgoing>SF_stripIn_BP11.01_ReadTheBoardsInPlay</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_stripIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.01_ReadTheBoardsInPlay" name="Read the boards in play">
+      <bpmn:incoming>SF_stripIn_BP11.01_ReadTheBoardsInPlay</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.01_ReadTheBoardsInPlay_End_26</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.01_ReadTheBoardsInPlay_s" name="Start">
+        <bpmn:outgoing>SF_BP11.01_ReadTheBoardsInPlay_s_T_21</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_21" name="Read every board that exists">
+        <bpmn:incoming>SF_BP11.01_ReadTheBoardsInPlay_s_T_21</bpmn:incoming>
+        <bpmn:outgoing>SF_T_21_T_22</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_22" name="Leave an archived project's boards out">
+        <bpmn:incoming>SF_T_21_T_22</bpmn:incoming>
+        <bpmn:outgoing>SF_T_22_T_23</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_23" name="Add Chores while it carries a task that is not done">
+        <bpmn:incoming>SF_T_22_T_23</bpmn:incoming>
+        <bpmn:outgoing>SF_T_23_T_24</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_24" name="Group the date's focused boards at the front">
+        <bpmn:incoming>SF_T_23_T_24</bpmn:incoming>
+        <bpmn:outgoing>SF_T_24_T_25</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_25" name="Name the board to open">
+        <bpmn:incoming>SF_T_24_T_25</bpmn:incoming>
+        <bpmn:outgoing>SF_T_25_BP11.01_ReadTheBoardsInPlay_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.01_ReadTheBoardsInPlay_e" name="fertig">
+        <bpmn:incoming>SF_T_25_BP11.01_ReadTheBoardsInPlay_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_21_T_22" sourceRef="T_21" targetRef="T_22" />
+      <bpmn:sequenceFlow id="SF_T_22_T_23" sourceRef="T_22" targetRef="T_23" />
+      <bpmn:sequenceFlow id="SF_T_23_T_24" sourceRef="T_23" targetRef="T_24" />
+      <bpmn:sequenceFlow id="SF_T_24_T_25" sourceRef="T_24" targetRef="T_25" />
+      <bpmn:sequenceFlow id="SF_BP11.01_ReadTheBoardsInPlay_s_T_21" sourceRef="BP11.01_ReadTheBoardsInPlay_s" targetRef="T_21" />
+      <bpmn:sequenceFlow id="SF_T_25_BP11.01_ReadTheBoardsInPlay_e" sourceRef="T_25" targetRef="BP11.01_ReadTheBoardsInPlay_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_26" name="Board strip answered">
+      <bpmn:incoming>SF_BP11.01_ReadTheBoardsInPlay_End_26</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="boardIn" name="Board requested">
+      <bpmn:outgoing>SF_boardIn_BP11.02_ReadABoard</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_boardIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.02_ReadABoard" name="Read a board">
+      <bpmn:incoming>SF_boardIn_BP11.02_ReadABoard</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.02_ReadABoard_End_32</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.02_ReadABoard_s" name="Start">
+        <bpmn:outgoing>SF_BP11.02_ReadABoard_s_T_27</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_27" name="Read the board's columns from the template that governs it">
+        <bpmn:incoming>SF_BP11.02_ReadABoard_s_T_27</bpmn:incoming>
+        <bpmn:outgoing>SF_T_27_T_28</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_28" name="Read the tasks in each column with their priority">
+        <bpmn:incoming>SF_T_27_T_28</bpmn:incoming>
+        <bpmn:outgoing>SF_T_28_T_29</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_29" name="Keep the three triage buckets in the Backlog, empty ones included">
+        <bpmn:incoming>SF_T_28_T_29</bpmn:incoming>
+        <bpmn:outgoing>SF_T_29_T_30</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_30" name="Read the lineage of the work: theme, goal, project, activity">
+        <bpmn:incoming>SF_T_29_T_30</bpmn:incoming>
+        <bpmn:outgoing>SF_T_30_T_31</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_31" name="Flag an activity whose predecessor is unfinished">
+        <bpmn:incoming>SF_T_30_T_31</bpmn:incoming>
+        <bpmn:outgoing>SF_T_31_BP11.02_ReadABoard_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.02_ReadABoard_e" name="fertig">
+        <bpmn:incoming>SF_T_31_BP11.02_ReadABoard_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_27_T_28" sourceRef="T_27" targetRef="T_28" />
+      <bpmn:sequenceFlow id="SF_T_28_T_29" sourceRef="T_28" targetRef="T_29" />
+      <bpmn:sequenceFlow id="SF_T_29_T_30" sourceRef="T_29" targetRef="T_30" />
+      <bpmn:sequenceFlow id="SF_T_30_T_31" sourceRef="T_30" targetRef="T_31" />
+      <bpmn:sequenceFlow id="SF_BP11.02_ReadABoard_s_T_27" sourceRef="BP11.02_ReadABoard_s" targetRef="T_27" />
+      <bpmn:sequenceFlow id="SF_T_31_BP11.02_ReadABoard_e" sourceRef="T_31" targetRef="BP11.02_ReadABoard_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_32" name="Board answered">
+      <bpmn:incoming>SF_BP11.02_ReadABoard_End_32</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="moveIn" name="Move requested">
+      <bpmn:outgoing>SF_moveIn_BP11.03_MoveTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_moveIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.03_MoveTask" name="Move a task">
+      <bpmn:incoming>SF_moveIn_BP11.03_MoveTask</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.03_MoveTask_End_36</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.03_MoveTask_s" name="Start">
+        <bpmn:outgoing>SF_BP11.03_MoveTask_s_T_33</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_33" name="Place the task in the column the user dropped it on">
+        <bpmn:incoming>SF_BP11.03_MoveTask_s_T_33</bpmn:incoming>
+        <bpmn:outgoing>SF_T_33_T_34</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_34" name="Keep its priority with it">
+        <bpmn:incoming>SF_T_33_T_34</bpmn:incoming>
+        <bpmn:outgoing>SF_T_34_T_35</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_35" name="Report whether an activity's last task reached Done">
+        <bpmn:incoming>SF_T_34_T_35</bpmn:incoming>
+        <bpmn:outgoing>SF_T_35_BP11.03_MoveTask_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.03_MoveTask_e" name="fertig">
+        <bpmn:incoming>SF_T_35_BP11.03_MoveTask_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_33_T_34" sourceRef="T_33" targetRef="T_34" />
+      <bpmn:sequenceFlow id="SF_T_34_T_35" sourceRef="T_34" targetRef="T_35" />
+      <bpmn:sequenceFlow id="SF_BP11.03_MoveTask_s_T_33" sourceRef="BP11.03_MoveTask_s" targetRef="T_33" />
+      <bpmn:sequenceFlow id="SF_T_35_BP11.03_MoveTask_e" sourceRef="T_35" targetRef="BP11.03_MoveTask_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_36" name="Move answered">
+      <bpmn:incoming>SF_BP11.03_MoveTask_End_36</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="prioritizeIn" name="Priority submitted">
+      <bpmn:outgoing>SF_prioritizeIn_BP11.04_PrioritizeTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_prioritizeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.04_PrioritizeTask" name="Prioritize a task">
+      <bpmn:incoming>SF_prioritizeIn_BP11.04_PrioritizeTask</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.04_PrioritizeTask_End_41</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.04_PrioritizeTask_s" name="Start">
+        <bpmn:outgoing>SF_BP11.04_PrioritizeTask_s_Gw_37</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:exclusiveGateway id="Gw_37" name="Is the task in the Backlog?">
+        <bpmn:incoming>SF_BP11.04_PrioritizeTask_s_Gw_37</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_37_T_38</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_37_T_39</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:task id="T_38" name="Record the task's triage bucket">
+        <bpmn:incoming>SF_Gw_37_T_38</bpmn:incoming>
+        <bpmn:outgoing>SF_T_38_T_40</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_39" name="Refuse the change and say why">
+        <bpmn:incoming>SF_Gw_37_T_39</bpmn:incoming>
+        <bpmn:outgoing>SF_T_39_T_40</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_40" name="Report the outcome">
+        <bpmn:incoming>SF_T_38_T_40</bpmn:incoming>
+        <bpmn:incoming>SF_T_39_T_40</bpmn:incoming>
+        <bpmn:outgoing>SF_T_40_BP11.04_PrioritizeTask_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.04_PrioritizeTask_e" name="fertig">
+        <bpmn:incoming>SF_T_40_BP11.04_PrioritizeTask_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_Gw_37_T_38" name="yes" sourceRef="Gw_37" targetRef="T_38" />
+      <bpmn:sequenceFlow id="SF_Gw_37_T_39" name="no" sourceRef="Gw_37" targetRef="T_39" />
+      <bpmn:sequenceFlow id="SF_T_38_T_40" sourceRef="T_38" targetRef="T_40" />
+      <bpmn:sequenceFlow id="SF_T_39_T_40" sourceRef="T_39" targetRef="T_40" />
+      <bpmn:sequenceFlow id="SF_BP11.04_PrioritizeTask_s_Gw_37" sourceRef="BP11.04_PrioritizeTask_s" targetRef="Gw_37" />
+      <bpmn:sequenceFlow id="SF_T_40_BP11.04_PrioritizeTask_e" sourceRef="T_40" targetRef="BP11.04_PrioritizeTask_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_41" name="Priority answered">
+      <bpmn:incoming>SF_BP11.04_PrioritizeTask_End_41</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="rankIn" name="Rank submitted">
+      <bpmn:outgoing>SF_rankIn_BP11.05_RankTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_rankIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.05_RankTask" name="Rank a task">
+      <bpmn:incoming>SF_rankIn_BP11.05_RankTask</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.05_RankTask_End_43</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.05_RankTask_s" name="Start">
+        <bpmn:outgoing>SF_BP11.05_RankTask_s_T_42</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_42" name="Record the new relative order within the bucket or column">
+        <bpmn:incoming>SF_BP11.05_RankTask_s_T_42</bpmn:incoming>
+        <bpmn:outgoing>SF_T_42_BP11.05_RankTask_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.05_RankTask_e" name="fertig">
+        <bpmn:incoming>SF_T_42_BP11.05_RankTask_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP11.05_RankTask_s_T_42" sourceRef="BP11.05_RankTask_s" targetRef="T_42" />
+      <bpmn:sequenceFlow id="SF_T_42_BP11.05_RankTask_e" sourceRef="T_42" targetRef="BP11.05_RankTask_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_43" name="Rank answered">
+      <bpmn:incoming>SF_BP11.05_RankTask_End_43</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="amendIn" name="Task amendment requested">
+      <bpmn:outgoing>SF_amendIn_BP11.06_AmendTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_amendIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.06_AmendTask" name="Amend a task">
+      <bpmn:incoming>SF_amendIn_BP11.06_AmendTask</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.06_AmendTask_End_45</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.06_AmendTask_s" name="Start">
+        <bpmn:outgoing>SF_BP11.06_AmendTask_s_T_44</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_44" name="Apply the title and description as given">
+        <bpmn:incoming>SF_BP11.06_AmendTask_s_T_44</bpmn:incoming>
+        <bpmn:outgoing>SF_T_44_BP11.06_AmendTask_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.06_AmendTask_e" name="fertig">
+        <bpmn:incoming>SF_T_44_BP11.06_AmendTask_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP11.06_AmendTask_s_T_44" sourceRef="BP11.06_AmendTask_s" targetRef="T_44" />
+      <bpmn:sequenceFlow id="SF_T_44_BP11.06_AmendTask_e" sourceRef="T_44" targetRef="BP11.06_AmendTask_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_45" name="Amendment answered">
+      <bpmn:incoming>SF_BP11.06_AmendTask_End_45</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="archiveIn" name="Task archiving requested">
+      <bpmn:outgoing>SF_archiveIn_BP11.07_ArchiveTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_archiveIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.07_ArchiveTask" name="Archive a task">
+      <bpmn:incoming>SF_archiveIn_BP11.07_ArchiveTask</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.07_ArchiveTask_End_47</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.07_ArchiveTask_s" name="Start">
+        <bpmn:outgoing>SF_BP11.07_ArchiveTask_s_T_46</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_46" name="Archive the task">
+        <bpmn:incoming>SF_BP11.07_ArchiveTask_s_T_46</bpmn:incoming>
+        <bpmn:outgoing>SF_T_46_BP11.07_ArchiveTask_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.07_ArchiveTask_e" name="fertig">
+        <bpmn:incoming>SF_T_46_BP11.07_ArchiveTask_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP11.07_ArchiveTask_s_T_46" sourceRef="BP11.07_ArchiveTask_s" targetRef="T_46" />
+      <bpmn:sequenceFlow id="SF_T_46_BP11.07_ArchiveTask_e" sourceRef="T_46" targetRef="BP11.07_ArchiveTask_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_47" name="Task archiving answered">
+      <bpmn:incoming>SF_BP11.07_ArchiveTask_End_47</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="deleteIn" name="Task deletion requested">
+      <bpmn:outgoing>SF_deleteIn_BP11.08_DeleteTask</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_deleteIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.08_DeleteTask" name="Delete a task">
+      <bpmn:incoming>SF_deleteIn_BP11.08_DeleteTask</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.08_DeleteTask_End_49</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.08_DeleteTask_s" name="Start">
+        <bpmn:outgoing>SF_BP11.08_DeleteTask_s_T_48</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_48" name="Delete the task">
+        <bpmn:incoming>SF_BP11.08_DeleteTask_s_T_48</bpmn:incoming>
+        <bpmn:outgoing>SF_T_48_BP11.08_DeleteTask_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.08_DeleteTask_e" name="fertig">
+        <bpmn:incoming>SF_T_48_BP11.08_DeleteTask_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP11.08_DeleteTask_s_T_48" sourceRef="BP11.08_DeleteTask_s" targetRef="T_48" />
+      <bpmn:sequenceFlow id="SF_T_48_BP11.08_DeleteTask_e" sourceRef="T_48" targetRef="BP11.08_DeleteTask_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_49" name="Task deletion answered">
+      <bpmn:incoming>SF_BP11.08_DeleteTask_End_49</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="activityIn" name="Activity state submitted">
+      <bpmn:outgoing>SF_activityIn_BP11.09_SetTheActivityDone</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_activityIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP11.09_SetTheActivityDone" name="Set the activity Done">
+      <bpmn:incoming>SF_activityIn_BP11.09_SetTheActivityDone</bpmn:incoming>
+      <bpmn:outgoing>SF_BP11.09_SetTheActivityDone_End_51</bpmn:outgoing>
+      <bpmn:startEvent id="BP11.09_SetTheActivityDone_s" name="Start">
+        <bpmn:outgoing>SF_BP11.09_SetTheActivityDone_s_T_50</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_50" name="Record the activity's state">
+        <bpmn:incoming>SF_BP11.09_SetTheActivityDone_s_T_50</bpmn:incoming>
+        <bpmn:outgoing>SF_T_50_BP11.09_SetTheActivityDone_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP11.09_SetTheActivityDone_e" name="fertig">
+        <bpmn:incoming>SF_T_50_BP11.09_SetTheActivityDone_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP11.09_SetTheActivityDone_s_T_50" sourceRef="BP11.09_SetTheActivityDone_s" targetRef="T_50" />
+      <bpmn:sequenceFlow id="SF_T_50_BP11.09_SetTheActivityDone_e" sourceRef="T_50" targetRef="BP11.09_SetTheActivityDone_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_51" name="Activity state answered">
+      <bpmn:incoming>SF_BP11.09_SetTheActivityDone_End_51</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_taskDraftIn_BP11.10_DraftTheTaskInput" sourceRef="taskDraftIn" targetRef="BP11.10_DraftTheTaskInput" />
+    <bpmn:sequenceFlow id="SF_BP11.10_DraftTheTaskInput_End_20" sourceRef="BP11.10_DraftTheTaskInput" targetRef="End_20" />
+    <bpmn:sequenceFlow id="SF_stripIn_BP11.01_ReadTheBoardsInPlay" sourceRef="stripIn" targetRef="BP11.01_ReadTheBoardsInPlay" />
+    <bpmn:sequenceFlow id="SF_BP11.01_ReadTheBoardsInPlay_End_26" sourceRef="BP11.01_ReadTheBoardsInPlay" targetRef="End_26" />
+    <bpmn:sequenceFlow id="SF_boardIn_BP11.02_ReadABoard" sourceRef="boardIn" targetRef="BP11.02_ReadABoard" />
+    <bpmn:sequenceFlow id="SF_BP11.02_ReadABoard_End_32" sourceRef="BP11.02_ReadABoard" targetRef="End_32" />
+    <bpmn:sequenceFlow id="SF_moveIn_BP11.03_MoveTask" sourceRef="moveIn" targetRef="BP11.03_MoveTask" />
+    <bpmn:sequenceFlow id="SF_BP11.03_MoveTask_End_36" sourceRef="BP11.03_MoveTask" targetRef="End_36" />
+    <bpmn:sequenceFlow id="SF_prioritizeIn_BP11.04_PrioritizeTask" sourceRef="prioritizeIn" targetRef="BP11.04_PrioritizeTask" />
+    <bpmn:sequenceFlow id="SF_BP11.04_PrioritizeTask_End_41" sourceRef="BP11.04_PrioritizeTask" targetRef="End_41" />
+    <bpmn:sequenceFlow id="SF_rankIn_BP11.05_RankTask" sourceRef="rankIn" targetRef="BP11.05_RankTask" />
+    <bpmn:sequenceFlow id="SF_BP11.05_RankTask_End_43" sourceRef="BP11.05_RankTask" targetRef="End_43" />
+    <bpmn:sequenceFlow id="SF_amendIn_BP11.06_AmendTask" sourceRef="amendIn" targetRef="BP11.06_AmendTask" />
+    <bpmn:sequenceFlow id="SF_BP11.06_AmendTask_End_45" sourceRef="BP11.06_AmendTask" targetRef="End_45" />
+    <bpmn:sequenceFlow id="SF_archiveIn_BP11.07_ArchiveTask" sourceRef="archiveIn" targetRef="BP11.07_ArchiveTask" />
+    <bpmn:sequenceFlow id="SF_BP11.07_ArchiveTask_End_47" sourceRef="BP11.07_ArchiveTask" targetRef="End_47" />
+    <bpmn:sequenceFlow id="SF_deleteIn_BP11.08_DeleteTask" sourceRef="deleteIn" targetRef="BP11.08_DeleteTask" />
+    <bpmn:sequenceFlow id="SF_BP11.08_DeleteTask_End_49" sourceRef="BP11.08_DeleteTask" targetRef="End_49" />
+    <bpmn:sequenceFlow id="SF_activityIn_BP11.09_SetTheActivityDone" sourceRef="activityIn" targetRef="BP11.09_SetTheActivityDone" />
+    <bpmn:sequenceFlow id="SF_BP11.09_SetTheActivityDone_End_51" sourceRef="BP11.09_SetTheActivityDone" targetRef="End_51" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard">
+    <bpmndi:BPMNPlane id="P_BP11_WorkTheBoard" bpmnElement="Collaboration_BP11_WorkTheBoard">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2600" height="980" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="1100" width="2600" height="980" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="execution_di" bpmnElement="execution">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="strip_di" bpmnElement="strip">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="board_di" bpmnElement="board">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="working_di" bpmnElement="working">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="1265" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="1410" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="moved_di" bpmnElement="moved">
+        <dc:Bounds x="1612" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_5_di" bpmnElement="Gw_5">
+        <dc:Bounds x="1775" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_6_di" bpmnElement="T_6">
+        <dc:Bounds x="1920" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_7_di" bpmnElement="Gw_7">
+        <dc:Bounds x="2115" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="2260" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activitySet_di" bpmnElement="activitySet">
+        <dc:Bounds x="2462" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="2260" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_10_di" bpmnElement="T_10">
+        <dc:Bounds x="1920" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="1410" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="prioritized_di" bpmnElement="prioritized">
+        <dc:Bounds x="1612" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="1410" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ranked_di" bpmnElement="ranked">
+        <dc:Bounds x="1612" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="1410" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="1580" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amended_di" bpmnElement="amended">
+        <dc:Bounds x="1782" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="1410" y="640" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="archived_di" bpmnElement="archived">
+        <dc:Bounds x="1612" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="1410" y="760" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="deleted_di" bpmnElement="deleted">
+        <dc:Bounds x="1612" y="782" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="823" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_17_di" bpmnElement="T_17">
+        <dc:Bounds x="1410" y="880" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_18_di" bpmnElement="End_18">
+        <dc:Bounds x="252" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="taskDraftIn_di" bpmnElement="taskDraftIn">
+        <dc:Bounds x="1442" y="1562" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1603" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.10_DraftTheTaskInput_di" bpmnElement="BP11.10_DraftTheTaskInput" isExpanded="false">
+        <dc:Bounds x="1560" y="1535" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_20_di" bpmnElement="End_20">
+        <dc:Bounds x="1782" y="1562" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1603" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="stripIn_di" bpmnElement="stripIn">
+        <dc:Bounds x="422" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.01_ReadTheBoardsInPlay_di" bpmnElement="BP11.01_ReadTheBoardsInPlay" isExpanded="false">
+        <dc:Bounds x="540" y="1175" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_26_di" bpmnElement="End_26">
+        <dc:Bounds x="762" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boardIn_di" bpmnElement="boardIn">
+        <dc:Bounds x="762" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.02_ReadABoard_di" bpmnElement="BP11.02_ReadABoard" isExpanded="false">
+        <dc:Bounds x="880" y="1295" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_32_di" bpmnElement="End_32">
+        <dc:Bounds x="1102" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="moveIn_di" bpmnElement="moveIn">
+        <dc:Bounds x="1442" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.03_MoveTask_di" bpmnElement="BP11.03_MoveTask" isExpanded="false">
+        <dc:Bounds x="1560" y="1175" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_36_di" bpmnElement="End_36">
+        <dc:Bounds x="1782" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="prioritizeIn_di" bpmnElement="prioritizeIn">
+        <dc:Bounds x="1442" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.04_PrioritizeTask_di" bpmnElement="BP11.04_PrioritizeTask" isExpanded="false">
+        <dc:Bounds x="1560" y="1295" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_41_di" bpmnElement="End_41">
+        <dc:Bounds x="1782" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="rankIn_di" bpmnElement="rankIn">
+        <dc:Bounds x="1442" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1483" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.05_RankTask_di" bpmnElement="BP11.05_RankTask" isExpanded="false">
+        <dc:Bounds x="1560" y="1415" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_43_di" bpmnElement="End_43">
+        <dc:Bounds x="1782" y="1442" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1483" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amendIn_di" bpmnElement="amendIn">
+        <dc:Bounds x="1612" y="1682" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="1723" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.06_AmendTask_di" bpmnElement="BP11.06_AmendTask" isExpanded="false">
+        <dc:Bounds x="1730" y="1655" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_45_di" bpmnElement="End_45">
+        <dc:Bounds x="1952" y="1682" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="1723" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="archiveIn_di" bpmnElement="archiveIn">
+        <dc:Bounds x="1442" y="1682" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1723" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.07_ArchiveTask_di" bpmnElement="BP11.07_ArchiveTask" isExpanded="false">
+        <dc:Bounds x="1560" y="1775" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_47_di" bpmnElement="End_47">
+        <dc:Bounds x="1782" y="1802" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1843" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="deleteIn_di" bpmnElement="deleteIn">
+        <dc:Bounds x="1442" y="1802" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1843" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.08_DeleteTask_di" bpmnElement="BP11.08_DeleteTask" isExpanded="false">
+        <dc:Bounds x="1560" y="1895" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_49_di" bpmnElement="End_49">
+        <dc:Bounds x="1782" y="1922" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1963" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activityIn_di" bpmnElement="activityIn">
+        <dc:Bounds x="2292" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.09_SetTheActivityDone_di" bpmnElement="BP11.09_SetTheActivityDone" isExpanded="false">
+        <dc:Bounds x="2410" y="1175" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_51_di" bpmnElement="End_51">
+        <dc:Bounds x="2632" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2608" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_execution_di" bpmnElement="SF_Start_1_execution">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_execution_strip_di" bpmnElement="SF_execution_strip">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_strip_T_2_di" bpmnElement="SF_strip_T_2">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_board_di" bpmnElement="SF_T_2_board">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_board_working_di" bpmnElement="SF_board_working">
+        <di:waypoint x="968" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_working_Gw_3_di" bpmnElement="SF_working_Gw_3">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1265" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_moved_di" bpmnElement="SF_T_4_moved">
+        <di:waypoint x="1510" y="200" />
+        <di:waypoint x="1612" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_moved_Gw_5_di" bpmnElement="SF_moved_Gw_5">
+        <di:waypoint x="1648" y="200" />
+        <di:waypoint x="1775" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_6_Gw_7_di" bpmnElement="SF_T_6_Gw_7">
+        <di:waypoint x="2020" y="200" />
+        <di:waypoint x="2115" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_activitySet_di" bpmnElement="SF_T_8_activitySet">
+        <di:waypoint x="2360" y="200" />
+        <di:waypoint x="2462" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_7_T_8_di" bpmnElement="SF_Gw_7_T_8">
+        <di:waypoint x="2165" y="200" />
+        <di:waypoint x="2260" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_7_T_9_di" bpmnElement="SF_Gw_7_T_9">
+        <di:waypoint x="2165" y="200" />
+        <di:waypoint x="2195" y="200" />
+        <di:waypoint x="2195" y="320" />
+        <di:waypoint x="2260" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_5_T_6_di" bpmnElement="SF_Gw_5_T_6">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1920" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_5_T_10_di" bpmnElement="SF_Gw_5_T_10">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1855" y="200" />
+        <di:waypoint x="1855" y="320" />
+        <di:waypoint x="1920" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1410" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_prioritized_di" bpmnElement="SF_T_11_prioritized">
+        <di:waypoint x="1510" y="320" />
+        <di:waypoint x="1612" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_11_di" bpmnElement="SF_Gw_3_T_11">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1345" y="200" />
+        <di:waypoint x="1345" y="320" />
+        <di:waypoint x="1410" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_12_ranked_di" bpmnElement="SF_T_12_ranked">
+        <di:waypoint x="1510" y="440" />
+        <di:waypoint x="1612" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_12_di" bpmnElement="SF_Gw_3_T_12">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1345" y="200" />
+        <di:waypoint x="1345" y="440" />
+        <di:waypoint x="1410" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="1510" y="560" />
+        <di:waypoint x="1580" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_amended_di" bpmnElement="SF_T_14_amended">
+        <di:waypoint x="1680" y="560" />
+        <di:waypoint x="1782" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_13_di" bpmnElement="SF_Gw_3_T_13">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1345" y="200" />
+        <di:waypoint x="1345" y="560" />
+        <di:waypoint x="1410" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_archived_di" bpmnElement="SF_T_15_archived">
+        <di:waypoint x="1510" y="680" />
+        <di:waypoint x="1612" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_15_di" bpmnElement="SF_Gw_3_T_15">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1345" y="200" />
+        <di:waypoint x="1345" y="680" />
+        <di:waypoint x="1410" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_deleted_di" bpmnElement="SF_T_16_deleted">
+        <di:waypoint x="1510" y="800" />
+        <di:waypoint x="1612" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_16_di" bpmnElement="SF_Gw_3_T_16">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1345" y="200" />
+        <di:waypoint x="1345" y="800" />
+        <di:waypoint x="1410" y="800" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_17_di" bpmnElement="SF_Gw_3_T_17">
+        <di:waypoint x="1315" y="200" />
+        <di:waypoint x="1345" y="200" />
+        <di:waypoint x="1345" y="920" />
+        <di:waypoint x="1410" y="920" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_activitySet_working_di" bpmnElement="SF_activitySet_working">
+        <di:waypoint x="2498" y="200" />
+        <di:waypoint x="2565" y="200" />
+        <di:waypoint x="2565" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_working_di" bpmnElement="SF_T_9_working">
+        <di:waypoint x="2360" y="320" />
+        <di:waypoint x="2395" y="320" />
+        <di:waypoint x="2395" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_10_working_di" bpmnElement="SF_T_10_working">
+        <di:waypoint x="2020" y="320" />
+        <di:waypoint x="2055" y="320" />
+        <di:waypoint x="2055" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_prioritized_working_di" bpmnElement="SF_prioritized_working">
+        <di:waypoint x="1648" y="320" />
+        <di:waypoint x="1715" y="320" />
+        <di:waypoint x="1715" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_ranked_working_di" bpmnElement="SF_ranked_working">
+        <di:waypoint x="1648" y="440" />
+        <di:waypoint x="1545" y="440" />
+        <di:waypoint x="1545" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_amended_working_di" bpmnElement="SF_amended_working">
+        <di:waypoint x="1818" y="560" />
+        <di:waypoint x="2055" y="560" />
+        <di:waypoint x="2055" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_archived_working_di" bpmnElement="SF_archived_working">
+        <di:waypoint x="1648" y="680" />
+        <di:waypoint x="1545" y="680" />
+        <di:waypoint x="1545" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_deleted_working_di" bpmnElement="SF_deleted_working">
+        <di:waypoint x="1648" y="800" />
+        <di:waypoint x="1545" y="800" />
+        <di:waypoint x="1545" y="151" />
+        <di:waypoint x="1120" y="151" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_17_execution_di" bpmnElement="SF_T_17_execution">
+        <di:waypoint x="1510" y="920" />
+        <di:waypoint x="1545" y="920" />
+        <di:waypoint x="1545" y="151" />
+        <di:waypoint x="440" y="151" />
+        <di:waypoint x="440" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_taskDraftIn_BP11.10_DraftTheTaskInput_di" bpmnElement="SF_taskDraftIn_BP11.10_DraftTheTaskInput">
+        <di:waypoint x="1478" y="1580" />
+        <di:waypoint x="1560" y="1580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.10_DraftTheTaskInput_End_20_di" bpmnElement="SF_BP11.10_DraftTheTaskInput_End_20">
+        <di:waypoint x="1700" y="1580" />
+        <di:waypoint x="1782" y="1580" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_stripIn_BP11.01_ReadTheBoardsInPlay_di" bpmnElement="SF_stripIn_BP11.01_ReadTheBoardsInPlay">
+        <di:waypoint x="458" y="1220" />
+        <di:waypoint x="540" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.01_ReadTheBoardsInPlay_End_26_di" bpmnElement="SF_BP11.01_ReadTheBoardsInPlay_End_26">
+        <di:waypoint x="680" y="1220" />
+        <di:waypoint x="762" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_boardIn_BP11.02_ReadABoard_di" bpmnElement="SF_boardIn_BP11.02_ReadABoard">
+        <di:waypoint x="798" y="1340" />
+        <di:waypoint x="880" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.02_ReadABoard_End_32_di" bpmnElement="SF_BP11.02_ReadABoard_End_32">
+        <di:waypoint x="1020" y="1340" />
+        <di:waypoint x="1102" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_moveIn_BP11.03_MoveTask_di" bpmnElement="SF_moveIn_BP11.03_MoveTask">
+        <di:waypoint x="1478" y="1220" />
+        <di:waypoint x="1560" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.03_MoveTask_End_36_di" bpmnElement="SF_BP11.03_MoveTask_End_36">
+        <di:waypoint x="1700" y="1220" />
+        <di:waypoint x="1782" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_prioritizeIn_BP11.04_PrioritizeTask_di" bpmnElement="SF_prioritizeIn_BP11.04_PrioritizeTask">
+        <di:waypoint x="1478" y="1340" />
+        <di:waypoint x="1560" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.04_PrioritizeTask_End_41_di" bpmnElement="SF_BP11.04_PrioritizeTask_End_41">
+        <di:waypoint x="1700" y="1340" />
+        <di:waypoint x="1782" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_rankIn_BP11.05_RankTask_di" bpmnElement="SF_rankIn_BP11.05_RankTask">
+        <di:waypoint x="1478" y="1460" />
+        <di:waypoint x="1560" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.05_RankTask_End_43_di" bpmnElement="SF_BP11.05_RankTask_End_43">
+        <di:waypoint x="1700" y="1460" />
+        <di:waypoint x="1782" y="1460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_amendIn_BP11.06_AmendTask_di" bpmnElement="SF_amendIn_BP11.06_AmendTask">
+        <di:waypoint x="1648" y="1700" />
+        <di:waypoint x="1730" y="1700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.06_AmendTask_End_45_di" bpmnElement="SF_BP11.06_AmendTask_End_45">
+        <di:waypoint x="1870" y="1700" />
+        <di:waypoint x="1952" y="1700" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_archiveIn_BP11.07_ArchiveTask_di" bpmnElement="SF_archiveIn_BP11.07_ArchiveTask">
+        <di:waypoint x="1478" y="1700" />
+        <di:waypoint x="1508" y="1700" />
+        <di:waypoint x="1508" y="1820" />
+        <di:waypoint x="1560" y="1820" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.07_ArchiveTask_End_47_di" bpmnElement="SF_BP11.07_ArchiveTask_End_47">
+        <di:waypoint x="1700" y="1820" />
+        <di:waypoint x="1782" y="1820" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_deleteIn_BP11.08_DeleteTask_di" bpmnElement="SF_deleteIn_BP11.08_DeleteTask">
+        <di:waypoint x="1478" y="1820" />
+        <di:waypoint x="1508" y="1820" />
+        <di:waypoint x="1508" y="1940" />
+        <di:waypoint x="1560" y="1940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.08_DeleteTask_End_49_di" bpmnElement="SF_BP11.08_DeleteTask_End_49">
+        <di:waypoint x="1700" y="1940" />
+        <di:waypoint x="1782" y="1940" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_activityIn_BP11.09_SetTheActivityDone_di" bpmnElement="SF_activityIn_BP11.09_SetTheActivityDone">
+        <di:waypoint x="2328" y="1220" />
+        <di:waypoint x="2410" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.09_SetTheActivityDone_End_51_di" bpmnElement="SF_BP11.09_SetTheActivityDone_End_51">
+        <di:waypoint x="2550" y="1220" />
+        <di:waypoint x="2632" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="780" y="240" />
+        <di:waypoint x="780" y="252" />
+        <di:waypoint x="865" y="252" />
+        <di:waypoint x="865" y="1310" />
+        <di:waypoint x="780" y="1310" />
+        <di:waypoint x="780" y="1322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="1450" y="240" />
+        <di:waypoint x="1450" y="252" />
+        <di:waypoint x="1535" y="252" />
+        <di:waypoint x="1535" y="1190" />
+        <di:waypoint x="1450" y="1190" />
+        <di:waypoint x="1450" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="2310" y="240" />
+        <di:waypoint x="2310" y="252" />
+        <di:waypoint x="2395" y="252" />
+        <di:waypoint x="2395" y="1190" />
+        <di:waypoint x="2310" y="1190" />
+        <di:waypoint x="2310" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="1450" y="360" />
+        <di:waypoint x="1450" y="372" />
+        <di:waypoint x="1535" y="372" />
+        <di:waypoint x="1535" y="1310" />
+        <di:waypoint x="1450" y="1310" />
+        <di:waypoint x="1450" y="1322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="1455" y="480" />
+        <di:waypoint x="1455" y="492" />
+        <di:waypoint x="1540" y="492" />
+        <di:waypoint x="1540" y="1430" />
+        <di:waypoint x="1455" y="1430" />
+        <di:waypoint x="1455" y="1442" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="1465" y="600" />
+        <di:waypoint x="1465" y="612" />
+        <di:waypoint x="1550" y="612" />
+        <di:waypoint x="1550" y="1550" />
+        <di:waypoint x="1465" y="1550" />
+        <di:waypoint x="1465" y="1562" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="1635" y="600" />
+        <di:waypoint x="1635" y="612" />
+        <di:waypoint x="1720" y="612" />
+        <di:waypoint x="1720" y="1670" />
+        <di:waypoint x="1635" y="1670" />
+        <di:waypoint x="1635" y="1682" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="1470" y="720" />
+        <di:waypoint x="1470" y="732" />
+        <di:waypoint x="1555" y="732" />
+        <di:waypoint x="1555" y="1670" />
+        <di:waypoint x="1470" y="1670" />
+        <di:waypoint x="1470" y="1682" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="1470" y="840" />
+        <di:waypoint x="1470" y="852" />
+        <di:waypoint x="1555" y="852" />
+        <di:waypoint x="1555" y="1790" />
+        <di:waypoint x="1470" y="1790" />
+        <di:waypoint x="1470" y="1802" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_11_di" bpmnElement="MF_11">
+        <di:waypoint x="610" y="1175" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_12_di" bpmnElement="MF_12">
+        <di:waypoint x="950" y="1295" />
+        <di:waypoint x="950" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_13_di" bpmnElement="MF_13">
+        <di:waypoint x="1620" y="1175" />
+        <di:waypoint x="1620" y="1163" />
+        <di:waypoint x="1535" y="1163" />
+        <di:waypoint x="1535" y="230" />
+        <di:waypoint x="1620" y="230" />
+        <di:waypoint x="1620" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_14_di" bpmnElement="MF_14">
+        <di:waypoint x="1620" y="1295" />
+        <di:waypoint x="1620" y="1283" />
+        <di:waypoint x="1535" y="1283" />
+        <di:waypoint x="1535" y="350" />
+        <di:waypoint x="1620" y="350" />
+        <di:waypoint x="1620" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_15_di" bpmnElement="MF_15">
+        <di:waypoint x="1625" y="1415" />
+        <di:waypoint x="1625" y="1403" />
+        <di:waypoint x="1540" y="1403" />
+        <di:waypoint x="1540" y="470" />
+        <di:waypoint x="1625" y="470" />
+        <di:waypoint x="1625" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_16_di" bpmnElement="MF_16">
+        <di:waypoint x="1800" y="1655" />
+        <di:waypoint x="1885" y="1655" />
+        <di:waypoint x="1885" y="590" />
+        <di:waypoint x="1800" y="590" />
+        <di:waypoint x="1800" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_17_di" bpmnElement="MF_17">
+        <di:waypoint x="1640" y="1775" />
+        <di:waypoint x="1725" y="1775" />
+        <di:waypoint x="1725" y="710" />
+        <di:waypoint x="1640" y="710" />
+        <di:waypoint x="1640" y="698" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_18_di" bpmnElement="MF_18">
+        <di:waypoint x="1640" y="1895" />
+        <di:waypoint x="1640" y="1883" />
+        <di:waypoint x="1725" y="1883" />
+        <di:waypoint x="1725" y="830" />
+        <di:waypoint x="1640" y="830" />
+        <di:waypoint x="1640" y="818" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_19_di" bpmnElement="MF_19">
+        <di:waypoint x="2480" y="1175" />
+        <di:waypoint x="2480" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="1510" y="72" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="1630" y="302" /><di:waypoint x="1630" y="292" /><di:waypoint x="1602" y="292" /><di:waypoint x="1602" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1510" y="-1" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1630" y="662" /><di:waypoint x="1630" y="630" /><di:waypoint x="1400" y="630" /><di:waypoint x="1400" y="30" /><di:waypoint x="1510" y="30" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1510" y="-104" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1630" y="782" /><di:waypoint x="1630" y="750" /><di:waypoint x="1400" y="750" /><di:waypoint x="1400" y="-58" /><di:waypoint x="1510" y="-58" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="1680" y="432" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="1800" y="542" /><di:waypoint x="1800" y="508" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="2190" y="72" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="2310" y="280" /><di:waypoint x="2310" y="270" /><di:waypoint x="2250" y="270" /><di:waypoint x="2250" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="490" y="1285" width="240" height="121" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="610" y="1265" /><di:waypoint x="610" y="1285" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="830" y="1405" width="240" height="136" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="950" y="1385" /><di:waypoint x="950" y="1405" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X8_di" bpmnElement="TextAnnotation_X8"><dc:Bounds x="1510" y="1997" width="240" height="121" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X8_di" bpmnElement="Association_X8"><di:waypoint x="1630" y="1625" /><di:waypoint x="1630" y="1635" /><di:waypoint x="1550" y="1635" /><di:waypoint x="1550" y="1997" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X9_di" bpmnElement="TextAnnotation_X9"><dc:Bounds x="1510" y="2130" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X9_di" bpmnElement="Association_X9"><di:waypoint x="1630" y="1265" /><di:waypoint x="1630" y="1275" /><di:waypoint x="1500" y="1275" /><di:waypoint x="1500" y="2176" /><di:waypoint x="1510" y="2176" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X10_di" bpmnElement="TextAnnotation_X10"><dc:Bounds x="1510" y="2233" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X10_di" bpmnElement="Association_X10"><di:waypoint x="1630" y="1385" /><di:waypoint x="1630" y="1395" /><di:waypoint x="1500" y="1395" /><di:waypoint x="1500" y="2279" /><di:waypoint x="1510" y="2279" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X11_di" bpmnElement="TextAnnotation_X11"><dc:Bounds x="1510" y="2336" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X11_di" bpmnElement="Association_X11"><di:waypoint x="1630" y="1865" /><di:waypoint x="1630" y="1875" /><di:waypoint x="1500" y="1875" /><di:waypoint x="1500" y="2382" /><di:waypoint x="1510" y="2382" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X12_di" bpmnElement="TextAnnotation_X12"><dc:Bounds x="1510" y="2439" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X12_di" bpmnElement="Association_X12"><di:waypoint x="1630" y="1985" /><di:waypoint x="1500" y="1985" /><di:waypoint x="1500" y="2462" /><di:waypoint x="1510" y="2462" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X13_di" bpmnElement="TextAnnotation_X13"><dc:Bounds x="1680" y="2497" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X13_di" bpmnElement="Association_X13"><di:waypoint x="1800" y="1745" /><di:waypoint x="1800" y="1755" /><di:waypoint x="1779" y="1755" /><di:waypoint x="1779" y="2497" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X14_di" bpmnElement="TextAnnotation_X14"><dc:Bounds x="2360" y="1285" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X14_di" bpmnElement="Association_X14"><di:waypoint x="2480" y="1265" /><di:waypoint x="2480" y="1285" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1110DraftTheTaskInput">
+    <bpmndi:BPMNPlane id="P_BP1110DraftTheTaskInput" bpmnElement="BP11.10_DraftTheTaskInput">
+      <bpmndi:BPMNShape id="BP11.10_DraftTheTaskInput_s_di" bpmnElement="BP11.10_DraftTheTaskInput_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_19_di" bpmnElement="T_19">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.10_DraftTheTaskInput_e_di" bpmnElement="BP11.10_DraftTheTaskInput_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP11.10_DraftTheTaskInput_s_T_19_di" bpmnElement="SF_BP11.10_DraftTheTaskInput_s_T_19">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_19_BP11.10_DraftTheTaskInput_e_di" bpmnElement="SF_T_19_BP11.10_DraftTheTaskInput_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1101ReadTheBoardsInPlay">
+    <bpmndi:BPMNPlane id="P_BP1101ReadTheBoardsInPlay" bpmnElement="BP11.01_ReadTheBoardsInPlay">
+      <bpmndi:BPMNShape id="BP11.01_ReadTheBoardsInPlay_s_di" bpmnElement="BP11.01_ReadTheBoardsInPlay_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_22_di" bpmnElement="T_22">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_25_di" bpmnElement="T_25">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.01_ReadTheBoardsInPlay_e_di" bpmnElement="BP11.01_ReadTheBoardsInPlay_e">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_21_T_22_di" bpmnElement="SF_T_21_T_22">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_22_T_23_di" bpmnElement="SF_T_22_T_23">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_23_T_24_di" bpmnElement="SF_T_23_T_24">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_T_25_di" bpmnElement="SF_T_24_T_25">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.01_ReadTheBoardsInPlay_s_T_21_di" bpmnElement="SF_BP11.01_ReadTheBoardsInPlay_s_T_21">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_25_BP11.01_ReadTheBoardsInPlay_e_di" bpmnElement="SF_T_25_BP11.01_ReadTheBoardsInPlay_e">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1102ReadABoard">
+    <bpmndi:BPMNPlane id="P_BP1102ReadABoard" bpmnElement="BP11.02_ReadABoard">
+      <bpmndi:BPMNShape id="BP11.02_ReadABoard_s_di" bpmnElement="BP11.02_ReadABoard_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_27_di" bpmnElement="T_27">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_28_di" bpmnElement="T_28">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_29_di" bpmnElement="T_29">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_30_di" bpmnElement="T_30">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_31_di" bpmnElement="T_31">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.02_ReadABoard_e_di" bpmnElement="BP11.02_ReadABoard_e">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_27_T_28_di" bpmnElement="SF_T_27_T_28">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_28_T_29_di" bpmnElement="SF_T_28_T_29">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_29_T_30_di" bpmnElement="SF_T_29_T_30">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_30_T_31_di" bpmnElement="SF_T_30_T_31">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.02_ReadABoard_s_T_27_di" bpmnElement="SF_BP11.02_ReadABoard_s_T_27">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_31_BP11.02_ReadABoard_e_di" bpmnElement="SF_T_31_BP11.02_ReadABoard_e">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1103MoveTask">
+    <bpmndi:BPMNPlane id="P_BP1103MoveTask" bpmnElement="BP11.03_MoveTask">
+      <bpmndi:BPMNShape id="BP11.03_MoveTask_s_di" bpmnElement="BP11.03_MoveTask_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_33_di" bpmnElement="T_33">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_34_di" bpmnElement="T_34">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_35_di" bpmnElement="T_35">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.03_MoveTask_e_di" bpmnElement="BP11.03_MoveTask_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_33_T_34_di" bpmnElement="SF_T_33_T_34">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_34_T_35_di" bpmnElement="SF_T_34_T_35">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.03_MoveTask_s_T_33_di" bpmnElement="SF_BP11.03_MoveTask_s_T_33">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_35_BP11.03_MoveTask_e_di" bpmnElement="SF_T_35_BP11.03_MoveTask_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1104PrioritizeTask">
+    <bpmndi:BPMNPlane id="P_BP1104PrioritizeTask" bpmnElement="BP11.04_PrioritizeTask">
+      <bpmndi:BPMNShape id="BP11.04_PrioritizeTask_s_di" bpmnElement="BP11.04_PrioritizeTask_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_37_di" bpmnElement="Gw_37">
+        <dc:Bounds x="415" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_38_di" bpmnElement="T_38">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_39_di" bpmnElement="T_39">
+        <dc:Bounds x="560" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_40_di" bpmnElement="T_40">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.04_PrioritizeTask_e_di" bpmnElement="BP11.04_PrioritizeTask_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Gw_37_T_38_di" bpmnElement="SF_Gw_37_T_38">
+        <di:waypoint x="465" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_37_T_39_di" bpmnElement="SF_Gw_37_T_39">
+        <di:waypoint x="465" y="200" />
+        <di:waypoint x="495" y="200" />
+        <di:waypoint x="495" y="320" />
+        <di:waypoint x="560" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_38_T_40_di" bpmnElement="SF_T_38_T_40">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_39_T_40_di" bpmnElement="SF_T_39_T_40">
+        <di:waypoint x="660" y="320" />
+        <di:waypoint x="690" y="320" />
+        <di:waypoint x="690" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP11.04_PrioritizeTask_s_Gw_37_di" bpmnElement="SF_BP11.04_PrioritizeTask_s_Gw_37">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="415" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_40_BP11.04_PrioritizeTask_e_di" bpmnElement="SF_T_40_BP11.04_PrioritizeTask_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1105RankTask">
+    <bpmndi:BPMNPlane id="P_BP1105RankTask" bpmnElement="BP11.05_RankTask">
+      <bpmndi:BPMNShape id="BP11.05_RankTask_s_di" bpmnElement="BP11.05_RankTask_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_42_di" bpmnElement="T_42">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.05_RankTask_e_di" bpmnElement="BP11.05_RankTask_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP11.05_RankTask_s_T_42_di" bpmnElement="SF_BP11.05_RankTask_s_T_42">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_42_BP11.05_RankTask_e_di" bpmnElement="SF_T_42_BP11.05_RankTask_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1106AmendTask">
+    <bpmndi:BPMNPlane id="P_BP1106AmendTask" bpmnElement="BP11.06_AmendTask">
+      <bpmndi:BPMNShape id="BP11.06_AmendTask_s_di" bpmnElement="BP11.06_AmendTask_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_44_di" bpmnElement="T_44">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.06_AmendTask_e_di" bpmnElement="BP11.06_AmendTask_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP11.06_AmendTask_s_T_44_di" bpmnElement="SF_BP11.06_AmendTask_s_T_44">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_44_BP11.06_AmendTask_e_di" bpmnElement="SF_T_44_BP11.06_AmendTask_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1107ArchiveTask">
+    <bpmndi:BPMNPlane id="P_BP1107ArchiveTask" bpmnElement="BP11.07_ArchiveTask">
+      <bpmndi:BPMNShape id="BP11.07_ArchiveTask_s_di" bpmnElement="BP11.07_ArchiveTask_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_46_di" bpmnElement="T_46">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.07_ArchiveTask_e_di" bpmnElement="BP11.07_ArchiveTask_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP11.07_ArchiveTask_s_T_46_di" bpmnElement="SF_BP11.07_ArchiveTask_s_T_46">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_46_BP11.07_ArchiveTask_e_di" bpmnElement="SF_T_46_BP11.07_ArchiveTask_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1108DeleteTask">
+    <bpmndi:BPMNPlane id="P_BP1108DeleteTask" bpmnElement="BP11.08_DeleteTask">
+      <bpmndi:BPMNShape id="BP11.08_DeleteTask_s_di" bpmnElement="BP11.08_DeleteTask_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_48_di" bpmnElement="T_48">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.08_DeleteTask_e_di" bpmnElement="BP11.08_DeleteTask_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP11.08_DeleteTask_s_T_48_di" bpmnElement="SF_BP11.08_DeleteTask_s_T_48">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_48_BP11.08_DeleteTask_e_di" bpmnElement="SF_T_48_BP11.08_DeleteTask_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP11_WorkTheBoard_BP1109SetTheActivityDone">
+    <bpmndi:BPMNPlane id="P_BP1109SetTheActivityDone" bpmnElement="BP11.09_SetTheActivityDone">
+      <bpmndi:BPMNShape id="BP11.09_SetTheActivityDone_s_di" bpmnElement="BP11.09_SetTheActivityDone_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_50_di" bpmnElement="T_50">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP11.09_SetTheActivityDone_e_di" bpmnElement="BP11.09_SetTheActivityDone_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP11.09_SetTheActivityDone_s_T_50_di" bpmnElement="SF_BP11.09_SetTheActivityDone_s_T_50">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_50_BP11.09_SetTheActivityDone_e_di" bpmnElement="SF_T_50_BP11.09_SetTheActivityDone_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -1,0 +1,470 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="3158" height="2233" viewBox="0 0 3158 2233">
+<rect width="3158" height="2233" fill="#fff"/>
+<rect x="24" y="32" width="3110" height="980" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="32" x2="54" y2="1012" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="526.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 522)">User</text>
+<rect x="24" y="1052" width="3110" height="860" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1052" x2="54" y2="1912" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1486.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1482)">Bearing</text>
+<polyline points="152,152 254,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 152 L 246 155.36 L 246 148.64 Z" fill="#000"/>
+<polyline points="354,152 796,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 152 L 788 155.36 L 788 148.64 Z" fill="#000"/>
+<polyline points="832,152 959,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 152 L 951 155.36 L 951 148.64 Z" fill="#000"/>
+<polyline points="1204,152 1274,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 152 L 1266 155.36 L 1266 148.64 Z" fill="#000"/>
+<polyline points="1374,152 1816,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1816 152 L 1808 155.36 L 1808 148.64 Z" fill="#000"/>
+<polyline points="1009,152 1104,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 152 L 1096 155.36 L 1096 148.64 Z" fill="#000"/>
+<polyline points="1204,272 1306,272" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 272 L 1298 275.36 L 1298 268.64 Z" fill="#000"/>
+<polyline points="1009,152 1039,152 1039,272 1104,272" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 272 L 1096 275.36 L 1096 268.64 Z" fill="#000"/>
+<polyline points="1204,392 1306,392" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 392 L 1298 395.36 L 1298 388.64 Z" fill="#000"/>
+<polyline points="1009,152 1039,152 1039,392 1104,392" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 392 L 1096 395.36 L 1096 388.64 Z" fill="#000"/>
+<polyline points="1204,512 1306,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 512 L 1298 515.36 L 1298 508.64 Z" fill="#000"/>
+<polyline points="1009,152 1039,152 1039,512 1104,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 512 L 1096 515.36 L 1096 508.64 Z" fill="#000"/>
+<polyline points="1204,632 1646,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 632 L 1638 635.36 L 1638 628.64 Z" fill="#000"/>
+<polyline points="1682,632 1809,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1809 632 L 1801 635.36 L 1801 628.64 Z" fill="#000"/>
+<polyline points="1859,632 1954,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1954 632 L 1946 635.36 L 1946 628.64 Z" fill="#000"/>
+<polyline points="1859,632 1889,632 1889,752 1954,752" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1954 752 L 1946 755.36 L 1946 748.64 Z" fill="#000"/>
+<polyline points="1859,632 1889,632 1889,872 1954,872" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1954 872 L 1946 875.36 L 1946 868.64 Z" fill="#000"/>
+<polyline points="2224,632 2496,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2496 632 L 2488 635.36 L 2488 628.64 Z" fill="#000"/>
+<polyline points="1009,152 1039,152 1039,632 1104,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 632 L 1096 635.36 L 1096 628.64 Z" fill="#000"/>
+<polyline points="1852,152 2659,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2659 152 L 2651 155.36 L 2651 148.64 Z" fill="#000"/>
+<polyline points="1342,272 1409,272 1409,117 2684,117 2684,127" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2684 127 L 2680.64 119 L 2687.36 119 Z" fill="#000"/>
+<polyline points="1342,392 1409,392 1409,117 2684,117 2684,127" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2684 127 L 2680.64 119 L 2687.36 119 Z" fill="#000"/>
+<polyline points="1342,512 1409,512 1409,117 2684,117 2684,127" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2684 127 L 2680.64 119 L 2687.36 119 Z" fill="#000"/>
+<polyline points="2532,632 2769,632 2769,92 2684,92 2684,127" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2684 127 L 2680.64 119 L 2687.36 119 Z" fill="#000"/>
+<polyline points="2709,152 2804,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2804 152 L 2796 155.36 L 2796 148.64 Z" fill="#000"/>
+<polyline points="2904,152 3006,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3006 152 L 2998 155.36 L 2998 148.64 Z" fill="#000"/>
+<polyline points="2054,632 2124,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 632 L 2116 635.36 L 2116 628.64 Z" fill="#000"/>
+<polyline points="2054,752 2084,752 2084,632 2124,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 632 L 2116 635.36 L 2116 628.64 Z" fill="#000"/>
+<polyline points="2054,872 1579,872 1579,103 304,103 304,112" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 304 112 L 300.64 104 L 307.36 104 Z" fill="#000"/>
+<polyline points="2709,152 2769,152 2769,225 304,225 304,192" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 304 192 L 307.36 200 L 300.64 200 Z" fill="#000"/>
+<polyline points="524,1172 594,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1172 L 586 1175.36 L 586 1168.64 Z" fill="#000"/>
+<polyline points="694,1172 764,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1172 L 756 1175.36 L 756 1168.64 Z" fill="#000"/>
+<polyline points="322,1172 424,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 1172 L 416 1175.36 L 416 1168.64 Z" fill="#000"/>
+<polyline points="864,1172 966,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1172 L 958 1175.36 L 958 1168.64 Z" fill="#000"/>
+<polyline points="1172,1172 1274,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1172 L 1266 1175.36 L 1266 1168.64 Z" fill="#000"/>
+<polyline points="1374,1172 1476,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 1172 L 1468 1175.36 L 1468 1168.64 Z" fill="#000"/>
+<polyline points="1544,1292 1614,1292" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 1292 L 1606 1295.36 L 1606 1288.64 Z" fill="#000"/>
+<polyline points="1714,1292 1784,1292" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 1292 L 1776 1295.36 L 1776 1288.64 Z" fill="#000"/>
+<polyline points="1342,1292 1444,1292" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 1292 L 1436 1295.36 L 1436 1288.64 Z" fill="#000"/>
+<polyline points="1884,1292 1986,1292" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1986 1292 L 1978 1295.36 L 1978 1288.64 Z" fill="#000"/>
+<polyline points="1172,1292 1202,1292 1202,1412 1274,1412" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1412 L 1266 1415.36 L 1266 1408.64 Z" fill="#000"/>
+<polyline points="1374,1412 1476,1412" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 1412 L 1468 1415.36 L 1468 1408.64 Z" fill="#000"/>
+<polyline points="1172,1412 1202,1412 1202,1532 1274,1532" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1532 L 1266 1535.36 L 1266 1528.64 Z" fill="#000"/>
+<polyline points="1374,1532 1476,1532" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 1532 L 1468 1535.36 L 1468 1528.64 Z" fill="#000"/>
+<polyline points="1172,1532 1202,1532 1202,1652 1274,1652" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1652 L 1266 1655.36 L 1266 1648.64 Z" fill="#000"/>
+<polyline points="1374,1652 1476,1652" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 1652 L 1468 1655.36 L 1468 1648.64 Z" fill="#000"/>
+<polyline points="1374,1772 1444,1772" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 1772 L 1436 1775.36 L 1436 1768.64 Z" fill="#000"/>
+<polyline points="1544,1772 1614,1772" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1614 1772 L 1606 1775.36 L 1606 1768.64 Z" fill="#000"/>
+<polyline points="1172,1652 1202,1652 1202,1772 1274,1772" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1772 L 1266 1775.36 L 1266 1768.64 Z" fill="#000"/>
+<polyline points="1714,1772 1816,1772" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1816 1772 L 1808 1775.36 L 1808 1768.64 Z" fill="#000"/>
+<polyline points="2394,1172 2464,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2464 1172 L 2456 1175.36 L 2456 1168.64 Z" fill="#000"/>
+<polyline points="2192,1172 2294,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2294 1172 L 2286 1175.36 L 2286 1168.64 Z" fill="#000"/>
+<polyline points="2564,1172 2666,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2666 1172 L 2658 1175.36 L 2658 1168.64 Z" fill="#000"/>
+<polyline points="304,192 304,1154" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 307.78 1145 L 304 1154 L 300.22 1145" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="304" cy="192" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1144,192 1144,204 1229,204 1229,1142 1144,1142 1144,1154" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1147.78 1145 L 1144 1154 L 1140.22 1145" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1144" cy="192" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1314,192 1314,204 1399,204 1399,1262 1314,1262 1314,1274" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1317.78 1265 L 1314 1274 L 1310.22 1265" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1314" cy="192" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1144,312 1144,324 1229,324 1229,1262 1144,1262 1144,1274" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1147.78 1265 L 1144 1274 L 1140.22 1265" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1144" cy="312" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1154,432 1154,444 1239,444 1239,1382 1154,1382 1154,1394" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1157.78 1385 L 1154 1394 L 1150.22 1385" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="432" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1164,552 1164,564 1249,564 1249,1502 1164,1502 1164,1514" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1167.78 1505 L 1164 1514 L 1160.22 1505" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1164" cy="552" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1164,672 1164,684 1249,684 1249,1622 1164,1622 1164,1634" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1167.78 1625 L 1164 1634 L 1160.22 1625" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1164" cy="672" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2174,672 2174,1154" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2177.78 1145 L 2174 1154 L 2170.22 1145" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2174" cy="672" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,1132 814,170" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 810.22 179 L 814 170 L 817.78 179" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="1132" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1834,1252 1834,1240 1749,1240 1749,182 1834,182 1834,170" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1830.22 179 L 1834 170 L 1837.78 179" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1834" cy="1252" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1319,1372 1319,1360 1404,1360 1404,302 1319,302 1319,290" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1315.22 299 L 1319 290 L 1322.78 299" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1319" cy="1372" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1329,1492 1329,1480 1414,1480 1414,422 1329,422 1329,410" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1325.22 419 L 1329 410 L 1332.78 419" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1329" cy="1492" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1334,1612 1334,1600 1419,1600 1419,542 1334,542 1334,530" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1330.22 539 L 1334 530 L 1337.78 539" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1334" cy="1612" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1664,1732 1664,1720 1749,1720 1749,662 1664,662 1664,650" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1660.22 659 L 1664 650 L 1667.78 659" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1664" cy="1732" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2514,1132 2514,650" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2510.22 659 L 2514 650 L 2517.78 659" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2514" cy="1132" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1324,374 1324,364 1264,364 1264,100" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1834,134 1834,114" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2004,712 2004,702 1944,702 1944,580" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2004,832 2004,822 1874,822 1874,499 1884,499" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2514,614 2514,594" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="474,1212 474,1232" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1212 1324,1222 1264,1222 1264,1824" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1572 1324,1582 1194,1582 1194,2003 1204,2003" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1812 1194,1812 1194,2098 1204,2098" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,1332 1494,1342 1554,1342 1554,2148" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2344,1212 2344,1232" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A recurring practice</text>
+<text x="92" y="194.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">needs attention</text>
+<rect x="254" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="148.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open a theme on</text>
+<text x="304" y="160.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the Themes tab</text>
+<circle cx="814" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="152" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="146.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 146.06 L 814 152 L 823 146.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The theme's routines</text>
+<text x="772" y="194.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">with their schedules</text>
+<path d="M 984 127 L 1009 152 L 984 177 L 959 152 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 141.5 L 994.5 162.5 M 973.5 162.5 L 994.5 141.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="191" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="1104" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="1149.5" y1="175" x2="1158.5" y2="175" stroke="#000" stroke-width="1.4"/>
+<line x1="1149.5" y1="178" x2="1158.5" y2="178" stroke="#000" stroke-width="1.4"/>
+<line x1="1149.5" y1="181" x2="1158.5" y2="181" stroke="#000" stroke-width="1.4"/>
+<text x="1154" y="148.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Name the routine</text>
+<text x="1154" y="160.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">and set its schedule</text>
+<rect x="1274" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="148.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the new</text>
+<text x="1324" y="160.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">routine</text>
+<circle cx="1834" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1834" cy="152" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1825" y="146.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1825 146.06 L 1834 152 L 1843 146.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1792" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine defined</text>
+<rect x="1104" y="232" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="274.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Amend the routine</text>
+<circle cx="1324" cy="272" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="272" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="266.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 266.06 L 1324 272 L 1333 266.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="304" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine amended</text>
+<rect x="1104" y="352" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="388.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Toggle the routine</text>
+<text x="1154" y="400.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">active</text>
+<circle cx="1324" cy="392" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="392" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="386.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 386.06 L 1324 392 L 1333 386.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="424" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Active state</text>
+<text x="1282" y="434.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">recorded</text>
+<rect x="1104" y="472" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="508.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Drag a routine into</text>
+<text x="1154" y="520.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">place</text>
+<circle cx="1324" cy="512" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="512" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="506.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 506.06 L 1324 512 L 1333 506.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="544" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Order recorded</text>
+<rect x="1104" y="592" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="628.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Choose a routine to</text>
+<text x="1154" y="640.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">delete</text>
+<circle cx="1664" cy="632" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1664" cy="632" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1655" y="626.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1655 626.06 L 1664 632 L 1673 626.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1622" y="664" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the deletion</text>
+<text x="1622" y="674.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 1834 607 L 1859 632 L 1834 657 L 1809 632 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1823.5 621.5 L 1844.5 642.5 M 1823.5 642.5 L 1844.5 621.5" stroke="#000" stroke-width="1"/>
+<text x="1792" y="671" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Let the occurrences</text>
+<text x="1792" y="681.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">go too?</text>
+<rect x="1954" y="592" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2004" y="622.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Include the</text>
+<text x="2004" y="634.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">occurrences in the</text>
+<text x="2004" y="646.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascade</text>
+<rect x="1954" y="712" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2004" y="742.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the</text>
+<text x="2004" y="754.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">occurrences out of</text>
+<text x="2004" y="766.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the cascade</text>
+<rect x="1954" y="832" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2004" y="868.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Abandon the</text>
+<text x="2004" y="880.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">deletion</text>
+<rect x="2124" y="592" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2174" y="634.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the deletion</text>
+<circle cx="2514" cy="632" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="2514" cy="632" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="2505" y="626.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2505 626.06 L 2514 632 L 2523 626.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2472" y="664" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine deleted</text>
+<path d="M 2684 127 L 2709 152 L 2684 177 L 2659 152 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 2673.5 141.5 L 2694.5 162.5 M 2673.5 162.5 L 2694.5 141.5" stroke="#000" stroke-width="1"/>
+<text x="2642" y="191" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Anything else under</text>
+<text x="2642" y="201.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">this life area?</text>
+<rect x="2804" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2854" y="154.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the life area</text>
+<circle cx="3024" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2982" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routines current</text>
+<circle cx="304" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="295" y="1166.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 295 1166.06 L 304 1172 L 313 1166.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="262" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine list</text>
+<text x="262" y="1214.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="424" y="1132" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="474" y="1162.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read the theme's</text>
+<text x="474" y="1174.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">routines in their</text>
+<text x="474" y="1186.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">recorded order</text>
+<rect x="594" y="1132" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1156.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Derive due and</text>
+<text x="644" y="1168.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">overdue from each</text>
+<text x="644" y="1180.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">active routine's</text>
+<text x="644" y="1192.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">schedule</text>
+<rect x="764" y="1132" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1162.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the paused</text>
+<text x="814" y="1174.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">ones out of the</text>
+<text x="814" y="1186.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">computation</text>
+<circle cx="984" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine list</text>
+<text x="942" y="1214.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1166.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1166.06 L 1154 1172 L 1163 1166.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine draft</text>
+<text x="1112" y="1214.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<rect x="1274" y="1132" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1168.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep what is typed</text>
+<text x="1324" y="1180.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">as a draft</text>
+<circle cx="1494" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1452" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Draft kept</text>
+<circle cx="1324" cy="1292" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1286.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1286.06 L 1324 1292 L 1333 1286.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1324" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine definition</text>
+<text x="1282" y="1334.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<rect x="1444" y="1252" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1288.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store the routine</text>
+<text x="1494" y="1300.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">under its theme</text>
+<rect x="1614" y="1252" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="1288.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store its recurrence</text>
+<text x="1664" y="1300.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">and preferred days</text>
+<rect x="1784" y="1252" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1834" y="1288.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Place it last in the</text>
+<text x="1834" y="1300.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">theme's order</text>
+<circle cx="2004" cy="1292" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1962" y="1324" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Definition answered</text>
+<circle cx="1154" cy="1292" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1286.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1286.06 L 1154 1292 L 1163 1286.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1324" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine amendment</text>
+<text x="1112" y="1334.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="1372" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1408.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Apply the name and</text>
+<text x="1324" y="1420.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">schedule as given</text>
+<circle cx="1494" cy="1412" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1452" y="1444" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Amendment</text>
+<text x="1452" y="1454.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="1412" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1406.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1406.06 L 1154 1412 L 1163 1406.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1444" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Active state</text>
+<text x="1112" y="1454.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<rect x="1274" y="1492" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1528.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Record the routine's</text>
+<text x="1324" y="1540.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">active state</text>
+<circle cx="1494" cy="1532" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1452" y="1564" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Active state</text>
+<text x="1452" y="1574.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="1532" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1526.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1526.06 L 1154 1532 L 1163 1526.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1564" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine reordering</text>
+<text x="1112" y="1574.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="1612" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1642.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Record the new</text>
+<text x="1324" y="1654.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">relative order within</text>
+<text x="1324" y="1666.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the theme</text>
+<circle cx="1494" cy="1652" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1452" y="1684" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Reordering</text>
+<text x="1452" y="1694.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="1652" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1646.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1646.06 L 1154 1652 L 1163 1646.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1684" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="1112" y="1694.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="1732" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1762.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect the task</text>
+<text x="1324" y="1774.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">occurrences the</text>
+<text x="1324" y="1786.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">routine produced</text>
+<rect x="1444" y="1732" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1768.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Include the archived</text>
+<text x="1494" y="1780.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">ones in the count</text>
+<rect x="1614" y="1732" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1664" y="1768.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report what the</text>
+<text x="1664" y="1780.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">deletion will take</text>
+<circle cx="1834" cy="1772" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1792" y="1804" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Impact answered</text>
+<circle cx="2174" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="2165" y="1166.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2165 1166.06 L 2174 1172 L 2183 1166.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2132" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine deletion</text>
+<text x="2132" y="1214.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="2294" y="1132" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2344" y="1162.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete the</text>
+<text x="2344" y="1174.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">occurrences the</text>
+<text x="2344" y="1186.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">user included</text>
+<rect x="2464" y="1132" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2514" y="1174.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete the routine</text>
+<circle cx="2684" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2642" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion answered</text>
+<path d="M 1210 24 H 1204 V 100 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A paused routine stops being offered for a day's focus</text>
+<text x="1213" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">and stops being due or overdue. Any task it already</text>
+<text x="1213" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">produced stays where it is.</text>
+<path d="M 1720 38 H 1714 V 114 H 1720" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1723" y="50" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The schedule is a recurrence pattern plus preferred</text>
+<text x="1723" y="60.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">days. It says when the routine is due; it never puts work</text>
+<text x="1723" y="71.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">on a board.</text>
+<path d="M 1890 534 H 1884 V 580 H 1890" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1893" y="546" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The routine stops producing new ones either way.</text>
+<path d="M 1890 476 H 1884 V 522 H 1890" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1893" y="488" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Nothing is deleted and nothing is changed.</text>
+<path d="M 2400 548 H 2394 V 594 H 2400" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2403" y="560" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">There is no in-app undo. Recovery is from version</text>
+<text x="2403" y="570.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">control.</text>
+<path d="M 360 1232 H 354 V 1353 H 360" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="363" y="1244" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Due and overdue are computed from the recurrence and</text>
+<text x="363" y="1254.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the preferred days of the active routines. A paused</text>
+<text x="363" y="1265.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">routine is neither, and the days it spends paused never</text>
+<text x="363" y="1275.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">become overdue. The computation writes nothing.</text>
+<path d="M 1210 1824 H 1204 V 1945 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="1836" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Every form on this surface drafts as it is filled in, so</text>
+<text x="1213" y="1846.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">leaving it half-finished, a crash and a restart all cost</text>
+<text x="1213" y="1857.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">nothing. The draft is one-way: nothing waits for it to be</text>
+<text x="1213" y="1867.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">kept. Whichever write commits the form discards it.</text>
+<path d="M 1210 1957 H 1204 V 2048 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="1969" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">One request covers both directions. A paused routine</text>
+<text x="1213" y="1979.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">leaves the focus selectables and the due computation,</text>
+<text x="1213" y="1990.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">and returns to both on resume.</text>
+<path d="M 1210 2060 H 1204 V 2136 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="2072" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The occurrences are a declinable cascade, so it starts</text>
+<text x="1213" y="2082.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">off. Declining leaves them on Chores and stops the</text>
+<text x="1213" y="2093.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">routine producing new ones.</text>
+<path d="M 1380 2148 H 1374 V 2209 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="2160" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The theme is required. The recurrence is Daily, Weekly,</text>
+<text x="1383" y="2170.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Monthly or Yearly.</text>
+<path d="M 2230 1232 H 2224 V 1278 H 2230" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2233" y="1244" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The request carries the cascade the user approved.</text>
+<rect x="1011" y="153" width="75.69" height="11.5" fill="#fff"/>
+<text x="1012" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">start a new practice</text>
+<rect x="1041" y="153" width="46.42" height="11.5" fill="#fff"/>
+<text x="1042" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">change one</text>
+<rect x="1041" y="153" width="128.17" height="11.5" fill="#fff"/>
+<text x="1042" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">put one on hold, or take it off hold</text>
+<rect x="1041" y="153" width="50.65" height="11.5" fill="#fff"/>
+<text x="1042" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="1861" y="633" width="85.61" height="11.5" fill="#fff"/>
+<text x="1862" y="642.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes, take them as well</text>
+<rect x="1891" y="633" width="99.33" height="11.5" fill="#fff"/>
+<text x="1892" y="642.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no, leave them on Chores</text>
+<rect x="1891" y="633" width="81.39" height="11.5" fill="#fff"/>
+<text x="1892" y="642.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">abandon the deletion</text>
+<rect x="1041" y="153" width="71.45" height="11.5" fill="#fff"/>
+<text x="1042" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">retire one for good</text>
+<rect x="2711" y="153" width="11.45" height="11.5" fill="#fff"/>
+<text x="2712" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="2771" y="226" width="15.23" height="11.5" fill="#fff"/>
+<text x="2772" y="235.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="306" y="193" width="93.86" height="20.73" fill="#fff"/>
+<text x="307" y="201.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.01</text>
+<text x="307" y="211.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Read a theme's routines</text>
+<rect x="1231" y="205" width="83.74" height="20.73" fill="#fff"/>
+<text x="1232" y="213.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.08</text>
+<text x="1232" y="223.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Draft the routine input</text>
+<rect x="1401" y="205" width="62" height="20.73" fill="#fff"/>
+<text x="1402" y="213.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.02</text>
+<text x="1402" y="223.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Define a routine</text>
+<rect x="1231" y="325" width="64.36" height="20.73" fill="#fff"/>
+<text x="1232" y="333.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.03</text>
+<text x="1232" y="343.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Amend a routine</text>
+<rect x="1241" y="445" width="102.16" height="20.73" fill="#fff"/>
+<text x="1242" y="453.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.04</text>
+<text x="1242" y="463.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Pause or resume a routine</text>
+<rect x="1251" y="565" width="65.3" height="20.73" fill="#fff"/>
+<text x="1252" y="573.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.05</text>
+<text x="1252" y="583.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder routines</text>
+<rect x="1251" y="685" width="127.68" height="20.73" fill="#fff"/>
+<text x="1252" y="693.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.06</text>
+<text x="1252" y="703.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what deleting a routine takes</text>
+<rect x="2176" y="673" width="62" height="20.73" fill="#fff"/>
+<text x="2177" y="681.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.07</text>
+<text x="2177" y="691.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete a routine</text>
+<rect x="816" y="1133" width="158.1" height="11.5" fill="#fff"/>
+<text x="817" y="1142.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The theme's routines with their schedules</text>
+<rect x="1751" y="1241" width="61.53" height="11.5" fill="#fff"/>
+<text x="1752" y="1250.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Routine defined</text>
+<rect x="1406" y="1361" width="69.09" height="11.5" fill="#fff"/>
+<text x="1407" y="1370.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Routine amended</text>
+<rect x="1416" y="1481" width="81.84" height="11.5" fill="#fff"/>
+<text x="1417" y="1490.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Active state recorded</text>
+<rect x="1421" y="1601" width="59.63" height="11.5" fill="#fff"/>
+<text x="1422" y="1610.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Order recorded</text>
+<rect x="1751" y="1721" width="100.74" height="11.5" fill="#fff"/>
+<text x="1752" y="1730.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the deletion will take</text>
+<rect x="2516" y="1133" width="61.53" height="11.5" fill="#fff"/>
+<text x="2517" y="1142.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Routine deleted</text>
+</svg>

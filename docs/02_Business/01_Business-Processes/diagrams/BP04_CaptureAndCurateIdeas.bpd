@@ -1,0 +1,212 @@
+@startbpmn BP04_CaptureAndCurateIdeas
+lang en
+
+output L1 "01_detailed/BP04_CaptureAndCurateIdeas.bpmn"
+output L2 "02_detailed/BP04_CaptureAndCurateIdeas.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - an idea has 0..1 theme; theme-less is legitimate and grouped under Unthemed: BR-03
+'   - an archived idea cannot be edited: BR-05
+'   - the hand-made order is a grouping convenience with no funnel consequence: BR-88
+'   - archiving an idea archives the projects that came from it, on informed approval: BR-112, QB-42
+'   - deleting an idea cascades its projects with approval, or the deletion is rejected: BR-14, QB-41
+'   - detaching a project to parentless is deliberately not offered: BR-14, BR-21
+'   - archiving removes the thing from the focus selectables and hides its board: BR-43
+'   - the capture is opportunistic and happens during execution: section 1.2 step 3
+'
+'   - unfinished input is a draft and no draft is version-controlled: BR-121
+'   - an archived item cannot be edited, idea and notes alike: BR-05
+'
+' Call-site collapsing: re-affiliating an idea to a theme is a field of the amend request, not a
+' chain of its own. Refining the notes is two chains rather than one: the draft kept as the user
+' types, and the commit when the editor is left.
+
+pool "User" {
+  start "An idea worth keeping, or a list worth tidying"
+  task "Open the Ideation tab" as ideationTab
+  send "Read the ideation overview" to overviewIn
+  receive "Ideas, filtered and sorted" as overview
+
+  if "What needs doing?" then "capture something new"
+    :Write the idea down;
+    send "Capture an idea" to captureIn
+    receive "Idea captured" as captured
+    note "A theme is optional at capture. A theme-less idea is grouped under Unthemed."
+
+  elseif "What needs doing?" then "change one"
+    :Amend the idea;
+    send "Amend an idea" to amendIn
+    receive "Idea amended" as amended
+    note "The title and the theme affiliation are one request."
+
+  elseif "What needs doing?" then "think it through"
+    :Write into the idea notes;
+    multiInstance
+    send "Draft the idea input" to notesIn
+    note "The notes are kept as a draft while the user writes, one instance per keystroke batch, and the draft survives a crash and a restart."
+    :Leave the notes editor;
+    send "Commit the idea notes" to commitNotesIn
+    receive "Notes committed" as notesCommitted
+    note "Leaving the editor is the commit. Nothing is in the planning history before it."
+
+  elseif "What needs doing?" then "narrow or reorder the list"
+    :Change the filter or the ordering in force;
+    note "Both are remembered between sessions, so the next read uses them."
+    goto ideationTab
+
+  elseif "What needs doing?" then "group related ones together"
+    :Drag an idea into place;
+    send "Reorder ideas" to reorderIn
+    receive "Order recorded" as reordered
+    note "The order groups related ideas. It carries no priority."
+
+  elseif "What needs doing?" then "park one"
+    :Choose an idea to archive;
+    send "See what archiving an idea takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "Approve what the archiving takes?" rule BR-112 then "approve"
+      :Confirm the archiving;
+      send "Archive an idea" to archiveIn
+      receive "Idea archived" as archived
+    else "abandon"
+      :Abandon the archiving;
+      note "Nothing is archived."
+      goto ideationTab
+    endif
+
+  else "drop one for good"
+    :Choose an idea to delete;
+    send "See what deleting an idea takes" to delImpactIn
+    receive "What the deletion will take" as delImpact
+    if "Approve what the deletion takes?" rule BR-14 then "approve"
+      :Confirm the deletion;
+      send "Delete an idea" to deleteIn
+      receive "Idea deleted" as deleted
+      note "There is no in-app undo. Recovery is from version control."
+    else "abandon"
+      :Abandon the deletion;
+      note "Nothing is deleted."
+      goto ideationTab
+    endif
+  endif
+
+  if "Anything else on this tab?" then "yes"
+    goto ideationTab
+  else "no"
+    :Leave the tab;
+  endif
+
+  end "Ideation current"
+}
+
+system pool "Bearing" {
+  messageStart "Ideation overview requested" as overviewIn
+  call "BP04.01_ReadTheIdeationOverview" "Read the ideation overview" {
+    :Read the ideas the filter admits;
+    :Apply the ordering in force;
+    rule BR-88
+    :Group the theme-less ideas as Unthemed;
+    rule BR-03
+  }
+  send "Ideas, filtered and sorted" to overview
+  note "Archived ideas are not in the working view."
+  end "Overview answered"
+
+  messageStart "Idea capture submitted" as captureIn
+  call "BP04.02_CaptureIdea" "Capture an idea" {
+    :Store the idea with its title;
+    :Affiliate it to the theme given;
+    rule BR-03
+  }
+  send "Idea captured" to captured
+  note "The theme may be absent."
+  end "Capture answered"
+
+  messageStart "Idea amendment requested" as amendIn
+  call "BP04.03_AmendIdea" "Amend an idea" {
+    :Apply the title and theme as given;
+    rule BR-05
+  }
+  send "Idea amended" to amended
+  note "An archived idea is not editable."
+  end "Amendment answered"
+
+  messageStart "Idea draft submitted" as notesIn
+  call "BP04.04_DraftTheIdeaInput" "Draft the idea input" {
+    :Keep what is typed for a live idea as a draft;
+    rule BR-05
+    :Hold the draft out of version control;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in — the capture form, the title and theme, and the notes as they are written. The draft is one-way: nothing waits for it to be kept, it changes nothing on the idea, and whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Notes commit requested" as commitNotesIn
+  call "BP04.10_CommitIdeaNotes" "Commit the idea notes" {
+    :Store the drafted notes on the idea;
+    rule BR-05
+    :Discard the draft;
+    rule BR-121
+  }
+  send "Notes committed" to notesCommitted
+  note "The commit is what enters the planning history, and the draft is dropped once it is in."
+  end "Notes answered"
+
+  messageStart "Idea reordering requested" as reorderIn
+  call "BP04.05_ReorderIdeas" "Reorder ideas" {
+    :Record the new relative order;
+  }
+  send "Order recorded" to reordered
+  end "Reordering answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP04.06_ReadTheArchivingImpact" "See what archiving an idea takes" {
+    :Collect the projects parented on the idea;
+    :Collect their activities and tasks;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the archiving will take;
+    rule BR-112
+  }
+  send "What the archiving will take" to archImpact
+  note "Nothing below a project can be left behind, so the gesture is approve-or-abandon."
+  end "Archiving impact answered"
+
+  messageStart "Idea archiving requested" as archiveIn
+  call "BP04.07_ArchiveIdea" "Archive an idea" {
+    :Archive the projects that came from the idea;
+    rule BR-112
+    :Archive the idea;
+    :Withdraw the archived boards from the focus selectables;
+    rule BR-43
+  }
+  send "Idea archived" to archived
+  note "Unarchiving restores the whole bundle."
+  end "Archiving answered"
+
+  messageStart "Deletion impact requested" as delImpactIn
+  call "BP04.08_ReadTheDeletionImpact" "See what deleting an idea takes" {
+    :Collect the projects parented on the idea;
+    :Collect the goals that link the idea;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the deletion will take;
+    rule BR-14
+  }
+  send "What the deletion will take" to delImpact
+  note "Keeping a project behind is not offered. A goal that links the idea survives minus the link."
+  end "Deletion impact answered"
+
+  messageStart "Idea deletion requested" as deleteIn
+  call "BP04.09_DeleteIdea" "Delete an idea" {
+    :Delete the projects parented on the idea;
+    rule BR-14
+    :Unlink the idea from every goal that links it;
+    :Delete the idea;
+  }
+  send "Idea deleted" to deleted
+  note "A goal left with no linked idea is flagged on its current state."
+  end "Deletion answered"
+}
+
+@endbpmn

@@ -1,0 +1,193 @@
+@startbpmn BP16_ConsultTheAdvisor
+lang en
+
+output L1 "01_detailed/BP16_ConsultTheAdvisor.bpmn"
+output L2 "02_detailed/BP16_ConsultTheAdvisor.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - one advisor, available anywhere, aware of where the user is, never blocking: BR-66
+'   - one conversation per session, cleared deliberately: BR-66
+'   - the advisor sees the whole funnel, plus vision and mission when set: BR-67
+'   - a proposal is a structured typed object, never prose to be parsed: BR-68
+'   - applying writes immediately and completely; a creation proposal carries everything: BR-69
+'   - at most one outstanding proposal per target; a revision supersedes its predecessor: BR-70
+'   - applying or declining a whole answer acts on the still-outstanding ones, in order: BR-71
+'   - the advisor acts only through the operations the user has, deletions included: BR-72
+'   - an applied operation discloses and asks exactly what it would for the user: BR-72
+'   - so applying is a disclosure and a write, never one call that asks and acts: BR-12, BR-72
+'   - a proposal may land where the user is not working, and saying so is part of applying: BR-74
+'   - it never silently fails and never hands over an inert proposal: BR-75
+'   - the panel comes current on its own; higher latency than everything else is accepted: BR-118
+'   - the conversation is journaled but not version-controlled: section 3
+'   - an unsent question is unfinished input, so it drafts like any other: BR-121, SA 2026-10-10
+'
+' Scope: this process is the conversation and the proposals. The writes a proposal causes are the
+' user's own operations, drawn in whichever process owns the entity, so they are reached through
+' this process rather than redrawn in it.
+'
+' Call-site collapsing: applying one proposal and applying a whole answer are two variations of
+' one request, as are dismissing one and dismissing a whole answer. The ten catalog types are the
+' payload of a proposal, not ten operations.
+
+pool "User" {
+  start "A second opinion wanted"
+  task "Open the advisor panel" as panel
+  send "Open the advisor conversation" to openIn
+  receive "The conversation with its context" as conversation
+  note "The panel knows which view and which selection the user is on. Opening it suspends nothing."
+
+  task "Work with the advisor" as working
+  if "What needs doing?" then "ask something"
+    :Write the question;
+    multiInstance
+    send "Draft the question" to questionDraftIn
+    :Put the question;
+    send "Ask the advisor" to askIn
+    receive "The answer with its proposals" as answer
+    note "The answer arrives on its own. The advisor is slower than the rest of the product and stays non-blocking while it thinks."
+    goto working
+
+  elseif "What needs doing?" then "take a proposal up"
+    :Accept the proposal, or the whole answer;
+    send "See what applying will take" to applyImpactIn
+    receive "What applying will take, and where it lands" as applyImpact
+    note "Applying runs the user's own operation, so whatever that operation discloses is disclosed here: what a deletion will take, the answers an archiving offers, and any part of the funnel the change lands in."
+    if "Approve what applying takes?" rule BR-72 then "approve"
+      :Confirm what applying takes;
+      send "Apply advisor proposals" to applyIn
+      receive "What was applied, and where" as applied
+      note "Each approved proposal is then written completely. Nothing is half-applied."
+    else "abandon"
+      :Abandon the application;
+      note "The proposals stay outstanding and nothing is written."
+    endif
+    goto working
+
+  elseif "What needs doing?" then "turn one down"
+    :Dismiss the proposal, or the whole answer;
+    send "Dismiss advisor proposals" to dismissIn
+    receive "What was dismissed" as dismissed
+    goto working
+
+  elseif "What needs doing?" then "start over"
+    :Clear the conversation;
+    send "Clear the conversation" to clearIn
+    receive "Conversation cleared" as cleared
+    note "Clearing is deliberate. One conversation runs for the session and nothing clears it on the user's behalf."
+    goto working
+
+  else "leave it"
+    :Close the panel;
+  endif
+
+  end "Opinion taken or left"
+}
+
+system pool "Bearing" {
+  messageStart "Question draft submitted" as questionDraftIn
+  call "BP16.08_DraftTheQuestion" "Draft the question" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Conversation requested" as openIn
+  call "BP16.01_OpenTheAdvisorConversation" "Open the advisor conversation" {
+    :Read the session's conversation with its outstanding proposals;
+    rule BR-66
+    :Read the view and the selection the user is on;
+    :Report the conversation;
+  }
+  send "The conversation with its context" to conversation
+  note "There is one advisor and one conversation per session. The conversation is journaled and stays out of version control."
+  end "Conversation answered"
+
+  messageStart "Question submitted" as askIn
+  call "BP16.02_AskTheAdvisor" "Ask the advisor" {
+    :Assemble the funnel as context, with vision and mission when set;
+    rule BR-67
+    :Add the view and the selection to the question;
+    :Record the question in the conversation;
+  }
+  send "Advice requested" to adviceIn
+  note "The whole funnel goes with the question: themes, ideas, goals, routines, focus history, tasks and progress check-ins."
+  end "Question sent"
+
+  messageStart "Advisor answered" as answerIn
+  call "BP16.03_TakeTheAdvisorsAnswer" "Take the advisor's answer" {
+    if "Can every part of the answer be acted on?" rule BR-75 then "yes"
+      :Turn each part into a typed proposal;
+      rule BR-68
+    else "no"
+      :Keep the prose as prose and say what could not be used;
+      rule BR-75
+    endif
+    :Supersede the outstanding proposal on each target the answer touches;
+    rule BR-70
+    :Report the answer with its proposals;
+    rule BR-118
+  }
+  send "The answer with its proposals" to answer
+  note "A proposal is a structured object, never prose to be parsed. At most one proposal is outstanding per target, and an already-applied or already-dismissed one is closed and untouched."
+  end "Answer answered"
+
+  messageStart "Application impact requested" as applyImpactIn
+  call "BP16.07_ReadWhatApplyingWillTake" "See what applying will take" {
+    :Take the still-outstanding proposals in order;
+    rule BR-71
+    :Collect what each one's operation would take, the archived included;
+    rule BR-117
+    :Collect which part of the funnel each one lands in;
+    rule BR-74
+    :Report what applying will take, proposal by proposal;
+    rule BR-72
+  }
+  send "What applying will take, and where it lands" to applyImpact
+  note "A proposal that takes nothing has nothing to disclose. One that deletes or archives discloses exactly what the user's own gesture would, because it is that gesture."
+  end "Application impact answered"
+
+  messageStart "Application requested" as applyIn
+  call "BP16.04_ApplyAdvisorProposals" "Apply advisor proposals" {
+    :Take the approved proposals in order;
+    rule BR-71
+    :Run the user's own operation for each, carrying the approval given;
+    rule BR-72
+    :Write each proposal completely;
+    rule BR-69
+    :Report what was applied and where it landed;
+    rule BR-74
+  }
+  send "What was applied, and where" to applied
+  note "One request applies a single proposal and a whole answer alike. There is no second write path: a proposal to create something carries everything that thing needs."
+  end "Application answered"
+
+  messageStart "Dismissal requested" as dismissIn
+  call "BP16.05_DismissAdvisorProposals" "Dismiss advisor proposals" {
+    :Take the still-outstanding proposals in order;
+    rule BR-71
+    :Close each as dismissed;
+    rule BR-70
+  }
+  send "What was dismissed" to dismissed
+  note "One request dismisses a single proposal and a whole answer alike. Already-resolved proposals are skipped."
+  end "Dismissal answered"
+
+  messageStart "Clear requested" as clearIn
+  call "BP16.06_ClearTheConversation" "Clear the conversation" {
+    :Drop the conversation and its outstanding proposals;
+    rule BR-66
+  }
+  send "Conversation cleared" to cleared
+  note "Applied and dismissed proposals are closed already and are unaffected by clearing."
+  end "Clear answered"
+}
+
+pool "Advisor" {
+  messageStart "Advice requested" as adviceIn
+  :Answer from the context it was given;
+  send "Advisor answered" to answerIn
+  end "Advice given"
+}
+
+@endbpmn

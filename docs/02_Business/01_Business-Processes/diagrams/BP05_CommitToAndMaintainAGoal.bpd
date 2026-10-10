@@ -1,0 +1,244 @@
+@startbpmn BP05_CommitToAndMaintainAGoal
+lang en
+
+output L1 "01_detailed/BP05_CommitToAndMaintainAGoal.bpmn"
+output L2 "02_detailed/BP05_CommitToAndMaintainAGoal.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a goal requires exactly one theme: BR-01
+'   - a goal links 0..N ideas; no linked idea is legitimate and flagged: BR-04, QB-28
+'   - a goal cannot be created before a theme exists, and the user is told why: BR-84
+'   - goals are flat; no parent and no child goals: BR-08
+'   - an archived item cannot be edited, so the overview reads the live goals: BR-05
+'   - a time horizon is optional and its granularity is the user's: BR-31, QB-14
+'   - archiving a goal offers cascade, goal alone, or reject: BR-112, QB-43
+'   - a goal's measures and their check-in history go with it unasked, archived and deleted alike: BR-112, BR-15
+'   - a goal archives directly at any time, independent of check-out: BR-23, QB-32
+'   - deleting a goal cascades its linked ideas and its projects: BR-15, QB-41
+'   - goals are deliberately unfiltered; grouping by theme does the work: BR-87
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'
+' Scope: the progress measures are BP06's — defining, amending, reordering and removing one, and
+' recording against it. Closing a goal out is BP07. This process frames, amends and ends a goal's
+' life; it never judges one and it never shapes how one is measured. What it does still carry is
+' what a goal's archiving and deletion take with them unasked, measures and check-in history
+' included (BR-15, BR-112).
+'
+' Retired call sites: BP05.06, BP05.07, BP05.08, BP05.09, BP05.10 — the measure lifecycle moved
+' to BP06 (SA 2026-10-10). The numbers are never reused.
+'
+' Call-site collapsing: promoting an idea to a goal and framing a theme-only goal are two
+' variations of one request, differing in whether a linked idea comes with it.
+
+pool "User" {
+  start "A commitment to make, or one to maintain"
+  task "Open the Goals tab" as goalsTab
+  send "Read the goals overview" to overviewIn
+  receive "Goals grouped by theme" as overview
+
+  if "What needs doing?" then "commit to something"
+    if "Any life area to hang it on?" rule BR-84 then "none yet"
+      :Read why a goal cannot be framed;
+      note "A goal requires a theme, and the user is told so instead of being shown a form that cannot be submitted. Creating the life area is BP02."
+      goto goalsTab
+    else "at least one"
+      :State the objective and its horizon;
+      multiInstance
+      send "Draft the goal input" to goalDraftIn
+      :Submit the framing;
+      send "Frame a goal" to frameIn
+      receive "Framing outcome" as framed
+    endif
+
+  elseif "What needs doing?" then "change the commitment"
+    if "Which part?" then "the objective or the horizon"
+      :Amend the goal;
+      send "Amend a goal" to amendIn
+      receive "Goal amended" as amended
+    elseif "Which part?" then "add an idea behind it"
+      :Pick an idea to link;
+      send "Link an idea to a goal" to linkIn
+      receive "Idea linked" as linked
+    else "drop an idea from behind it"
+      :Pick a linked idea;
+      send "Unlink an idea from a goal" to unlinkIn
+      receive "Idea unlinked" as unlinked
+      note "A goal with no linked idea stays legitimate and is flagged as such."
+    endif
+
+  elseif "What needs doing?" then "reorder them"
+    :Drag a goal into place;
+    send "Reorder goals within a theme" to reorderGoalsIn
+    receive "Order recorded" as goalsReordered
+
+  elseif "What needs doing?" then "set one aside"
+    :Choose a goal to archive;
+    send "See what archiving a goal takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "How far should the archiving reach?" rule BR-112 then "the goal and its projects"
+      :Approve the whole cascade;
+      goto confirmArchive
+    elseif "How far should the archiving reach?" rule BR-112 then "the goal alone"
+      :Keep the projects active;
+      note "An archived goal still exists, so its projects are not orphaned by it."
+      goto confirmArchive
+    else "reject"
+      :Abandon the archiving;
+      note "Nothing is archived."
+      goto goalsTab
+    endif
+    task "Confirm the archiving" as confirmArchive
+    send "Archive a goal" to archiveIn
+    receive "Goal archived" as archived
+
+  else "end the commitment for good"
+    :Choose a goal to delete;
+    send "See what deleting a goal takes" to delImpactIn
+    receive "What the deletion will take" as delImpact
+    if "Approve what the deletion takes?" rule BR-15 then "approve"
+      :Confirm the deletion;
+      send "Delete a goal" to deleteIn
+      receive "Goal deleted" as deleted
+      note "There is no in-app undo. Recovery is from version control."
+    else "abandon"
+      :Abandon the deletion;
+      note "Nothing is deleted."
+      goto goalsTab
+    endif
+  endif
+
+  if "Anything else on this tab?" then "yes"
+    goto goalsTab
+  else "no"
+    :Leave the tab;
+  endif
+
+  end "Commitment current"
+}
+
+system pool "Bearing" {
+  messageStart "Goal draft submitted" as goalDraftIn
+  call "BP05.16_DraftTheGoalInput" "Draft the goal input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Goals overview requested" as overviewIn
+  call "BP05.01_ReadTheGoalsOverview" "Read the goals overview" {
+    :Read the active goals grouped by theme;
+    rule BR-87
+    :Flag each goal that has no linked idea;
+    rule BR-04
+    :Flag each goal whose horizon has passed;
+    rule BR-22
+    :Report whether any theme exists;
+    rule BR-84
+  }
+  send "Goals grouped by theme" to overview
+  note "The flags read the current state. Nothing acts on the goal."
+  end "Overview answered"
+
+  messageStart "Goal framing submitted" as frameIn
+  call "BP05.02_FrameGoal" "Frame a goal" {
+    if "Any theme defined?" rule BR-84 then "none"
+      :Refuse the framing and say why;
+    else "at least one"
+      :Store the goal under its theme;
+      rule BR-01
+      :Link the idea it was promoted from;
+      rule BR-04
+      :Store the horizon the user gave;
+    endif
+    :Report the framing outcome;
+  }
+  send "Framing outcome" to framed
+  note "One request frames a theme-only goal and promotes an idea alike. The horizon may be absent."
+  end "Framing answered"
+
+  messageStart "Goal amendment requested" as amendIn
+  call "BP05.03_AmendGoal" "Amend a goal" {
+    :Apply the objective and the horizon as given;
+    rule BR-08
+  }
+  send "Goal amended" to amended
+  note "A goal has no parent and no children."
+  end "Amendment answered"
+
+  messageStart "Idea link requested" as linkIn
+  call "BP05.04_LinkIdea" "Link an idea to a goal" {
+    :Add the idea to the goal's links;
+    rule BR-04
+  }
+  send "Idea linked" to linked
+  end "Link answered"
+
+  messageStart "Idea unlink requested" as unlinkIn
+  call "BP05.05_UnlinkIdea" "Unlink an idea from a goal" {
+    :Remove the idea from the goal's links;
+    rule BR-04
+  }
+  send "Idea unlinked" to unlinked
+  end "Unlink answered"
+
+  messageStart "Goal reordering requested" as reorderGoalsIn
+  call "BP05.11_ReorderGoals" "Reorder goals within a theme" {
+    :Record the new relative order within the theme;
+  }
+  send "Order recorded" to goalsReordered
+  end "Goal reordering answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP05.12_ReadTheArchivingImpact" "See what archiving a goal takes" {
+    :Collect the projects parented on the goal;
+    :Collect the projects parented on its measures;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report the three answers the gesture offers;
+    rule BR-112
+  }
+  send "What the archiving will take" to archImpact
+  note "Cascade, the goal alone, or reject. The keep answer is legal here because an archived goal still exists."
+  end "Archiving impact answered"
+
+  messageStart "Goal archiving requested" as archiveIn
+  call "BP05.13_ArchiveGoal" "Archive a goal" {
+    :Archive the projects the user included;
+    rule BR-112
+    :Archive its measures with their check-in history;
+    rule BR-112
+    :Archive the goal with its check-out record;
+    rule BR-23
+  }
+  send "Goal archived" to archived
+  note "Archiving is independent of closing out. A check-out record already attached stays with the goal."
+  end "Archiving answered"
+
+  messageStart "Deletion impact requested" as delImpactIn
+  call "BP05.14_ReadTheDeletionImpact" "See what deleting a goal takes" {
+    :Collect the linked ideas;
+    :Collect the projects parented on the goal and on its measures;
+    :Collect the measures and their check-in history;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the deletion will take;
+    rule BR-15
+  }
+  send "What the deletion will take" to delImpact
+  note "The measures and their history go unasked. Keeping a project behind is not offered."
+  end "Deletion impact answered"
+
+  messageStart "Goal deletion requested" as deleteIn
+  call "BP05.15_DeleteGoal" "Delete a goal" {
+    :Delete the linked ideas the user included;
+    rule BR-15
+    :Delete the projects parented on the goal and on its measures;
+    :Delete the measures with their check-in history;
+    :Delete the goal;
+  }
+  send "Goal deleted" to deleted
+  end "Deletion answered"
+}
+
+@endbpmn

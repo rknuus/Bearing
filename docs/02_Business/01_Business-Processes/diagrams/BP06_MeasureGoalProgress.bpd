@@ -1,0 +1,199 @@
+@startbpmn BP06_MeasureGoalProgress
+lang en
+
+output L1 "01_detailed/BP06_MeasureGoalProgress.bpmn"
+output L2 "02_detailed/BP06_MeasureGoalProgress.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - every measure is typed numeric or boolean; there is no untyped measure: BR-28, QB-13
+'   - a measure's type is amendable, and amending it never rewrites the history: BR-28, SA 2026-10-10
+'   - removing a measure that parents a project cascades with approval, or is rejected: BR-115
+'   - the check-in history hangs on the measure's identity, never on its position: section 3
+'   - a check-in is one dated data point with an optional note: section 3
+'   - the history is append-only, so a second check-in on one date is a second data point: section 3, SA 2026-10-10
+'   - an archived item is frozen, so an archived goal's measures take nothing at all: BR-05, SA 2026-10-10
+'   - the goals overview carries no measures, so this process reads its own: BP05.01, section 7
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'   - the cadence of a check-in is the user's, out of band: section 1.2 step 5
+'   - per-measure status is auto-inferred at check-out, not at check-in: BR-28, BR-29
+'
+' Scope: this process is the whole life of a goal's progress measures — what is measured, and what
+' it stood at. Framing the goal itself is BP05, judging it is BP07. The goals overview reads goals
+' and not their measures, so this process reads its own at the entry; the goal it starts from is one
+' the user already has in front of them.
+'
+' Call-site history: the measure lifecycle was drawn in BP05 until 2026-10-10 and moved here on the
+' Software Architect's ruling, so that one process holds the measure and the other the commitment.
+' BP05.06 to BP05.10 are retired there and are never reused.
+'
+' Call-site collapsing: a numeric check-in and a boolean check-in are two variations of one
+' request. The type is the measure's, already fixed when the measure was added, so the payload
+' differs and the operation does not. The inferred status belongs to the check-out (BP07), not
+' here: a check-in records a data point and judges nothing.
+
+pool "User" {
+  start "A commitment to measure, or progress to record"
+  task "Open a goal's progress measures" as goalOpen
+  send "Read the goal's progress measures" to measuresIn
+  receive "The measures with their types and targets" as measures
+
+  if "Is the goal archived?" rule BR-05 then "archived"
+    :Read why nothing here can change;
+    note "An archived goal is frozen, its measures and their check-ins included. Unarchiving it is what makes any of this possible again."
+    goto leaving
+  endif
+
+  if "What needs doing?" then "say what counts"
+    :Type the measure and set its target;
+    multiInstance
+    send "Draft the measure input" to measureDraftIn
+    :Submit the measure;
+    send "Add a progress measure" to addIn
+    receive "Measure added" as added
+    note "Numeric carries a target, a unit and a direction. Boolean carries done and not done."
+
+  elseif "What needs doing?" then "change what counts"
+    :Amend the measure;
+    send "Amend a progress measure" to amendIn
+    receive "Measure amended" as amended
+    note "The type is amendable like the target and the unit, and the recorded check-ins are left as they stand."
+
+  elseif "What needs doing?" then "reorder them"
+    :Drag a measure into place;
+    send "Reorder progress measures" to reorderIn
+    receive "Order recorded" as reordered
+    note "The check-in history hangs on the measure's identity, never on its position."
+
+  elseif "What needs doing?" then "drop one"
+    :Choose a measure to remove;
+    send "See what removing a measure takes" to impactIn
+    receive "What the removal will take" as impact
+    if "Approve what the removal takes?" rule BR-115 then "approve"
+      :Confirm the removal;
+      send "Remove a progress measure" to removeIn
+      receive "Measure removed" as removed
+    else "abandon"
+      :Abandon the removal;
+      note "Nothing is removed."
+      goto goalOpen
+    endif
+
+  else "record where one stands"
+    :Open a progress measure;
+    send "Read a measure's check-in history" to historyIn
+    receive "The measure's check-ins over time" as history
+    if "Anything to record?" then "yes"
+      :State the value reached;
+      send "Record a progress check-in" to checkInIn
+      receive "Check-in recorded" as recorded
+      note "Numeric takes the value reached. Boolean takes done and not done. A note is optional either way."
+    else "no"
+      :Read the trend and leave it;
+    endif
+  endif
+
+  task "Take stock" as leaving
+  if "Anything else on this goal?" then "yes"
+    goto goalOpen
+  else "no"
+    :Leave the goal;
+  endif
+
+  end "Progress measured"
+}
+
+system pool "Bearing" {
+  messageStart "Measure draft submitted" as measureDraftIn
+  call "BP06.09_DraftTheMeasureInput" "Draft the measure input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Measure list requested" as measuresIn
+  call "BP06.08_ReadAGoalsProgressMeasures" "Read the goal's progress measures" {
+    :Read the goal's measures in their recorded order;
+    :Read each measure's type, target and latest check-in;
+    rule BR-28
+    :Report whether the goal is archived;
+    rule BR-05
+  }
+  send "The measures with their types and targets" to measures
+  note "The goals overview carries no measures, so this is where they are read. An archived goal is reported as such, and nothing here can change while it is."
+  end "Measure list answered"
+
+  messageStart "Check-in history requested" as historyIn
+  call "BP06.01_ReadTheCheckInHistory" "Read a measure's check-in history" {
+    :Read the measure with its type and target;
+    :Read its check-ins in date order;
+  }
+  send "The measure's check-ins over time" to history
+  note "The history hangs on the measure's identity, so reordering the measures never disturbs it. The goal is known to be live by now: the freeze is answered at the entry."
+  end "History answered"
+
+  messageStart "Check-in submitted" as checkInIn
+  call "BP06.02_RecordProgressCheckIn" "Record a progress check-in" {
+    if "Numeric measure?" rule BR-28 then "numeric"
+      :Store the value reached against the target;
+    else "boolean"
+      :Store done or not done;
+    endif
+    :Append the dated check-in with its note;
+    :Confirm what was recorded;
+  }
+  send "Check-in recorded" to recorded
+  note "The history is append-only, so a date that already carries a check-in takes another and each is its own data point. A check-in records a data point and infers no status."
+  end "Check-in answered"
+
+  messageStart "Measure submitted" as addIn
+  call "BP06.03_AddProgressMeasure" "Add a progress measure" {
+    :Store the measure with its type and target;
+    rule BR-28
+    :Place it last in the goal's order;
+  }
+  send "Measure added" to added
+  note "There is no untyped measure."
+  end "Measure answered"
+
+  messageStart "Measure amendment requested" as amendIn
+  call "BP06.04_AmendProgressMeasure" "Amend a progress measure" {
+    :Apply the type, the target and the unit as given;
+    rule BR-28
+    :Leave the recorded check-ins as they stand;
+  }
+  send "Measure amended" to amended
+  note "The type is amendable like the target and the unit. Each check-in keeps the type it was recorded under, so the history is never rewritten."
+  end "Measure amendment answered"
+
+  messageStart "Measure reordering requested" as reorderIn
+  call "BP06.05_ReorderProgressMeasures" "Reorder progress measures" {
+    :Record the new relative order within the goal;
+  }
+  send "Order recorded" to reordered
+  end "Measure reordering answered"
+
+  messageStart "Removal impact requested" as impactIn
+  call "BP06.06_ReadTheMeasureRemovalImpact" "See what removing a measure takes" {
+    :Collect the projects parented on the measure;
+    :Collect the measure's check-in history;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the removal will take;
+    rule BR-115
+  }
+  send "What the removal will take" to impact
+  note "The check-in history goes unasked. The projects are a cascade the user approves or abandons."
+  end "Removal impact answered"
+
+  messageStart "Measure removal requested" as removeIn
+  call "BP06.07_RemoveProgressMeasure" "Remove a progress measure" {
+    :Delete the projects parented on the measure;
+    rule BR-115
+    :Delete the measure with its check-in history;
+  }
+  send "Measure removed" to removed
+  end "Removal answered"
+}
+
+@endbpmn

@@ -1,0 +1,111 @@
+@startbpmn BP15_ReviewArchivedMaterial
+lang en
+
+output L1 "01_detailed/BP15_ReviewArchivedMaterial.bpmn"
+output L2 "02_detailed/BP15_ReviewArchivedMaterial.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - archived items are retained, hidden from the working view, read by an explicit act: BR-26
+'   - an archived item cannot be edited, any archived item: BR-05, SA 2026-10-10
+'   - unarchive must leave the overall state consistent and is rejected whenever it cannot: BR-25
+'   - a partial unarchive can never be consistent and is refused in either direction: BR-25
+'   - the bundle comes back in its prior state and prior position: BR-25
+'   - an archived item's position is never occupied while it is away: BR-25
+'   - where the bundle cannot be reassembled the item stays archived: BR-25
+'   - four archivable kinds: idea, goal, project with its activities and tasks, task: BR-23
+'   - an archived goal carries its check-out record, and unarchiving never revokes it: BR-30
+'   - a goal's measures and their check-in history come back with it: BR-112
+'   - the archive view's filters and default sorts belong to the Contract gate: BR-26
+'
+' Scope: this process reads the archive and brings things back. Putting them there is each entity's
+' own process, and the archive is no shield from a deletion, so an item can also leave the archive
+' by being deleted out of it, which is BP02, BP04, BP05, BP11, BP17 or BP18 rather than this one.
+'
+' Call-site collapsing: the four archivable kinds are not four operations. Reading the archived
+' ideas, goals, projects and tasks is one request with the kind and the filter as its payload, and
+' unarchiving is one request whose consequences differ by what the item carries rather than by
+' which operation is called. This is why the eight candidates in Intent section 6 draw as three.
+
+pool "User" {
+  start "Something to look up, or something to bring back"
+  task "Open the archive" as archive
+  send "Read the archived items" to listIn
+  receive "The archived items of that kind" as list
+
+  if "What needs doing?" then "narrow or re-scope the list"
+    :Change the kind or the filter in force;
+    note "The archive is read by an explicit act. Nothing archived shows up in the working view."
+    goto archive
+
+  elseif "What needs doing?" then "read one"
+    :Read the item as it stands;
+    note "An archived item is readable and frozen. Changing one means bringing it back first, and an archived goal still carries its check-out record."
+
+  else "bring one back"
+    :Choose an item to unarchive;
+    send "See what unarchiving will bring back" to impactIn
+    receive "What comes back, or why it cannot" as impact
+    if "Can the bundle come back whole?" rule BR-25 then "yes"
+      :Confirm the unarchiving;
+      send "Unarchive an item" to unarchiveIn
+      receive "The item back in the working set" as unarchived
+      note "The whole bundle comes back as it went. No part of it can be picked and nothing is re-parented, relocated or approximated."
+    else "no"
+      :Read why it stays archived;
+      note "A member deleted out of the archive, or a surrounding that is now gone, leaves the bundle unreassemblable. The item stays archived."
+    endif
+  endif
+
+  if "Anything else in the archive?" then "yes"
+    goto archive
+  else "no"
+    :Leave the archive;
+  endif
+
+  end "Archive reviewed"
+}
+
+system pool "Bearing" {
+  messageStart "Archive list requested" as listIn
+  call "BP15.01_ReadTheArchivedItems" "Read the archived items" {
+    :Read the archived items of the kind asked for;
+    rule BR-26
+    :Apply the filter and the sort in force;
+    rule BR-88
+    :Carry each archived goal's check-out record with it;
+    rule BR-30
+  }
+  send "The archived items of that kind" to list
+  note "One request serves all four archivable kinds: ideas, goals, projects and tasks. Archived material is retained on disk and reachable only this way."
+  end "Archive list answered"
+
+  messageStart "Unarchive impact requested" as impactIn
+  call "BP15.02_ReadTheUnarchiveImpact" "See what unarchiving will bring back" {
+    :Collect the whole bundle the item was archived with;
+    rule BR-25
+    :Check that every member is still there;
+    :Check that the surroundings can still hold it;
+    :Report what comes back, or what is missing;
+    rule BR-25
+  }
+  send "What comes back, or why it cannot" to impact
+  note "A project brings its activities and their tasks; a goal brings its measures and their check-in history. The bundle is judged whole: a subset is never offered."
+  end "Unarchive impact answered"
+
+  messageStart "Unarchive requested" as unarchiveIn
+  call "BP15.03_UnarchiveItem" "Unarchive an item" {
+    if "Is the bundle reassemblable?" rule BR-25 then "yes"
+      :Return every member to its prior state;
+      :Return every member to its prior position;
+      rule BR-88
+    else "no"
+      :Refuse the unarchiving and say what is missing;
+    endif
+    :Report the outcome;
+  }
+  send "The item back in the working set" to unarchived
+  note "Ordering is relative, so the position an archived item comes back to was never occupied while it was away. The check-out record of a goal that comes back is untouched."
+  end "Unarchive answered"
+}
+
+@endbpmn

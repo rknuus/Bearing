@@ -1,0 +1,208 @@
+@startbpmn BP17_MaintainAProject
+lang en
+
+output L1 "01_detailed/BP17_MaintainAProject.bpmn"
+output L2 "02_detailed/BP17_MaintainAProject.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a project has exactly one optional parent: an idea, a goal, a measure, or none: BR-96
+'   - the parent is single-valued and the user is never asked what kind of thing it is: BR-96
+'   - the kind is declared at creation and there is no migration either way: BR-97, QB-44
+'   - a simple project has one board; an activity-based one has a plan: BR-97, BR-101
+'   - a project owns one column template, governing every board of that project: BR-108
+'   - a project archives directly, carrying its activities and their tasks: BR-23, BR-112
+'   - archiving a project is the only way an activity is archived at all: BR-23
+'   - archiving withdraws the project from the focus selectables: BR-43
+'   - a project deletion takes everything the project is, approve-or-abandon: BR-113, BR-114
+'   - the parent survives a project deletion, minus the link: BR-96, BR-114
+'   - archived projects are out of the working view: BR-26
+'   - the archive is no shield from a deletion: BR-117
+'   - there is no in-app undo: BR-20
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'
+' Scope: this process is the project as an entity. Laying out and tracking an activity-based
+' project's work is BP18, which this process hands over to by opening a project's course.
+' Bringing an archived project back is BP15.
+'
+' Call-site history: the plan was drawn here until 2026-10-10 and moved to BP18 on the Software
+' Architect's ruling, so that the project and its plan are one process each. BP17.06 to BP17.13
+' are retired and are never reused.
+'
+' Call-site collapsing: creating a simple project and creating an activity-based one are one
+' request differing in the kind it carries.
+
+pool "User" {
+  start "Work to organize, or a project to settle"
+  task "Open the Course tab" as courseTab
+  send "Read the project list" to listIn
+  receive "The projects with their parents and kinds" as list
+
+  if "What needs doing?" then "start something new"
+    :Name the project, its parent and its kind;
+    multiInstance
+    send "Draft the project input" to projectDraftIn
+    :Submit the new project;
+    send "Create a project" to createIn
+    receive "Project created" as created
+    note "The parent may be an idea, a goal or a progress measure, or there may be none. The kind holds for the project's life."
+
+  elseif "What needs doing?" then "change what a project is"
+    :Amend the project;
+    send "Amend a project" to amendIn
+    receive "Project amended" as amended
+    note "The name and the parent are one request. The kind is not among them."
+
+  elseif "What needs doing?" then "plan its work"
+    :Open the project's course;
+    note "Laying out the activities and their order is its own process. A simple project has no plan to open."
+
+  elseif "What needs doing?" then "set one aside"
+    :Choose a project to archive;
+    send "See what archiving a project takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "Approve what the archiving takes?" rule BR-112 then "approve"
+      :Confirm the archiving;
+      send "Archive a project" to archiveIn
+      receive "Project archived" as archived
+      note "The activities and their tasks go with it. Nothing below a project can be kept behind."
+    else "abandon"
+      :Abandon the archiving;
+      note "Nothing is archived."
+      goto courseTab
+    endif
+
+  else "end one"
+    :Choose a project to delete;
+    send "See what deleting a project takes" to delImpactIn
+    receive "What the project deletion will take" as delImpact
+    if "Approve what the project deletion takes?" rule BR-114 then "approve"
+      :Confirm the project deletion;
+      send "Delete a project" to deleteIn
+      receive "Project deleted" as deleted
+      note "There is no in-app undo. Recovery is from version control."
+    else "abandon"
+      :Abandon the project deletion;
+      note "Nothing is deleted. The parent keeps its link."
+      goto courseTab
+    endif
+  endif
+
+  if "Anything else on the Course tab?" then "yes"
+    goto courseTab
+  else "no"
+    :Leave the Course tab;
+  endif
+
+  end "Projects current"
+}
+
+system pool "Bearing" {
+  messageStart "Project draft submitted" as projectDraftIn
+  call "BP17.16_DraftTheProjectInput" "Draft the project input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Project list requested" as listIn
+  call "BP17.01_ReadTheProjectList" "Read the project list" {
+    :Read the projects with their parent and their kind;
+    rule BR-96
+    :Leave the archived ones out;
+    rule BR-26
+    :Report each project's Done, InProgress and Todo counts;
+    rule BR-109
+  }
+  send "The projects with their parents and kinds" to list
+  note "A project with no parent is legitimate. The counts are of activities; a simple project has none."
+  end "Project list answered"
+
+  messageStart "Project submitted" as createIn
+  call "BP17.02_CreateProject" "Create a project" {
+    :Store the project with its parent and its kind;
+    rule BR-97
+    :Create its column template with its default columns;
+    rule BR-108
+    if "Simple project?" rule BR-97 then "simple"
+      :Create its one board from that template;
+      rule BR-101
+    else "activity-based"
+      :Open an empty plan for it;
+      rule BR-111
+    endif
+    :Report the project;
+  }
+  send "Project created" to created
+  note "One request creates either kind. The new template starts from the default columns, one Backlog and one Done among them. The kind is declared once and never migrates. A plan orders and tracks; it carries no duration, no float and no critical path."
+  end "Project creation answered"
+
+  messageStart "Project amendment requested" as amendIn
+  call "BP17.03_AmendProject" "Amend a project" {
+    :Apply the name and the parent as given;
+    rule BR-96
+    :Leave the kind as it was declared;
+    rule BR-97
+  }
+  send "Project amended" to amended
+  note "The parent is single-valued and the user is never asked what kind of thing it is."
+  end "Project amendment answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP17.14_ReadTheProjectArchivingImpact" "See what archiving a project takes" {
+    :Collect the project's activities and the tasks on their boards;
+    rule BR-112
+    :Collect a simple project's own board and its tasks;
+    rule BR-101
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the archiving will take;
+    rule BR-113
+  }
+  send "What the archiving will take" to archImpact
+  note "Archiving a project is the only way an activity is archived at all, and it is approved whole or rejected whole."
+  end "Archiving impact answered"
+
+  messageStart "Project archiving requested" as archiveIn
+  call "BP17.15_ArchiveProject" "Archive a project" {
+    :Archive the activities and the tasks on their boards;
+    rule BR-112
+    :Archive the project;
+    rule BR-23
+    :Withdraw it from the focus selectables and hide its boards;
+    rule BR-43
+  }
+  send "Project archived" to archived
+  note "An archived project is frozen until it is brought back, and it comes back as the whole bundle it went as."
+  end "Project archiving answered"
+
+  messageStart "Project deletion impact requested" as delImpactIn
+  call "BP17.04_ReadTheProjectDeletionImpact" "See what deleting a project takes" {
+    :Collect the project's activities and the tasks on their boards;
+    rule BR-114
+    :Collect a simple project's own board and its tasks;
+    rule BR-101
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the deletion will take;
+    rule BR-113
+  }
+  send "What the project deletion will take" to delImpact
+  note "Everything the project is goes with it. Keeping anything below it is not offered, because nothing below a project can be detached."
+  end "Project impact answered"
+
+  messageStart "Project deletion requested" as deleteIn
+  call "BP17.05_DeleteProject" "Delete a project" {
+    :Delete the activities and the tasks on their boards;
+    rule BR-114
+    :Delete the project with its column template;
+    rule BR-108
+    :Leave the parent standing, minus the link;
+    rule BR-96
+  }
+  send "Project deleted" to deleted
+  note "The parent survives a project's deletion. A goal left with no linked idea is flagged on its current state."
+  end "Project deletion answered"
+}
+
+@endbpmn

@@ -1,0 +1,557 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="7408" height="1207" viewBox="0 0 7408 1207">
+<rect width="7408" height="1207" fill="#fff"/>
+<rect x="24" y="143" width="7360" height="620" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="143" x2="54" y2="763" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="457.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 453)">User</text>
+<rect x="24" y="803" width="7360" height="380" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="803" x2="54" y2="1183" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="997.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 993)">Bearing</text>
+<polyline points="152,263 254,263" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 263 L 246 266.36 L 246 259.64 Z" fill="#000"/>
+<polyline points="354,263 1136,263" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 263 L 1128 266.36 L 1128 259.64 Z" fill="#000"/>
+<polyline points="1172,263 1299,263" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1299 263 L 1291 266.36 L 1291 259.64 Z" fill="#000"/>
+<polyline points="1544,263 1646,263" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 263 L 1638 266.36 L 1638 259.64 Z" fill="#000"/>
+<polyline points="1349,263 1444,263" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 263 L 1436 266.36 L 1436 259.64 Z" fill="#000"/>
+<polyline points="1349,263 1379,263 1379,383 1444,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 383 L 1436 386.36 L 1436 379.64 Z" fill="#000"/>
+<polyline points="1544,383 1639,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1639 383 L 1631 386.36 L 1631 379.64 Z" fill="#000"/>
+<polyline points="1689,383 1784,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 383 L 1776 386.36 L 1776 379.64 Z" fill="#000"/>
+<polyline points="1689,383 1719,383 1719,503 1784,503" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1784 503 L 1776 506.36 L 1776 499.64 Z" fill="#000"/>
+<polyline points="1884,383 1954,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1954 383 L 1946 386.36 L 1946 379.64 Z" fill="#000"/>
+<polyline points="1884,503 1914,503 1914,383 1954,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1954 383 L 1946 386.36 L 1946 379.64 Z" fill="#000"/>
+<polyline points="2054,383 2326,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2326 383 L 2318 386.36 L 2318 379.64 Z" fill="#000"/>
+<polyline points="2362,383 2489,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2489 383 L 2481 386.36 L 2481 379.64 Z" fill="#000"/>
+<polyline points="2734,383 3346,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3346 383 L 3338 386.36 L 3338 379.64 Z" fill="#000"/>
+<polyline points="3382,383 3509,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3509 383 L 3501 386.36 L 3501 379.64 Z" fill="#000"/>
+<polyline points="3559,383 3654,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3654 383 L 3646 386.36 L 3646 379.64 Z" fill="#000"/>
+<polyline points="3559,383 3589,383 3589,503 3654,503" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3654 503 L 3646 506.36 L 3646 499.64 Z" fill="#000"/>
+<polyline points="3559,383 3589,383 3589,623 3654,623" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3654 623 L 3646 626.36 L 3646 619.64 Z" fill="#000"/>
+<polyline points="2539,383 2634,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2634 383 L 2626 386.36 L 2626 379.64 Z" fill="#000"/>
+<polyline points="2539,383 2569,383 2569,503 2634,503" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2634 503 L 2626 506.36 L 2626 499.64 Z" fill="#000"/>
+<polyline points="3754,383 3824,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3824 383 L 3816 386.36 L 3816 379.64 Z" fill="#000"/>
+<polyline points="3754,503 3784,503 3784,383 3824,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3824 383 L 3816 386.36 L 3816 379.64 Z" fill="#000"/>
+<polyline points="3754,623 3784,623 3784,383 3824,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3824 383 L 3816 386.36 L 3816 379.64 Z" fill="#000"/>
+<polyline points="2734,503 2769,503 2769,334 3874,334 3874,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3874 343 L 3870.64 335 L 3877.36 335 Z" fill="#000"/>
+<polyline points="3924,383 4876,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4876 383 L 4868 386.36 L 4868 379.64 Z" fill="#000"/>
+<polyline points="4912,383 5039,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5039 383 L 5031 386.36 L 5031 379.64 Z" fill="#000"/>
+<polyline points="5284,383 6236,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6236 383 L 6228 386.36 L 6228 379.64 Z" fill="#000"/>
+<polyline points="6272,383 6374,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6374 383 L 6366 386.36 L 6366 379.64 Z" fill="#000"/>
+<polyline points="6474,383 6569,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6569 383 L 6561 386.36 L 6561 379.64 Z" fill="#000"/>
+<polyline points="6814,383 7086,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 7086 383 L 7078 386.36 L 7078 379.64 Z" fill="#000"/>
+<polyline points="6619,383 6714,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6714 383 L 6706 386.36 L 6706 379.64 Z" fill="#000"/>
+<polyline points="6619,383 6649,383 6649,503 6714,503" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6714 503 L 6706 506.36 L 6706 499.64 Z" fill="#000"/>
+<polyline points="5089,383 5184,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5184 383 L 5176 386.36 L 5176 379.64 Z" fill="#000"/>
+<polyline points="5089,383 5119,383 5119,503 5184,503" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5184 503 L 5176 506.36 L 5176 499.64 Z" fill="#000"/>
+<polyline points="7122,383 7256,383" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 7256 383 L 7248 386.36 L 7248 379.64 Z" fill="#000"/>
+<polyline points="6814,503 6849,503 6849,334 7274,334 7274,365" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 7274 365 L 7270.64 357 L 7277.36 357 Z" fill="#000"/>
+<polyline points="5284,503 5319,503 5319,334 7274,334 7274,365" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 7274 365 L 7270.64 357 L 7277.36 357 Z" fill="#000"/>
+<polyline points="524,923 594,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 923 L 586 926.36 L 586 919.64 Z" fill="#000"/>
+<polyline points="694,923 764,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 923 L 756 926.36 L 756 919.64 Z" fill="#000"/>
+<polyline points="864,923 934,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 923 L 926 926.36 L 926 919.64 Z" fill="#000"/>
+<polyline points="1034,923 1104,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 923 L 1096 926.36 L 1096 919.64 Z" fill="#000"/>
+<polyline points="322,923 424,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 923 L 416 926.36 L 416 919.64 Z" fill="#000"/>
+<polyline points="1204,923 1306,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 923 L 1298 926.36 L 1298 919.64 Z" fill="#000"/>
+<polyline points="2224,923 2294,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2294 923 L 2286 926.36 L 2286 919.64 Z" fill="#000"/>
+<polyline points="2022,923 2124,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2124 923 L 2116 926.36 L 2116 919.64 Z" fill="#000"/>
+<polyline points="2394,923 2496,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2496 923 L 2488 926.36 L 2488 919.64 Z" fill="#000"/>
+<polyline points="2904,923 2974,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2974 923 L 2966 926.36 L 2966 919.64 Z" fill="#000"/>
+<polyline points="3074,923 3144,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3144 923 L 3136 926.36 L 3136 919.64 Z" fill="#000"/>
+<polyline points="3244,923 3314,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3314 923 L 3306 926.36 L 3306 919.64 Z" fill="#000"/>
+<polyline points="2702,923 2804,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 2804 923 L 2796 926.36 L 2796 919.64 Z" fill="#000"/>
+<polyline points="3414,923 3516,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3516 923 L 3508 926.36 L 3508 919.64 Z" fill="#000"/>
+<polyline points="4094,923 4189,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4189 923 L 4181 926.36 L 4181 919.64 Z" fill="#000"/>
+<polyline points="4434,923 4504,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4504 923 L 4496 926.36 L 4496 919.64 Z" fill="#000"/>
+<polyline points="4239,923 4334,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4334 923 L 4326 926.36 L 4326 919.64 Z" fill="#000"/>
+<polyline points="4239,923 4269,923 4269,1043 4334,1043" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4334 1043 L 4326 1046.36 L 4326 1039.64 Z" fill="#000"/>
+<polyline points="4604,923 4674,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4674 923 L 4666 926.36 L 4666 919.64 Z" fill="#000"/>
+<polyline points="4434,1043 4469,1043 4469,863 4724,863 4724,883" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4724 883 L 4720.64 875 L 4727.36 875 Z" fill="#000"/>
+<polyline points="4774,923 4844,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 4844 923 L 4836 926.36 L 4836 919.64 Z" fill="#000"/>
+<polyline points="3892,923 3994,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 3994 923 L 3986 926.36 L 3986 919.64 Z" fill="#000"/>
+<polyline points="4944,923 5046,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5046 923 L 5038 926.36 L 5038 919.64 Z" fill="#000"/>
+<polyline points="5454,923 5524,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5524 923 L 5516 926.36 L 5516 919.64 Z" fill="#000"/>
+<polyline points="5624,923 5694,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5694 923 L 5686 926.36 L 5686 919.64 Z" fill="#000"/>
+<polyline points="5794,923 5864,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5864 923 L 5856 926.36 L 5856 919.64 Z" fill="#000"/>
+<polyline points="5964,923 6034,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6034 923 L 6026 926.36 L 6026 919.64 Z" fill="#000"/>
+<polyline points="6134,923 6204,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6204 923 L 6196 926.36 L 6196 919.64 Z" fill="#000"/>
+<polyline points="5252,923 5354,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 5354 923 L 5346 926.36 L 5346 919.64 Z" fill="#000"/>
+<polyline points="6304,923 6406,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6406 923 L 6398 926.36 L 6398 919.64 Z" fill="#000"/>
+<polyline points="6984,923 7054,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 7054 923 L 7046 926.36 L 7046 919.64 Z" fill="#000"/>
+<polyline points="6782,923 6884,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 6884 923 L 6876 926.36 L 6876 919.64 Z" fill="#000"/>
+<polyline points="7154,923 7256,923" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 7256 923 L 7248 926.36 L 7248 919.64 Z" fill="#000"/>
+<polyline points="304,303 304,905" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 307.78 896 L 304 905 L 300.22 896" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="304" cy="303" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2004,423 2004,905" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2007.78 896 L 2004 905 L 2000.22 896" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2004" cy="423" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2684,423 2684,435 2769,435 2769,893 2684,893 2684,905" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2687.78 896 L 2684 905 L 2680.22 896" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2684" cy="423" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="3874,423 3874,905" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 3877.78 896 L 3874 905 L 3870.22 896" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="3874" cy="423" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="5234,423 5234,435 5319,435 5319,893 5234,893 5234,905" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 5237.78 896 L 5234 905 L 5230.22 896" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="5234" cy="423" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="6764,423 6764,435 6849,435 6849,893 6764,893 6764,905" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 6767.78 896 L 6764 905 L 6760.22 896" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="6764" cy="423" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1154,883 1154,281" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1150.22 290 L 1154 281 L 1157.78 290" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="883" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="2344,883 2344,401" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 2340.22 410 L 2344 401 L 2347.78 410" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="2344" cy="883" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="3364,883 3364,401" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 3360.22 410 L 3364 401 L 3367.78 410" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="3364" cy="883" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="4894,883 4894,401" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 4890.22 410 L 4894 401 L 4897.78 410" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="4894" cy="883" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="6254,883 6254,401" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 6250.22 410 L 6254 401 L 6257.78 410" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="6254" cy="883" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="7104,883 7104,401" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 7100.22 410 L 7104 401 L 7107.78 410" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="7104" cy="883" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,223 1494,203" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,343 1494,333 1364,333 1364,62 1374,62" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1834,343 1834,323" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2344,365 2344,345" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="3704,463 3704,453 3644,453 3644,331" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="3704,583 3704,573 3574,573 3574,228 3584,228" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="6764,463 6764,453 6704,453 6704,331" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="474,963 474,983" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2174,963 2174,983" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="2854,963 2854,983" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="4044,963 4044,983" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="5404,963 5404,983" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="6934,963 6934,983" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="263" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="295" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A cycle ending, or a</text>
+<text x="92" y="305.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">commitment to settle</text>
+<rect x="254" y="223" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="259.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open a goal's</text>
+<text x="304" y="271.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">check-out</text>
+<circle cx="1154" cy="263" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="263" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="257.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 257.06 L 1154 263 L 1163 257.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="295" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The proposal with a</text>
+<text x="1112" y="305.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">status per measure</text>
+<path d="M 1324 238 L 1349 263 L 1324 288 L 1299 263 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1313.5 252.5 L 1334.5 273.5 M 1313.5 273.5 L 1334.5 252.5" stroke="#000" stroke-width="1"/>
+<text x="1282" y="302" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Is the goal archived?</text>
+<rect x="1444" y="223" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="259.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read why it cannot</text>
+<text x="1494" y="271.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">be checked out</text>
+<circle cx="1664" cy="263" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="295" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Nothing to settle</text>
+<rect x="1444" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="379.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Rate the overall</text>
+<text x="1494" y="391.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">outcome</text>
+<path d="M 1664 358 L 1689 383 L 1664 408 L 1639 383 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1653.5 372.5 L 1674.5 393.5 M 1653.5 393.5 L 1674.5 372.5" stroke="#000" stroke-width="1"/>
+<text x="1622" y="422" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Accept the inferred</text>
+<text x="1622" y="432.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">statuses?</text>
+<rect x="1784" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="1829.5" y1="406" x2="1838.5" y2="406" stroke="#000" stroke-width="1.4"/>
+<line x1="1829.5" y1="409" x2="1838.5" y2="409" stroke="#000" stroke-width="1.4"/>
+<line x1="1829.5" y1="412" x2="1838.5" y2="412" stroke="#000" stroke-width="1.4"/>
+<text x="1834" y="385.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Set a status by hand</text>
+<rect x="1784" y="463" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1834" y="499.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep what was</text>
+<text x="1834" y="511.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">inferred</text>
+<rect x="1954" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="1999.5" y1="406" x2="2008.5" y2="406" stroke="#000" stroke-width="1.4"/>
+<line x1="1999.5" y1="409" x2="2008.5" y2="409" stroke="#000" stroke-width="1.4"/>
+<line x1="1999.5" y1="412" x2="2008.5" y2="412" stroke="#000" stroke-width="1.4"/>
+<text x="2004" y="373.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Write the retro and</text>
+<text x="2004" y="385.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the per-measure</text>
+<text x="2004" y="397.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">notes</text>
+<circle cx="2344" cy="383" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="2344" cy="383" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="2335" y="377.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2335 377.06 L 2344 383 L 2353 377.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2302" y="415" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Draft kept</text>
+<path d="M 2514 358 L 2539 383 L 2514 408 L 2489 383 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 2503.5 372.5 L 2524.5 393.5 M 2503.5 393.5 L 2524.5 372.5" stroke="#000" stroke-width="1"/>
+<text x="2472" y="422" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archive the goal as</text>
+<text x="2472" y="432.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">this closes?</text>
+<rect x="2634" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2684" y="379.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Choose an archiving</text>
+<text x="2684" y="391.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">reach</text>
+<circle cx="3364" cy="383" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="3364" cy="383" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="3355" y="377.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 3355 377.06 L 3364 383 L 3373 377.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="3322" y="415" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the archiving</text>
+<text x="3322" y="425.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 3534 358 L 3559 383 L 3534 408 L 3509 383 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 3523.5 372.5 L 3544.5 393.5 M 3523.5 393.5 L 3544.5 372.5" stroke="#000" stroke-width="1"/>
+<text x="3492" y="422" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">How far should the</text>
+<text x="3492" y="432.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">archiving reach?</text>
+<rect x="3654" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3704" y="379.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Approve the whole</text>
+<text x="3704" y="391.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascade</text>
+<rect x="3654" y="463" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3704" y="499.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep the projects</text>
+<text x="3704" y="511.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">active</text>
+<rect x="3654" y="583" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3704" y="619.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Withdraw the</text>
+<text x="3704" y="631.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archiving</text>
+<rect x="2634" y="463" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2684" y="499.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Turn the archive</text>
+<text x="2684" y="511.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">action off</text>
+<rect x="3824" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3874" y="379.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Complete the</text>
+<text x="3874" y="391.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">check-out</text>
+<circle cx="4894" cy="383" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="4894" cy="383" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="4885" y="377.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 4885 377.06 L 4894 383 L 4903 377.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="4852" y="415" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal checked out</text>
+<path d="M 5064 358 L 5089 383 L 5064 408 L 5039 383 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 5053.5 372.5 L 5074.5 393.5 M 5053.5 393.5 L 5074.5 372.5" stroke="#000" stroke-width="1"/>
+<text x="5022" y="422" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Carry the</text>
+<text x="5022" y="432.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">commitment</text>
+<text x="5022" y="443.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">forward?</text>
+<rect x="5184" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="5234" y="385.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Ask for a follow-up</text>
+<circle cx="6254" cy="383" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="6254" cy="383" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="6245" y="377.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 6245 377.06 L 6254 383 L 6263 377.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="6212" y="415" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The seeded</text>
+<text x="6212" y="425.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">follow-up for review</text>
+<rect x="6374" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="6424" y="379.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Review the</text>
+<text x="6424" y="391.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">follow-up</text>
+<path d="M 6594 358 L 6619 383 L 6594 408 L 6569 383 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 6583.5 372.5 L 6604.5 393.5 M 6583.5 393.5 L 6604.5 372.5" stroke="#000" stroke-width="1"/>
+<text x="6552" y="422" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Commit the</text>
+<text x="6552" y="432.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">follow-up?</text>
+<rect x="6714" y="343" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="6764" y="379.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Commit the</text>
+<text x="6764" y="391.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">follow-up goal</text>
+<circle cx="7104" cy="383" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="7104" cy="383" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="7095" y="377.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 7095 377.06 L 7104 383 L 7113 377.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="7062" y="415" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Follow-up goal</text>
+<text x="7062" y="425.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">created</text>
+<rect x="6714" y="463" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="6764" y="499.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Abandon the</text>
+<text x="6764" y="511.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">follow-up</text>
+<rect x="5184" y="463" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="5234" y="493.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the</text>
+<text x="5234" y="505.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">commitment without</text>
+<text x="5234" y="517.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">a successor</text>
+<circle cx="7274" cy="383" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="7232" y="415" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Commitment settled</text>
+<circle cx="304" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="295" y="917.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 295 917.06 L 304 923 L 313 917.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="262" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-out proposal</text>
+<text x="262" y="965.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="424" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="474" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read the goal with</text>
+<text x="474" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">its measures and</text>
+<text x="474" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">their latest check-ins</text>
+<rect x="594" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Infer a status per</text>
+<text x="644" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measure from its</text>
+<text x="644" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">type</text>
+<rect x="764" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read the draft left</text>
+<text x="814" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">by an earlier sitting</text>
+<rect x="934" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report whether the</text>
+<text x="984" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">goal is archived</text>
+<rect x="1104" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the proposal</text>
+<circle cx="1324" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Proposal answered</text>
+<circle cx="2004" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1995" y="917.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1995 917.06 L 2004 923 L 2013 917.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1962" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-out draft</text>
+<text x="1962" y="965.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<rect x="2124" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2174" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep the outcome,</text>
+<text x="2174" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the statuses and the</text>
+<text x="2174" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">retro as a draft</text>
+<rect x="2294" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2344" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Hold the draft out of</text>
+<text x="2344" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">version control</text>
+<circle cx="2514" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="2472" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Draft answered</text>
+<circle cx="2684" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="2675" y="917.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 2675 917.06 L 2684 923 L 2693 917.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2642" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving impact</text>
+<text x="2642" y="965.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="2804" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="2854" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect the projects</text>
+<text x="2854" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">parented on the goal</text>
+<rect x="2974" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3024" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Collect the projects</text>
+<text x="3024" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">parented on its</text>
+<text x="3024" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measures</text>
+<rect x="3144" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3194" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Include the archived</text>
+<text x="3194" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">ones in the count</text>
+<rect x="3314" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="3364" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the three</text>
+<text x="3364" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">answers the gesture</text>
+<text x="3364" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">offers</text>
+<circle cx="3534" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="3492" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving impact</text>
+<text x="3492" y="965.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="3874" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="3865" y="917.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 3865 917.06 L 3874 923 L 3883 917.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="3832" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Close-out submitted</text>
+<rect x="3994" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="4044" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store the outcome,</text>
+<text x="4044" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the statuses and the</text>
+<text x="4044" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">retro on the goal</text>
+<path d="M 4214 898 L 4239 923 L 4214 948 L 4189 923 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 4203.5 912.5 L 4224.5 933.5 M 4203.5 933.5 L 4224.5 912.5" stroke="#000" stroke-width="1"/>
+<text x="4172" y="962" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving approved?</text>
+<rect x="4334" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="4384" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive the projects</text>
+<text x="4384" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the user included</text>
+<rect x="4504" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="4554" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive the goal</text>
+<text x="4554" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">with its check-out</text>
+<text x="4554" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">record</text>
+<rect x="4334" y="1003" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="4384" y="1039.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave the goal in</text>
+<text x="4384" y="1051.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the working set</text>
+<rect x="4674" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="4724" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Discard the draft the</text>
+<text x="4724" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">sitting came from</text>
+<rect x="4844" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="4894" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report what was</text>
+<text x="4894" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">closed</text>
+<circle cx="5064" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="5022" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Close-out answered</text>
+<circle cx="5234" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="5225" y="917.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 5225 917.06 L 5234 923 L 5243 917.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="5192" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Follow-up seed</text>
+<text x="5192" y="965.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="5354" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="5404" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Inherit the theme</text>
+<text x="5404" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">and the linked ideas</text>
+<rect x="5524" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="5574" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Carry the objective</text>
+<text x="5574" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">over, marked as a</text>
+<text x="5574" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">continuation</text>
+<rect x="5694" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="5744" y="907.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Take the Partial and</text>
+<text x="5744" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Missed measures</text>
+<text x="5744" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">with their progress</text>
+<text x="5744" y="943.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">reset</text>
+<rect x="5864" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="5914" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Advance the horizon</text>
+<text x="5914" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">of a goal that had</text>
+<text x="5914" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">one</text>
+<rect x="6034" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="6084" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Back-reference the</text>
+<text x="6084" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">originating</text>
+<text x="6084" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">check-out</text>
+<rect x="6204" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="6254" y="919.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the seeded</text>
+<text x="6254" y="931.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">follow-up</text>
+<circle cx="6424" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="6382" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Seed answered</text>
+<circle cx="6764" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="6755" y="917.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 6755 917.06 L 6764 923 L 6773 917.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="6722" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Follow-up submitted</text>
+<rect x="6884" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="6934" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store the follow-up</text>
+<text x="6934" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">as the user</text>
+<text x="6934" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">reviewed it</text>
+<rect x="7054" y="883" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="7104" y="913.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep its link back to</text>
+<text x="7104" y="925.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the check-out it</text>
+<text x="7104" y="937.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">came from</text>
+<circle cx="7274" cy="923" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="7232" y="955" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Follow-up answered</text>
+<path d="M 1380 112 H 1374 V 203 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="124" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">An archived goal is frozen. Bringing it back is what</text>
+<text x="1383" y="134.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">makes a judgment possible again, and a check-out</text>
+<text x="1383" y="145.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">record it already carries is untouched meanwhile.</text>
+<path d="M 1380 24 H 1374 V 100 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Achieved, partially achieved, missed or abandoned. The</text>
+<text x="1383" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">outcome is required; everything else in the sitting is</text>
+<text x="1383" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">optional.</text>
+<path d="M 1720 247 H 1714 V 323 H 1720" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1723" y="259" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Any inferred status can be overridden, a boolean</text>
+<text x="1723" y="269.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">measure set to Partial included. The rule constrains the</text>
+<text x="1723" y="280.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">inference, never the judgment.</text>
+<path d="M 2230 269 H 2224 V 345 H 2230" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2233" y="281" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The sitting is kept as a draft while it is filled in, so leaving</text>
+<text x="2233" y="291.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">it, a crash and a restart cost nothing.</text>
+<path d="M 3590 270 H 3584 V 331 H 3590" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="3593" y="282" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">An archived goal still exists, so its projects are not</text>
+<text x="3593" y="292.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">orphaned by it.</text>
+<path d="M 3590 197 H 3584 V 258 H 3590" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="3593" y="209" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The check-out completes either way. A goal left active</text>
+<text x="3593" y="219.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">can be archived directly later.</text>
+<path d="M 6650 285 H 6644 V 331 H 6650" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="6653" y="297" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Abandoning the follow-up still leaves the check-out</text>
+<text x="6653" y="307.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">complete.</text>
+<path d="M 360 983 H 354 V 1089 H 360" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="363" y="995" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The proposal is what the system observed: the statuses</text>
+<text x="363" y="1005.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">are inferred, not decided. A check-out is available at any</text>
+<text x="363" y="1016.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">time, with or without a horizon, as long as the goal is not</text>
+<text x="363" y="1026.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">archived.</text>
+<path d="M 2060 983 H 2054 V 1044 H 2060" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2063" y="995" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A draft is not a commit. Nothing it describes takes effect</text>
+<text x="2063" y="1005.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">until the check-out is completed.</text>
+<path d="M 2740 983 H 2734 V 1059 H 2740" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="2743" y="995" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Cascade, the goal alone, or reject. The keep answer is</text>
+<text x="2743" y="1005.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">legal here because an archived goal still exists.</text>
+<path d="M 3930 983 H 3924 V 1044 H 3930" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="3933" y="995" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The check-out record stays attached to the goal,</text>
+<text x="3933" y="1005.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">archived or not, and unarchiving never revokes it.</text>
+<path d="M 5290 983 H 5284 V 1059 H 5290" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="5293" y="995" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Check-out notes are dropped. A goal that was</text>
+<text x="5293" y="1005.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">open-ended stays open-ended. The seed is reviewed</text>
+<text x="5293" y="1016.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">before anything is created.</text>
+<path d="M 6820 983 H 6814 V 1044 H 6820" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="6823" y="995" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The iteration chain stays traceable from the follow-up</text>
+<text x="6823" y="1005.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">back to the check-out.</text>
+<rect x="1351" y="264" width="34.12" height="11.5" fill="#fff"/>
+<text x="1352" y="273.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">archived</text>
+<rect x="1381" y="264" width="14.75" height="11.5" fill="#fff"/>
+<text x="1382" y="273.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">live</text>
+<rect x="1691" y="384" width="49.24" height="11.5" fill="#fff"/>
+<text x="1692" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">override one</text>
+<rect x="1721" y="384" width="83.74" height="11.5" fill="#fff"/>
+<text x="1722" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">take them as they are</text>
+<rect x="3561" y="384" width="91.77" height="11.5" fill="#fff"/>
+<text x="3562" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the goal and its projects</text>
+<rect x="3591" y="384" width="55.4" height="11.5" fill="#fff"/>
+<text x="3592" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the goal alone</text>
+<rect x="3591" y="384" width="73.33" height="11.5" fill="#fff"/>
+<text x="3592" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject the archiving</text>
+<rect x="2541" y="384" width="59.65" height="11.5" fill="#fff"/>
+<text x="2542" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes, the default</text>
+<rect x="2571" y="384" width="67.67" height="11.5" fill="#fff"/>
+<text x="2572" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no, leave it active</text>
+<rect x="6621" y="384" width="36" height="11.5" fill="#fff"/>
+<text x="6622" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">commit it</text>
+<rect x="6651" y="384" width="41.7" height="11.5" fill="#fff"/>
+<text x="6652" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">abandon it</text>
+<rect x="5091" y="384" width="15.23" height="11.5" fill="#fff"/>
+<text x="5092" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="5121" y="384" width="56.34" height="11.5" fill="#fff"/>
+<text x="5122" y="393.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no, end it here</text>
+<rect x="4241" y="924" width="37.44" height="11.5" fill="#fff"/>
+<text x="4242" y="933.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approved</text>
+<rect x="4271" y="924" width="33.18" height="11.5" fill="#fff"/>
+<text x="4272" y="933.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">withheld</text>
+<rect x="306" y="304" width="134.97" height="20.73" fill="#fff"/>
+<text x="307" y="312.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP07.01</text>
+<text x="307" y="322.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Read the goal's check-out proposal</text>
+<rect x="2006" y="424" width="92.24" height="20.73" fill="#fff"/>
+<text x="2007" y="432.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP07.02</text>
+<text x="2007" y="442.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Draft the goal check-out</text>
+<rect x="2771" y="436" width="129.09" height="20.73" fill="#fff"/>
+<text x="2772" y="444.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP07.03</text>
+<text x="2772" y="454.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what archiving the goal takes</text>
+<rect x="3876" y="424" width="70.51" height="20.73" fill="#fff"/>
+<text x="3877" y="432.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP07.04</text>
+<text x="3877" y="442.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Close out the goal</text>
+<rect x="5321" y="436" width="83.74" height="20.73" fill="#fff"/>
+<text x="5322" y="444.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP07.05</text>
+<text x="5322" y="454.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Seed a follow-up goal</text>
+<rect x="6851" y="436" width="96.49" height="20.73" fill="#fff"/>
+<text x="6852" y="444.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP07.06</text>
+<text x="6852" y="454.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Create the follow-up goal</text>
+<rect x="1156" y="884" width="151.29" height="11.5" fill="#fff"/>
+<text x="1157" y="893.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The proposal with a status per measure</text>
+<rect x="2346" y="884" width="38.85" height="11.5" fill="#fff"/>
+<text x="2347" y="893.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Draft kept</text>
+<rect x="3366" y="884" width="104.98" height="11.5" fill="#fff"/>
+<text x="3367" y="893.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the archiving will take</text>
+<rect x="4896" y="884" width="68.15" height="11.5" fill="#fff"/>
+<text x="4897" y="893.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Goal checked out</text>
+<rect x="6256" y="884" width="122.46" height="11.5" fill="#fff"/>
+<text x="6257" y="893.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The seeded follow-up for review</text>
+<rect x="7106" y="884" width="87.98" height="11.5" fill="#fff"/>
+<text x="7107" y="893.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Follow-up goal created</text>
+</svg>

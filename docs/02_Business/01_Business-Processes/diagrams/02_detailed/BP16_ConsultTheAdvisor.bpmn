@@ -1,0 +1,1280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP16_ConsultTheAdvisor" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP16_ConsultTheAdvisor">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Advisor" name="Advisor" processRef="Process_Advisor" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP16.01 · Open the advisor conversation" sourceRef="panel" targetRef="openIn" />
+    <bpmn:messageFlow id="MF_2" name="BP16.08 · Draft the question" sourceRef="T_3" targetRef="questionDraftIn" />
+    <bpmn:messageFlow id="MF_3" name="BP16.02 · Ask the advisor" sourceRef="T_4" targetRef="askIn" />
+    <bpmn:messageFlow id="MF_4" name="BP16.07 · See what applying will take" sourceRef="T_5" targetRef="applyImpactIn" />
+    <bpmn:messageFlow id="MF_5" name="BP16.04 · Apply advisor proposals" sourceRef="T_7" targetRef="applyIn" />
+    <bpmn:messageFlow id="MF_6" name="BP16.05 · Dismiss advisor proposals" sourceRef="T_9" targetRef="dismissIn" />
+    <bpmn:messageFlow id="MF_7" name="BP16.06 · Clear the conversation" sourceRef="T_10" targetRef="clearIn" />
+    <bpmn:messageFlow id="MF_8" name="BP16.03 · Take the advisor's answer" sourceRef="T_13" targetRef="answerIn" />
+    <bpmn:messageFlow id="MF_9" name="The conversation with its context" sourceRef="BP16.01_OpenTheAdvisorConversation" targetRef="conversation" />
+    <bpmn:messageFlow id="MF_10" name="Advice requested" sourceRef="BP16.02_AskTheAdvisor" targetRef="adviceIn" />
+    <bpmn:messageFlow id="MF_11" name="The answer with its proposals" sourceRef="BP16.03_TakeTheAdvisorsAnswer" targetRef="answer" />
+    <bpmn:messageFlow id="MF_12" name="What applying will take, and where it lands" sourceRef="BP16.07_ReadWhatApplyingWillTake" targetRef="applyImpact" />
+    <bpmn:messageFlow id="MF_13" name="What was applied, and where" sourceRef="BP16.04_ApplyAdvisorProposals" targetRef="applied" />
+    <bpmn:messageFlow id="MF_14" name="What was dismissed" sourceRef="BP16.05_DismissAdvisorProposals" targetRef="dismissed" />
+    <bpmn:messageFlow id="MF_15" name="Conversation cleared" sourceRef="BP16.06_ClearTheConversation" targetRef="cleared" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>The panel knows which view and which selection the user is on. Opening it suspends nothing.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="conversation" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Applying runs the user's own operation, so whatever that operation discloses is disclosed here: what a deletion will take, the answers an archiving offers, and any part of the funnel the change lands in.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="applyImpact" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>Clearing is deliberate. One conversation runs for the session and nothing clears it on the user's behalf.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="cleared" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>The proposals stay outstanding and nothing is written.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="T_8" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>The answer arrives on its own. The advisor is slower than the rest of the product and stays non-blocking while it thinks.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="answer" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>Each approved proposal is then written completely. Nothing is half-applied.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="applied" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>There is one advisor and one conversation per session. The conversation is journaled and stays out of version control.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="BP16.01_OpenTheAdvisorConversation" targetRef="TextAnnotation_X7" />
+    <bpmn:textAnnotation id="TextAnnotation_X8"><bpmn:text>Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X8" associationDirection="None" sourceRef="BP16.08_DraftTheQuestion" targetRef="TextAnnotation_X8" />
+    <bpmn:textAnnotation id="TextAnnotation_X9"><bpmn:text>A proposal that takes nothing has nothing to disclose. One that deletes or archives discloses exactly what the user's own gesture would, because it is that gesture.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X9" associationDirection="None" sourceRef="BP16.07_ReadWhatApplyingWillTake" targetRef="TextAnnotation_X9" />
+    <bpmn:textAnnotation id="TextAnnotation_X10"><bpmn:text>One request dismisses a single proposal and a whole answer alike. Already-resolved proposals are skipped.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X10" associationDirection="None" sourceRef="BP16.05_DismissAdvisorProposals" targetRef="TextAnnotation_X10" />
+    <bpmn:textAnnotation id="TextAnnotation_X11"><bpmn:text>Applied and dismissed proposals are closed already and are unaffected by clearing.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X11" associationDirection="None" sourceRef="BP16.06_ClearTheConversation" targetRef="TextAnnotation_X11" />
+    <bpmn:textAnnotation id="TextAnnotation_X12"><bpmn:text>The whole funnel goes with the question: themes, ideas, goals, routines, focus history, tasks and progress check-ins.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X12" associationDirection="None" sourceRef="BP16.02_AskTheAdvisor" targetRef="TextAnnotation_X12" />
+    <bpmn:textAnnotation id="TextAnnotation_X13"><bpmn:text>A proposal is a structured object, never prose to be parsed. At most one proposal is outstanding per target, and an already-applied or already-dismissed one is closed and untouched.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X13" associationDirection="None" sourceRef="BP16.03_TakeTheAdvisorsAnswer" targetRef="TextAnnotation_X13" />
+    <bpmn:textAnnotation id="TextAnnotation_X14"><bpmn:text>One request applies a single proposal and a whole answer alike. There is no second write path: a proposal to create something carries everything that thing needs.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X14" associationDirection="None" sourceRef="BP16.04_ApplyAdvisorProposals" targetRef="TextAnnotation_X14" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A second opinion wanted">
+      <bpmn:outgoing>SF_Start_1_panel</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="panel" name="Open the advisor panel">
+      <bpmn:incoming>SF_Start_1_panel</bpmn:incoming>
+      <bpmn:outgoing>SF_panel_conversation</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="conversation" name="The conversation with its context">
+      <bpmn:incoming>SF_panel_conversation</bpmn:incoming>
+      <bpmn:outgoing>SF_conversation_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_conversation" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="working" name="Work with the advisor">
+      <bpmn:incoming>SF_conversation_working</bpmn:incoming>
+      <bpmn:incoming>SF_answer_working</bpmn:incoming>
+      <bpmn:incoming>SF_applied_working</bpmn:incoming>
+      <bpmn:incoming>SF_T_8_working</bpmn:incoming>
+      <bpmn:incoming>SF_dismissed_working</bpmn:incoming>
+      <bpmn:incoming>SF_cleared_working</bpmn:incoming>
+      <bpmn:outgoing>SF_working_Gw_2</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_2" name="What needs doing?">
+      <bpmn:incoming>SF_working_Gw_2</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_2_T_3</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_2_T_5</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_2_T_9</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_2_T_10</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_2_T_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_3" name="Write the question">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_2_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_T_4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_4" name="Put the question">
+      <bpmn:incoming>SF_T_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_answer</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="answer" name="The answer with its proposals">
+      <bpmn:incoming>SF_T_4_answer</bpmn:incoming>
+      <bpmn:outgoing>SF_answer_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_answer" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_5" name="Accept the proposal, or the whole answer">
+      <bpmn:incoming>SF_Gw_2_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_applyImpact</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="applyImpact" name="What applying will take, and where it lands">
+      <bpmn:incoming>SF_T_5_applyImpact</bpmn:incoming>
+      <bpmn:outgoing>SF_applyImpact_Gw_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_applyImpact" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_6" name="Approve what applying takes?">
+      <bpmn:incoming>SF_applyImpact_Gw_6</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_6_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_6_T_8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_7" name="Confirm what applying takes">
+      <bpmn:incoming>SF_Gw_6_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_applied</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="applied" name="What was applied, and where">
+      <bpmn:incoming>SF_T_7_applied</bpmn:incoming>
+      <bpmn:outgoing>SF_applied_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_applied" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_8" name="Abandon the application">
+      <bpmn:incoming>SF_Gw_6_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_working</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_9" name="Dismiss the proposal, or the whole answer">
+      <bpmn:incoming>SF_Gw_2_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_dismissed</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="dismissed" name="What was dismissed">
+      <bpmn:incoming>SF_T_9_dismissed</bpmn:incoming>
+      <bpmn:outgoing>SF_dismissed_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_dismissed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_10" name="Clear the conversation">
+      <bpmn:incoming>SF_Gw_2_T_10</bpmn:incoming>
+      <bpmn:outgoing>SF_T_10_cleared</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="cleared" name="Conversation cleared">
+      <bpmn:incoming>SF_T_10_cleared</bpmn:incoming>
+      <bpmn:outgoing>SF_cleared_working</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_cleared" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_11" name="Close the panel">
+      <bpmn:incoming>SF_Gw_2_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_End_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_12" name="Opinion taken or left">
+      <bpmn:incoming>SF_T_11_End_12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_panel" sourceRef="Start_1" targetRef="panel" />
+    <bpmn:sequenceFlow id="SF_panel_conversation" sourceRef="panel" targetRef="conversation" />
+    <bpmn:sequenceFlow id="SF_conversation_working" sourceRef="conversation" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_working_Gw_2" sourceRef="working" targetRef="Gw_2" />
+    <bpmn:sequenceFlow id="SF_T_3_T_4" sourceRef="T_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_T_4_answer" sourceRef="T_4" targetRef="answer" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_3" name="ask something" sourceRef="Gw_2" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_5_applyImpact" sourceRef="T_5" targetRef="applyImpact" />
+    <bpmn:sequenceFlow id="SF_applyImpact_Gw_6" sourceRef="applyImpact" targetRef="Gw_6" />
+    <bpmn:sequenceFlow id="SF_T_7_applied" sourceRef="T_7" targetRef="applied" />
+    <bpmn:sequenceFlow id="SF_Gw_6_T_7" name="approve" sourceRef="Gw_6" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_Gw_6_T_8" name="abandon" sourceRef="Gw_6" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_5" name="take a proposal up" sourceRef="Gw_2" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_9_dismissed" sourceRef="T_9" targetRef="dismissed" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_9" name="turn one down" sourceRef="Gw_2" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_10_cleared" sourceRef="T_10" targetRef="cleared" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_10" name="start over" sourceRef="Gw_2" targetRef="T_10" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_11" name="leave it" sourceRef="Gw_2" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_T_11_End_12" sourceRef="T_11" targetRef="End_12" />
+    <bpmn:sequenceFlow id="SF_answer_working" sourceRef="answer" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_applied_working" sourceRef="applied" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_T_8_working" sourceRef="T_8" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_dismissed_working" sourceRef="dismissed" targetRef="working" />
+    <bpmn:sequenceFlow id="SF_cleared_working" sourceRef="cleared" targetRef="working" />
+  </bpmn:process>
+  <bpmn:process id="Process_Advisor" isExecutable="false">
+    <bpmn:startEvent id="adviceIn" name="Advice requested">
+      <bpmn:outgoing>SF_adviceIn_T_13</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_adviceIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_13" name="Answer from the context it was given">
+      <bpmn:incoming>SF_adviceIn_T_13</bpmn:incoming>
+      <bpmn:outgoing>SF_T_13_End_14</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_14" name="Advice given">
+      <bpmn:incoming>SF_T_13_End_14</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_adviceIn_T_13" sourceRef="adviceIn" targetRef="T_13" />
+    <bpmn:sequenceFlow id="SF_T_13_End_14" sourceRef="T_13" targetRef="End_14" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="questionDraftIn" name="Question draft submitted">
+      <bpmn:outgoing>SF_questionDraftIn_BP16.08_DraftTheQuestion</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_questionDraftIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.08_DraftTheQuestion" name="Draft the question">
+      <bpmn:incoming>SF_questionDraftIn_BP16.08_DraftTheQuestion</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.08_DraftTheQuestion_End_16</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.08_DraftTheQuestion_s" name="Start">
+        <bpmn:outgoing>SF_BP16.08_DraftTheQuestion_s_T_15</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_15" name="Keep what is typed as a draft">
+        <bpmn:incoming>SF_BP16.08_DraftTheQuestion_s_T_15</bpmn:incoming>
+        <bpmn:outgoing>SF_T_15_BP16.08_DraftTheQuestion_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.08_DraftTheQuestion_e" name="fertig">
+        <bpmn:incoming>SF_T_15_BP16.08_DraftTheQuestion_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP16.08_DraftTheQuestion_s_T_15" sourceRef="BP16.08_DraftTheQuestion_s" targetRef="T_15" />
+      <bpmn:sequenceFlow id="SF_T_15_BP16.08_DraftTheQuestion_e" sourceRef="T_15" targetRef="BP16.08_DraftTheQuestion_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_16" name="Draft kept">
+      <bpmn:incoming>SF_BP16.08_DraftTheQuestion_End_16</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="openIn" name="Conversation requested">
+      <bpmn:outgoing>SF_openIn_BP16.01_OpenTheAdvisorConversation</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_openIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.01_OpenTheAdvisorConversation" name="Open the advisor conversation">
+      <bpmn:incoming>SF_openIn_BP16.01_OpenTheAdvisorConversation</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.01_OpenTheAdvisorConversation_End_20</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.01_OpenTheAdvisorConversation_s" name="Start">
+        <bpmn:outgoing>SF_BP16.01_OpenTheAdvisorConversation_s_T_17</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_17" name="Read the session's conversation with its outstanding proposals">
+        <bpmn:incoming>SF_BP16.01_OpenTheAdvisorConversation_s_T_17</bpmn:incoming>
+        <bpmn:outgoing>SF_T_17_T_18</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_18" name="Read the view and the selection the user is on">
+        <bpmn:incoming>SF_T_17_T_18</bpmn:incoming>
+        <bpmn:outgoing>SF_T_18_T_19</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_19" name="Report the conversation">
+        <bpmn:incoming>SF_T_18_T_19</bpmn:incoming>
+        <bpmn:outgoing>SF_T_19_BP16.01_OpenTheAdvisorConversation_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.01_OpenTheAdvisorConversation_e" name="fertig">
+        <bpmn:incoming>SF_T_19_BP16.01_OpenTheAdvisorConversation_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_17_T_18" sourceRef="T_17" targetRef="T_18" />
+      <bpmn:sequenceFlow id="SF_T_18_T_19" sourceRef="T_18" targetRef="T_19" />
+      <bpmn:sequenceFlow id="SF_BP16.01_OpenTheAdvisorConversation_s_T_17" sourceRef="BP16.01_OpenTheAdvisorConversation_s" targetRef="T_17" />
+      <bpmn:sequenceFlow id="SF_T_19_BP16.01_OpenTheAdvisorConversation_e" sourceRef="T_19" targetRef="BP16.01_OpenTheAdvisorConversation_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_20" name="Conversation answered">
+      <bpmn:incoming>SF_BP16.01_OpenTheAdvisorConversation_End_20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="askIn" name="Question submitted">
+      <bpmn:outgoing>SF_askIn_BP16.02_AskTheAdvisor</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_askIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.02_AskTheAdvisor" name="Ask the advisor">
+      <bpmn:incoming>SF_askIn_BP16.02_AskTheAdvisor</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.02_AskTheAdvisor_End_24</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.02_AskTheAdvisor_s" name="Start">
+        <bpmn:outgoing>SF_BP16.02_AskTheAdvisor_s_T_21</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_21" name="Assemble the funnel as context, with vision and mission when set">
+        <bpmn:incoming>SF_BP16.02_AskTheAdvisor_s_T_21</bpmn:incoming>
+        <bpmn:outgoing>SF_T_21_T_22</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_22" name="Add the view and the selection to the question">
+        <bpmn:incoming>SF_T_21_T_22</bpmn:incoming>
+        <bpmn:outgoing>SF_T_22_T_23</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_23" name="Record the question in the conversation">
+        <bpmn:incoming>SF_T_22_T_23</bpmn:incoming>
+        <bpmn:outgoing>SF_T_23_BP16.02_AskTheAdvisor_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.02_AskTheAdvisor_e" name="fertig">
+        <bpmn:incoming>SF_T_23_BP16.02_AskTheAdvisor_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_21_T_22" sourceRef="T_21" targetRef="T_22" />
+      <bpmn:sequenceFlow id="SF_T_22_T_23" sourceRef="T_22" targetRef="T_23" />
+      <bpmn:sequenceFlow id="SF_BP16.02_AskTheAdvisor_s_T_21" sourceRef="BP16.02_AskTheAdvisor_s" targetRef="T_21" />
+      <bpmn:sequenceFlow id="SF_T_23_BP16.02_AskTheAdvisor_e" sourceRef="T_23" targetRef="BP16.02_AskTheAdvisor_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_24" name="Question sent">
+      <bpmn:incoming>SF_BP16.02_AskTheAdvisor_End_24</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="answerIn" name="Advisor answered">
+      <bpmn:outgoing>SF_answerIn_BP16.03_TakeTheAdvisorsAnswer</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_answerIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.03_TakeTheAdvisorsAnswer" name="Take the advisor's answer">
+      <bpmn:incoming>SF_answerIn_BP16.03_TakeTheAdvisorsAnswer</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.03_TakeTheAdvisorsAnswer_End_30</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.03_TakeTheAdvisorsAnswer_s" name="Start">
+        <bpmn:outgoing>SF_BP16.03_TakeTheAdvisorsAnswer_s_Gw_25</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:exclusiveGateway id="Gw_25" name="Can every part of the answer be acted on?">
+        <bpmn:incoming>SF_BP16.03_TakeTheAdvisorsAnswer_s_Gw_25</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_25_T_26</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_25_T_27</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:task id="T_26" name="Turn each part into a typed proposal">
+        <bpmn:incoming>SF_Gw_25_T_26</bpmn:incoming>
+        <bpmn:outgoing>SF_T_26_T_28</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_27" name="Keep the prose as prose and say what could not be used">
+        <bpmn:incoming>SF_Gw_25_T_27</bpmn:incoming>
+        <bpmn:outgoing>SF_T_27_T_28</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_28" name="Supersede the outstanding proposal on each target the answer touches">
+        <bpmn:incoming>SF_T_26_T_28</bpmn:incoming>
+        <bpmn:incoming>SF_T_27_T_28</bpmn:incoming>
+        <bpmn:outgoing>SF_T_28_T_29</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_29" name="Report the answer with its proposals">
+        <bpmn:incoming>SF_T_28_T_29</bpmn:incoming>
+        <bpmn:outgoing>SF_T_29_BP16.03_TakeTheAdvisorsAnswer_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.03_TakeTheAdvisorsAnswer_e" name="fertig">
+        <bpmn:incoming>SF_T_29_BP16.03_TakeTheAdvisorsAnswer_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_Gw_25_T_26" name="yes" sourceRef="Gw_25" targetRef="T_26" />
+      <bpmn:sequenceFlow id="SF_Gw_25_T_27" name="no" sourceRef="Gw_25" targetRef="T_27" />
+      <bpmn:sequenceFlow id="SF_T_26_T_28" sourceRef="T_26" targetRef="T_28" />
+      <bpmn:sequenceFlow id="SF_T_27_T_28" sourceRef="T_27" targetRef="T_28" />
+      <bpmn:sequenceFlow id="SF_T_28_T_29" sourceRef="T_28" targetRef="T_29" />
+      <bpmn:sequenceFlow id="SF_BP16.03_TakeTheAdvisorsAnswer_s_Gw_25" sourceRef="BP16.03_TakeTheAdvisorsAnswer_s" targetRef="Gw_25" />
+      <bpmn:sequenceFlow id="SF_T_29_BP16.03_TakeTheAdvisorsAnswer_e" sourceRef="T_29" targetRef="BP16.03_TakeTheAdvisorsAnswer_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_30" name="Answer answered">
+      <bpmn:incoming>SF_BP16.03_TakeTheAdvisorsAnswer_End_30</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="applyImpactIn" name="Application impact requested">
+      <bpmn:outgoing>SF_applyImpactIn_BP16.07_ReadWhatApplyingWillTake</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_applyImpactIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.07_ReadWhatApplyingWillTake" name="See what applying will take">
+      <bpmn:incoming>SF_applyImpactIn_BP16.07_ReadWhatApplyingWillTake</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.07_ReadWhatApplyingWillTake_End_35</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.07_ReadWhatApplyingWillTake_s" name="Start">
+        <bpmn:outgoing>SF_BP16.07_ReadWhatApplyingWillTake_s_T_31</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_31" name="Take the still-outstanding proposals in order">
+        <bpmn:incoming>SF_BP16.07_ReadWhatApplyingWillTake_s_T_31</bpmn:incoming>
+        <bpmn:outgoing>SF_T_31_T_32</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_32" name="Collect what each one's operation would take, the archived included">
+        <bpmn:incoming>SF_T_31_T_32</bpmn:incoming>
+        <bpmn:outgoing>SF_T_32_T_33</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_33" name="Collect which part of the funnel each one lands in">
+        <bpmn:incoming>SF_T_32_T_33</bpmn:incoming>
+        <bpmn:outgoing>SF_T_33_T_34</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_34" name="Report what applying will take, proposal by proposal">
+        <bpmn:incoming>SF_T_33_T_34</bpmn:incoming>
+        <bpmn:outgoing>SF_T_34_BP16.07_ReadWhatApplyingWillTake_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.07_ReadWhatApplyingWillTake_e" name="fertig">
+        <bpmn:incoming>SF_T_34_BP16.07_ReadWhatApplyingWillTake_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_31_T_32" sourceRef="T_31" targetRef="T_32" />
+      <bpmn:sequenceFlow id="SF_T_32_T_33" sourceRef="T_32" targetRef="T_33" />
+      <bpmn:sequenceFlow id="SF_T_33_T_34" sourceRef="T_33" targetRef="T_34" />
+      <bpmn:sequenceFlow id="SF_BP16.07_ReadWhatApplyingWillTake_s_T_31" sourceRef="BP16.07_ReadWhatApplyingWillTake_s" targetRef="T_31" />
+      <bpmn:sequenceFlow id="SF_T_34_BP16.07_ReadWhatApplyingWillTake_e" sourceRef="T_34" targetRef="BP16.07_ReadWhatApplyingWillTake_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_35" name="Application impact answered">
+      <bpmn:incoming>SF_BP16.07_ReadWhatApplyingWillTake_End_35</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="applyIn" name="Application requested">
+      <bpmn:outgoing>SF_applyIn_BP16.04_ApplyAdvisorProposals</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_applyIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.04_ApplyAdvisorProposals" name="Apply advisor proposals">
+      <bpmn:incoming>SF_applyIn_BP16.04_ApplyAdvisorProposals</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.04_ApplyAdvisorProposals_End_40</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.04_ApplyAdvisorProposals_s" name="Start">
+        <bpmn:outgoing>SF_BP16.04_ApplyAdvisorProposals_s_T_36</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_36" name="Take the approved proposals in order">
+        <bpmn:incoming>SF_BP16.04_ApplyAdvisorProposals_s_T_36</bpmn:incoming>
+        <bpmn:outgoing>SF_T_36_T_37</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_37" name="Run the user's own operation for each, carrying the approval given">
+        <bpmn:incoming>SF_T_36_T_37</bpmn:incoming>
+        <bpmn:outgoing>SF_T_37_T_38</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_38" name="Write each proposal completely">
+        <bpmn:incoming>SF_T_37_T_38</bpmn:incoming>
+        <bpmn:outgoing>SF_T_38_T_39</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_39" name="Report what was applied and where it landed">
+        <bpmn:incoming>SF_T_38_T_39</bpmn:incoming>
+        <bpmn:outgoing>SF_T_39_BP16.04_ApplyAdvisorProposals_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.04_ApplyAdvisorProposals_e" name="fertig">
+        <bpmn:incoming>SF_T_39_BP16.04_ApplyAdvisorProposals_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_36_T_37" sourceRef="T_36" targetRef="T_37" />
+      <bpmn:sequenceFlow id="SF_T_37_T_38" sourceRef="T_37" targetRef="T_38" />
+      <bpmn:sequenceFlow id="SF_T_38_T_39" sourceRef="T_38" targetRef="T_39" />
+      <bpmn:sequenceFlow id="SF_BP16.04_ApplyAdvisorProposals_s_T_36" sourceRef="BP16.04_ApplyAdvisorProposals_s" targetRef="T_36" />
+      <bpmn:sequenceFlow id="SF_T_39_BP16.04_ApplyAdvisorProposals_e" sourceRef="T_39" targetRef="BP16.04_ApplyAdvisorProposals_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_40" name="Application answered">
+      <bpmn:incoming>SF_BP16.04_ApplyAdvisorProposals_End_40</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="dismissIn" name="Dismissal requested">
+      <bpmn:outgoing>SF_dismissIn_BP16.05_DismissAdvisorProposals</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_dismissIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.05_DismissAdvisorProposals" name="Dismiss advisor proposals">
+      <bpmn:incoming>SF_dismissIn_BP16.05_DismissAdvisorProposals</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.05_DismissAdvisorProposals_End_43</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.05_DismissAdvisorProposals_s" name="Start">
+        <bpmn:outgoing>SF_BP16.05_DismissAdvisorProposals_s_T_41</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_41" name="Take the still-outstanding proposals in order">
+        <bpmn:incoming>SF_BP16.05_DismissAdvisorProposals_s_T_41</bpmn:incoming>
+        <bpmn:outgoing>SF_T_41_T_42</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_42" name="Close each as dismissed">
+        <bpmn:incoming>SF_T_41_T_42</bpmn:incoming>
+        <bpmn:outgoing>SF_T_42_BP16.05_DismissAdvisorProposals_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.05_DismissAdvisorProposals_e" name="fertig">
+        <bpmn:incoming>SF_T_42_BP16.05_DismissAdvisorProposals_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_41_T_42" sourceRef="T_41" targetRef="T_42" />
+      <bpmn:sequenceFlow id="SF_BP16.05_DismissAdvisorProposals_s_T_41" sourceRef="BP16.05_DismissAdvisorProposals_s" targetRef="T_41" />
+      <bpmn:sequenceFlow id="SF_T_42_BP16.05_DismissAdvisorProposals_e" sourceRef="T_42" targetRef="BP16.05_DismissAdvisorProposals_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_43" name="Dismissal answered">
+      <bpmn:incoming>SF_BP16.05_DismissAdvisorProposals_End_43</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="clearIn" name="Clear requested">
+      <bpmn:outgoing>SF_clearIn_BP16.06_ClearTheConversation</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_clearIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP16.06_ClearTheConversation" name="Clear the conversation">
+      <bpmn:incoming>SF_clearIn_BP16.06_ClearTheConversation</bpmn:incoming>
+      <bpmn:outgoing>SF_BP16.06_ClearTheConversation_End_45</bpmn:outgoing>
+      <bpmn:startEvent id="BP16.06_ClearTheConversation_s" name="Start">
+        <bpmn:outgoing>SF_BP16.06_ClearTheConversation_s_T_44</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_44" name="Drop the conversation and its outstanding proposals">
+        <bpmn:incoming>SF_BP16.06_ClearTheConversation_s_T_44</bpmn:incoming>
+        <bpmn:outgoing>SF_T_44_BP16.06_ClearTheConversation_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP16.06_ClearTheConversation_e" name="fertig">
+        <bpmn:incoming>SF_T_44_BP16.06_ClearTheConversation_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP16.06_ClearTheConversation_s_T_44" sourceRef="BP16.06_ClearTheConversation_s" targetRef="T_44" />
+      <bpmn:sequenceFlow id="SF_T_44_BP16.06_ClearTheConversation_e" sourceRef="T_44" targetRef="BP16.06_ClearTheConversation_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_45" name="Clear answered">
+      <bpmn:incoming>SF_BP16.06_ClearTheConversation_End_45</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_questionDraftIn_BP16.08_DraftTheQuestion" sourceRef="questionDraftIn" targetRef="BP16.08_DraftTheQuestion" />
+    <bpmn:sequenceFlow id="SF_BP16.08_DraftTheQuestion_End_16" sourceRef="BP16.08_DraftTheQuestion" targetRef="End_16" />
+    <bpmn:sequenceFlow id="SF_openIn_BP16.01_OpenTheAdvisorConversation" sourceRef="openIn" targetRef="BP16.01_OpenTheAdvisorConversation" />
+    <bpmn:sequenceFlow id="SF_BP16.01_OpenTheAdvisorConversation_End_20" sourceRef="BP16.01_OpenTheAdvisorConversation" targetRef="End_20" />
+    <bpmn:sequenceFlow id="SF_askIn_BP16.02_AskTheAdvisor" sourceRef="askIn" targetRef="BP16.02_AskTheAdvisor" />
+    <bpmn:sequenceFlow id="SF_BP16.02_AskTheAdvisor_End_24" sourceRef="BP16.02_AskTheAdvisor" targetRef="End_24" />
+    <bpmn:sequenceFlow id="SF_answerIn_BP16.03_TakeTheAdvisorsAnswer" sourceRef="answerIn" targetRef="BP16.03_TakeTheAdvisorsAnswer" />
+    <bpmn:sequenceFlow id="SF_BP16.03_TakeTheAdvisorsAnswer_End_30" sourceRef="BP16.03_TakeTheAdvisorsAnswer" targetRef="End_30" />
+    <bpmn:sequenceFlow id="SF_applyImpactIn_BP16.07_ReadWhatApplyingWillTake" sourceRef="applyImpactIn" targetRef="BP16.07_ReadWhatApplyingWillTake" />
+    <bpmn:sequenceFlow id="SF_BP16.07_ReadWhatApplyingWillTake_End_35" sourceRef="BP16.07_ReadWhatApplyingWillTake" targetRef="End_35" />
+    <bpmn:sequenceFlow id="SF_applyIn_BP16.04_ApplyAdvisorProposals" sourceRef="applyIn" targetRef="BP16.04_ApplyAdvisorProposals" />
+    <bpmn:sequenceFlow id="SF_BP16.04_ApplyAdvisorProposals_End_40" sourceRef="BP16.04_ApplyAdvisorProposals" targetRef="End_40" />
+    <bpmn:sequenceFlow id="SF_dismissIn_BP16.05_DismissAdvisorProposals" sourceRef="dismissIn" targetRef="BP16.05_DismissAdvisorProposals" />
+    <bpmn:sequenceFlow id="SF_BP16.05_DismissAdvisorProposals_End_43" sourceRef="BP16.05_DismissAdvisorProposals" targetRef="End_43" />
+    <bpmn:sequenceFlow id="SF_clearIn_BP16.06_ClearTheConversation" sourceRef="clearIn" targetRef="BP16.06_ClearTheConversation" />
+    <bpmn:sequenceFlow id="SF_BP16.06_ClearTheConversation_End_45" sourceRef="BP16.06_ClearTheConversation" targetRef="End_45" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor">
+    <bpmndi:BPMNPlane id="P_BP16_ConsultTheAdvisor" bpmnElement="Collaboration_BP16_ConsultTheAdvisor">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1920" height="740" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Advisor_di" bpmnElement="Participant_Advisor" isHorizontal="true">
+        <dc:Bounds x="160" y="860" width="1920" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="1160" width="1920" height="740" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="panel_di" bpmnElement="panel">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="conversation_di" bpmnElement="conversation">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="working_di" bpmnElement="working">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_2_di" bpmnElement="Gw_2">
+        <dc:Bounds x="925" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="1240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="answer_di" bpmnElement="answer">
+        <dc:Bounds x="1782" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="1070" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="applyImpact_di" bpmnElement="applyImpact">
+        <dc:Bounds x="1272" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_6_di" bpmnElement="Gw_6">
+        <dc:Bounds x="1435" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="1580" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="applied_di" bpmnElement="applied">
+        <dc:Bounds x="1782" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="1580" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="1070" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="dismissed_di" bpmnElement="dismissed">
+        <dc:Bounds x="1272" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_10_di" bpmnElement="T_10">
+        <dc:Bounds x="1070" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="cleared_di" bpmnElement="cleared">
+        <dc:Bounds x="1272" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="1070" y="640" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_12_di" bpmnElement="End_12">
+        <dc:Bounds x="1272" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="adviceIn_di" bpmnElement="adviceIn">
+        <dc:Bounds x="1442" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="1580" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_14_di" bpmnElement="End_14">
+        <dc:Bounds x="1782" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="questionDraftIn_di" bpmnElement="questionDraftIn">
+        <dc:Bounds x="1102" y="1262" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1303" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.08_DraftTheQuestion_di" bpmnElement="BP16.08_DraftTheQuestion" isExpanded="false">
+        <dc:Bounds x="1220" y="1235" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_16_di" bpmnElement="End_16">
+        <dc:Bounds x="1442" y="1262" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1303" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="openIn_di" bpmnElement="openIn">
+        <dc:Bounds x="422" y="1262" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1303" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.01_OpenTheAdvisorConversation_di" bpmnElement="BP16.01_OpenTheAdvisorConversation" isExpanded="false">
+        <dc:Bounds x="540" y="1235" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_20_di" bpmnElement="End_20">
+        <dc:Bounds x="762" y="1262" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1303" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="askIn_di" bpmnElement="askIn">
+        <dc:Bounds x="1272" y="1382" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="1423" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.02_AskTheAdvisor_di" bpmnElement="BP16.02_AskTheAdvisor" isExpanded="false">
+        <dc:Bounds x="1390" y="1355" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_24_di" bpmnElement="End_24">
+        <dc:Bounds x="1612" y="1382" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="1423" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="answerIn_di" bpmnElement="answerIn">
+        <dc:Bounds x="1612" y="1262" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="1303" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.03_TakeTheAdvisorsAnswer_di" bpmnElement="BP16.03_TakeTheAdvisorsAnswer" isExpanded="false">
+        <dc:Bounds x="1730" y="1235" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_30_di" bpmnElement="End_30">
+        <dc:Bounds x="1952" y="1262" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="1303" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="applyImpactIn_di" bpmnElement="applyImpactIn">
+        <dc:Bounds x="1102" y="1382" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1423" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.07_ReadWhatApplyingWillTake_di" bpmnElement="BP16.07_ReadWhatApplyingWillTake" isExpanded="false">
+        <dc:Bounds x="1220" y="1475" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_35_di" bpmnElement="End_35">
+        <dc:Bounds x="1442" y="1502" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1543" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="applyIn_di" bpmnElement="applyIn">
+        <dc:Bounds x="1612" y="1502" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="1543" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.04_ApplyAdvisorProposals_di" bpmnElement="BP16.04_ApplyAdvisorProposals" isExpanded="false">
+        <dc:Bounds x="1730" y="1475" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_40_di" bpmnElement="End_40">
+        <dc:Bounds x="1952" y="1502" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="1543" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="dismissIn_di" bpmnElement="dismissIn">
+        <dc:Bounds x="1102" y="1502" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1543" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.05_DismissAdvisorProposals_di" bpmnElement="BP16.05_DismissAdvisorProposals" isExpanded="false">
+        <dc:Bounds x="1220" y="1595" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_43_di" bpmnElement="End_43">
+        <dc:Bounds x="1442" y="1622" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1663" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="clearIn_di" bpmnElement="clearIn">
+        <dc:Bounds x="1102" y="1622" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1663" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.06_ClearTheConversation_di" bpmnElement="BP16.06_ClearTheConversation" isExpanded="false">
+        <dc:Bounds x="1220" y="1715" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_45_di" bpmnElement="End_45">
+        <dc:Bounds x="1442" y="1742" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1783" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_panel_di" bpmnElement="SF_Start_1_panel">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_panel_conversation_di" bpmnElement="SF_panel_conversation">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_conversation_working_di" bpmnElement="SF_conversation_working">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_working_Gw_2_di" bpmnElement="SF_working_Gw_2">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="925" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_T_4_di" bpmnElement="SF_T_3_T_4">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_answer_di" bpmnElement="SF_T_4_answer">
+        <di:waypoint x="1340" y="200" />
+        <di:waypoint x="1782" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_3_di" bpmnElement="SF_Gw_2_T_3">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_applyImpact_di" bpmnElement="SF_T_5_applyImpact">
+        <di:waypoint x="1170" y="320" />
+        <di:waypoint x="1272" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_applyImpact_Gw_6_di" bpmnElement="SF_applyImpact_Gw_6">
+        <di:waypoint x="1308" y="320" />
+        <di:waypoint x="1435" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_applied_di" bpmnElement="SF_T_7_applied">
+        <di:waypoint x="1680" y="320" />
+        <di:waypoint x="1782" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_6_T_7_di" bpmnElement="SF_Gw_6_T_7">
+        <di:waypoint x="1485" y="320" />
+        <di:waypoint x="1580" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_6_T_8_di" bpmnElement="SF_Gw_6_T_8">
+        <di:waypoint x="1485" y="320" />
+        <di:waypoint x="1515" y="320" />
+        <di:waypoint x="1515" y="440" />
+        <di:waypoint x="1580" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_5_di" bpmnElement="SF_Gw_2_T_5">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1005" y="200" />
+        <di:waypoint x="1005" y="320" />
+        <di:waypoint x="1070" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_dismissed_di" bpmnElement="SF_T_9_dismissed">
+        <di:waypoint x="1170" y="440" />
+        <di:waypoint x="1272" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_9_di" bpmnElement="SF_Gw_2_T_9">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1005" y="200" />
+        <di:waypoint x="1005" y="440" />
+        <di:waypoint x="1070" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_10_cleared_di" bpmnElement="SF_T_10_cleared">
+        <di:waypoint x="1170" y="560" />
+        <di:waypoint x="1272" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_10_di" bpmnElement="SF_Gw_2_T_10">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1005" y="200" />
+        <di:waypoint x="1005" y="560" />
+        <di:waypoint x="1070" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_11_di" bpmnElement="SF_Gw_2_T_11">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1005" y="200" />
+        <di:waypoint x="1005" y="680" />
+        <di:waypoint x="1070" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_End_12_di" bpmnElement="SF_T_11_End_12">
+        <di:waypoint x="1170" y="680" />
+        <di:waypoint x="1272" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_answer_working_di" bpmnElement="SF_answer_working">
+        <di:waypoint x="1818" y="200" />
+        <di:waypoint x="1545" y="200" />
+        <di:waypoint x="1545" y="151" />
+        <di:waypoint x="780" y="151" />
+        <di:waypoint x="780" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_applied_working_di" bpmnElement="SF_applied_working">
+        <di:waypoint x="1818" y="320" />
+        <di:waypoint x="1885" y="320" />
+        <di:waypoint x="1885" y="273" />
+        <di:waypoint x="780" y="273" />
+        <di:waypoint x="780" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_working_di" bpmnElement="SF_T_8_working">
+        <di:waypoint x="1680" y="440" />
+        <di:waypoint x="1375" y="440" />
+        <di:waypoint x="1375" y="151" />
+        <di:waypoint x="780" y="151" />
+        <di:waypoint x="780" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_dismissed_working_di" bpmnElement="SF_dismissed_working">
+        <di:waypoint x="1308" y="440" />
+        <di:waypoint x="1375" y="440" />
+        <di:waypoint x="1375" y="151" />
+        <di:waypoint x="780" y="151" />
+        <di:waypoint x="780" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_cleared_working_di" bpmnElement="SF_cleared_working">
+        <di:waypoint x="1308" y="560" />
+        <di:waypoint x="1375" y="560" />
+        <di:waypoint x="1375" y="151" />
+        <di:waypoint x="780" y="151" />
+        <di:waypoint x="780" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_adviceIn_T_13_di" bpmnElement="SF_adviceIn_T_13">
+        <di:waypoint x="1478" y="980" />
+        <di:waypoint x="1580" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_End_14_di" bpmnElement="SF_T_13_End_14">
+        <di:waypoint x="1680" y="980" />
+        <di:waypoint x="1782" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_questionDraftIn_BP16.08_DraftTheQuestion_di" bpmnElement="SF_questionDraftIn_BP16.08_DraftTheQuestion">
+        <di:waypoint x="1138" y="1280" />
+        <di:waypoint x="1220" y="1280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.08_DraftTheQuestion_End_16_di" bpmnElement="SF_BP16.08_DraftTheQuestion_End_16">
+        <di:waypoint x="1360" y="1280" />
+        <di:waypoint x="1442" y="1280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_openIn_BP16.01_OpenTheAdvisorConversation_di" bpmnElement="SF_openIn_BP16.01_OpenTheAdvisorConversation">
+        <di:waypoint x="458" y="1280" />
+        <di:waypoint x="540" y="1280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.01_OpenTheAdvisorConversation_End_20_di" bpmnElement="SF_BP16.01_OpenTheAdvisorConversation_End_20">
+        <di:waypoint x="680" y="1280" />
+        <di:waypoint x="762" y="1280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_askIn_BP16.02_AskTheAdvisor_di" bpmnElement="SF_askIn_BP16.02_AskTheAdvisor">
+        <di:waypoint x="1308" y="1400" />
+        <di:waypoint x="1390" y="1400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.02_AskTheAdvisor_End_24_di" bpmnElement="SF_BP16.02_AskTheAdvisor_End_24">
+        <di:waypoint x="1530" y="1400" />
+        <di:waypoint x="1612" y="1400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_answerIn_BP16.03_TakeTheAdvisorsAnswer_di" bpmnElement="SF_answerIn_BP16.03_TakeTheAdvisorsAnswer">
+        <di:waypoint x="1648" y="1280" />
+        <di:waypoint x="1730" y="1280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.03_TakeTheAdvisorsAnswer_End_30_di" bpmnElement="SF_BP16.03_TakeTheAdvisorsAnswer_End_30">
+        <di:waypoint x="1870" y="1280" />
+        <di:waypoint x="1952" y="1280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_applyImpactIn_BP16.07_ReadWhatApplyingWillTake_di" bpmnElement="SF_applyImpactIn_BP16.07_ReadWhatApplyingWillTake">
+        <di:waypoint x="1138" y="1400" />
+        <di:waypoint x="1168" y="1400" />
+        <di:waypoint x="1168" y="1520" />
+        <di:waypoint x="1220" y="1520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.07_ReadWhatApplyingWillTake_End_35_di" bpmnElement="SF_BP16.07_ReadWhatApplyingWillTake_End_35">
+        <di:waypoint x="1360" y="1520" />
+        <di:waypoint x="1442" y="1520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_applyIn_BP16.04_ApplyAdvisorProposals_di" bpmnElement="SF_applyIn_BP16.04_ApplyAdvisorProposals">
+        <di:waypoint x="1648" y="1520" />
+        <di:waypoint x="1730" y="1520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.04_ApplyAdvisorProposals_End_40_di" bpmnElement="SF_BP16.04_ApplyAdvisorProposals_End_40">
+        <di:waypoint x="1870" y="1520" />
+        <di:waypoint x="1952" y="1520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_dismissIn_BP16.05_DismissAdvisorProposals_di" bpmnElement="SF_dismissIn_BP16.05_DismissAdvisorProposals">
+        <di:waypoint x="1138" y="1520" />
+        <di:waypoint x="1168" y="1520" />
+        <di:waypoint x="1168" y="1640" />
+        <di:waypoint x="1220" y="1640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.05_DismissAdvisorProposals_End_43_di" bpmnElement="SF_BP16.05_DismissAdvisorProposals_End_43">
+        <di:waypoint x="1360" y="1640" />
+        <di:waypoint x="1442" y="1640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_clearIn_BP16.06_ClearTheConversation_di" bpmnElement="SF_clearIn_BP16.06_ClearTheConversation">
+        <di:waypoint x="1138" y="1640" />
+        <di:waypoint x="1168" y="1640" />
+        <di:waypoint x="1168" y="1760" />
+        <di:waypoint x="1220" y="1760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.06_ClearTheConversation_End_45_di" bpmnElement="SF_BP16.06_ClearTheConversation_End_45">
+        <di:waypoint x="1360" y="1760" />
+        <di:waypoint x="1442" y="1760" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="1262" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1110" y="240" />
+        <di:waypoint x="1110" y="252" />
+        <di:waypoint x="1195" y="252" />
+        <di:waypoint x="1195" y="1250" />
+        <di:waypoint x="1110" y="1250" />
+        <di:waypoint x="1110" y="1262" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="1280" y="240" />
+        <di:waypoint x="1280" y="252" />
+        <di:waypoint x="1365" y="252" />
+        <di:waypoint x="1365" y="1370" />
+        <di:waypoint x="1280" y="1370" />
+        <di:waypoint x="1280" y="1382" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="1115" y="360" />
+        <di:waypoint x="1115" y="372" />
+        <di:waypoint x="1200" y="372" />
+        <di:waypoint x="1200" y="1370" />
+        <di:waypoint x="1115" y="1370" />
+        <di:waypoint x="1115" y="1382" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="1625" y="360" />
+        <di:waypoint x="1625" y="372" />
+        <di:waypoint x="1540" y="372" />
+        <di:waypoint x="1540" y="1490" />
+        <di:waypoint x="1625" y="1490" />
+        <di:waypoint x="1625" y="1502" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="1125" y="480" />
+        <di:waypoint x="1125" y="492" />
+        <di:waypoint x="1210" y="492" />
+        <di:waypoint x="1210" y="1490" />
+        <di:waypoint x="1125" y="1490" />
+        <di:waypoint x="1125" y="1502" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="1130" y="600" />
+        <di:waypoint x="1130" y="612" />
+        <di:waypoint x="1215" y="612" />
+        <di:waypoint x="1215" y="1610" />
+        <di:waypoint x="1130" y="1610" />
+        <di:waypoint x="1130" y="1622" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="1635" y="1020" />
+        <di:waypoint x="1635" y="1262" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="610" y="1235" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="1460" y="1355" />
+        <di:waypoint x="1545" y="1355" />
+        <di:waypoint x="1545" y="1010" />
+        <di:waypoint x="1460" y="1010" />
+        <di:waypoint x="1460" y="998" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_11_di" bpmnElement="MF_11">
+        <di:waypoint x="1795" y="1235" />
+        <di:waypoint x="1795" y="1223" />
+        <di:waypoint x="1880" y="1223" />
+        <di:waypoint x="1880" y="230" />
+        <di:waypoint x="1795" y="230" />
+        <di:waypoint x="1795" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_12_di" bpmnElement="MF_12">
+        <di:waypoint x="1285" y="1475" />
+        <di:waypoint x="1370" y="1475" />
+        <di:waypoint x="1370" y="350" />
+        <di:waypoint x="1285" y="350" />
+        <di:waypoint x="1285" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_13_di" bpmnElement="MF_13">
+        <di:waypoint x="1805" y="1475" />
+        <di:waypoint x="1805" y="1463" />
+        <di:waypoint x="2060" y="1463" />
+        <di:waypoint x="2060" y="350" />
+        <di:waypoint x="1805" y="350" />
+        <di:waypoint x="1805" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_14_di" bpmnElement="MF_14">
+        <di:waypoint x="1295" y="1595" />
+        <di:waypoint x="1295" y="1583" />
+        <di:waypoint x="1380" y="1583" />
+        <di:waypoint x="1380" y="470" />
+        <di:waypoint x="1295" y="470" />
+        <di:waypoint x="1295" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_15_di" bpmnElement="MF_15">
+        <di:waypoint x="1300" y="1715" />
+        <di:waypoint x="1300" y="1703" />
+        <di:waypoint x="1385" y="1703" />
+        <di:waypoint x="1385" y="590" />
+        <di:waypoint x="1300" y="590" />
+        <di:waypoint x="1300" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="490" y="87" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="610" y="182" /><di:waypoint x="610" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1170" y="42" width="240" height="106" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1290" y="302" /><di:waypoint x="1290" y="292" /><di:waypoint x="1230" y="292" /><di:waypoint x="1230" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1170" y="-46" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1290" y="542" /><di:waypoint x="1290" y="532" /><di:waypoint x="1420" y="532" /><di:waypoint x="1420" y="-8" /><di:waypoint x="1410" y="-8" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="1510" y="222" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="1630" y="400" /><di:waypoint x="1630" y="390" /><di:waypoint x="1570" y="390" /><di:waypoint x="1570" y="268" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="1680" y="86" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="1800" y="182" /><di:waypoint x="1800" y="162" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="1680" y="13" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="1800" y="302" /><di:waypoint x="1800" y="292" /><di:waypoint x="1930" y="292" /><di:waypoint x="1930" y="44" /><di:waypoint x="1920" y="44" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="490" y="1345" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="610" y="1325" /><di:waypoint x="610" y="1345" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X8_di" bpmnElement="TextAnnotation_X8"><dc:Bounds x="1170" y="1817" width="240" height="121" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X8_di" bpmnElement="Association_X8"><di:waypoint x="1290" y="1325" /><di:waypoint x="1290" y="1335" /><di:waypoint x="1210" y="1335" /><di:waypoint x="1210" y="1817" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X9_di" bpmnElement="TextAnnotation_X9"><dc:Bounds x="1170" y="1950" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X9_di" bpmnElement="Association_X9"><di:waypoint x="1290" y="1565" /><di:waypoint x="1290" y="1575" /><di:waypoint x="1160" y="1575" /><di:waypoint x="1160" y="1996" /><di:waypoint x="1170" y="1996" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X10_di" bpmnElement="TextAnnotation_X10"><dc:Bounds x="1170" y="2053" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X10_di" bpmnElement="Association_X10"><di:waypoint x="1290" y="1685" /><di:waypoint x="1290" y="1695" /><di:waypoint x="1160" y="1695" /><di:waypoint x="1160" y="2091" /><di:waypoint x="1170" y="2091" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X11_di" bpmnElement="TextAnnotation_X11"><dc:Bounds x="1170" y="2141" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X11_di" bpmnElement="Association_X11"><di:waypoint x="1290" y="1805" /><di:waypoint x="1160" y="1805" /><di:waypoint x="1160" y="2172" /><di:waypoint x="1170" y="2172" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X12_di" bpmnElement="TextAnnotation_X12"><dc:Bounds x="1340" y="2214" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X12_di" bpmnElement="Association_X12"><di:waypoint x="1460" y="1445" /><di:waypoint x="1460" y="1455" /><di:waypoint x="1439" y="1455" /><di:waypoint x="1439" y="2214" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X13_di" bpmnElement="TextAnnotation_X13"><dc:Bounds x="1680" y="1345" width="240" height="106" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X13_di" bpmnElement="Association_X13"><di:waypoint x="1800" y="1325" /><di:waypoint x="1800" y="1345" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X14_di" bpmnElement="TextAnnotation_X14"><dc:Bounds x="1680" y="1585" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X14_di" bpmnElement="Association_X14"><di:waypoint x="1800" y="1565" /><di:waypoint x="1800" y="1585" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1608DraftTheQuestion">
+    <bpmndi:BPMNPlane id="P_BP1608DraftTheQuestion" bpmnElement="BP16.08_DraftTheQuestion">
+      <bpmndi:BPMNShape id="BP16.08_DraftTheQuestion_s_di" bpmnElement="BP16.08_DraftTheQuestion_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.08_DraftTheQuestion_e_di" bpmnElement="BP16.08_DraftTheQuestion_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP16.08_DraftTheQuestion_s_T_15_di" bpmnElement="SF_BP16.08_DraftTheQuestion_s_T_15">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_BP16.08_DraftTheQuestion_e_di" bpmnElement="SF_T_15_BP16.08_DraftTheQuestion_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1601OpenTheAdvisorConversation">
+    <bpmndi:BPMNPlane id="P_BP1601OpenTheAdvisorConversation" bpmnElement="BP16.01_OpenTheAdvisorConversation">
+      <bpmndi:BPMNShape id="BP16.01_OpenTheAdvisorConversation_s_di" bpmnElement="BP16.01_OpenTheAdvisorConversation_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_17_di" bpmnElement="T_17">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_19_di" bpmnElement="T_19">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.01_OpenTheAdvisorConversation_e_di" bpmnElement="BP16.01_OpenTheAdvisorConversation_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_17_T_18_di" bpmnElement="SF_T_17_T_18">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_T_19_di" bpmnElement="SF_T_18_T_19">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.01_OpenTheAdvisorConversation_s_T_17_di" bpmnElement="SF_BP16.01_OpenTheAdvisorConversation_s_T_17">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_19_BP16.01_OpenTheAdvisorConversation_e_di" bpmnElement="SF_T_19_BP16.01_OpenTheAdvisorConversation_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1602AskTheAdvisor">
+    <bpmndi:BPMNPlane id="P_BP1602AskTheAdvisor" bpmnElement="BP16.02_AskTheAdvisor">
+      <bpmndi:BPMNShape id="BP16.02_AskTheAdvisor_s_di" bpmnElement="BP16.02_AskTheAdvisor_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_22_di" bpmnElement="T_22">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.02_AskTheAdvisor_e_di" bpmnElement="BP16.02_AskTheAdvisor_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_21_T_22_di" bpmnElement="SF_T_21_T_22">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_22_T_23_di" bpmnElement="SF_T_22_T_23">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.02_AskTheAdvisor_s_T_21_di" bpmnElement="SF_BP16.02_AskTheAdvisor_s_T_21">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_23_BP16.02_AskTheAdvisor_e_di" bpmnElement="SF_T_23_BP16.02_AskTheAdvisor_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1603TakeTheAdvisorsAnswer">
+    <bpmndi:BPMNPlane id="P_BP1603TakeTheAdvisorsAnswer" bpmnElement="BP16.03_TakeTheAdvisorsAnswer">
+      <bpmndi:BPMNShape id="BP16.03_TakeTheAdvisorsAnswer_s_di" bpmnElement="BP16.03_TakeTheAdvisorsAnswer_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_25_di" bpmnElement="Gw_25">
+        <dc:Bounds x="415" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_27_di" bpmnElement="T_27">
+        <dc:Bounds x="560" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_28_di" bpmnElement="T_28">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_29_di" bpmnElement="T_29">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.03_TakeTheAdvisorsAnswer_e_di" bpmnElement="BP16.03_TakeTheAdvisorsAnswer_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Gw_25_T_26_di" bpmnElement="SF_Gw_25_T_26">
+        <di:waypoint x="465" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_25_T_27_di" bpmnElement="SF_Gw_25_T_27">
+        <di:waypoint x="465" y="200" />
+        <di:waypoint x="495" y="200" />
+        <di:waypoint x="495" y="320" />
+        <di:waypoint x="560" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_26_T_28_di" bpmnElement="SF_T_26_T_28">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_27_T_28_di" bpmnElement="SF_T_27_T_28">
+        <di:waypoint x="660" y="320" />
+        <di:waypoint x="690" y="320" />
+        <di:waypoint x="690" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_28_T_29_di" bpmnElement="SF_T_28_T_29">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.03_TakeTheAdvisorsAnswer_s_Gw_25_di" bpmnElement="SF_BP16.03_TakeTheAdvisorsAnswer_s_Gw_25">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="415" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_29_BP16.03_TakeTheAdvisorsAnswer_e_di" bpmnElement="SF_T_29_BP16.03_TakeTheAdvisorsAnswer_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1607ReadWhatApplyingWillTake">
+    <bpmndi:BPMNPlane id="P_BP1607ReadWhatApplyingWillTake" bpmnElement="BP16.07_ReadWhatApplyingWillTake">
+      <bpmndi:BPMNShape id="BP16.07_ReadWhatApplyingWillTake_s_di" bpmnElement="BP16.07_ReadWhatApplyingWillTake_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_31_di" bpmnElement="T_31">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_32_di" bpmnElement="T_32">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_33_di" bpmnElement="T_33">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_34_di" bpmnElement="T_34">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.07_ReadWhatApplyingWillTake_e_di" bpmnElement="BP16.07_ReadWhatApplyingWillTake_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_31_T_32_di" bpmnElement="SF_T_31_T_32">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_32_T_33_di" bpmnElement="SF_T_32_T_33">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_33_T_34_di" bpmnElement="SF_T_33_T_34">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.07_ReadWhatApplyingWillTake_s_T_31_di" bpmnElement="SF_BP16.07_ReadWhatApplyingWillTake_s_T_31">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_34_BP16.07_ReadWhatApplyingWillTake_e_di" bpmnElement="SF_T_34_BP16.07_ReadWhatApplyingWillTake_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1604ApplyAdvisorProposals">
+    <bpmndi:BPMNPlane id="P_BP1604ApplyAdvisorProposals" bpmnElement="BP16.04_ApplyAdvisorProposals">
+      <bpmndi:BPMNShape id="BP16.04_ApplyAdvisorProposals_s_di" bpmnElement="BP16.04_ApplyAdvisorProposals_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_36_di" bpmnElement="T_36">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_37_di" bpmnElement="T_37">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_38_di" bpmnElement="T_38">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_39_di" bpmnElement="T_39">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.04_ApplyAdvisorProposals_e_di" bpmnElement="BP16.04_ApplyAdvisorProposals_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_36_T_37_di" bpmnElement="SF_T_36_T_37">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_37_T_38_di" bpmnElement="SF_T_37_T_38">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_38_T_39_di" bpmnElement="SF_T_38_T_39">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.04_ApplyAdvisorProposals_s_T_36_di" bpmnElement="SF_BP16.04_ApplyAdvisorProposals_s_T_36">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_39_BP16.04_ApplyAdvisorProposals_e_di" bpmnElement="SF_T_39_BP16.04_ApplyAdvisorProposals_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1605DismissAdvisorProposals">
+    <bpmndi:BPMNPlane id="P_BP1605DismissAdvisorProposals" bpmnElement="BP16.05_DismissAdvisorProposals">
+      <bpmndi:BPMNShape id="BP16.05_DismissAdvisorProposals_s_di" bpmnElement="BP16.05_DismissAdvisorProposals_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_41_di" bpmnElement="T_41">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_42_di" bpmnElement="T_42">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.05_DismissAdvisorProposals_e_di" bpmnElement="BP16.05_DismissAdvisorProposals_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_41_T_42_di" bpmnElement="SF_T_41_T_42">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP16.05_DismissAdvisorProposals_s_T_41_di" bpmnElement="SF_BP16.05_DismissAdvisorProposals_s_T_41">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_42_BP16.05_DismissAdvisorProposals_e_di" bpmnElement="SF_T_42_BP16.05_DismissAdvisorProposals_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP16_ConsultTheAdvisor_BP1606ClearTheConversation">
+    <bpmndi:BPMNPlane id="P_BP1606ClearTheConversation" bpmnElement="BP16.06_ClearTheConversation">
+      <bpmndi:BPMNShape id="BP16.06_ClearTheConversation_s_di" bpmnElement="BP16.06_ClearTheConversation_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_44_di" bpmnElement="T_44">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP16.06_ClearTheConversation_e_di" bpmnElement="BP16.06_ClearTheConversation_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP16.06_ClearTheConversation_s_T_44_di" bpmnElement="SF_BP16.06_ClearTheConversation_s_T_44">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_44_BP16.06_ClearTheConversation_e_di" bpmnElement="SF_T_44_BP16.06_ClearTheConversation_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

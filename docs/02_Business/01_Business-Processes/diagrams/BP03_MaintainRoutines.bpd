@@ -1,0 +1,165 @@
+@startbpmn BP03_MaintainRoutines
+lang en
+
+output L1 "01_detailed/BP03_MaintainRoutines.bpmn"
+output L2 "02_detailed/BP03_MaintainRoutines.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a routine requires exactly one theme: BR-02
+'   - a routine is not archivable; it is paused or deleted: BR-23
+'   - four recurrence patterns, no fifth, plus preferred days: BR-94
+'   - the schedule computes due and overdue and never creates a task: BR-91
+'   - only selecting a routine creates its task, and at most one outstanding: BR-42
+'   - deleting a routine offers a cascade over the occurrences it already produced: BR-16
+'   - that cascade is declinable, so it is off by default: BR-19
+'   - a paused routine cannot be selected for a day: BR-43
+'   - a paused routine is neither due nor overdue, and paused days never become overdue: BR-91
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'
+' Call-site collapsing: pause and resume are one request with two variations, the way setting an
+' activity's state is one act in BP18. Defining and amending stay separate: one creates, the
+' other changes what exists.
+
+pool "User" {
+  start "A recurring practice needs attention"
+  task "Open a theme on the Themes tab" as themeOpen
+  send "Read a theme's routines" to listIn
+  receive "The theme's routines with their schedules" as list
+
+  if "What needs doing?" then "start a new practice"
+    :Name the routine and set its schedule;
+    multiInstance
+    send "Draft the routine input" to routineDraftIn
+    :Submit the new routine;
+    send "Define a routine" to defineIn
+    receive "Routine defined" as defined
+    note "The schedule is a recurrence pattern plus preferred days. It says when the routine is due; it never puts work on a board."
+
+  elseif "What needs doing?" then "change one"
+    :Amend the routine;
+    send "Amend a routine" to amendIn
+    receive "Routine amended" as amended
+
+  elseif "What needs doing?" then "put one on hold, or take it off hold"
+    :Toggle the routine active;
+    send "Pause or resume a routine" to activeIn
+    receive "Active state recorded" as activeSet
+    note "A paused routine stops being offered for a day's focus and stops being due or overdue. Any task it already produced stays where it is."
+
+  elseif "What needs doing?" then "reorder them"
+    :Drag a routine into place;
+    send "Reorder routines" to reorderIn
+    receive "Order recorded" as reordered
+
+  else "retire one for good"
+    :Choose a routine to delete;
+    send "See what deleting a routine takes" to impactIn
+    receive "What the deletion will take" as impact
+    if "Let the occurrences go too?" rule BR-19 then "yes, take them as well"
+      :Include the occurrences in the cascade;
+      goto confirmDeletion
+    elseif "Let the occurrences go too?" rule BR-19 then "no, leave them on Chores"
+      :Leave the occurrences out of the cascade;
+      note "The routine stops producing new ones either way."
+      goto confirmDeletion
+    else "abandon the deletion"
+      :Abandon the deletion;
+      note "Nothing is deleted and nothing is changed."
+      goto themeOpen
+    endif
+    task "Confirm the deletion" as confirmDeletion
+    send "Delete a routine" to deleteIn
+    receive "Routine deleted" as deleted
+    note "There is no in-app undo. Recovery is from version control."
+  endif
+
+  if "Anything else under this life area?" then "yes"
+    goto themeOpen
+  else "no"
+    :Leave the life area;
+  endif
+
+  end "Routines current"
+}
+
+system pool "Bearing" {
+  messageStart "Routine list requested" as listIn
+  call "BP03.01_ReadAThemesRoutines" "Read a theme's routines" {
+    :Read the theme's routines in their recorded order;
+    :Derive due and overdue from each active routine's schedule;
+    rule BR-91
+    :Leave the paused ones out of the computation;
+    rule BR-43
+  }
+  send "The theme's routines with their schedules" to list
+  note "Due and overdue are computed from the recurrence and the preferred days of the active routines. A paused routine is neither, and the days it spends paused never become overdue. The computation writes nothing."
+  end "Routine list answered"
+
+  messageStart "Routine draft submitted" as routineDraftIn
+  call "BP03.08_DraftTheRoutineInput" "Draft the routine input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Routine definition submitted" as defineIn
+  call "BP03.02_DefineRoutine" "Define a routine" {
+    :Store the routine under its theme;
+    rule BR-02
+    :Store its recurrence and preferred days;
+    rule BR-94
+    :Place it last in the theme's order;
+  }
+  send "Routine defined" to defined
+  note "The theme is required. The recurrence is Daily, Weekly, Monthly or Yearly."
+  end "Definition answered"
+
+  messageStart "Routine amendment requested" as amendIn
+  call "BP03.03_AmendRoutine" "Amend a routine" {
+    :Apply the name and schedule as given;
+    rule BR-94
+  }
+  send "Routine amended" to amended
+  end "Amendment answered"
+
+  messageStart "Active state submitted" as activeIn
+  call "BP03.04_SetRoutineActive" "Pause or resume a routine" {
+    :Record the routine's active state;
+    rule BR-43
+  }
+  send "Active state recorded" to activeSet
+  note "One request covers both directions. A paused routine leaves the focus selectables and the due computation, and returns to both on resume."
+  end "Active state answered"
+
+  messageStart "Routine reordering requested" as reorderIn
+  call "BP03.05_ReorderRoutines" "Reorder routines" {
+    :Record the new relative order within the theme;
+  }
+  send "Order recorded" to reordered
+  end "Reordering answered"
+
+  messageStart "Deletion impact requested" as impactIn
+  call "BP03.06_ReadTheDeletionImpact" "See what deleting a routine takes" {
+    :Collect the task occurrences the routine produced;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report what the deletion will take;
+    rule BR-19
+  }
+  send "What the deletion will take" to impact
+  note "The occurrences are a declinable cascade, so it starts off. Declining leaves them on Chores and stops the routine producing new ones."
+  end "Impact answered"
+
+  messageStart "Routine deletion requested" as deleteIn
+  call "BP03.07_DeleteRoutine" "Delete a routine" {
+    :Delete the occurrences the user included;
+    rule BR-16
+    :Delete the routine;
+  }
+  send "Routine deleted" to deleted
+  note "The request carries the cascade the user approved."
+  end "Deletion answered"
+}
+
+@endbpmn

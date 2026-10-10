@@ -1,0 +1,119 @@
+@startbpmn BP13_CloseOutTheDay
+lang en
+
+output L1 "01_detailed/BP13_CloseOutTheDay.bpmn"
+output L2 "02_detailed/BP13_CloseOutTheDay.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - what the day check-out captures, and that the user confirms rather than edits: BR-33
+'   - the board scope is the day's chosen boards; Chores is out of the account: BR-33, BR-107
+'   - a day with no focus has an empty account: BR-33, SA 2026-10-10
+'   - closing actions: archive the completed default ON, reset the open default OFF: BR-34
+'   - the archive action reaches Chores as well as the chosen boards: BR-34, SA 2026-10-10
+'   - still open means past Backlog and not Done, whenever it was last touched: BR-35
+'   - reset returns a task to the top of its Backlog bucket, rightmost column highest: BR-35
+'   - the check-out is idempotent per date: BR-36
+'   - day notes are drafted continuously, from the morning on: BR-37, BR-121
+'   - a day never checked out stays checkable out: BR-45
+'   - the day's log remains available as that day's explanation: BR-38
+'   - the check-out shape is observed, reflect, judge, opt-in closing actions, one gesture: BR-39
+'
+' Scope: this process settles one date. Choosing that date's boards and routines is BP08, and
+' reading an earlier day's log afterwards is BP09.
+'
+' Call-site collapsing: the two closing actions are not two requests. Each is a flag the one
+' close-out carries, so turning either on or off changes what that single write does. Checking
+' out today and checking out an earlier day are the same request with a different date.
+
+pool "User" {
+  start "A day to settle"
+  task "Open the day check-out" as checkOut
+  send "Read the day's account" to accountIn
+  receive "What is done and what is still open" as account
+
+  :Confirm the account as it stands;
+  note "Both lists are read from the boards as they stand, not from when anything moved. The user confirms them rather than editing them."
+
+  :Write the day notes;
+  multiInstance
+  send "Draft the day notes" to notesIn
+  receive "Notes drafted" as notesDrafted
+  note "The notes are a running journal started in the morning and finished in the evening, so the draft is current at every moment."
+
+  if "Archive what is in Done?" rule BR-34 then "yes, the default"
+    :Keep the archive action on;
+    note "The archive action takes every task in a Done column on the day's boards and on Chores."
+  else "no"
+    :Turn the archive action off;
+  endif
+
+  if "Reset what is still open?" rule BR-34 then "yes"
+    :Turn the reset action on;
+    note "Reset returns the task to the top of its Backlog bucket, where its triage re-opens."
+  else "no, the default"
+    :Leave the reset action off;
+  endif
+
+  task "Complete the check-out" as closing
+  send "Close out the day" to closeIn
+  receive "The day's log" as log
+  note "Running the check-out again on the same date updates that day's log rather than creating a second one."
+
+  end "Day settled"
+}
+
+system pool "Bearing" {
+  messageStart "Day account requested" as accountIn
+  call "BP13.01_ReadTheDaysAccount" "Read the day's account" {
+    :Read the boards the date's focus chose;
+    rule BR-33
+    :Collect the tasks currently in a Done column;
+    :Collect the tasks past Backlog and not Done;
+    rule BR-35
+    :Read the day notes drafted so far;
+    rule BR-37
+    :Report the account;
+    rule BR-39
+  }
+  send "What is done and what is still open" to account
+  note "Chores is out of the account even while it is in play: a chore being done is not progress on what was committed to. A date with no focus has an empty account. A date never checked out stays checkable out."
+  end "Account answered"
+
+  messageStart "Day notes drafted" as notesIn
+  call "BP13.02_DraftTheDayNotes" "Draft the day notes" {
+    :Keep the notes as a draft;
+    rule BR-37
+    :Hold the draft out of version control;
+    rule BR-121
+  }
+  send "Notes drafted" to notesDrafted
+  note "A draft is not a commit. The notes enter the day's log when the check-out completes."
+  end "Notes answered"
+
+  messageStart "Check-out submitted" as closeIn
+  call "BP13.03_CloseOutTheDay" "Close out the day" {
+    :Record the notes and both task sets as the date's log;
+    rule BR-33
+    if "Archive the completed?" rule BR-34 then "archive them"
+      :Archive every task in a Done column on the day's boards;
+      rule BR-23
+      :Archive every task in a Done column on Chores;
+      rule BR-34
+    else "leave them"
+      :Leave the completed tasks where they are;
+    endif
+    if "Reset the still open?" rule BR-35 then "reset them"
+      :Return each to the top of its Backlog bucket, rightmost column highest;
+      rule BR-54
+    else "leave them"
+      :Leave the open tasks in their columns;
+    endif
+    :Report the day's log;
+    rule BR-36
+  }
+  send "The day's log" to log
+  note "The reset touches the day's chosen boards only. Chores tasks already archived by hand are simply not there to take. The log stays available as that day's explanation."
+  end "Check-out answered"
+}
+
+@endbpmn

@@ -1,0 +1,222 @@
+@startbpmn BP11_WorkTheBoard
+lang en
+
+output L1 "01_detailed/BP11_WorkTheBoard.bpmn"
+output L2 "02_detailed/BP11_WorkTheBoard.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - three kinds of board and no aggregate board over every task: BR-49
+'   - archiving hides a project's boards as well as withdrawing it from the selectables: BR-43
+'   - a board's columns come from the template that governs it; Chores owns its own: BR-102, BR-108
+'   - unfinished input is a draft, forms included, and no draft is version-controlled: BR-121
+'   - a board is in focus because it was chosen; Chores gets there derived: BR-50, BR-107
+'   - every board is in the strip and the focus orders it, focused boards first: BR-116
+'   - a board is always open, and the focus decides which; the first in the strip otherwise: BR-51
+'   - the lineage of the work on a board is shown per UX-11: wf section 6.1
+'   - priority lives in the Backlog and nowhere else: BR-52, BR-56
+'   - three triage buckets, always present, ordered urgency first: BR-53, BR-57
+'   - a task's priority travels with it and re-applies on return: BR-54
+'   - content and placement are separate, and the board is neither: BR-64, BR-103
+'   - archiving is always a manual gesture: BR-22, BR-23
+'   - a task owns nothing, so a deletion has no cascade: BR-17
+'   - there is no in-app undo, and the user is told at the point of deletion: BR-20
+'   - moving an activity's last task to Done may offer to close the activity: BR-109
+'   - an unfinished predecessor is flagged, never blocking: BR-110
+'
+' Scope: this is the hot path — working what is already on a board. Putting tasks there is BP10,
+' the columns themselves are BP12, settling the day is BP13, and the activity's own plan is BP18.
+' An activity's state is the Course page's to own; this process only answers the completion offer
+' that moving the last task into Done raises.
+'
+' Call-site collapsing: moving a task between columns and sending it back to the Backlog are two
+' variations of one request. Ranking within a bucket and ranking within a column are likewise one.
+
+pool "User" {
+  start "Work to get done"
+  task "Open the Execution page" as execution
+  send "Read the boards in play" to stripIn
+  receive "The board strip, focus first" as strip
+
+  :Open a board;
+  send "Read a board" to boardIn
+  receive "The board with its columns, cards and lineage" as board
+
+  task "Work the board" as working
+  if "What needs doing?" then "move work along"
+    :Drag a task to another column;
+    send "Move a task" to moveIn
+    receive "Task moved" as moved
+    if "Was that an activity's last task into Done?" rule BR-109 then "yes"
+      :Answer the completion offer;
+      if "Mark the activity Done?" rule BR-109 then "yes"
+        :Close the activity;
+        send "Set the activity Done" to activityIn
+        receive "Activity state recorded" as activitySet
+      else "no"
+        :Leave the activity in progress;
+        note "Declining is a legitimate answer. The activity stays InProgress and is closed by hand on the Course page."
+      endif
+    else "no"
+      :Carry on;
+    endif
+    goto working
+
+  elseif "What needs doing?" then "re-triage something"
+    :Change the task's bucket;
+    send "Prioritize a task" to prioritizeIn
+    receive "Priority recorded" as prioritized
+    note "Priority changes only while the task is in the Backlog. Work in motion is sent back there first, which re-opens its triage."
+    goto working
+
+  elseif "What needs doing?" then "order what is waiting"
+    :Drag a task within its bucket;
+    send "Rank a task" to rankIn
+    receive "Rank recorded" as ranked
+    goto working
+
+  elseif "What needs doing?" then "fix what a task says"
+    :Retype the task's title or description;
+    multiInstance
+    send "Draft the task input" to taskDraftIn
+    :Submit the amendment;
+    send "Amend a task" to amendIn
+    receive "Task amended" as amended
+    note "Content and placement are separate concerns, and the board is neither: a task stays on the board it was created on for its whole life."
+    goto working
+
+  elseif "What needs doing?" then "file one away"
+    :Archive the task;
+    send "Archive a task" to archiveIn
+    receive "Task archived" as archived
+    note "Archiving is a conscious gesture. A task sitting in Done does not archive itself."
+    goto working
+
+  elseif "What needs doing?" then "throw one away"
+    :Confirm the deletion;
+    send "Delete a task" to deleteIn
+    receive "Task deleted" as deleted
+    note "A task owns nothing, so there is nothing to disclose and no cascade to approve. There is no in-app undo; recovery is from version control."
+    goto working
+
+  else "move to another board"
+    :Pick another board from the strip;
+    goto execution
+  endif
+
+  end "Work moved on"
+}
+
+system pool "Bearing" {
+  messageStart "Task draft submitted" as taskDraftIn
+  call "BP11.10_DraftTheTaskInput" "Draft the task input" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "Every form on this surface drafts as it is filled in, so leaving it half-finished, a crash and a restart all cost nothing. The draft is one-way: nothing waits for it to be kept. Whichever write commits the form discards it."
+  end "Draft kept"
+
+  messageStart "Board strip requested" as stripIn
+  call "BP11.01_ReadTheBoardsInPlay" "Read the boards in play" {
+    :Read every board that exists;
+    rule BR-49
+    :Leave an archived project's boards out;
+    rule BR-43
+    :Add Chores while it carries a task that is not done;
+    rule BR-107
+    :Group the date's focused boards at the front;
+    rule BR-116
+    :Name the board to open;
+    rule BR-51
+  }
+  send "The board strip, focus first" to strip
+  note "The strip holds every board and the focus orders it. An out-of-focus activity-based project is one entry, opening to its activities on demand. Where the date has no focus, the first board in the strip is the one named."
+  end "Board strip answered"
+
+  messageStart "Board requested" as boardIn
+  call "BP11.02_ReadABoard" "Read a board" {
+    :Read the board's columns from the template that governs it;
+    rule BR-108
+    :Read the tasks in each column with their priority;
+    rule BR-54
+    :Keep the three triage buckets in the Backlog, empty ones included;
+    rule BR-57
+    :Read the lineage of the work: theme, goal, project, activity;
+    :Flag an activity whose predecessor is unfinished;
+    rule BR-110
+  }
+  send "The board with its columns, cards and lineage" to board
+  note "A board with no tasks is an empty board, not an empty page. A project's template governs its boards; the Chores board owns its template itself. The flag on an unfinished predecessor names it and clears itself when that predecessor completes."
+  end "Board answered"
+
+  messageStart "Move requested" as moveIn
+  call "BP11.03_MoveTask" "Move a task" {
+    :Place the task in the column the user dropped it on;
+    rule BR-64
+    :Keep its priority with it;
+    rule BR-54
+    :Report whether an activity's last task reached Done;
+    rule BR-109
+  }
+  send "Task moved" to moved
+  note "One request moves a task between columns and sends it back to the Backlog alike. A task never moves to another board. Returning it to the Backlog re-opens its triage."
+  end "Move answered"
+
+  messageStart "Priority submitted" as prioritizeIn
+  call "BP11.04_PrioritizeTask" "Prioritize a task" {
+    if "Is the task in the Backlog?" rule BR-56 then "yes"
+      :Record the task's triage bucket;
+      rule BR-53
+    else "no"
+      :Refuse the change and say why;
+    endif
+    :Report the outcome;
+  }
+  send "Priority recorded" to prioritized
+  note "Triage happens at intake, so priority lives in the Backlog. The buckets are Important and Urgent, Not Important and Urgent, and Important and Not Urgent."
+  end "Priority answered"
+
+  messageStart "Rank submitted" as rankIn
+  call "BP11.05_RankTask" "Rank a task" {
+    :Record the new relative order within the bucket or column;
+  }
+  send "Rank recorded" to ranked
+  end "Rank answered"
+
+  messageStart "Task amendment requested" as amendIn
+  call "BP11.06_AmendTask" "Amend a task" {
+    :Apply the title and description as given;
+    rule BR-64
+  }
+  send "Task amended" to amended
+  note "The board and the column are untouched by an amendment."
+  end "Amendment answered"
+
+  messageStart "Task archiving requested" as archiveIn
+  call "BP11.07_ArchiveTask" "Archive a task" {
+    :Archive the task;
+    rule BR-23
+  }
+  send "Task archived" to archived
+  note "This is one of the three acts that archive a task, and the one that takes a single card. A routine's task archives by these same acts and no others."
+  end "Task archiving answered"
+
+  messageStart "Task deletion requested" as deleteIn
+  call "BP11.08_DeleteTask" "Delete a task" {
+    :Delete the task;
+    rule BR-17
+  }
+  send "Task deleted" to deleted
+  note "A task owns nothing, so nothing goes with it."
+  end "Task deletion answered"
+
+  messageStart "Activity state submitted" as activityIn
+  call "BP11.09_SetTheActivityDone" "Set the activity Done" {
+    :Record the activity's state;
+    rule BR-109
+  }
+  send "Activity state recorded" to activitySet
+  note "The Course page owns an activity's state; this is the completion offer answered from the board. A Done activity can be reopened there."
+  end "Activity state answered"
+}
+
+@endbpmn

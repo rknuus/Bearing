@@ -1,0 +1,76 @@
+@startbpmn BP09_ReviewFocusHistory
+lang en
+
+output L1 "01_detailed/BP09_ReviewFocusHistory.bpmn"
+output L2 "02_detailed/BP09_ReviewFocusHistory.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the smallest focus-view scope is a week; there is no day-scoped view: BR-93
+'   - every period view states which period it shows and how that relates to now: BR-46
+'   - stepping the period and switching the scope are always available: BR-46
+'   - each period view reports theme balance over the period it shows: BR-47
+'   - a day's log remains available as the explanation of that day: BR-38
+'   - the Chores board never appears in focus history: BR-107
+'   - selecting a day opens it for editing without leaving the period behind: BR-40
+'
+' Call-site collapsing: week, month and year are three variations of one read, parameterized by
+' scope and by which period. Stepping to the previous or next period, and going back to the
+' current one, are that same read with a different parameter - not three further chains, which
+' is why the review loops back to the one read instead of drawing a second. The coverage strip
+' and the theme balance are part of its answer, not reads of their own.
+'
+' Hand-over: picking a day ends this process by opening the day focus editor. Setting that
+' focus is BP08.
+
+pool "User" {
+  start "A stretch of days worth looking back on"
+  task "Choose a period and a scope" as pick
+  send "Read a period overview" to overviewIn
+  receive "The period with its coverage and theme balance" as overview
+
+  if "What next?" then "look at another period"
+    :Step the period, or switch the scope;
+    note "Previous, next and back-to-current are the same read with another parameter."
+    goto pick
+  elseif "What next?" then "understand one day"
+    :Open that day's log;
+    send "Read a day's log" to logIn
+    receive "That day's log" as log
+    goto pick
+  elseif "What next?" then "change a day's plan"
+    :Select the day to edit;
+    note "The day focus editor opens on the selected day and the period stays behind it. Setting the focus is BP08."
+    end "Day opened for editing"
+  else "nothing more"
+    :Close the review;
+  endif
+
+  end "Review done"
+}
+
+system pool "Bearing" {
+  messageStart "Period overview requested" as overviewIn
+  call "BP09.01_ReadThePeriodOverview" "Read a period overview" {
+    :Read the days of the requested period;
+    rule BR-93
+    :State the period and its relation to now;
+    rule BR-46
+    :Compute the coverage over the period;
+    :Compute the theme balance over the period;
+    rule BR-47
+  }
+  send "The period with its coverage and theme balance" to overview
+  note "One read serves week, month and year, and serves previous, next and current alike. There is no day-scoped view. The Chores board is absent from history: a derived member cannot be reconstructed for a past date."
+  end "Overview answered"
+
+  messageStart "Day log requested" as logIn
+  call "BP09.02_ReadADaysLog" "Read a day's log" {
+    :Read the log written for that date;
+    rule BR-38
+  }
+  send "That day's log" to log
+  note "The log holds what was completed, what was still open, and the notes written that day."
+  end "Day log answered"
+}
+
+@endbpmn

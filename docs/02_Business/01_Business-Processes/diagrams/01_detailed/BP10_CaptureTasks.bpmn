@@ -1,0 +1,814 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP10_CaptureTasks" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP10_CaptureTasks">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP10.07 · Read the staged batch" sourceRef="T_2" targetRef="draftsIn" />
+    <bpmn:messageFlow id="MF_2" name="BP10.01 · Read the selectable boards" sourceRef="T_6" targetRef="boardsIn" />
+    <bpmn:messageFlow id="MF_3" name="BP10.02 · Stage a task draft" sourceRef="T_7" targetRef="stageIn" />
+    <bpmn:messageFlow id="MF_4" name="BP10.03 · Amend a staged draft" sourceRef="T_9" targetRef="amendIn" />
+    <bpmn:messageFlow id="MF_5" name="BP10.04 · Reorder staged drafts" sourceRef="T_10" targetRef="reorderIn" />
+    <bpmn:messageFlow id="MF_6" name="BP10.05 · Discard staged drafts" sourceRef="T_11" targetRef="discardIn" />
+    <bpmn:messageFlow id="MF_7" name="BP10.06 · Commit the staged tasks" sourceRef="T_14" targetRef="commitIn" />
+    <bpmn:messageFlow id="MF_8" name="The staged batch, if any" sourceRef="T_18" targetRef="drafts" />
+    <bpmn:messageFlow id="MF_9" name="The boards that exist" sourceRef="T_21" targetRef="boards" />
+    <bpmn:messageFlow id="MF_10" name="Draft staged" sourceRef="T_24" targetRef="staged" />
+    <bpmn:messageFlow id="MF_11" name="Draft amended" sourceRef="T_26" targetRef="amended" />
+    <bpmn:messageFlow id="MF_12" name="Order recorded" sourceRef="T_28" targetRef="reordered" />
+    <bpmn:messageFlow id="MF_13" name="Drafts discarded" sourceRef="T_30" targetRef="discarded" />
+    <bpmn:messageFlow id="MF_14" name="Tasks on their boards" sourceRef="T_35" targetRef="committed" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>A staged batch survives leaving the gesture, a crash and a restart, so capture resumes it rather than starting over.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_4" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>One instance per task. The bucket is Important and Urgent, Not Important and Urgent, or Important and Not Urgent.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="staged" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>The staged batch survives as a draft. Nothing it describes takes effect until the batch is committed.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="T_16" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>The answer is empty where nothing was left staged. A draft is kept outside version control.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="T_18" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>Chores is never a destination the user picks. Naming no board at all is what sends a task there. The answer is empty until the first project exists, and then naming no board is the only legal capture.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="T_20" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>A staged draft is not a commit. It is kept outside version control.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="T_23" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>One request discards a single draft and the whole batch alike.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="T_30" targetRef="TextAnnotation_X7" />
+    <bpmn:textAnnotation id="TextAnnotation_X8"><bpmn:text>Capturing a task never creates a board. The batch commits as one act.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X8" associationDirection="None" sourceRef="T_32" targetRef="TextAnnotation_X8" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="Work worth writing down">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Open task capture">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_drafts</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="drafts" name="The staged batch, if any">
+      <bpmn:incoming>SF_T_2_drafts</bpmn:incoming>
+      <bpmn:outgoing>SF_drafts_Gw_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_drafts" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_3" name="A batch left from before?">
+      <bpmn:incoming>SF_drafts_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="Pick up where the batch was left">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_T_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="Start a fresh batch">
+      <bpmn:incoming>SF_Gw_3_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_T_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_6" name="Open the board picker">
+      <bpmn:incoming>SF_T_4_T_6</bpmn:incoming>
+      <bpmn:incoming>SF_T_5_T_6</bpmn:incoming>
+      <bpmn:outgoing>SF_T_6_boards</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="boards" name="The boards that exist">
+      <bpmn:incoming>SF_T_6_boards</bpmn:incoming>
+      <bpmn:outgoing>SF_boards_T_7</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_boards" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_7" name="Stage a task in its triage bucket">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_boards_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_staged</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="staged" name="Draft staged">
+      <bpmn:incoming>SF_T_7_staged</bpmn:incoming>
+      <bpmn:outgoing>SF_staged_tidy</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_staged" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="tidy" name="Look over the batch">
+      <bpmn:incoming>SF_staged_tidy</bpmn:incoming>
+      <bpmn:incoming>SF_amended_tidy</bpmn:incoming>
+      <bpmn:incoming>SF_reordered_tidy</bpmn:incoming>
+      <bpmn:incoming>SF_discarded_tidy</bpmn:incoming>
+      <bpmn:outgoing>SF_tidy_Gw_8</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_8" name="Anything to tidy before committing?">
+      <bpmn:incoming>SF_tidy_Gw_8</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_8_T_9</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_8_T_10</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_8_T_11</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_8_T_12</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_9" name="Amend the staged draft">
+      <bpmn:incoming>SF_Gw_8_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_amended</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="amended" name="Draft amended">
+      <bpmn:incoming>SF_T_9_amended</bpmn:incoming>
+      <bpmn:outgoing>SF_amended_tidy</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_amended" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_10" name="Drag a staged draft into place">
+      <bpmn:incoming>SF_Gw_8_T_10</bpmn:incoming>
+      <bpmn:outgoing>SF_T_10_reordered</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="reordered" name="Order recorded">
+      <bpmn:incoming>SF_T_10_reordered</bpmn:incoming>
+      <bpmn:outgoing>SF_reordered_tidy</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reordered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_11" name="Discard the staged drafts">
+      <bpmn:incoming>SF_Gw_8_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_discarded</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="discarded" name="Drafts discarded">
+      <bpmn:incoming>SF_T_11_discarded</bpmn:incoming>
+      <bpmn:outgoing>SF_discarded_tidy</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_discarded" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_12" name="Leave the batch as it stands">
+      <bpmn:incoming>SF_Gw_8_T_12</bpmn:incoming>
+      <bpmn:outgoing>SF_T_12_decide</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="decide" name="Commit or leave it">
+      <bpmn:incoming>SF_T_12_decide</bpmn:incoming>
+      <bpmn:outgoing>SF_decide_Gw_13</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_13" name="Commit the batch now?">
+      <bpmn:incoming>SF_decide_Gw_13</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_13_T_14</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_13_T_16</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_14" name="Commit the staged tasks">
+      <bpmn:incoming>SF_Gw_13_T_14</bpmn:incoming>
+      <bpmn:outgoing>SF_T_14_committed</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="committed" name="Tasks on their boards">
+      <bpmn:incoming>SF_T_14_committed</bpmn:incoming>
+      <bpmn:outgoing>SF_committed_End_15</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_committed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_15" name="Tasks captured">
+      <bpmn:incoming>SF_committed_End_15</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_16" name="Leave the gesture">
+      <bpmn:incoming>SF_Gw_13_T_16</bpmn:incoming>
+      <bpmn:outgoing>SF_T_16_End_17</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_17" name="Batch left as a draft">
+      <bpmn:incoming>SF_T_16_End_17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_drafts" sourceRef="T_2" targetRef="drafts" />
+    <bpmn:sequenceFlow id="SF_drafts_Gw_3" sourceRef="drafts" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="yes" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_5" name="no" sourceRef="Gw_3" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_4_T_6" sourceRef="T_4" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_T_5_T_6" sourceRef="T_5" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_T_6_boards" sourceRef="T_6" targetRef="boards" />
+    <bpmn:sequenceFlow id="SF_boards_T_7" sourceRef="boards" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_7_staged" sourceRef="T_7" targetRef="staged" />
+    <bpmn:sequenceFlow id="SF_staged_tidy" sourceRef="staged" targetRef="tidy" />
+    <bpmn:sequenceFlow id="SF_tidy_Gw_8" sourceRef="tidy" targetRef="Gw_8" />
+    <bpmn:sequenceFlow id="SF_T_9_amended" sourceRef="T_9" targetRef="amended" />
+    <bpmn:sequenceFlow id="SF_Gw_8_T_9" name="change a staged task" sourceRef="Gw_8" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_10_reordered" sourceRef="T_10" targetRef="reordered" />
+    <bpmn:sequenceFlow id="SF_Gw_8_T_10" name="reorder them" sourceRef="Gw_8" targetRef="T_10" />
+    <bpmn:sequenceFlow id="SF_T_11_discarded" sourceRef="T_11" targetRef="discarded" />
+    <bpmn:sequenceFlow id="SF_Gw_8_T_11" name="throw one away, or all of them" sourceRef="Gw_8" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_Gw_8_T_12" name="no" sourceRef="Gw_8" targetRef="T_12" />
+    <bpmn:sequenceFlow id="SF_T_12_decide" sourceRef="T_12" targetRef="decide" />
+    <bpmn:sequenceFlow id="SF_decide_Gw_13" sourceRef="decide" targetRef="Gw_13" />
+    <bpmn:sequenceFlow id="SF_T_14_committed" sourceRef="T_14" targetRef="committed" />
+    <bpmn:sequenceFlow id="SF_committed_End_15" sourceRef="committed" targetRef="End_15" />
+    <bpmn:sequenceFlow id="SF_Gw_13_T_14" name="commit" sourceRef="Gw_13" targetRef="T_14" />
+    <bpmn:sequenceFlow id="SF_T_16_End_17" sourceRef="T_16" targetRef="End_17" />
+    <bpmn:sequenceFlow id="SF_Gw_13_T_16" name="leave it for later" sourceRef="Gw_13" targetRef="T_16" />
+    <bpmn:sequenceFlow id="SF_amended_tidy" sourceRef="amended" targetRef="tidy" />
+    <bpmn:sequenceFlow id="SF_reordered_tidy" sourceRef="reordered" targetRef="tidy" />
+    <bpmn:sequenceFlow id="SF_discarded_tidy" sourceRef="discarded" targetRef="tidy" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="draftsIn" name="Staged batch requested">
+      <bpmn:outgoing>SF_draftsIn_T_18</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_draftsIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_18" name="Read the drafts staged and not yet committed">
+      <bpmn:incoming>SF_draftsIn_T_18</bpmn:incoming>
+      <bpmn:outgoing>SF_T_18_End_19</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_19" name="Staged batch answered">
+      <bpmn:incoming>SF_T_18_End_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="boardsIn" name="Board list requested">
+      <bpmn:outgoing>SF_boardsIn_T_20</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_boardsIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_20" name="Read the boards that exist, grouped by project">
+      <bpmn:incoming>SF_boardsIn_T_20</bpmn:incoming>
+      <bpmn:outgoing>SF_T_20_T_21</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_21" name="Leave Chores out of the offer">
+      <bpmn:incoming>SF_T_20_T_21</bpmn:incoming>
+      <bpmn:outgoing>SF_T_21_End_22</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_22" name="Board list answered">
+      <bpmn:incoming>SF_T_21_End_22</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="stageIn" name="Draft staged">
+      <bpmn:outgoing>SF_stageIn_T_23</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_stageIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_23" name="Store the draft with its title and bucket">
+      <bpmn:incoming>SF_stageIn_T_23</bpmn:incoming>
+      <bpmn:outgoing>SF_T_23_T_24</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_24" name="Place it last in its bucket">
+      <bpmn:incoming>SF_T_23_T_24</bpmn:incoming>
+      <bpmn:outgoing>SF_T_24_End_25</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_25" name="Staging answered">
+      <bpmn:incoming>SF_T_24_End_25</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="amendIn" name="Draft amendment requested">
+      <bpmn:outgoing>SF_amendIn_T_26</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_amendIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_26" name="Apply the title, bucket and board as given">
+      <bpmn:incoming>SF_amendIn_T_26</bpmn:incoming>
+      <bpmn:outgoing>SF_T_26_End_27</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_27" name="Draft amendment answered">
+      <bpmn:incoming>SF_T_26_End_27</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="reorderIn" name="Draft reordering requested">
+      <bpmn:outgoing>SF_reorderIn_T_28</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reorderIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_28" name="Record the new relative order within the bucket">
+      <bpmn:incoming>SF_reorderIn_T_28</bpmn:incoming>
+      <bpmn:outgoing>SF_T_28_End_29</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_29" name="Draft reordering answered">
+      <bpmn:incoming>SF_T_28_End_29</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="discardIn" name="Discard requested">
+      <bpmn:outgoing>SF_discardIn_T_30</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_discardIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_30" name="Delete the drafts the request names">
+      <bpmn:incoming>SF_discardIn_T_30</bpmn:incoming>
+      <bpmn:outgoing>SF_T_30_End_31</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_31" name="Discard answered">
+      <bpmn:incoming>SF_T_30_End_31</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="commitIn" name="Batch commit requested">
+      <bpmn:outgoing>SF_commitIn_T_32</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_commitIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_32" name="Place each task on the board it names">
+      <bpmn:incoming>SF_commitIn_T_32</bpmn:incoming>
+      <bpmn:outgoing>SF_T_32_T_33</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_33" name="Place each board-less task on Chores">
+      <bpmn:incoming>SF_T_32_T_33</bpmn:incoming>
+      <bpmn:outgoing>SF_T_33_T_34</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_34" name="Enter every task at the Backlog in its bucket">
+      <bpmn:incoming>SF_T_33_T_34</bpmn:incoming>
+      <bpmn:outgoing>SF_T_34_T_35</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_35" name="Discard the drafts the batch came from">
+      <bpmn:incoming>SF_T_34_T_35</bpmn:incoming>
+      <bpmn:outgoing>SF_T_35_End_36</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_36" name="Commit answered">
+      <bpmn:incoming>SF_T_35_End_36</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_draftsIn_T_18" sourceRef="draftsIn" targetRef="T_18" />
+    <bpmn:sequenceFlow id="SF_T_18_End_19" sourceRef="T_18" targetRef="End_19" />
+    <bpmn:sequenceFlow id="SF_T_20_T_21" sourceRef="T_20" targetRef="T_21" />
+    <bpmn:sequenceFlow id="SF_boardsIn_T_20" sourceRef="boardsIn" targetRef="T_20" />
+    <bpmn:sequenceFlow id="SF_T_21_End_22" sourceRef="T_21" targetRef="End_22" />
+    <bpmn:sequenceFlow id="SF_T_23_T_24" sourceRef="T_23" targetRef="T_24" />
+    <bpmn:sequenceFlow id="SF_stageIn_T_23" sourceRef="stageIn" targetRef="T_23" />
+    <bpmn:sequenceFlow id="SF_T_24_End_25" sourceRef="T_24" targetRef="End_25" />
+    <bpmn:sequenceFlow id="SF_amendIn_T_26" sourceRef="amendIn" targetRef="T_26" />
+    <bpmn:sequenceFlow id="SF_T_26_End_27" sourceRef="T_26" targetRef="End_27" />
+    <bpmn:sequenceFlow id="SF_reorderIn_T_28" sourceRef="reorderIn" targetRef="T_28" />
+    <bpmn:sequenceFlow id="SF_T_28_End_29" sourceRef="T_28" targetRef="End_29" />
+    <bpmn:sequenceFlow id="SF_discardIn_T_30" sourceRef="discardIn" targetRef="T_30" />
+    <bpmn:sequenceFlow id="SF_T_30_End_31" sourceRef="T_30" targetRef="End_31" />
+    <bpmn:sequenceFlow id="SF_T_32_T_33" sourceRef="T_32" targetRef="T_33" />
+    <bpmn:sequenceFlow id="SF_T_33_T_34" sourceRef="T_33" targetRef="T_34" />
+    <bpmn:sequenceFlow id="SF_T_34_T_35" sourceRef="T_34" targetRef="T_35" />
+    <bpmn:sequenceFlow id="SF_commitIn_T_32" sourceRef="commitIn" targetRef="T_32" />
+    <bpmn:sequenceFlow id="SF_T_35_End_36" sourceRef="T_35" targetRef="End_36" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP10_CaptureTasks">
+    <bpmndi:BPMNPlane id="P_BP10_CaptureTasks" bpmnElement="Collaboration_BP10_CaptureTasks">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="3790" height="740" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="860" width="3790" height="500" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="drafts_di" bpmnElement="drafts">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="755" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="900" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_6_di" bpmnElement="T_6">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boards_di" bpmnElement="boards">
+        <dc:Bounds x="1442" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="1580" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="staged_di" bpmnElement="staged">
+        <dc:Bounds x="1952" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="tidy_di" bpmnElement="tidy">
+        <dc:Bounds x="2090" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_8_di" bpmnElement="Gw_8">
+        <dc:Bounds x="2285" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="2430" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amended_di" bpmnElement="amended">
+        <dc:Bounds x="2632" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2608" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_10_di" bpmnElement="T_10">
+        <dc:Bounds x="2430" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reordered_di" bpmnElement="reordered">
+        <dc:Bounds x="2632" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2608" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="2430" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="discarded_di" bpmnElement="discarded">
+        <dc:Bounds x="2632" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2608" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="2430" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="decide_di" bpmnElement="decide">
+        <dc:Bounds x="2600" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_13_di" bpmnElement="Gw_13">
+        <dc:Bounds x="2795" y="535" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2778" y="590" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="2940" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="committed_di" bpmnElement="committed">
+        <dc:Bounds x="3652" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3628" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_15_di" bpmnElement="End_15">
+        <dc:Bounds x="3822" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3798" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="2940" y="640" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_17_di" bpmnElement="End_17">
+        <dc:Bounds x="3142" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3118" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="draftsIn_di" bpmnElement="draftsIn">
+        <dc:Bounds x="422" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="560" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_19_di" bpmnElement="End_19">
+        <dc:Bounds x="762" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="boardsIn_di" bpmnElement="boardsIn">
+        <dc:Bounds x="1102" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_20_di" bpmnElement="T_20">
+        <dc:Bounds x="1240" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="1410" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_22_di" bpmnElement="End_22">
+        <dc:Bounds x="1612" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="stageIn_di" bpmnElement="stageIn">
+        <dc:Bounds x="1612" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="1750" y="1060" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="1920" y="1060" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_25_di" bpmnElement="End_25">
+        <dc:Bounds x="2122" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="amendIn_di" bpmnElement="amendIn">
+        <dc:Bounds x="2462" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="2600" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_27_di" bpmnElement="End_27">
+        <dc:Bounds x="2802" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2778" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reorderIn_di" bpmnElement="reorderIn">
+        <dc:Bounds x="2462" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_28_di" bpmnElement="T_28">
+        <dc:Bounds x="2600" y="1060" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_29_di" bpmnElement="End_29">
+        <dc:Bounds x="2802" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2778" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="discardIn_di" bpmnElement="discardIn">
+        <dc:Bounds x="2462" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_30_di" bpmnElement="T_30">
+        <dc:Bounds x="2600" y="1180" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_31_di" bpmnElement="End_31">
+        <dc:Bounds x="2802" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2778" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="commitIn_di" bpmnElement="commitIn">
+        <dc:Bounds x="2972" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2948" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_32_di" bpmnElement="T_32">
+        <dc:Bounds x="3110" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_33_di" bpmnElement="T_33">
+        <dc:Bounds x="3280" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_34_di" bpmnElement="T_34">
+        <dc:Bounds x="3450" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_35_di" bpmnElement="T_35">
+        <dc:Bounds x="3620" y="940" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_36_di" bpmnElement="End_36">
+        <dc:Bounds x="3822" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3798" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_drafts_di" bpmnElement="SF_T_2_drafts">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_drafts_Gw_3_di" bpmnElement="SF_drafts_Gw_3">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="755" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_5_di" bpmnElement="SF_Gw_3_T_5">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="320" />
+        <di:waypoint x="900" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_T_6_di" bpmnElement="SF_T_4_T_6">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_T_6_di" bpmnElement="SF_T_5_T_6">
+        <di:waypoint x="1000" y="320" />
+        <di:waypoint x="1030" y="320" />
+        <di:waypoint x="1030" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_6_boards_di" bpmnElement="SF_T_6_boards">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1442" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_boards_T_7_di" bpmnElement="SF_boards_T_7">
+        <di:waypoint x="1478" y="200" />
+        <di:waypoint x="1580" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_staged_di" bpmnElement="SF_T_7_staged">
+        <di:waypoint x="1680" y="200" />
+        <di:waypoint x="1952" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_staged_tidy_di" bpmnElement="SF_staged_tidy">
+        <di:waypoint x="1988" y="200" />
+        <di:waypoint x="2090" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_tidy_Gw_8_di" bpmnElement="SF_tidy_Gw_8">
+        <di:waypoint x="2190" y="200" />
+        <di:waypoint x="2285" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_amended_di" bpmnElement="SF_T_9_amended">
+        <di:waypoint x="2530" y="200" />
+        <di:waypoint x="2632" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_8_T_9_di" bpmnElement="SF_Gw_8_T_9">
+        <di:waypoint x="2335" y="200" />
+        <di:waypoint x="2430" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_10_reordered_di" bpmnElement="SF_T_10_reordered">
+        <di:waypoint x="2530" y="320" />
+        <di:waypoint x="2632" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_8_T_10_di" bpmnElement="SF_Gw_8_T_10">
+        <di:waypoint x="2335" y="200" />
+        <di:waypoint x="2365" y="200" />
+        <di:waypoint x="2365" y="320" />
+        <di:waypoint x="2430" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_discarded_di" bpmnElement="SF_T_11_discarded">
+        <di:waypoint x="2530" y="440" />
+        <di:waypoint x="2632" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_8_T_11_di" bpmnElement="SF_Gw_8_T_11">
+        <di:waypoint x="2335" y="200" />
+        <di:waypoint x="2365" y="200" />
+        <di:waypoint x="2365" y="440" />
+        <di:waypoint x="2430" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_8_T_12_di" bpmnElement="SF_Gw_8_T_12">
+        <di:waypoint x="2335" y="200" />
+        <di:waypoint x="2365" y="200" />
+        <di:waypoint x="2365" y="560" />
+        <di:waypoint x="2430" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_12_decide_di" bpmnElement="SF_T_12_decide">
+        <di:waypoint x="2530" y="560" />
+        <di:waypoint x="2600" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_decide_Gw_13_di" bpmnElement="SF_decide_Gw_13">
+        <di:waypoint x="2700" y="560" />
+        <di:waypoint x="2795" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_committed_di" bpmnElement="SF_T_14_committed">
+        <di:waypoint x="3040" y="560" />
+        <di:waypoint x="3652" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_committed_End_15_di" bpmnElement="SF_committed_End_15">
+        <di:waypoint x="3688" y="560" />
+        <di:waypoint x="3822" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_13_T_14_di" bpmnElement="SF_Gw_13_T_14">
+        <di:waypoint x="2845" y="560" />
+        <di:waypoint x="2940" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_End_17_di" bpmnElement="SF_T_16_End_17">
+        <di:waypoint x="3040" y="680" />
+        <di:waypoint x="3142" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_13_T_16_di" bpmnElement="SF_Gw_13_T_16">
+        <di:waypoint x="2845" y="560" />
+        <di:waypoint x="2875" y="560" />
+        <di:waypoint x="2875" y="680" />
+        <di:waypoint x="2940" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_amended_tidy_di" bpmnElement="SF_amended_tidy">
+        <di:waypoint x="2668" y="200" />
+        <di:waypoint x="2735" y="200" />
+        <di:waypoint x="2735" y="140" />
+        <di:waypoint x="2140" y="140" />
+        <di:waypoint x="2140" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reordered_tidy_di" bpmnElement="SF_reordered_tidy">
+        <di:waypoint x="2668" y="320" />
+        <di:waypoint x="2735" y="320" />
+        <di:waypoint x="2735" y="140" />
+        <di:waypoint x="2140" y="140" />
+        <di:waypoint x="2140" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_discarded_tidy_di" bpmnElement="SF_discarded_tidy">
+        <di:waypoint x="2668" y="440" />
+        <di:waypoint x="2735" y="440" />
+        <di:waypoint x="2735" y="140" />
+        <di:waypoint x="2140" y="140" />
+        <di:waypoint x="2140" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_draftsIn_T_18_di" bpmnElement="SF_draftsIn_T_18">
+        <di:waypoint x="458" y="980" />
+        <di:waypoint x="560" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_End_19_di" bpmnElement="SF_T_18_End_19">
+        <di:waypoint x="660" y="980" />
+        <di:waypoint x="762" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_20_T_21_di" bpmnElement="SF_T_20_T_21">
+        <di:waypoint x="1340" y="980" />
+        <di:waypoint x="1410" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_boardsIn_T_20_di" bpmnElement="SF_boardsIn_T_20">
+        <di:waypoint x="1138" y="980" />
+        <di:waypoint x="1240" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_21_End_22_di" bpmnElement="SF_T_21_End_22">
+        <di:waypoint x="1510" y="980" />
+        <di:waypoint x="1612" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_23_T_24_di" bpmnElement="SF_T_23_T_24">
+        <di:waypoint x="1850" y="1100" />
+        <di:waypoint x="1920" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_stageIn_T_23_di" bpmnElement="SF_stageIn_T_23">
+        <di:waypoint x="1648" y="1100" />
+        <di:waypoint x="1750" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_End_25_di" bpmnElement="SF_T_24_End_25">
+        <di:waypoint x="2020" y="1100" />
+        <di:waypoint x="2122" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_amendIn_T_26_di" bpmnElement="SF_amendIn_T_26">
+        <di:waypoint x="2498" y="980" />
+        <di:waypoint x="2600" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_26_End_27_di" bpmnElement="SF_T_26_End_27">
+        <di:waypoint x="2700" y="980" />
+        <di:waypoint x="2802" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reorderIn_T_28_di" bpmnElement="SF_reorderIn_T_28">
+        <di:waypoint x="2498" y="1100" />
+        <di:waypoint x="2600" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_28_End_29_di" bpmnElement="SF_T_28_End_29">
+        <di:waypoint x="2700" y="1100" />
+        <di:waypoint x="2802" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_discardIn_T_30_di" bpmnElement="SF_discardIn_T_30">
+        <di:waypoint x="2498" y="1220" />
+        <di:waypoint x="2600" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_30_End_31_di" bpmnElement="SF_T_30_End_31">
+        <di:waypoint x="2700" y="1220" />
+        <di:waypoint x="2802" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_32_T_33_di" bpmnElement="SF_T_32_T_33">
+        <di:waypoint x="3210" y="980" />
+        <di:waypoint x="3280" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_33_T_34_di" bpmnElement="SF_T_33_T_34">
+        <di:waypoint x="3380" y="980" />
+        <di:waypoint x="3450" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_34_T_35_di" bpmnElement="SF_T_34_T_35">
+        <di:waypoint x="3550" y="980" />
+        <di:waypoint x="3620" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_commitIn_T_32_di" bpmnElement="SF_commitIn_T_32">
+        <di:waypoint x="3008" y="980" />
+        <di:waypoint x="3110" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_35_End_36_di" bpmnElement="SF_T_35_End_36">
+        <di:waypoint x="3720" y="980" />
+        <di:waypoint x="3822" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1120" y="240" />
+        <di:waypoint x="1120" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="1630" y="240" />
+        <di:waypoint x="1630" y="252" />
+        <di:waypoint x="1715" y="252" />
+        <di:waypoint x="1715" y="1070" />
+        <di:waypoint x="1630" y="1070" />
+        <di:waypoint x="1630" y="1082" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="2470" y="240" />
+        <di:waypoint x="2470" y="252" />
+        <di:waypoint x="2555" y="252" />
+        <di:waypoint x="2555" y="950" />
+        <di:waypoint x="2470" y="950" />
+        <di:waypoint x="2470" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="2480" y="360" />
+        <di:waypoint x="2480" y="372" />
+        <di:waypoint x="2565" y="372" />
+        <di:waypoint x="2565" y="1070" />
+        <di:waypoint x="2480" y="1070" />
+        <di:waypoint x="2480" y="1082" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="2490" y="480" />
+        <di:waypoint x="2490" y="492" />
+        <di:waypoint x="2575" y="492" />
+        <di:waypoint x="2575" y="1190" />
+        <di:waypoint x="2490" y="1190" />
+        <di:waypoint x="2490" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="2990" y="600" />
+        <di:waypoint x="2990" y="612" />
+        <di:waypoint x="3075" y="612" />
+        <di:waypoint x="3075" y="950" />
+        <di:waypoint x="2990" y="950" />
+        <di:waypoint x="2990" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="610" y="940" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="1460" y="940" />
+        <di:waypoint x="1460" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="1970" y="1060" />
+        <di:waypoint x="1970" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_11_di" bpmnElement="MF_11">
+        <di:waypoint x="2640" y="940" />
+        <di:waypoint x="2640" y="928" />
+        <di:waypoint x="2725" y="928" />
+        <di:waypoint x="2725" y="230" />
+        <di:waypoint x="2640" y="230" />
+        <di:waypoint x="2640" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_12_di" bpmnElement="MF_12">
+        <di:waypoint x="2650" y="1060" />
+        <di:waypoint x="2650" y="1048" />
+        <di:waypoint x="2735" y="1048" />
+        <di:waypoint x="2735" y="350" />
+        <di:waypoint x="2650" y="350" />
+        <di:waypoint x="2650" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_13_di" bpmnElement="MF_13">
+        <di:waypoint x="2660" y="1180" />
+        <di:waypoint x="2660" y="1168" />
+        <di:waypoint x="2745" y="1168" />
+        <di:waypoint x="2745" y="470" />
+        <di:waypoint x="2660" y="470" />
+        <di:waypoint x="2660" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_14_di" bpmnElement="MF_14">
+        <di:waypoint x="3670" y="940" />
+        <di:waypoint x="3670" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="830" y="64" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="950" y="160" /><di:waypoint x="950" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1850" y="72" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1970" y="182" /><di:waypoint x="1970" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="2870" y="447" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="2990" y="640" /><di:waypoint x="2990" y="630" /><di:waypoint x="2930" y="630" /><di:waypoint x="2930" y="508" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="490" y="1040" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="610" y="1020" /><di:waypoint x="610" y="1040" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="1170" y="1040" width="240" height="106" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="1290" y="1020" /><di:waypoint x="1290" y="1040" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="1680" y="1160" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="1800" y="1140" /><di:waypoint x="1800" y="1160" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="2530" y="1280" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="2650" y="1260" /><di:waypoint x="2650" y="1280" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X8_di" bpmnElement="TextAnnotation_X8"><dc:Bounds x="3040" y="1040" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X8_di" bpmnElement="Association_X8"><di:waypoint x="3160" y="1020" /><di:waypoint x="3160" y="1040" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

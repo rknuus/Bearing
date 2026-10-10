@@ -1,0 +1,103 @@
+@startbpmn BP08_SetADaysFocus
+lang en
+
+output L1 "01_detailed/BP08_SetADaysFocus.bpmn"
+output L2 "02_detailed/BP08_SetADaysFocus.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the day is the unit of focus, settable from any period scope: BR-40, BR-93
+'   - any date is focusable, past or future, with no restriction: BR-40, SA 2026-10-10
+'   - committing a focus replaces the date's previous selection: BR-41, SA 2026-10-10
+'   - boards and routines are what a day selects: BR-41
+'   - the selection shape is 0..N projects and 0..M activities inside each: BR-41, SA 2026-10-10
+'   - picking a project offers its ready activities: BR-41, BR-99
+'   - selecting a routine ensures exactly one outstanding task, on Chores: BR-42
+'   - due and overdue are treated identically: BR-42, BR-91
+'   - deselecting a routine never removes a task already created: BR-42
+'   - only non-archived projects and active routines are selectable: BR-43
+'   - Chores joins the day derived, never selected, while it carries open work: BR-107
+'   - the day focus is a record of a human commitment: BR-40
+'   - the advisor may propose a day's focus; applying it runs this same operation: BR-72
+'
+' Scope: this process sets the focus for one date. Reading a period overview is BP09, which hands
+' over here by opening the day focus editor on the day the user picked.
+'
+' Call-site collapsing: scheduling the day's routine tasks is not a chain of its own. Selection
+' is what creates the task, so the creation is a drawn step inside the one write.
+
+pool "User" {
+  start "A day to commit to"
+  :Open the day focus editor;
+  send "Read the day's selectables" to selectablesIn
+  receive "Selectable boards and routines" as selectables
+
+  :Pick or drop the projects to work on;
+  multiInstance
+  note "Zero to many projects. Activities are grouped by their project, routines by theme."
+
+  if "Any activity-based project among them?" rule BR-41 then "yes"
+    :Pick or drop the activities inside each project;
+    multiInstance
+    note "Zero to many per project. The ready ones are offered first; nothing forces one at a time."
+  else "no"
+    :Take each simple project's own board;
+  endif
+
+  :Pick or drop the routines to keep up;
+  multiInstance
+  :Commit the day's focus;
+  send "Set the day's focus" to setIn
+  receive "The day's focus" as focusSet
+  note "Chores is never picked. It joins the day on its own while it carries work that is not done."
+
+  if "Review what was committed?" then "yes"
+    :Read the day's focus summary;
+    send "Read the day's focus" to readIn
+    receive "The day's focus as committed" as focusRead
+  else "no"
+    :Start working;
+  endif
+
+  end "Day committed"
+}
+
+system pool "Bearing" {
+  messageStart "Selectables requested" as selectablesIn
+  call "BP08.01_ReadTheDaysSelectables" "Read the day's selectables" {
+    :Read the non-archived projects with their kind;
+    rule BR-43
+    :Read each activity-based project's activities;
+    :Mark the activities whose predecessors are all done;
+    rule BR-99
+    :Read the active routines grouped by theme;
+    rule BR-43
+  }
+  send "Selectable boards and routines" to selectables
+  note "Archived projects and paused routines are not offered. A ready activity is one with no unfinished predecessor. Any date is focusable: a past day, today or a future day."
+  end "Selectables answered"
+
+  messageStart "Day focus submitted" as setIn
+  call "BP08.02_SetTheDaysFocus" "Set the day's focus" {
+    :Replace the date's board selection with what was committed;
+    rule BR-41
+    :Replace the date's routine selection with what was committed;
+    :Ensure one outstanding task per selected routine;
+    rule BR-42
+    :Return the day's focus;
+  }
+  send "The day's focus" to focusSet
+  note "A commit replaces the date's previous selection rather than adding to it, so the boards in play are exactly what was last committed. A routine that already owes a task gets no second one, on any date. Due and overdue are treated the same. Dropping a routine leaves a task already created where it is."
+  end "Day focus answered"
+
+  messageStart "Day focus read requested" as readIn
+  call "BP08.03_ReadTheDaysFocus" "Read the day's focus" {
+    :Read the boards and routines committed for the date;
+    :Add Chores while it carries a task that is not done;
+    rule BR-107
+  }
+  send "The day's focus as committed" to focusRead
+  note "The Chores membership is derived at read time and never stored."
+  end "Day focus read answered"
+}
+
+@endbpmn

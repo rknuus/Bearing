@@ -4,7 +4,7 @@
   "callSite": "BP01.01",
   "name": "StartUp",
   "speaking": "Start up",
-  "hash": "sha256:7185b0bdf1a360626c821ac850683dabf179092716c6bbce44c476f5259c4118",
+  "hash": "sha256:9859bf8ed10d5963c7ca22ce21e10e56d88ebaa668afaa9994e9e2c7723d4f77",
   "definition": {
     "process": "BP01_StartBearing",
     "source": "BP01_StartBearing.bpd",
@@ -68,6 +68,52 @@
               {
                 "kind": "step",
                 "label": "Version-control the new folder"
+              },
+              {
+                "kind": "step",
+                "label": "Create the Chores board with its default columns",
+                "rules": [
+                  "BR-102"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "step",
+        "label": "Set the day in play to the current date",
+        "rules": [
+          "BR-44"
+        ]
+      },
+      {
+        "kind": "gateway",
+        "condition": "Any data loaded?",
+        "rule": "BR-48",
+        "branches": [
+          {
+            "label": "yes",
+            "nodes": [
+              {
+                "kind": "step",
+                "label": "Restore the remembered interface state",
+                "rules": [
+                  "BR-92"
+                ]
+              },
+              {
+                "kind": "step",
+                "label": "Open the Focus tab"
+              }
+            ]
+          },
+          {
+            "label": "no",
+            "nodes": [
+              {
+                "kind": "step",
+                "label": "Leave the landing to onboarding"
               }
             ]
           }
@@ -82,7 +128,7 @@
       }
     ],
     "notes": [
-      "One synchronous call per launch. The four folder states are variations of one operation, not four operations. An unreachable symlink target counts as missing."
+      "One synchronous call per launch. The four folder states are variations of one operation, not four operations. An unreachable symlink target counts as missing. Creating the folder is what brings the Chores board into existence. The day in play is set to the current date here, from no day rather than from a previous one. A launch onto usable data lands on Focus; a first run lands there when onboarding completes."
     ],
     "sends": [
       {

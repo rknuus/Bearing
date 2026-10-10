@@ -1,0 +1,183 @@
+@startbpmn BP07_CloseOutAGoal
+lang en
+
+output L1 "01_detailed/BP07_CloseOutAGoal.bpmn"
+output L2 "02_detailed/BP07_CloseOutAGoal.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - what a goal check-out captures, and that it is available at any time: BR-27, QB-32
+'   - per-measure status is auto-inferred by measure type: BR-28
+'   - the user may override any inferred status, a boolean to Partial included: BR-29
+'   - closing actions: archive the goal default ON, follow-up default OFF: BR-30
+'   - leaving the archive on hands the gesture to BR-112, which may reject it: BR-30, SA 2026-10-10
+'   - what carry-forward inherits, resets and back-references: BR-31
+'   - a sitting in progress is a draft: BR-32, BR-121
+'   - the check-out shape is observed, reflect, judge, opt-in closing actions, one gesture: BR-39
+'   - archiving counts archived descendants too: BR-117
+'   - an archived goal is frozen, so it cannot be checked out: BR-05, SA 2026-10-10
+'
+' Scope: this process judges one goal and ends its cycle. Framing and maintaining the goal is BP05,
+' its progress measures are BP06. Archiving a goal without checking it out is BP05's: the two acts
+' are independent, and this one only offers archiving as a closing action.
+'
+' Call-site collapsing: the per-measure judgment is not a chain of its own. The statuses arrive
+' with the proposal and leave with the close-out; overriding one changes what the user submits,
+' not which operation is called.
+
+pool "User" {
+  start "A cycle ending, or a commitment to settle"
+  task "Open a goal's check-out" as checkOut
+  send "Read the goal's check-out proposal" to proposalIn
+  receive "The proposal with a status per measure" as proposal
+
+  if "Is the goal archived?" rule BR-05 then "archived"
+    :Read why it cannot be checked out;
+    note "An archived goal is frozen. Bringing it back is what makes a judgment possible again, and a check-out record it already carries is untouched meanwhile."
+    end "Nothing to settle"
+  else "live"
+    :Rate the overall outcome;
+    note "Achieved, partially achieved, missed or abandoned. The outcome is required; everything else in the sitting is optional."
+  endif
+
+  if "Accept the inferred statuses?" rule BR-29 then "override one"
+    :Set a status by hand;
+    multiInstance
+    note "Any inferred status can be overridden, a boolean measure set to Partial included. The rule constrains the inference, never the judgment."
+  else "take them as they are"
+    :Keep what was inferred;
+  endif
+
+  :Write the retro and the per-measure notes;
+  multiInstance
+  send "Draft the goal check-out" to draftIn
+  receive "Draft kept" as draftKept
+  note "The sitting is kept as a draft while it is filled in, so leaving it, a crash and a restart cost nothing."
+
+  if "Archive the goal as this closes?" rule BR-30 then "yes, the default"
+    :Choose an archiving reach;
+    send "See what archiving the goal takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "How far should the archiving reach?" rule BR-112 then "the goal and its projects"
+      :Approve the whole cascade;
+    elseif "How far should the archiving reach?" rule BR-112 then "the goal alone"
+      :Keep the projects active;
+      note "An archived goal still exists, so its projects are not orphaned by it."
+    else "reject the archiving"
+      :Withdraw the archiving;
+      note "The check-out completes either way. A goal left active can be archived directly later."
+    endif
+  else "no, leave it active"
+    :Turn the archive action off;
+  endif
+
+  task "Complete the check-out" as closing
+  send "Close out the goal" to closeIn
+  receive "Goal checked out" as closed
+
+  if "Carry the commitment forward?" rule BR-30 then "yes"
+    :Ask for a follow-up;
+    send "Seed a follow-up goal" to seedIn
+    receive "The seeded follow-up for review" as seeded
+    task "Review the follow-up" as review
+    if "Commit the follow-up?" then "commit it"
+      :Commit the follow-up goal;
+      send "Create the follow-up goal" to followUpIn
+      receive "Follow-up goal created" as followUp
+    else "abandon it"
+      :Abandon the follow-up;
+      note "Abandoning the follow-up still leaves the check-out complete."
+    endif
+  else "no, end it here"
+    :Leave the commitment without a successor;
+  endif
+
+  end "Commitment settled"
+}
+
+system pool "Bearing" {
+  messageStart "Check-out proposal requested" as proposalIn
+  call "BP07.01_ReadTheCheckOutProposal" "Read the goal's check-out proposal" {
+    :Read the goal with its measures and their latest check-ins;
+    :Infer a status per measure from its type;
+    rule BR-28
+    :Read the draft left by an earlier sitting;
+    rule BR-32
+    :Report whether the goal is archived;
+    rule BR-05
+    :Report the proposal;
+    rule BR-39
+  }
+  send "The proposal with a status per measure" to proposal
+  note "The proposal is what the system observed: the statuses are inferred, not decided. A check-out is available at any time, with or without a horizon, as long as the goal is not archived."
+  end "Proposal answered"
+
+  messageStart "Check-out draft submitted" as draftIn
+  call "BP07.02_DraftTheGoalCheckOut" "Draft the goal check-out" {
+    :Keep the outcome, the statuses and the retro as a draft;
+    rule BR-32
+    :Hold the draft out of version control;
+    rule BR-121
+  }
+  send "Draft kept" to draftKept
+  note "A draft is not a commit. Nothing it describes takes effect until the check-out is completed."
+  end "Draft answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP07.03_ReadTheArchivingImpact" "See what archiving the goal takes" {
+    :Collect the projects parented on the goal;
+    :Collect the projects parented on its measures;
+    :Include the archived ones in the count;
+    rule BR-117
+    :Report the three answers the gesture offers;
+    rule BR-112
+  }
+  send "What the archiving will take" to archImpact
+  note "Cascade, the goal alone, or reject. The keep answer is legal here because an archived goal still exists."
+  end "Archiving impact answered"
+
+  messageStart "Close-out submitted" as closeIn
+  call "BP07.04_CloseOutGoal" "Close out the goal" {
+    :Store the outcome, the statuses and the retro on the goal;
+    rule BR-27
+    if "Archiving approved?" rule BR-30 then "approved"
+      :Archive the projects the user included;
+      rule BR-112
+      :Archive the goal with its check-out record;
+      rule BR-23
+    else "withheld"
+      :Leave the goal in the working set;
+    endif
+    :Discard the draft the sitting came from;
+    rule BR-121
+    :Report what was closed;
+  }
+  send "Goal checked out" to closed
+  note "The check-out record stays attached to the goal, archived or not, and unarchiving never revokes it."
+  end "Close-out answered"
+
+  messageStart "Follow-up seed requested" as seedIn
+  call "BP07.05_SeedFollowUpGoal" "Seed a follow-up goal" {
+    :Inherit the theme and the linked ideas;
+    rule BR-31
+    :Carry the objective over, marked as a continuation;
+    :Take the Partial and Missed measures with their progress reset;
+    :Advance the horizon of a goal that had one;
+    :Back-reference the originating check-out;
+    :Report the seeded follow-up;
+  }
+  send "The seeded follow-up for review" to seeded
+  note "Check-out notes are dropped. A goal that was open-ended stays open-ended. The seed is reviewed before anything is created."
+  end "Seed answered"
+
+  messageStart "Follow-up submitted" as followUpIn
+  call "BP07.06_CreateFollowUpGoal" "Create the follow-up goal" {
+    :Store the follow-up as the user reviewed it;
+    rule BR-31
+    :Keep its link back to the check-out it came from;
+  }
+  send "Follow-up goal created" to followUp
+  note "The iteration chain stays traceable from the follow-up back to the check-out."
+  end "Follow-up answered"
+}
+
+@endbpmn

@@ -1,0 +1,566 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP13_CloseOutTheDay" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP13_CloseOutTheDay">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP13.01 · Read the day's account" sourceRef="checkOut" targetRef="accountIn" />
+    <bpmn:messageFlow id="MF_2" name="BP13.02 · Draft the day notes" sourceRef="T_3" targetRef="notesIn" />
+    <bpmn:messageFlow id="MF_3" name="BP13.03 · Close out the day" sourceRef="closing" targetRef="closeIn" />
+    <bpmn:messageFlow id="MF_4" name="What is done and what is still open" sourceRef="T_15" targetRef="account" />
+    <bpmn:messageFlow id="MF_5" name="Notes drafted" sourceRef="T_18" targetRef="notesDrafted" />
+    <bpmn:messageFlow id="MF_6" name="The day's log" sourceRef="T_28" targetRef="log" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>Both lists are read from the boards as they stand, not from when anything moved. The user confirms them rather than editing them.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_2" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>The notes are a running journal started in the morning and finished in the evening, so the draft is current at every moment.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="notesDrafted" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>The archive action takes every task in a Done column on the day's boards and on Chores.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="T_5" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>Reset returns the task to the top of its Backlog bucket, where its triage re-opens.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="T_8" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>Running the check-out again on the same date updates that day's log rather than creating a second one.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="log" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>Chores is out of the account even while it is in play: a chore being done is not progress on what was committed to. A date with no focus has an empty account. A date never checked out stays checkable out.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="T_11" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>A draft is not a commit. The notes enter the day's log when the check-out completes.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="T_17" targetRef="TextAnnotation_X7" />
+    <bpmn:textAnnotation id="TextAnnotation_X8"><bpmn:text>The reset touches the day's chosen boards only. Chores tasks already archived by hand are simply not there to take. The log stays available as that day's explanation.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X8" associationDirection="None" sourceRef="T_20" targetRef="TextAnnotation_X8" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A day to settle">
+      <bpmn:outgoing>SF_Start_1_checkOut</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="checkOut" name="Open the day check-out">
+      <bpmn:incoming>SF_Start_1_checkOut</bpmn:incoming>
+      <bpmn:outgoing>SF_checkOut_account</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="account" name="What is done and what is still open">
+      <bpmn:incoming>SF_checkOut_account</bpmn:incoming>
+      <bpmn:outgoing>SF_account_T_2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_account" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_2" name="Confirm the account as it stands">
+      <bpmn:incoming>SF_account_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_T_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_3" name="Write the day notes">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_T_2_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_notesDrafted</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="notesDrafted" name="Notes drafted">
+      <bpmn:incoming>SF_T_3_notesDrafted</bpmn:incoming>
+      <bpmn:outgoing>SF_notesDrafted_Gw_4</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_notesDrafted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_4" name="Archive what is in Done?">
+      <bpmn:incoming>SF_notesDrafted_Gw_4</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_4_T_5</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_T_6</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_5" name="Keep the archive action on">
+      <bpmn:incoming>SF_Gw_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_Gw_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_6" name="Turn the archive action off">
+      <bpmn:incoming>SF_Gw_4_T_6</bpmn:incoming>
+      <bpmn:outgoing>SF_T_6_Gw_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_7" name="Reset what is still open?">
+      <bpmn:incoming>SF_T_5_Gw_7</bpmn:incoming>
+      <bpmn:incoming>SF_T_6_Gw_7</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_7_T_8</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_7_T_9</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_8" name="Turn the reset action on">
+      <bpmn:incoming>SF_Gw_7_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_closing</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_9" name="Leave the reset action off">
+      <bpmn:incoming>SF_Gw_7_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_closing</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="closing" name="Complete the check-out">
+      <bpmn:incoming>SF_T_8_closing</bpmn:incoming>
+      <bpmn:incoming>SF_T_9_closing</bpmn:incoming>
+      <bpmn:outgoing>SF_closing_log</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="log" name="The day's log">
+      <bpmn:incoming>SF_closing_log</bpmn:incoming>
+      <bpmn:outgoing>SF_log_End_10</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_log" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_10" name="Day settled">
+      <bpmn:incoming>SF_log_End_10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_checkOut" sourceRef="Start_1" targetRef="checkOut" />
+    <bpmn:sequenceFlow id="SF_checkOut_account" sourceRef="checkOut" targetRef="account" />
+    <bpmn:sequenceFlow id="SF_account_T_2" sourceRef="account" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_T_3" sourceRef="T_2" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_3_notesDrafted" sourceRef="T_3" targetRef="notesDrafted" />
+    <bpmn:sequenceFlow id="SF_notesDrafted_Gw_4" sourceRef="notesDrafted" targetRef="Gw_4" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_5" name="yes, the default" sourceRef="Gw_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_6" name="no" sourceRef="Gw_4" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_T_5_Gw_7" sourceRef="T_5" targetRef="Gw_7" />
+    <bpmn:sequenceFlow id="SF_T_6_Gw_7" sourceRef="T_6" targetRef="Gw_7" />
+    <bpmn:sequenceFlow id="SF_Gw_7_T_8" name="yes" sourceRef="Gw_7" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_Gw_7_T_9" name="no, the default" sourceRef="Gw_7" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_8_closing" sourceRef="T_8" targetRef="closing" />
+    <bpmn:sequenceFlow id="SF_T_9_closing" sourceRef="T_9" targetRef="closing" />
+    <bpmn:sequenceFlow id="SF_closing_log" sourceRef="closing" targetRef="log" />
+    <bpmn:sequenceFlow id="SF_log_End_10" sourceRef="log" targetRef="End_10" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="accountIn" name="Day account requested">
+      <bpmn:outgoing>SF_accountIn_T_11</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_accountIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_11" name="Read the boards the date's focus chose">
+      <bpmn:incoming>SF_accountIn_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_T_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_12" name="Collect the tasks currently in a Done column">
+      <bpmn:incoming>SF_T_11_T_12</bpmn:incoming>
+      <bpmn:outgoing>SF_T_12_T_13</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_13" name="Collect the tasks past Backlog and not Done">
+      <bpmn:incoming>SF_T_12_T_13</bpmn:incoming>
+      <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_14" name="Read the day notes drafted so far">
+      <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+      <bpmn:outgoing>SF_T_14_T_15</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_15" name="Report the account">
+      <bpmn:incoming>SF_T_14_T_15</bpmn:incoming>
+      <bpmn:outgoing>SF_T_15_End_16</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_16" name="Account answered">
+      <bpmn:incoming>SF_T_15_End_16</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="notesIn" name="Day notes drafted">
+      <bpmn:outgoing>SF_notesIn_T_17</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_notesIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_17" name="Keep the notes as a draft">
+      <bpmn:incoming>SF_notesIn_T_17</bpmn:incoming>
+      <bpmn:outgoing>SF_T_17_T_18</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_18" name="Hold the draft out of version control">
+      <bpmn:incoming>SF_T_17_T_18</bpmn:incoming>
+      <bpmn:outgoing>SF_T_18_End_19</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_19" name="Notes answered">
+      <bpmn:incoming>SF_T_18_End_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="closeIn" name="Check-out submitted">
+      <bpmn:outgoing>SF_closeIn_T_20</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closeIn" />
+    </bpmn:startEvent>
+    <bpmn:task id="T_20" name="Record the notes and both task sets as the date's log">
+      <bpmn:incoming>SF_closeIn_T_20</bpmn:incoming>
+      <bpmn:outgoing>SF_T_20_Gw_21</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_21" name="Archive the completed?">
+      <bpmn:incoming>SF_T_20_Gw_21</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_21_T_22</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_21_T_24</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_22" name="Archive every task in a Done column on the day's boards">
+      <bpmn:incoming>SF_Gw_21_T_22</bpmn:incoming>
+      <bpmn:outgoing>SF_T_22_T_23</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_23" name="Archive every task in a Done column on Chores">
+      <bpmn:incoming>SF_T_22_T_23</bpmn:incoming>
+      <bpmn:outgoing>SF_T_23_Gw_25</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_24" name="Leave the completed tasks where they are">
+      <bpmn:incoming>SF_Gw_21_T_24</bpmn:incoming>
+      <bpmn:outgoing>SF_T_24_Gw_25</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_25" name="Reset the still open?">
+      <bpmn:incoming>SF_T_23_Gw_25</bpmn:incoming>
+      <bpmn:incoming>SF_T_24_Gw_25</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_25_T_26</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_25_T_27</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_26" name="Return each to the top of its Backlog bucket, rightmost column highest">
+      <bpmn:incoming>SF_Gw_25_T_26</bpmn:incoming>
+      <bpmn:outgoing>SF_T_26_T_28</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_27" name="Leave the open tasks in their columns">
+      <bpmn:incoming>SF_Gw_25_T_27</bpmn:incoming>
+      <bpmn:outgoing>SF_T_27_T_28</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_28" name="Report the day's log">
+      <bpmn:incoming>SF_T_26_T_28</bpmn:incoming>
+      <bpmn:incoming>SF_T_27_T_28</bpmn:incoming>
+      <bpmn:outgoing>SF_T_28_End_29</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_29" name="Check-out answered">
+      <bpmn:incoming>SF_T_28_End_29</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_T_11_T_12" sourceRef="T_11" targetRef="T_12" />
+    <bpmn:sequenceFlow id="SF_T_12_T_13" sourceRef="T_12" targetRef="T_13" />
+    <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+    <bpmn:sequenceFlow id="SF_T_14_T_15" sourceRef="T_14" targetRef="T_15" />
+    <bpmn:sequenceFlow id="SF_accountIn_T_11" sourceRef="accountIn" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_T_15_End_16" sourceRef="T_15" targetRef="End_16" />
+    <bpmn:sequenceFlow id="SF_T_17_T_18" sourceRef="T_17" targetRef="T_18" />
+    <bpmn:sequenceFlow id="SF_notesIn_T_17" sourceRef="notesIn" targetRef="T_17" />
+    <bpmn:sequenceFlow id="SF_T_18_End_19" sourceRef="T_18" targetRef="End_19" />
+    <bpmn:sequenceFlow id="SF_T_20_Gw_21" sourceRef="T_20" targetRef="Gw_21" />
+    <bpmn:sequenceFlow id="SF_T_22_T_23" sourceRef="T_22" targetRef="T_23" />
+    <bpmn:sequenceFlow id="SF_Gw_21_T_22" name="archive them" sourceRef="Gw_21" targetRef="T_22" />
+    <bpmn:sequenceFlow id="SF_Gw_21_T_24" name="leave them" sourceRef="Gw_21" targetRef="T_24" />
+    <bpmn:sequenceFlow id="SF_T_23_Gw_25" sourceRef="T_23" targetRef="Gw_25" />
+    <bpmn:sequenceFlow id="SF_T_24_Gw_25" sourceRef="T_24" targetRef="Gw_25" />
+    <bpmn:sequenceFlow id="SF_Gw_25_T_26" name="reset them" sourceRef="Gw_25" targetRef="T_26" />
+    <bpmn:sequenceFlow id="SF_Gw_25_T_27" name="leave them" sourceRef="Gw_25" targetRef="T_27" />
+    <bpmn:sequenceFlow id="SF_T_26_T_28" sourceRef="T_26" targetRef="T_28" />
+    <bpmn:sequenceFlow id="SF_T_27_T_28" sourceRef="T_27" targetRef="T_28" />
+    <bpmn:sequenceFlow id="SF_closeIn_T_20" sourceRef="closeIn" targetRef="T_20" />
+    <bpmn:sequenceFlow id="SF_T_28_End_29" sourceRef="T_28" targetRef="End_29" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP13_CloseOutTheDay">
+    <bpmndi:BPMNPlane id="P_BP13_CloseOutTheDay" bpmnElement="Collaboration_BP13_CloseOutTheDay">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="4130" height="380" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="500" width="4130" height="380" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="checkOut_di" bpmnElement="checkOut">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="account_di" bpmnElement="account">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="1410" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="1580" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="notesDrafted_di" bpmnElement="notesDrafted">
+        <dc:Bounds x="1952" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_4_di" bpmnElement="Gw_4">
+        <dc:Bounds x="2115" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="2260" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_6_di" bpmnElement="T_6">
+        <dc:Bounds x="2260" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_7_di" bpmnElement="Gw_7">
+        <dc:Bounds x="2455" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="2600" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="2600" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closing_di" bpmnElement="closing">
+        <dc:Bounds x="2770" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="log_di" bpmnElement="log">
+        <dc:Bounds x="3992" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3968" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_10_di" bpmnElement="End_10">
+        <dc:Bounds x="4162" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="4138" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="accountIn_di" bpmnElement="accountIn">
+        <dc:Bounds x="422" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="560" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="730" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="900" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="1070" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="1240" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_16_di" bpmnElement="End_16">
+        <dc:Bounds x="1442" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="notesIn_di" bpmnElement="notesIn">
+        <dc:Bounds x="1612" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_17_di" bpmnElement="T_17">
+        <dc:Bounds x="1750" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="1920" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_19_di" bpmnElement="End_19">
+        <dc:Bounds x="2122" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closeIn_di" bpmnElement="closeIn">
+        <dc:Bounds x="2802" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2778" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_20_di" bpmnElement="T_20">
+        <dc:Bounds x="2940" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_21_di" bpmnElement="Gw_21">
+        <dc:Bounds x="3135" y="595" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3118" y="650" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_22_di" bpmnElement="T_22">
+        <dc:Bounds x="3280" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="3450" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="3280" y="700" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_25_di" bpmnElement="Gw_25">
+        <dc:Bounds x="3645" y="595" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3628" y="650" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="3790" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_27_di" bpmnElement="T_27">
+        <dc:Bounds x="3790" y="700" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_28_di" bpmnElement="T_28">
+        <dc:Bounds x="3960" y="580" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_29_di" bpmnElement="End_29">
+        <dc:Bounds x="4162" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="4138" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_checkOut_di" bpmnElement="SF_Start_1_checkOut">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_checkOut_account_di" bpmnElement="SF_checkOut_account">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_account_T_2_di" bpmnElement="SF_account_T_2">
+        <di:waypoint x="1308" y="200" />
+        <di:waypoint x="1410" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_T_3_di" bpmnElement="SF_T_2_T_3">
+        <di:waypoint x="1510" y="200" />
+        <di:waypoint x="1580" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_notesDrafted_di" bpmnElement="SF_T_3_notesDrafted">
+        <di:waypoint x="1680" y="200" />
+        <di:waypoint x="1952" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_notesDrafted_Gw_4_di" bpmnElement="SF_notesDrafted_Gw_4">
+        <di:waypoint x="1988" y="200" />
+        <di:waypoint x="2115" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_5_di" bpmnElement="SF_Gw_4_T_5">
+        <di:waypoint x="2165" y="200" />
+        <di:waypoint x="2260" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_6_di" bpmnElement="SF_Gw_4_T_6">
+        <di:waypoint x="2165" y="200" />
+        <di:waypoint x="2195" y="200" />
+        <di:waypoint x="2195" y="320" />
+        <di:waypoint x="2260" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_Gw_7_di" bpmnElement="SF_T_5_Gw_7">
+        <di:waypoint x="2360" y="200" />
+        <di:waypoint x="2455" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_6_Gw_7_di" bpmnElement="SF_T_6_Gw_7">
+        <di:waypoint x="2360" y="320" />
+        <di:waypoint x="2390" y="320" />
+        <di:waypoint x="2390" y="200" />
+        <di:waypoint x="2455" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_7_T_8_di" bpmnElement="SF_Gw_7_T_8">
+        <di:waypoint x="2505" y="200" />
+        <di:waypoint x="2600" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_7_T_9_di" bpmnElement="SF_Gw_7_T_9">
+        <di:waypoint x="2505" y="200" />
+        <di:waypoint x="2535" y="200" />
+        <di:waypoint x="2535" y="320" />
+        <di:waypoint x="2600" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_closing_di" bpmnElement="SF_T_8_closing">
+        <di:waypoint x="2700" y="200" />
+        <di:waypoint x="2770" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_closing_di" bpmnElement="SF_T_9_closing">
+        <di:waypoint x="2700" y="320" />
+        <di:waypoint x="2730" y="320" />
+        <di:waypoint x="2730" y="200" />
+        <di:waypoint x="2770" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closing_log_di" bpmnElement="SF_closing_log">
+        <di:waypoint x="2870" y="200" />
+        <di:waypoint x="3992" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_log_End_10_di" bpmnElement="SF_log_End_10">
+        <di:waypoint x="4028" y="200" />
+        <di:waypoint x="4162" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_T_12_di" bpmnElement="SF_T_11_T_12">
+        <di:waypoint x="660" y="620" />
+        <di:waypoint x="730" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_12_T_13_di" bpmnElement="SF_T_12_T_13">
+        <di:waypoint x="830" y="620" />
+        <di:waypoint x="900" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="1000" y="620" />
+        <di:waypoint x="1070" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_T_15_di" bpmnElement="SF_T_14_T_15">
+        <di:waypoint x="1170" y="620" />
+        <di:waypoint x="1240" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_accountIn_T_11_di" bpmnElement="SF_accountIn_T_11">
+        <di:waypoint x="458" y="620" />
+        <di:waypoint x="560" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_End_16_di" bpmnElement="SF_T_15_End_16">
+        <di:waypoint x="1340" y="620" />
+        <di:waypoint x="1442" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_17_T_18_di" bpmnElement="SF_T_17_T_18">
+        <di:waypoint x="1850" y="620" />
+        <di:waypoint x="1920" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_notesIn_T_17_di" bpmnElement="SF_notesIn_T_17">
+        <di:waypoint x="1648" y="620" />
+        <di:waypoint x="1750" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_End_19_di" bpmnElement="SF_T_18_End_19">
+        <di:waypoint x="2020" y="620" />
+        <di:waypoint x="2122" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_20_Gw_21_di" bpmnElement="SF_T_20_Gw_21">
+        <di:waypoint x="3040" y="620" />
+        <di:waypoint x="3135" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_22_T_23_di" bpmnElement="SF_T_22_T_23">
+        <di:waypoint x="3380" y="620" />
+        <di:waypoint x="3450" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_21_T_22_di" bpmnElement="SF_Gw_21_T_22">
+        <di:waypoint x="3185" y="620" />
+        <di:waypoint x="3280" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_21_T_24_di" bpmnElement="SF_Gw_21_T_24">
+        <di:waypoint x="3185" y="620" />
+        <di:waypoint x="3215" y="620" />
+        <di:waypoint x="3215" y="740" />
+        <di:waypoint x="3280" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_23_Gw_25_di" bpmnElement="SF_T_23_Gw_25">
+        <di:waypoint x="3550" y="620" />
+        <di:waypoint x="3645" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_Gw_25_di" bpmnElement="SF_T_24_Gw_25">
+        <di:waypoint x="3380" y="740" />
+        <di:waypoint x="3415" y="740" />
+        <di:waypoint x="3415" y="560" />
+        <di:waypoint x="3670" y="560" />
+        <di:waypoint x="3670" y="595" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_25_T_26_di" bpmnElement="SF_Gw_25_T_26">
+        <di:waypoint x="3695" y="620" />
+        <di:waypoint x="3790" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_25_T_27_di" bpmnElement="SF_Gw_25_T_27">
+        <di:waypoint x="3695" y="620" />
+        <di:waypoint x="3725" y="620" />
+        <di:waypoint x="3725" y="740" />
+        <di:waypoint x="3790" y="740" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_26_T_28_di" bpmnElement="SF_T_26_T_28">
+        <di:waypoint x="3890" y="620" />
+        <di:waypoint x="3960" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_27_T_28_di" bpmnElement="SF_T_27_T_28">
+        <di:waypoint x="3890" y="740" />
+        <di:waypoint x="3920" y="740" />
+        <di:waypoint x="3920" y="620" />
+        <di:waypoint x="3960" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closeIn_T_20_di" bpmnElement="SF_closeIn_T_20">
+        <di:waypoint x="2838" y="620" />
+        <di:waypoint x="2940" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_28_End_29_di" bpmnElement="SF_T_28_End_29">
+        <di:waypoint x="4060" y="620" />
+        <di:waypoint x="4162" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1630" y="240" />
+        <di:waypoint x="1630" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="2820" y="240" />
+        <di:waypoint x="2820" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="1290" y="580" />
+        <di:waypoint x="1290" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="1970" y="580" />
+        <di:waypoint x="1970" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="4010" y="580" />
+        <di:waypoint x="4010" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="1340" y="64" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="1460" y="160" /><di:waypoint x="1460" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1850" y="86" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1970" y="182" /><di:waypoint x="1970" y="162" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="2190" y="79" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="2310" y="160" /><di:waypoint x="2310" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="2530" y="79" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="2650" y="160" /><di:waypoint x="2650" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="3890" y="101" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="4010" y="182" /><di:waypoint x="4010" y="162" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="490" y="680" width="240" height="106" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="610" y="660" /><di:waypoint x="610" y="680" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="1680" y="680" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="1800" y="660" /><di:waypoint x="1800" y="680" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X8_di" bpmnElement="TextAnnotation_X8"><dc:Bounds x="2870" y="680" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X8_di" bpmnElement="Association_X8"><di:waypoint x="2990" y="660" /><di:waypoint x="2990" y="680" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

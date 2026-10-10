@@ -1,0 +1,1271 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP07_CloseOutAGoal" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP07_CloseOutAGoal">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP07.01 · Read the goal's check-out proposal" sourceRef="checkOut" targetRef="proposalIn" />
+    <bpmn:messageFlow id="MF_2" name="BP07.02 · Draft the goal check-out" sourceRef="T_9" targetRef="draftIn" />
+    <bpmn:messageFlow id="MF_3" name="BP07.03 · See what archiving the goal takes" sourceRef="T_11" targetRef="archImpactIn" />
+    <bpmn:messageFlow id="MF_4" name="BP07.04 · Close out the goal" sourceRef="closing" targetRef="closeIn" />
+    <bpmn:messageFlow id="MF_5" name="BP07.05 · Seed a follow-up goal" sourceRef="T_18" targetRef="seedIn" />
+    <bpmn:messageFlow id="MF_6" name="BP07.06 · Create the follow-up goal" sourceRef="T_20" targetRef="followUpIn" />
+    <bpmn:messageFlow id="MF_7" name="The proposal with a status per measure" sourceRef="BP07.01_ReadTheCheckOutProposal" targetRef="proposal" />
+    <bpmn:messageFlow id="MF_8" name="Draft kept" sourceRef="BP07.02_DraftTheGoalCheckOut" targetRef="draftKept" />
+    <bpmn:messageFlow id="MF_9" name="What the archiving will take" sourceRef="BP07.03_ReadTheArchivingImpact" targetRef="archImpact" />
+    <bpmn:messageFlow id="MF_10" name="Goal checked out" sourceRef="BP07.04_CloseOutGoal" targetRef="closed" />
+    <bpmn:messageFlow id="MF_11" name="The seeded follow-up for review" sourceRef="BP07.05_SeedFollowUpGoal" targetRef="seeded" />
+    <bpmn:messageFlow id="MF_12" name="Follow-up goal created" sourceRef="BP07.06_CreateFollowUpGoal" targetRef="followUp" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>An archived goal is frozen. Bringing it back is what makes a judgment possible again, and a check-out record it already carries is untouched meanwhile.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_3" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Achieved, partially achieved, missed or abandoned. The outcome is required; everything else in the sitting is optional.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="T_5" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>Any inferred status can be overridden, a boolean measure set to Partial included. The rule constrains the inference, never the judgment.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="T_7" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>The sitting is kept as a draft while it is filled in, so leaving it, a crash and a restart cost nothing.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="draftKept" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>An archived goal still exists, so its projects are not orphaned by it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="T_14" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>The check-out completes either way. A goal left active can be archived directly later.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="T_15" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>Abandoning the follow-up still leaves the check-out complete.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="T_21" targetRef="TextAnnotation_X7" />
+    <bpmn:textAnnotation id="TextAnnotation_X8"><bpmn:text>The proposal is what the system observed: the statuses are inferred, not decided. A check-out is available at any time, with or without a horizon, as long as the goal is not archived.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X8" associationDirection="None" sourceRef="BP07.01_ReadTheCheckOutProposal" targetRef="TextAnnotation_X8" />
+    <bpmn:textAnnotation id="TextAnnotation_X9"><bpmn:text>A draft is not a commit. Nothing it describes takes effect until the check-out is completed.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X9" associationDirection="None" sourceRef="BP07.02_DraftTheGoalCheckOut" targetRef="TextAnnotation_X9" />
+    <bpmn:textAnnotation id="TextAnnotation_X10"><bpmn:text>Cascade, the goal alone, or reject. The keep answer is legal here because an archived goal still exists.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X10" associationDirection="None" sourceRef="BP07.03_ReadTheArchivingImpact" targetRef="TextAnnotation_X10" />
+    <bpmn:textAnnotation id="TextAnnotation_X11"><bpmn:text>The check-out record stays attached to the goal, archived or not, and unarchiving never revokes it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X11" associationDirection="None" sourceRef="BP07.04_CloseOutGoal" targetRef="TextAnnotation_X11" />
+    <bpmn:textAnnotation id="TextAnnotation_X12"><bpmn:text>Check-out notes are dropped. A goal that was open-ended stays open-ended. The seed is reviewed before anything is created.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X12" associationDirection="None" sourceRef="BP07.05_SeedFollowUpGoal" targetRef="TextAnnotation_X12" />
+    <bpmn:textAnnotation id="TextAnnotation_X13"><bpmn:text>The iteration chain stays traceable from the follow-up back to the check-out.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X13" associationDirection="None" sourceRef="BP07.06_CreateFollowUpGoal" targetRef="TextAnnotation_X13" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A cycle ending, or a commitment to settle">
+      <bpmn:outgoing>SF_Start_1_checkOut</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="checkOut" name="Open a goal's check-out">
+      <bpmn:incoming>SF_Start_1_checkOut</bpmn:incoming>
+      <bpmn:outgoing>SF_checkOut_proposal</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="proposal" name="The proposal with a status per measure">
+      <bpmn:incoming>SF_checkOut_proposal</bpmn:incoming>
+      <bpmn:outgoing>SF_proposal_Gw_2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_proposal" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_2" name="Is the goal archived?">
+      <bpmn:incoming>SF_proposal_Gw_2</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_2_T_3</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_2_T_5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_3" name="Read why it cannot be checked out">
+      <bpmn:incoming>SF_Gw_2_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_End_4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_4" name="Nothing to settle">
+      <bpmn:incoming>SF_T_3_End_4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_5" name="Rate the overall outcome">
+      <bpmn:incoming>SF_Gw_2_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_Gw_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_6" name="Accept the inferred statuses?">
+      <bpmn:incoming>SF_T_5_Gw_6</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_6_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_6_T_8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_7" name="Set a status by hand">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_6_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_T_9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_8" name="Keep what was inferred">
+      <bpmn:incoming>SF_Gw_6_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_T_9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_9" name="Write the retro and the per-measure notes">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_T_7_T_9</bpmn:incoming>
+      <bpmn:incoming>SF_T_8_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_draftKept</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="draftKept" name="Draft kept">
+      <bpmn:incoming>SF_T_9_draftKept</bpmn:incoming>
+      <bpmn:outgoing>SF_draftKept_Gw_10</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_draftKept" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_10" name="Archive the goal as this closes?">
+      <bpmn:incoming>SF_draftKept_Gw_10</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_10_T_11</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_10_T_16</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_11" name="Choose an archiving reach">
+      <bpmn:incoming>SF_Gw_10_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_archImpact</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="archImpact" name="What the archiving will take">
+      <bpmn:incoming>SF_T_11_archImpact</bpmn:incoming>
+      <bpmn:outgoing>SF_archImpact_Gw_12</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_archImpact" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_12" name="How far should the archiving reach?">
+      <bpmn:incoming>SF_archImpact_Gw_12</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_12_T_13</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_12_T_14</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_12_T_15</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_13" name="Approve the whole cascade">
+      <bpmn:incoming>SF_Gw_12_T_13</bpmn:incoming>
+      <bpmn:outgoing>SF_T_13_closing</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_14" name="Keep the projects active">
+      <bpmn:incoming>SF_Gw_12_T_14</bpmn:incoming>
+      <bpmn:outgoing>SF_T_14_closing</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_15" name="Withdraw the archiving">
+      <bpmn:incoming>SF_Gw_12_T_15</bpmn:incoming>
+      <bpmn:outgoing>SF_T_15_closing</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_16" name="Turn the archive action off">
+      <bpmn:incoming>SF_Gw_10_T_16</bpmn:incoming>
+      <bpmn:outgoing>SF_T_16_closing</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="closing" name="Complete the check-out">
+      <bpmn:incoming>SF_T_13_closing</bpmn:incoming>
+      <bpmn:incoming>SF_T_14_closing</bpmn:incoming>
+      <bpmn:incoming>SF_T_15_closing</bpmn:incoming>
+      <bpmn:incoming>SF_T_16_closing</bpmn:incoming>
+      <bpmn:outgoing>SF_closing_closed</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="closed" name="Goal checked out">
+      <bpmn:incoming>SF_closing_closed</bpmn:incoming>
+      <bpmn:outgoing>SF_closed_Gw_17</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_17" name="Carry the commitment forward?">
+      <bpmn:incoming>SF_closed_Gw_17</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_17_T_18</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_17_T_22</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_18" name="Ask for a follow-up">
+      <bpmn:incoming>SF_Gw_17_T_18</bpmn:incoming>
+      <bpmn:outgoing>SF_T_18_seeded</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="seeded" name="The seeded follow-up for review">
+      <bpmn:incoming>SF_T_18_seeded</bpmn:incoming>
+      <bpmn:outgoing>SF_seeded_review</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_seeded" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="review" name="Review the follow-up">
+      <bpmn:incoming>SF_seeded_review</bpmn:incoming>
+      <bpmn:outgoing>SF_review_Gw_19</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_19" name="Commit the follow-up?">
+      <bpmn:incoming>SF_review_Gw_19</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_19_T_20</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_19_T_21</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_20" name="Commit the follow-up goal">
+      <bpmn:incoming>SF_Gw_19_T_20</bpmn:incoming>
+      <bpmn:outgoing>SF_T_20_followUp</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="followUp" name="Follow-up goal created">
+      <bpmn:incoming>SF_T_20_followUp</bpmn:incoming>
+      <bpmn:outgoing>SF_followUp_End_23</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_followUp" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_21" name="Abandon the follow-up">
+      <bpmn:incoming>SF_Gw_19_T_21</bpmn:incoming>
+      <bpmn:outgoing>SF_T_21_End_23</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_22" name="Leave the commitment without a successor">
+      <bpmn:incoming>SF_Gw_17_T_22</bpmn:incoming>
+      <bpmn:outgoing>SF_T_22_End_23</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_23" name="Commitment settled">
+      <bpmn:incoming>SF_followUp_End_23</bpmn:incoming>
+      <bpmn:incoming>SF_T_21_End_23</bpmn:incoming>
+      <bpmn:incoming>SF_T_22_End_23</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_checkOut" sourceRef="Start_1" targetRef="checkOut" />
+    <bpmn:sequenceFlow id="SF_checkOut_proposal" sourceRef="checkOut" targetRef="proposal" />
+    <bpmn:sequenceFlow id="SF_proposal_Gw_2" sourceRef="proposal" targetRef="Gw_2" />
+    <bpmn:sequenceFlow id="SF_T_3_End_4" sourceRef="T_3" targetRef="End_4" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_3" name="archived" sourceRef="Gw_2" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_Gw_2_T_5" name="live" sourceRef="Gw_2" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_Gw_6" sourceRef="T_5" targetRef="Gw_6" />
+    <bpmn:sequenceFlow id="SF_Gw_6_T_7" name="override one" sourceRef="Gw_6" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_Gw_6_T_8" name="take them as they are" sourceRef="Gw_6" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_T_7_T_9" sourceRef="T_7" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_8_T_9" sourceRef="T_8" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_9_draftKept" sourceRef="T_9" targetRef="draftKept" />
+    <bpmn:sequenceFlow id="SF_draftKept_Gw_10" sourceRef="draftKept" targetRef="Gw_10" />
+    <bpmn:sequenceFlow id="SF_T_11_archImpact" sourceRef="T_11" targetRef="archImpact" />
+    <bpmn:sequenceFlow id="SF_archImpact_Gw_12" sourceRef="archImpact" targetRef="Gw_12" />
+    <bpmn:sequenceFlow id="SF_Gw_12_T_13" name="the goal and its projects" sourceRef="Gw_12" targetRef="T_13" />
+    <bpmn:sequenceFlow id="SF_Gw_12_T_14" name="the goal alone" sourceRef="Gw_12" targetRef="T_14" />
+    <bpmn:sequenceFlow id="SF_Gw_12_T_15" name="reject the archiving" sourceRef="Gw_12" targetRef="T_15" />
+    <bpmn:sequenceFlow id="SF_Gw_10_T_11" name="yes, the default" sourceRef="Gw_10" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_Gw_10_T_16" name="no, leave it active" sourceRef="Gw_10" targetRef="T_16" />
+    <bpmn:sequenceFlow id="SF_T_13_closing" sourceRef="T_13" targetRef="closing" />
+    <bpmn:sequenceFlow id="SF_T_14_closing" sourceRef="T_14" targetRef="closing" />
+    <bpmn:sequenceFlow id="SF_T_15_closing" sourceRef="T_15" targetRef="closing" />
+    <bpmn:sequenceFlow id="SF_T_16_closing" sourceRef="T_16" targetRef="closing" />
+    <bpmn:sequenceFlow id="SF_closing_closed" sourceRef="closing" targetRef="closed" />
+    <bpmn:sequenceFlow id="SF_closed_Gw_17" sourceRef="closed" targetRef="Gw_17" />
+    <bpmn:sequenceFlow id="SF_T_18_seeded" sourceRef="T_18" targetRef="seeded" />
+    <bpmn:sequenceFlow id="SF_seeded_review" sourceRef="seeded" targetRef="review" />
+    <bpmn:sequenceFlow id="SF_review_Gw_19" sourceRef="review" targetRef="Gw_19" />
+    <bpmn:sequenceFlow id="SF_T_20_followUp" sourceRef="T_20" targetRef="followUp" />
+    <bpmn:sequenceFlow id="SF_Gw_19_T_20" name="commit it" sourceRef="Gw_19" targetRef="T_20" />
+    <bpmn:sequenceFlow id="SF_Gw_19_T_21" name="abandon it" sourceRef="Gw_19" targetRef="T_21" />
+    <bpmn:sequenceFlow id="SF_Gw_17_T_18" name="yes" sourceRef="Gw_17" targetRef="T_18" />
+    <bpmn:sequenceFlow id="SF_Gw_17_T_22" name="no, end it here" sourceRef="Gw_17" targetRef="T_22" />
+    <bpmn:sequenceFlow id="SF_followUp_End_23" sourceRef="followUp" targetRef="End_23" />
+    <bpmn:sequenceFlow id="SF_T_21_End_23" sourceRef="T_21" targetRef="End_23" />
+    <bpmn:sequenceFlow id="SF_T_22_End_23" sourceRef="T_22" targetRef="End_23" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="proposalIn" name="Check-out proposal requested">
+      <bpmn:outgoing>SF_proposalIn_BP07.01_ReadTheCheckOutProposal</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_proposalIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.01_ReadTheCheckOutProposal" name="Read the goal's check-out proposal">
+      <bpmn:incoming>SF_proposalIn_BP07.01_ReadTheCheckOutProposal</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.01_ReadTheCheckOutProposal_End_29</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.01_ReadTheCheckOutProposal_s" name="Start">
+        <bpmn:outgoing>SF_BP07.01_ReadTheCheckOutProposal_s_T_24</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_24" name="Read the goal with its measures and their latest check-ins">
+        <bpmn:incoming>SF_BP07.01_ReadTheCheckOutProposal_s_T_24</bpmn:incoming>
+        <bpmn:outgoing>SF_T_24_T_25</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_25" name="Infer a status per measure from its type">
+        <bpmn:incoming>SF_T_24_T_25</bpmn:incoming>
+        <bpmn:outgoing>SF_T_25_T_26</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_26" name="Read the draft left by an earlier sitting">
+        <bpmn:incoming>SF_T_25_T_26</bpmn:incoming>
+        <bpmn:outgoing>SF_T_26_T_27</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_27" name="Report whether the goal is archived">
+        <bpmn:incoming>SF_T_26_T_27</bpmn:incoming>
+        <bpmn:outgoing>SF_T_27_T_28</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_28" name="Report the proposal">
+        <bpmn:incoming>SF_T_27_T_28</bpmn:incoming>
+        <bpmn:outgoing>SF_T_28_BP07.01_ReadTheCheckOutProposal_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.01_ReadTheCheckOutProposal_e" name="fertig">
+        <bpmn:incoming>SF_T_28_BP07.01_ReadTheCheckOutProposal_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_24_T_25" sourceRef="T_24" targetRef="T_25" />
+      <bpmn:sequenceFlow id="SF_T_25_T_26" sourceRef="T_25" targetRef="T_26" />
+      <bpmn:sequenceFlow id="SF_T_26_T_27" sourceRef="T_26" targetRef="T_27" />
+      <bpmn:sequenceFlow id="SF_T_27_T_28" sourceRef="T_27" targetRef="T_28" />
+      <bpmn:sequenceFlow id="SF_BP07.01_ReadTheCheckOutProposal_s_T_24" sourceRef="BP07.01_ReadTheCheckOutProposal_s" targetRef="T_24" />
+      <bpmn:sequenceFlow id="SF_T_28_BP07.01_ReadTheCheckOutProposal_e" sourceRef="T_28" targetRef="BP07.01_ReadTheCheckOutProposal_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_29" name="Proposal answered">
+      <bpmn:incoming>SF_BP07.01_ReadTheCheckOutProposal_End_29</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="draftIn" name="Check-out draft submitted">
+      <bpmn:outgoing>SF_draftIn_BP07.02_DraftTheGoalCheckOut</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_draftIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.02_DraftTheGoalCheckOut" name="Draft the goal check-out">
+      <bpmn:incoming>SF_draftIn_BP07.02_DraftTheGoalCheckOut</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.02_DraftTheGoalCheckOut_End_32</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.02_DraftTheGoalCheckOut_s" name="Start">
+        <bpmn:outgoing>SF_BP07.02_DraftTheGoalCheckOut_s_T_30</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_30" name="Keep the outcome, the statuses and the retro as a draft">
+        <bpmn:incoming>SF_BP07.02_DraftTheGoalCheckOut_s_T_30</bpmn:incoming>
+        <bpmn:outgoing>SF_T_30_T_31</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_31" name="Hold the draft out of version control">
+        <bpmn:incoming>SF_T_30_T_31</bpmn:incoming>
+        <bpmn:outgoing>SF_T_31_BP07.02_DraftTheGoalCheckOut_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.02_DraftTheGoalCheckOut_e" name="fertig">
+        <bpmn:incoming>SF_T_31_BP07.02_DraftTheGoalCheckOut_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_30_T_31" sourceRef="T_30" targetRef="T_31" />
+      <bpmn:sequenceFlow id="SF_BP07.02_DraftTheGoalCheckOut_s_T_30" sourceRef="BP07.02_DraftTheGoalCheckOut_s" targetRef="T_30" />
+      <bpmn:sequenceFlow id="SF_T_31_BP07.02_DraftTheGoalCheckOut_e" sourceRef="T_31" targetRef="BP07.02_DraftTheGoalCheckOut_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_32" name="Draft answered">
+      <bpmn:incoming>SF_BP07.02_DraftTheGoalCheckOut_End_32</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="archImpactIn" name="Archiving impact requested">
+      <bpmn:outgoing>SF_archImpactIn_BP07.03_ReadTheArchivingImpact</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_archImpactIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.03_ReadTheArchivingImpact" name="See what archiving the goal takes">
+      <bpmn:incoming>SF_archImpactIn_BP07.03_ReadTheArchivingImpact</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.03_ReadTheArchivingImpact_End_37</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.03_ReadTheArchivingImpact_s" name="Start">
+        <bpmn:outgoing>SF_BP07.03_ReadTheArchivingImpact_s_T_33</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_33" name="Collect the projects parented on the goal">
+        <bpmn:incoming>SF_BP07.03_ReadTheArchivingImpact_s_T_33</bpmn:incoming>
+        <bpmn:outgoing>SF_T_33_T_34</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_34" name="Collect the projects parented on its measures">
+        <bpmn:incoming>SF_T_33_T_34</bpmn:incoming>
+        <bpmn:outgoing>SF_T_34_T_35</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_35" name="Include the archived ones in the count">
+        <bpmn:incoming>SF_T_34_T_35</bpmn:incoming>
+        <bpmn:outgoing>SF_T_35_T_36</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_36" name="Report the three answers the gesture offers">
+        <bpmn:incoming>SF_T_35_T_36</bpmn:incoming>
+        <bpmn:outgoing>SF_T_36_BP07.03_ReadTheArchivingImpact_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.03_ReadTheArchivingImpact_e" name="fertig">
+        <bpmn:incoming>SF_T_36_BP07.03_ReadTheArchivingImpact_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_33_T_34" sourceRef="T_33" targetRef="T_34" />
+      <bpmn:sequenceFlow id="SF_T_34_T_35" sourceRef="T_34" targetRef="T_35" />
+      <bpmn:sequenceFlow id="SF_T_35_T_36" sourceRef="T_35" targetRef="T_36" />
+      <bpmn:sequenceFlow id="SF_BP07.03_ReadTheArchivingImpact_s_T_33" sourceRef="BP07.03_ReadTheArchivingImpact_s" targetRef="T_33" />
+      <bpmn:sequenceFlow id="SF_T_36_BP07.03_ReadTheArchivingImpact_e" sourceRef="T_36" targetRef="BP07.03_ReadTheArchivingImpact_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_37" name="Archiving impact answered">
+      <bpmn:incoming>SF_BP07.03_ReadTheArchivingImpact_End_37</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="closeIn" name="Close-out submitted">
+      <bpmn:outgoing>SF_closeIn_BP07.04_CloseOutGoal</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.04_CloseOutGoal" name="Close out the goal">
+      <bpmn:incoming>SF_closeIn_BP07.04_CloseOutGoal</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.04_CloseOutGoal_End_45</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.04_CloseOutGoal_s" name="Start">
+        <bpmn:outgoing>SF_BP07.04_CloseOutGoal_s_T_38</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_38" name="Store the outcome, the statuses and the retro on the goal">
+        <bpmn:incoming>SF_BP07.04_CloseOutGoal_s_T_38</bpmn:incoming>
+        <bpmn:outgoing>SF_T_38_Gw_39</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:exclusiveGateway id="Gw_39" name="Archiving approved?">
+        <bpmn:incoming>SF_T_38_Gw_39</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_39_T_40</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_39_T_42</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:task id="T_40" name="Archive the projects the user included">
+        <bpmn:incoming>SF_Gw_39_T_40</bpmn:incoming>
+        <bpmn:outgoing>SF_T_40_T_41</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_41" name="Archive the goal with its check-out record">
+        <bpmn:incoming>SF_T_40_T_41</bpmn:incoming>
+        <bpmn:outgoing>SF_T_41_T_43</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_42" name="Leave the goal in the working set">
+        <bpmn:incoming>SF_Gw_39_T_42</bpmn:incoming>
+        <bpmn:outgoing>SF_T_42_T_43</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_43" name="Discard the draft the sitting came from">
+        <bpmn:incoming>SF_T_41_T_43</bpmn:incoming>
+        <bpmn:incoming>SF_T_42_T_43</bpmn:incoming>
+        <bpmn:outgoing>SF_T_43_T_44</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_44" name="Report what was closed">
+        <bpmn:incoming>SF_T_43_T_44</bpmn:incoming>
+        <bpmn:outgoing>SF_T_44_BP07.04_CloseOutGoal_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.04_CloseOutGoal_e" name="fertig">
+        <bpmn:incoming>SF_T_44_BP07.04_CloseOutGoal_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_38_Gw_39" sourceRef="T_38" targetRef="Gw_39" />
+      <bpmn:sequenceFlow id="SF_T_40_T_41" sourceRef="T_40" targetRef="T_41" />
+      <bpmn:sequenceFlow id="SF_Gw_39_T_40" name="approved" sourceRef="Gw_39" targetRef="T_40" />
+      <bpmn:sequenceFlow id="SF_Gw_39_T_42" name="withheld" sourceRef="Gw_39" targetRef="T_42" />
+      <bpmn:sequenceFlow id="SF_T_41_T_43" sourceRef="T_41" targetRef="T_43" />
+      <bpmn:sequenceFlow id="SF_T_42_T_43" sourceRef="T_42" targetRef="T_43" />
+      <bpmn:sequenceFlow id="SF_T_43_T_44" sourceRef="T_43" targetRef="T_44" />
+      <bpmn:sequenceFlow id="SF_BP07.04_CloseOutGoal_s_T_38" sourceRef="BP07.04_CloseOutGoal_s" targetRef="T_38" />
+      <bpmn:sequenceFlow id="SF_T_44_BP07.04_CloseOutGoal_e" sourceRef="T_44" targetRef="BP07.04_CloseOutGoal_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_45" name="Close-out answered">
+      <bpmn:incoming>SF_BP07.04_CloseOutGoal_End_45</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="seedIn" name="Follow-up seed requested">
+      <bpmn:outgoing>SF_seedIn_BP07.05_SeedFollowUpGoal</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_seedIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.05_SeedFollowUpGoal" name="Seed a follow-up goal">
+      <bpmn:incoming>SF_seedIn_BP07.05_SeedFollowUpGoal</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.05_SeedFollowUpGoal_End_52</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.05_SeedFollowUpGoal_s" name="Start">
+        <bpmn:outgoing>SF_BP07.05_SeedFollowUpGoal_s_T_46</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_46" name="Inherit the theme and the linked ideas">
+        <bpmn:incoming>SF_BP07.05_SeedFollowUpGoal_s_T_46</bpmn:incoming>
+        <bpmn:outgoing>SF_T_46_T_47</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_47" name="Carry the objective over, marked as a continuation">
+        <bpmn:incoming>SF_T_46_T_47</bpmn:incoming>
+        <bpmn:outgoing>SF_T_47_T_48</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_48" name="Take the Partial and Missed measures with their progress reset">
+        <bpmn:incoming>SF_T_47_T_48</bpmn:incoming>
+        <bpmn:outgoing>SF_T_48_T_49</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_49" name="Advance the horizon of a goal that had one">
+        <bpmn:incoming>SF_T_48_T_49</bpmn:incoming>
+        <bpmn:outgoing>SF_T_49_T_50</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_50" name="Back-reference the originating check-out">
+        <bpmn:incoming>SF_T_49_T_50</bpmn:incoming>
+        <bpmn:outgoing>SF_T_50_T_51</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_51" name="Report the seeded follow-up">
+        <bpmn:incoming>SF_T_50_T_51</bpmn:incoming>
+        <bpmn:outgoing>SF_T_51_BP07.05_SeedFollowUpGoal_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.05_SeedFollowUpGoal_e" name="fertig">
+        <bpmn:incoming>SF_T_51_BP07.05_SeedFollowUpGoal_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_46_T_47" sourceRef="T_46" targetRef="T_47" />
+      <bpmn:sequenceFlow id="SF_T_47_T_48" sourceRef="T_47" targetRef="T_48" />
+      <bpmn:sequenceFlow id="SF_T_48_T_49" sourceRef="T_48" targetRef="T_49" />
+      <bpmn:sequenceFlow id="SF_T_49_T_50" sourceRef="T_49" targetRef="T_50" />
+      <bpmn:sequenceFlow id="SF_T_50_T_51" sourceRef="T_50" targetRef="T_51" />
+      <bpmn:sequenceFlow id="SF_BP07.05_SeedFollowUpGoal_s_T_46" sourceRef="BP07.05_SeedFollowUpGoal_s" targetRef="T_46" />
+      <bpmn:sequenceFlow id="SF_T_51_BP07.05_SeedFollowUpGoal_e" sourceRef="T_51" targetRef="BP07.05_SeedFollowUpGoal_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_52" name="Seed answered">
+      <bpmn:incoming>SF_BP07.05_SeedFollowUpGoal_End_52</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="followUpIn" name="Follow-up submitted">
+      <bpmn:outgoing>SF_followUpIn_BP07.06_CreateFollowUpGoal</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_followUpIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.06_CreateFollowUpGoal" name="Create the follow-up goal">
+      <bpmn:incoming>SF_followUpIn_BP07.06_CreateFollowUpGoal</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.06_CreateFollowUpGoal_End_55</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.06_CreateFollowUpGoal_s" name="Start">
+        <bpmn:outgoing>SF_BP07.06_CreateFollowUpGoal_s_T_53</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_53" name="Store the follow-up as the user reviewed it">
+        <bpmn:incoming>SF_BP07.06_CreateFollowUpGoal_s_T_53</bpmn:incoming>
+        <bpmn:outgoing>SF_T_53_T_54</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_54" name="Keep its link back to the check-out it came from">
+        <bpmn:incoming>SF_T_53_T_54</bpmn:incoming>
+        <bpmn:outgoing>SF_T_54_BP07.06_CreateFollowUpGoal_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.06_CreateFollowUpGoal_e" name="fertig">
+        <bpmn:incoming>SF_T_54_BP07.06_CreateFollowUpGoal_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_53_T_54" sourceRef="T_53" targetRef="T_54" />
+      <bpmn:sequenceFlow id="SF_BP07.06_CreateFollowUpGoal_s_T_53" sourceRef="BP07.06_CreateFollowUpGoal_s" targetRef="T_53" />
+      <bpmn:sequenceFlow id="SF_T_54_BP07.06_CreateFollowUpGoal_e" sourceRef="T_54" targetRef="BP07.06_CreateFollowUpGoal_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_55" name="Follow-up answered">
+      <bpmn:incoming>SF_BP07.06_CreateFollowUpGoal_End_55</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_proposalIn_BP07.01_ReadTheCheckOutProposal" sourceRef="proposalIn" targetRef="BP07.01_ReadTheCheckOutProposal" />
+    <bpmn:sequenceFlow id="SF_BP07.01_ReadTheCheckOutProposal_End_29" sourceRef="BP07.01_ReadTheCheckOutProposal" targetRef="End_29" />
+    <bpmn:sequenceFlow id="SF_draftIn_BP07.02_DraftTheGoalCheckOut" sourceRef="draftIn" targetRef="BP07.02_DraftTheGoalCheckOut" />
+    <bpmn:sequenceFlow id="SF_BP07.02_DraftTheGoalCheckOut_End_32" sourceRef="BP07.02_DraftTheGoalCheckOut" targetRef="End_32" />
+    <bpmn:sequenceFlow id="SF_archImpactIn_BP07.03_ReadTheArchivingImpact" sourceRef="archImpactIn" targetRef="BP07.03_ReadTheArchivingImpact" />
+    <bpmn:sequenceFlow id="SF_BP07.03_ReadTheArchivingImpact_End_37" sourceRef="BP07.03_ReadTheArchivingImpact" targetRef="End_37" />
+    <bpmn:sequenceFlow id="SF_closeIn_BP07.04_CloseOutGoal" sourceRef="closeIn" targetRef="BP07.04_CloseOutGoal" />
+    <bpmn:sequenceFlow id="SF_BP07.04_CloseOutGoal_End_45" sourceRef="BP07.04_CloseOutGoal" targetRef="End_45" />
+    <bpmn:sequenceFlow id="SF_seedIn_BP07.05_SeedFollowUpGoal" sourceRef="seedIn" targetRef="BP07.05_SeedFollowUpGoal" />
+    <bpmn:sequenceFlow id="SF_BP07.05_SeedFollowUpGoal_End_52" sourceRef="BP07.05_SeedFollowUpGoal" targetRef="End_52" />
+    <bpmn:sequenceFlow id="SF_followUpIn_BP07.06_CreateFollowUpGoal" sourceRef="followUpIn" targetRef="BP07.06_CreateFollowUpGoal" />
+    <bpmn:sequenceFlow id="SF_BP07.06_CreateFollowUpGoal_End_55" sourceRef="BP07.06_CreateFollowUpGoal" targetRef="End_55" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal">
+    <bpmndi:BPMNPlane id="P_BP07_CloseOutAGoal" bpmnElement="Collaboration_BP07_CloseOutAGoal">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="4130" height="620" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="740" width="4130" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="checkOut_di" bpmnElement="checkOut">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="proposal_di" bpmnElement="proposal">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_2_di" bpmnElement="Gw_2">
+        <dc:Bounds x="755" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_4_di" bpmnElement="End_4">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="900" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_6_di" bpmnElement="Gw_6">
+        <dc:Bounds x="1095" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="1240" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="1240" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="1410" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="draftKept_di" bpmnElement="draftKept">
+        <dc:Bounds x="1612" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_10_di" bpmnElement="Gw_10">
+        <dc:Bounds x="1775" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="1920" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="archImpact_di" bpmnElement="archImpact">
+        <dc:Bounds x="2122" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_12_di" bpmnElement="Gw_12">
+        <dc:Bounds x="2285" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="2430" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="2430" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="2430" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="1920" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closing_di" bpmnElement="closing">
+        <dc:Bounds x="2600" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closed_di" bpmnElement="closed">
+        <dc:Bounds x="2802" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2778" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_17_di" bpmnElement="Gw_17">
+        <dc:Bounds x="2965" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2948" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="3110" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="seeded_di" bpmnElement="seeded">
+        <dc:Bounds x="3312" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3288" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="review_di" bpmnElement="review">
+        <dc:Bounds x="3450" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_19_di" bpmnElement="Gw_19">
+        <dc:Bounds x="3645" y="295" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3628" y="350" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_20_di" bpmnElement="T_20">
+        <dc:Bounds x="3790" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="followUp_di" bpmnElement="followUp">
+        <dc:Bounds x="3992" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3968" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="3790" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_22_di" bpmnElement="T_22">
+        <dc:Bounds x="3110" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_23_di" bpmnElement="End_23">
+        <dc:Bounds x="4162" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="4138" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="proposalIn_di" bpmnElement="proposalIn">
+        <dc:Bounds x="422" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.01_ReadTheCheckOutProposal_di" bpmnElement="BP07.01_ReadTheCheckOutProposal" isExpanded="false">
+        <dc:Bounds x="540" y="815" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_29_di" bpmnElement="End_29">
+        <dc:Bounds x="762" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="draftIn_di" bpmnElement="draftIn">
+        <dc:Bounds x="1442" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.02_DraftTheGoalCheckOut_di" bpmnElement="BP07.02_DraftTheGoalCheckOut" isExpanded="false">
+        <dc:Bounds x="1560" y="815" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_32_di" bpmnElement="End_32">
+        <dc:Bounds x="1782" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="archImpactIn_di" bpmnElement="archImpactIn">
+        <dc:Bounds x="1952" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1928" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.03_ReadTheArchivingImpact_di" bpmnElement="BP07.03_ReadTheArchivingImpact" isExpanded="false">
+        <dc:Bounds x="2070" y="815" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_37_di" bpmnElement="End_37">
+        <dc:Bounds x="2292" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closeIn_di" bpmnElement="closeIn">
+        <dc:Bounds x="2632" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2608" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.04_CloseOutGoal_di" bpmnElement="BP07.04_CloseOutGoal" isExpanded="false">
+        <dc:Bounds x="2750" y="815" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_45_di" bpmnElement="End_45">
+        <dc:Bounds x="2972" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2948" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="seedIn_di" bpmnElement="seedIn">
+        <dc:Bounds x="3142" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3118" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.05_SeedFollowUpGoal_di" bpmnElement="BP07.05_SeedFollowUpGoal" isExpanded="false">
+        <dc:Bounds x="3260" y="815" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_52_di" bpmnElement="End_52">
+        <dc:Bounds x="3482" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3458" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="followUpIn_di" bpmnElement="followUpIn">
+        <dc:Bounds x="3822" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="3798" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.06_CreateFollowUpGoal_di" bpmnElement="BP07.06_CreateFollowUpGoal" isExpanded="false">
+        <dc:Bounds x="3940" y="815" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_55_di" bpmnElement="End_55">
+        <dc:Bounds x="4162" y="842" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="4138" y="883" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_checkOut_di" bpmnElement="SF_Start_1_checkOut">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_checkOut_proposal_di" bpmnElement="SF_checkOut_proposal">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_proposal_Gw_2_di" bpmnElement="SF_proposal_Gw_2">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="755" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_End_4_di" bpmnElement="SF_T_3_End_4">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_3_di" bpmnElement="SF_Gw_2_T_3">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_2_T_5_di" bpmnElement="SF_Gw_2_T_5">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="320" />
+        <di:waypoint x="900" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_Gw_6_di" bpmnElement="SF_T_5_Gw_6">
+        <di:waypoint x="1000" y="320" />
+        <di:waypoint x="1095" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_6_T_7_di" bpmnElement="SF_Gw_6_T_7">
+        <di:waypoint x="1145" y="320" />
+        <di:waypoint x="1240" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_6_T_8_di" bpmnElement="SF_Gw_6_T_8">
+        <di:waypoint x="1145" y="320" />
+        <di:waypoint x="1175" y="320" />
+        <di:waypoint x="1175" y="440" />
+        <di:waypoint x="1240" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_T_9_di" bpmnElement="SF_T_7_T_9">
+        <di:waypoint x="1340" y="320" />
+        <di:waypoint x="1410" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_T_9_di" bpmnElement="SF_T_8_T_9">
+        <di:waypoint x="1340" y="440" />
+        <di:waypoint x="1370" y="440" />
+        <di:waypoint x="1370" y="320" />
+        <di:waypoint x="1410" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_draftKept_di" bpmnElement="SF_T_9_draftKept">
+        <di:waypoint x="1510" y="320" />
+        <di:waypoint x="1612" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_draftKept_Gw_10_di" bpmnElement="SF_draftKept_Gw_10">
+        <di:waypoint x="1648" y="320" />
+        <di:waypoint x="1775" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_archImpact_di" bpmnElement="SF_T_11_archImpact">
+        <di:waypoint x="2020" y="320" />
+        <di:waypoint x="2122" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_archImpact_Gw_12_di" bpmnElement="SF_archImpact_Gw_12">
+        <di:waypoint x="2158" y="320" />
+        <di:waypoint x="2285" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_12_T_13_di" bpmnElement="SF_Gw_12_T_13">
+        <di:waypoint x="2335" y="320" />
+        <di:waypoint x="2430" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_12_T_14_di" bpmnElement="SF_Gw_12_T_14">
+        <di:waypoint x="2335" y="320" />
+        <di:waypoint x="2365" y="320" />
+        <di:waypoint x="2365" y="440" />
+        <di:waypoint x="2430" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_12_T_15_di" bpmnElement="SF_Gw_12_T_15">
+        <di:waypoint x="2335" y="320" />
+        <di:waypoint x="2365" y="320" />
+        <di:waypoint x="2365" y="560" />
+        <di:waypoint x="2430" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_T_11_di" bpmnElement="SF_Gw_10_T_11">
+        <di:waypoint x="1825" y="320" />
+        <di:waypoint x="1920" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_T_16_di" bpmnElement="SF_Gw_10_T_16">
+        <di:waypoint x="1825" y="320" />
+        <di:waypoint x="1855" y="320" />
+        <di:waypoint x="1855" y="440" />
+        <di:waypoint x="1920" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_closing_di" bpmnElement="SF_T_13_closing">
+        <di:waypoint x="2530" y="320" />
+        <di:waypoint x="2600" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_closing_di" bpmnElement="SF_T_14_closing">
+        <di:waypoint x="2530" y="440" />
+        <di:waypoint x="2560" y="440" />
+        <di:waypoint x="2560" y="320" />
+        <di:waypoint x="2600" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_closing_di" bpmnElement="SF_T_15_closing">
+        <di:waypoint x="2530" y="560" />
+        <di:waypoint x="2560" y="560" />
+        <di:waypoint x="2560" y="320" />
+        <di:waypoint x="2600" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_closing_di" bpmnElement="SF_T_16_closing">
+        <di:waypoint x="2020" y="440" />
+        <di:waypoint x="2055" y="440" />
+        <di:waypoint x="2055" y="271" />
+        <di:waypoint x="2650" y="271" />
+        <di:waypoint x="2650" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closing_closed_di" bpmnElement="SF_closing_closed">
+        <di:waypoint x="2700" y="320" />
+        <di:waypoint x="2802" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closed_Gw_17_di" bpmnElement="SF_closed_Gw_17">
+        <di:waypoint x="2838" y="320" />
+        <di:waypoint x="2965" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_seeded_di" bpmnElement="SF_T_18_seeded">
+        <di:waypoint x="3210" y="320" />
+        <di:waypoint x="3312" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_seeded_review_di" bpmnElement="SF_seeded_review">
+        <di:waypoint x="3348" y="320" />
+        <di:waypoint x="3450" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_review_Gw_19_di" bpmnElement="SF_review_Gw_19">
+        <di:waypoint x="3550" y="320" />
+        <di:waypoint x="3645" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_20_followUp_di" bpmnElement="SF_T_20_followUp">
+        <di:waypoint x="3890" y="320" />
+        <di:waypoint x="3992" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_19_T_20_di" bpmnElement="SF_Gw_19_T_20">
+        <di:waypoint x="3695" y="320" />
+        <di:waypoint x="3790" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_19_T_21_di" bpmnElement="SF_Gw_19_T_21">
+        <di:waypoint x="3695" y="320" />
+        <di:waypoint x="3725" y="320" />
+        <di:waypoint x="3725" y="440" />
+        <di:waypoint x="3790" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_17_T_18_di" bpmnElement="SF_Gw_17_T_18">
+        <di:waypoint x="3015" y="320" />
+        <di:waypoint x="3110" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_17_T_22_di" bpmnElement="SF_Gw_17_T_22">
+        <di:waypoint x="3015" y="320" />
+        <di:waypoint x="3045" y="320" />
+        <di:waypoint x="3045" y="440" />
+        <di:waypoint x="3110" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_followUp_End_23_di" bpmnElement="SF_followUp_End_23">
+        <di:waypoint x="4028" y="320" />
+        <di:waypoint x="4162" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_21_End_23_di" bpmnElement="SF_T_21_End_23">
+        <di:waypoint x="3890" y="440" />
+        <di:waypoint x="3925" y="440" />
+        <di:waypoint x="3925" y="271" />
+        <di:waypoint x="4180" y="271" />
+        <di:waypoint x="4180" y="302" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_22_End_23_di" bpmnElement="SF_T_22_End_23">
+        <di:waypoint x="3210" y="440" />
+        <di:waypoint x="3245" y="440" />
+        <di:waypoint x="3245" y="271" />
+        <di:waypoint x="4180" y="271" />
+        <di:waypoint x="4180" y="302" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_proposalIn_BP07.01_ReadTheCheckOutProposal_di" bpmnElement="SF_proposalIn_BP07.01_ReadTheCheckOutProposal">
+        <di:waypoint x="458" y="860" />
+        <di:waypoint x="540" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.01_ReadTheCheckOutProposal_End_29_di" bpmnElement="SF_BP07.01_ReadTheCheckOutProposal_End_29">
+        <di:waypoint x="680" y="860" />
+        <di:waypoint x="762" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_draftIn_BP07.02_DraftTheGoalCheckOut_di" bpmnElement="SF_draftIn_BP07.02_DraftTheGoalCheckOut">
+        <di:waypoint x="1478" y="860" />
+        <di:waypoint x="1560" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.02_DraftTheGoalCheckOut_End_32_di" bpmnElement="SF_BP07.02_DraftTheGoalCheckOut_End_32">
+        <di:waypoint x="1700" y="860" />
+        <di:waypoint x="1782" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_archImpactIn_BP07.03_ReadTheArchivingImpact_di" bpmnElement="SF_archImpactIn_BP07.03_ReadTheArchivingImpact">
+        <di:waypoint x="1988" y="860" />
+        <di:waypoint x="2070" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.03_ReadTheArchivingImpact_End_37_di" bpmnElement="SF_BP07.03_ReadTheArchivingImpact_End_37">
+        <di:waypoint x="2210" y="860" />
+        <di:waypoint x="2292" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closeIn_BP07.04_CloseOutGoal_di" bpmnElement="SF_closeIn_BP07.04_CloseOutGoal">
+        <di:waypoint x="2668" y="860" />
+        <di:waypoint x="2750" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.04_CloseOutGoal_End_45_di" bpmnElement="SF_BP07.04_CloseOutGoal_End_45">
+        <di:waypoint x="2890" y="860" />
+        <di:waypoint x="2972" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_seedIn_BP07.05_SeedFollowUpGoal_di" bpmnElement="SF_seedIn_BP07.05_SeedFollowUpGoal">
+        <di:waypoint x="3178" y="860" />
+        <di:waypoint x="3260" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.05_SeedFollowUpGoal_End_52_di" bpmnElement="SF_BP07.05_SeedFollowUpGoal_End_52">
+        <di:waypoint x="3400" y="860" />
+        <di:waypoint x="3482" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_followUpIn_BP07.06_CreateFollowUpGoal_di" bpmnElement="SF_followUpIn_BP07.06_CreateFollowUpGoal">
+        <di:waypoint x="3858" y="860" />
+        <di:waypoint x="3940" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.06_CreateFollowUpGoal_End_55_di" bpmnElement="SF_BP07.06_CreateFollowUpGoal_End_55">
+        <di:waypoint x="4080" y="860" />
+        <di:waypoint x="4162" y="860" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="842" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1460" y="360" />
+        <di:waypoint x="1460" y="842" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="1970" y="360" />
+        <di:waypoint x="1970" y="372" />
+        <di:waypoint x="2055" y="372" />
+        <di:waypoint x="2055" y="830" />
+        <di:waypoint x="1970" y="830" />
+        <di:waypoint x="1970" y="842" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="2650" y="360" />
+        <di:waypoint x="2650" y="842" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="3160" y="360" />
+        <di:waypoint x="3160" y="372" />
+        <di:waypoint x="3245" y="372" />
+        <di:waypoint x="3245" y="830" />
+        <di:waypoint x="3160" y="830" />
+        <di:waypoint x="3160" y="842" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="3840" y="360" />
+        <di:waypoint x="3840" y="372" />
+        <di:waypoint x="3925" y="372" />
+        <di:waypoint x="3925" y="830" />
+        <di:waypoint x="3840" y="830" />
+        <di:waypoint x="3840" y="842" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="610" y="815" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="1630" y="815" />
+        <di:waypoint x="1630" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="2140" y="815" />
+        <di:waypoint x="2140" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="2820" y="815" />
+        <di:waypoint x="2820" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_11_di" bpmnElement="MF_11">
+        <di:waypoint x="3330" y="815" />
+        <di:waypoint x="3330" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_12_di" bpmnElement="MF_12">
+        <di:waypoint x="4010" y="815" />
+        <di:waypoint x="4010" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="830" y="49" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="950" y="160" /><di:waypoint x="950" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="830" y="-39" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="950" y="280" /><di:waypoint x="950" y="270" /><di:waypoint x="820" y="270" /><di:waypoint x="820" y="-1" /><di:waypoint x="830" y="-1" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1170" y="184" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1290" y="280" /><di:waypoint x="1290" y="260" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="1510" y="192" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="1630" y="302" /><di:waypoint x="1630" y="268" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="2360" y="207" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="2480" y="400" /><di:waypoint x="2480" y="390" /><di:waypoint x="2420" y="390" /><di:waypoint x="2420" y="268" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="2360" y="134" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="2480" y="520" /><di:waypoint x="2480" y="510" /><di:waypoint x="2350" y="510" /><di:waypoint x="2350" y="165" /><di:waypoint x="2360" y="165" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="3720" y="222" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="3840" y="400" /><di:waypoint x="3840" y="390" /><di:waypoint x="3780" y="390" /><di:waypoint x="3780" y="268" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X8_di" bpmnElement="TextAnnotation_X8"><dc:Bounds x="490" y="925" width="240" height="106" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X8_di" bpmnElement="Association_X8"><di:waypoint x="610" y="905" /><di:waypoint x="610" y="925" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X9_di" bpmnElement="TextAnnotation_X9"><dc:Bounds x="1510" y="925" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X9_di" bpmnElement="Association_X9"><di:waypoint x="1630" y="905" /><di:waypoint x="1630" y="925" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X10_di" bpmnElement="TextAnnotation_X10"><dc:Bounds x="2020" y="925" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X10_di" bpmnElement="Association_X10"><di:waypoint x="2140" y="905" /><di:waypoint x="2140" y="925" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X11_di" bpmnElement="TextAnnotation_X11"><dc:Bounds x="2700" y="925" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X11_di" bpmnElement="Association_X11"><di:waypoint x="2820" y="905" /><di:waypoint x="2820" y="925" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X12_di" bpmnElement="TextAnnotation_X12"><dc:Bounds x="3210" y="925" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X12_di" bpmnElement="Association_X12"><di:waypoint x="3330" y="905" /><di:waypoint x="3330" y="925" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X13_di" bpmnElement="TextAnnotation_X13"><dc:Bounds x="3890" y="925" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X13_di" bpmnElement="Association_X13"><di:waypoint x="4010" y="905" /><di:waypoint x="4010" y="925" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal_BP0701ReadTheCheckOutProposal">
+    <bpmndi:BPMNPlane id="P_BP0701ReadTheCheckOutProposal" bpmnElement="BP07.01_ReadTheCheckOutProposal">
+      <bpmndi:BPMNShape id="BP07.01_ReadTheCheckOutProposal_s_di" bpmnElement="BP07.01_ReadTheCheckOutProposal_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_25_di" bpmnElement="T_25">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_27_di" bpmnElement="T_27">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_28_di" bpmnElement="T_28">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.01_ReadTheCheckOutProposal_e_di" bpmnElement="BP07.01_ReadTheCheckOutProposal_e">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_24_T_25_di" bpmnElement="SF_T_24_T_25">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_25_T_26_di" bpmnElement="SF_T_25_T_26">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_26_T_27_di" bpmnElement="SF_T_26_T_27">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_27_T_28_di" bpmnElement="SF_T_27_T_28">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.01_ReadTheCheckOutProposal_s_T_24_di" bpmnElement="SF_BP07.01_ReadTheCheckOutProposal_s_T_24">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_28_BP07.01_ReadTheCheckOutProposal_e_di" bpmnElement="SF_T_28_BP07.01_ReadTheCheckOutProposal_e">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal_BP0702DraftTheGoalCheckOut">
+    <bpmndi:BPMNPlane id="P_BP0702DraftTheGoalCheckOut" bpmnElement="BP07.02_DraftTheGoalCheckOut">
+      <bpmndi:BPMNShape id="BP07.02_DraftTheGoalCheckOut_s_di" bpmnElement="BP07.02_DraftTheGoalCheckOut_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_30_di" bpmnElement="T_30">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_31_di" bpmnElement="T_31">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.02_DraftTheGoalCheckOut_e_di" bpmnElement="BP07.02_DraftTheGoalCheckOut_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_30_T_31_di" bpmnElement="SF_T_30_T_31">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.02_DraftTheGoalCheckOut_s_T_30_di" bpmnElement="SF_BP07.02_DraftTheGoalCheckOut_s_T_30">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_31_BP07.02_DraftTheGoalCheckOut_e_di" bpmnElement="SF_T_31_BP07.02_DraftTheGoalCheckOut_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal_BP0703ReadTheArchivingImpact">
+    <bpmndi:BPMNPlane id="P_BP0703ReadTheArchivingImpact" bpmnElement="BP07.03_ReadTheArchivingImpact">
+      <bpmndi:BPMNShape id="BP07.03_ReadTheArchivingImpact_s_di" bpmnElement="BP07.03_ReadTheArchivingImpact_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_33_di" bpmnElement="T_33">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_34_di" bpmnElement="T_34">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_35_di" bpmnElement="T_35">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_36_di" bpmnElement="T_36">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.03_ReadTheArchivingImpact_e_di" bpmnElement="BP07.03_ReadTheArchivingImpact_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_33_T_34_di" bpmnElement="SF_T_33_T_34">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_34_T_35_di" bpmnElement="SF_T_34_T_35">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_35_T_36_di" bpmnElement="SF_T_35_T_36">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.03_ReadTheArchivingImpact_s_T_33_di" bpmnElement="SF_BP07.03_ReadTheArchivingImpact_s_T_33">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_36_BP07.03_ReadTheArchivingImpact_e_di" bpmnElement="SF_T_36_BP07.03_ReadTheArchivingImpact_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal_BP0704CloseOutGoal">
+    <bpmndi:BPMNPlane id="P_BP0704CloseOutGoal" bpmnElement="BP07.04_CloseOutGoal">
+      <bpmndi:BPMNShape id="BP07.04_CloseOutGoal_s_di" bpmnElement="BP07.04_CloseOutGoal_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_38_di" bpmnElement="T_38">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_39_di" bpmnElement="Gw_39">
+        <dc:Bounds x="585" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_40_di" bpmnElement="T_40">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_41_di" bpmnElement="T_41">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_42_di" bpmnElement="T_42">
+        <dc:Bounds x="730" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_43_di" bpmnElement="T_43">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_44_di" bpmnElement="T_44">
+        <dc:Bounds x="1240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.04_CloseOutGoal_e_di" bpmnElement="BP07.04_CloseOutGoal_e">
+        <dc:Bounds x="1442" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_38_Gw_39_di" bpmnElement="SF_T_38_Gw_39">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="585" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_40_T_41_di" bpmnElement="SF_T_40_T_41">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_39_T_40_di" bpmnElement="SF_Gw_39_T_40">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_39_T_42_di" bpmnElement="SF_Gw_39_T_42">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="320" />
+        <di:waypoint x="730" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_41_T_43_di" bpmnElement="SF_T_41_T_43">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_42_T_43_di" bpmnElement="SF_T_42_T_43">
+        <di:waypoint x="830" y="320" />
+        <di:waypoint x="865" y="320" />
+        <di:waypoint x="865" y="140" />
+        <di:waypoint x="1120" y="140" />
+        <di:waypoint x="1120" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_43_T_44_di" bpmnElement="SF_T_43_T_44">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.04_CloseOutGoal_s_T_38_di" bpmnElement="SF_BP07.04_CloseOutGoal_s_T_38">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_44_BP07.04_CloseOutGoal_e_di" bpmnElement="SF_T_44_BP07.04_CloseOutGoal_e">
+        <di:waypoint x="1340" y="200" />
+        <di:waypoint x="1442" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal_BP0705SeedFollowUpGoal">
+    <bpmndi:BPMNPlane id="P_BP0705SeedFollowUpGoal" bpmnElement="BP07.05_SeedFollowUpGoal">
+      <bpmndi:BPMNShape id="BP07.05_SeedFollowUpGoal_s_di" bpmnElement="BP07.05_SeedFollowUpGoal_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_46_di" bpmnElement="T_46">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_47_di" bpmnElement="T_47">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_48_di" bpmnElement="T_48">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_49_di" bpmnElement="T_49">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_50_di" bpmnElement="T_50">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_51_di" bpmnElement="T_51">
+        <dc:Bounds x="1240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.05_SeedFollowUpGoal_e_di" bpmnElement="BP07.05_SeedFollowUpGoal_e">
+        <dc:Bounds x="1442" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_46_T_47_di" bpmnElement="SF_T_46_T_47">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_47_T_48_di" bpmnElement="SF_T_47_T_48">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_48_T_49_di" bpmnElement="SF_T_48_T_49">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_49_T_50_di" bpmnElement="SF_T_49_T_50">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_50_T_51_di" bpmnElement="SF_T_50_T_51">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.05_SeedFollowUpGoal_s_T_46_di" bpmnElement="SF_BP07.05_SeedFollowUpGoal_s_T_46">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_51_BP07.05_SeedFollowUpGoal_e_di" bpmnElement="SF_T_51_BP07.05_SeedFollowUpGoal_e">
+        <di:waypoint x="1340" y="200" />
+        <di:waypoint x="1442" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CloseOutAGoal_BP0706CreateFollowUpGoal">
+    <bpmndi:BPMNPlane id="P_BP0706CreateFollowUpGoal" bpmnElement="BP07.06_CreateFollowUpGoal">
+      <bpmndi:BPMNShape id="BP07.06_CreateFollowUpGoal_s_di" bpmnElement="BP07.06_CreateFollowUpGoal_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_53_di" bpmnElement="T_53">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_54_di" bpmnElement="T_54">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.06_CreateFollowUpGoal_e_di" bpmnElement="BP07.06_CreateFollowUpGoal_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_53_T_54_di" bpmnElement="SF_T_53_T_54">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.06_CreateFollowUpGoal_s_T_53_di" bpmnElement="SF_BP07.06_CreateFollowUpGoal_s_T_53">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_54_BP07.06_CreateFollowUpGoal_e_di" bpmnElement="SF_T_54_BP07.06_CreateFollowUpGoal_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
