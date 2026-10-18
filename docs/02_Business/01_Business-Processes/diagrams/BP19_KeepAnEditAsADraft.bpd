@@ -1,0 +1,58 @@
+@startbpmn BP19_KeepAnEditAsADraft
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "01_detailed/BP19_KeepAnEditAsADraft.bpmn"
+output L2 "02_detailed/BP19_KeepAnEditAsADraft.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - unfinished input is a draft, forms and dialogs included, and no draft is version-controlled:
+'     BR-121, SA 2026-10-10
+'   - a draft survives abandoning the gesture, a crash and a restart, and changes nothing until the
+'     gesture completes: BR-121
+'   - keeping a draft is one-way: nothing waits for it to be kept: BR-121
+'   - whichever write commits the input discards the draft it came from, so the discard belongs to
+'     the committing process and is drawn there: BR-121
+'   - where a draft is kept is not a business concern - it lives with the user's data and outside
+'     version control, like the remembered interface state: BR-121, BR-92
+'   - the particular draft rules instance this general one: a goal check-out sitting (BR-32), the
+'     check-out notes (BR-37), a staged task batch (BR-63)
+'
+' Scope: EVERY draftable field in the product, drawn once. Until 2026-10-11 each editing process
+' drew its own draft chain - eleven call sites realizing one operation - and the Software Architect
+' ruled that out: "it would complicate editing text fields qualified for drafting in BPs", and
+' "whenever I edit a draftable text field incl. a goal check-out field or a day note field, I want
+' to apply the drafting BP". So the operation is drawn here, once, and every editing process binds
+' BR-121 to the step that fills the field instead of drawing a chain of its own. The retired call
+' sites are BP03.08, BP04.04, BP05.16, BP06.09, BP07.02, BP11.10, BP12.09, BP13.02, BP16.08,
+' BP17.16 and BP18.09; their ids are never reused (ADR-066).
+'
+' A STAGED TASK BATCH is not this process. It is a draft in BR-121's sense, but the user picks it
+' up, amends it, reorders it and commits it as a batch, which is work of its own: BP10, BR-63,
+' SA 2026-10-11 ("draft tasks are completely different beast and are excluded here").
+'
+' WHICH fields are draftable is the owning process's business, not this drawing's: this one says
+' what happens to any of them while it is being filled in.
+
+' ===== The user: fills a field in, and is free to walk away from it =====
+pool "User" {
+  start "A draftable field is being filled in"
+  :Type into the field;
+  multiInstance
+  rule BR-121
+  send "Keep the edit as a draft" to draftIn
+  note "Leaving it costs nothing: it is there on the next launch, half-finished, and it has changed nothing meanwhile. Committing it is the act of whichever process the field belongs to, and that is what discards the draft."
+  end "The edit is safe either way"
+}
+
+' ===== The system: one chain, for every draftable field there is =====
+system pool "Bearing" {
+  messageStart "Edit submitted" as draftIn
+  call "BP19.01_KeepTheEditAsADraft" "Keep the edit as a draft" {
+    :Keep what is typed as a draft;
+    rule BR-121
+  }
+  note "One-way: nothing waits for the draft to be kept. It stays out of the planning history, and nothing it describes takes effect until the gesture that owns it completes."
+  end "Draft kept"
+}
+
+@endbpmn

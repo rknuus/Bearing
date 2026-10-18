@@ -1,0 +1,33 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB22_WorkLoop
+lang en
+
+output L1 "BB22_WorkLoop.bpmn"
+
+' The frame thirteen processes are built on, drawn once so no act block redraws it. It asks the
+' system for nothing of its own, which is why it has no system pool: what it carries is the
+' skeleton - the trigger, the surface the act is performed on, the one question, and one path per
+' act, each ending on what its gesture did. A member varies the vocabulary and the number of
+' branches, never the shape.
+'
+' THE LOOP IS NOT HERE ANY MORE. That the surface stays in front of the user and the next act is
+' available is a user-interface fact, drawn once in UIP01 as a loop marker on the surface's box,
+' not as a return edge per act in every process: SA 2026-10-17, DRW-09.
+
+pool "User" {
+  start "A <entity> needs attention"
+  :Open the <view>;
+  note "Opening it is OpenView: one request, one answer, and the question decides on that answer."
+  :Work a <entity>;
+  rule BR-118
+  if "What needs doing?" then "an act"
+    :Perform one act;
+    note "One branch per act, each of them a block: EditContent, EditState, ArchiveLeafItem, DeleteCascadedItem, UnarchiveItem, a hand-over to a sub-process, a seam. An act never asks the user to re-read the view afterwards."
+    end "<What the gesture did>"
+  elseif "What needs doing?" then "another act"
+    :Perform another one;
+    end "<What that gesture did>"
+  endif
+}
+
+@endbpmn

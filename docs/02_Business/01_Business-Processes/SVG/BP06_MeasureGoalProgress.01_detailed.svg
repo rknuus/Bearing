@@ -1,0 +1,331 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1458" height="2452" viewBox="0 0 1458 2452">
+<rect width="1458" height="2452" fill="#fff"/>
+<rect x="24" y="519" width="1410" height="860" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="519" x2="54" y2="1379" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="953.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 949)">User</text>
+<rect x="24" y="1419" width="1410" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1419" x2="54" y2="2159" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1793.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1789)">Bearing</text>
+<polyline points="152,639 254,639" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 639 L 246 642.36 L 246 635.64 Z" fill="#000"/>
+<polyline points="354,639 449,639" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 639 L 441 642.36 L 441 635.64 Z" fill="#000"/>
+<polyline points="694,639 764,639" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 639 L 756 642.36 L 756 635.64 Z" fill="#000"/>
+<polyline points="864,639 1136,639" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 639 L 1128 642.36 L 1128 635.64 Z" fill="#000"/>
+<polyline points="1172,639 1306,639" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 639 L 1298 642.36 L 1298 635.64 Z" fill="#000"/>
+<polyline points="499,639 594,639" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 639 L 586 642.36 L 586 635.64 Z" fill="#000"/>
+<polyline points="694,759 966,759" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 759 L 958 762.36 L 958 755.64 Z" fill="#000"/>
+<polyline points="1002,759 1136,759" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 759 L 1128 762.36 L 1128 755.64 Z" fill="#000"/>
+<polyline points="499,639 529,639 529,759 594,759" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 759 L 586 762.36 L 586 755.64 Z" fill="#000"/>
+<polyline points="694,879 966,879" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 879 L 958 882.36 L 958 875.64 Z" fill="#000"/>
+<polyline points="1002,879 1136,879" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 879 L 1128 882.36 L 1128 875.64 Z" fill="#000"/>
+<polyline points="499,639 529,639 529,879 594,879" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 879 L 586 882.36 L 586 875.64 Z" fill="#000"/>
+<polyline points="694,999 966,999" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 999 L 958 1002.36 L 958 995.64 Z" fill="#000"/>
+<polyline points="1002,999 1136,999" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 999 L 1128 1002.36 L 1128 995.64 Z" fill="#000"/>
+<polyline points="499,639 529,639 529,999 594,999" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 999 L 586 1002.36 L 586 995.64 Z" fill="#000"/>
+<polyline points="694,1119 764,1119" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1119 L 756 1122.36 L 756 1115.64 Z" fill="#000"/>
+<polyline points="864,1119 1136,1119" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1119 L 1128 1122.36 L 1128 1115.64 Z" fill="#000"/>
+<polyline points="1172,1119 1306,1119" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 1119 L 1298 1122.36 L 1298 1115.64 Z" fill="#000"/>
+<polyline points="499,639 529,639 529,1119 594,1119" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1119 L 586 1122.36 L 586 1115.64 Z" fill="#000"/>
+<polyline points="694,1239 796,1239" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1239 L 788 1242.36 L 788 1235.64 Z" fill="#000"/>
+<polyline points="499,639 529,639 529,1239 594,1239" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1239 L 586 1242.36 L 586 1235.64 Z" fill="#000"/>
+<polyline points="1034,2019 1104,2019" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 2019 L 1096 2022.36 L 1096 2015.64 Z" fill="#000"/>
+<polyline points="832,2019 934,2019" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 2019 L 926 2022.36 L 926 2015.64 Z" fill="#000"/>
+<polyline points="1204,2019 1306,2019" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 2019 L 1298 2022.36 L 1298 2015.64 Z" fill="#000"/>
+<polyline points="1034,1539 1104,1539" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 1539 L 1096 1542.36 L 1096 1535.64 Z" fill="#000"/>
+<polyline points="832,1539 934,1539" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1539 L 926 1542.36 L 926 1535.64 Z" fill="#000"/>
+<polyline points="1204,1539 1306,1539" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 1539 L 1298 1542.36 L 1298 1535.64 Z" fill="#000"/>
+<polyline points="864,1659 934,1659" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1659 L 926 1662.36 L 926 1655.64 Z" fill="#000"/>
+<polyline points="662,1539 692,1539 692,1659 764,1659" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1659 L 756 1662.36 L 756 1655.64 Z" fill="#000"/>
+<polyline points="1034,1659 1136,1659" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1659 L 1128 1662.36 L 1128 1655.64 Z" fill="#000"/>
+<polyline points="864,1779 934,1779" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1779 L 926 1782.36 L 926 1775.64 Z" fill="#000"/>
+<polyline points="662,1659 692,1659 692,1779 764,1779" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1779 L 756 1782.36 L 756 1775.64 Z" fill="#000"/>
+<polyline points="1034,1779 1136,1779" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1779 L 1128 1782.36 L 1128 1775.64 Z" fill="#000"/>
+<polyline points="864,1899 934,1899" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1899 L 926 1902.36 L 926 1895.64 Z" fill="#000"/>
+<polyline points="662,1779 692,1779 692,1899 764,1899" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1899 L 756 1902.36 L 756 1895.64 Z" fill="#000"/>
+<polyline points="1034,1899 1136,1899" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1899 L 1128 1902.36 L 1128 1895.64 Z" fill="#000"/>
+<polyline points="809,679 809,691 894,691 894,1509 809,1509 809,1521" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 812.78 1512 L 809 1521 L 805.22 1512" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="809" cy="679" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="634,799 634,811 719,811 719,1509 634,1509 634,1521" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 637.78 1512 L 634 1521 L 630.22 1512" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="634" cy="799" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,919 644,931 729,931 729,1629 644,1629 644,1641" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 647.78 1632 L 644 1641 L 640.22 1632" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="644" cy="919" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="654,1039 654,1051 739,1051 739,1749 654,1749 654,1761" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 657.78 1752 L 654 1761 L 650.22 1752" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="654" cy="1039" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="819,1159 819,1171 904,1171 904,1989 819,1989 819,2001" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 822.78 1992 L 819 2001 L 815.22 1992" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="819" cy="1159" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1159,1979 1159,1967 1244,1967 1244,1149 1159,1149 1159,1137" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1155.22 1146 L 1159 1137 L 1162.78 1146" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1159" cy="1979" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1149,1499 1149,1487 1234,1487 1234,669 1149,669 1149,657" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1145.22 666 L 1149 657 L 1152.78 666" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1149" cy="1499" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="974,1619 974,1607 1059,1607 1059,789 974,789 974,777" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 970.22 786 L 974 777 L 977.78 786" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="974" cy="1619" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,1739 984,1727 1069,1727 1069,909 984,909 984,897" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 906 L 984 897 L 987.78 906" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="1739" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="994,1859 994,1847 1079,1847 1079,1029 994,1029 994,1017" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 990.22 1026 L 994 1017 L 997.78 1026" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="994" cy="1859" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="304,599 304,579" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,1199 644,1189 584,1189 584,587" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,741 984,587" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,861 984,851 1114,851 1114,469 1104,469" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,981 984,971 1114,971 1114,358 1104,358" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,621 1154,293" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,1101 1154,1091 1284,1091 1284,77 1274,77" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1819 814,1829 754,1829 754,2071" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,2059 984,2174" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,1579 984,1589 1214,1589 1214,2375 1104,2375" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="639" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="671" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A commitment to</text>
+<text x="92" y="681.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">measure, or</text>
+<text x="92" y="692.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">progress to record</text>
+<rect x="254" y="599" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="635.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a progress</text>
+<text x="304" y="647.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measure</text>
+<path d="M 474 614 L 499 639 L 474 664 L 449 639 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 628.5 L 484.5 649.5 M 463.5 649.5 L 484.5 628.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="678" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="599" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="641.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Define a measure</text>
+<rect x="764" y="599" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="641.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the measure</text>
+<circle cx="1154" cy="639" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="639" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="633.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 633.06 L 1154 639 L 1163 633.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="671" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1324" cy="639" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="671" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure defined</text>
+<rect x="594" y="719" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="761.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a measure</text>
+<circle cx="984" cy="759" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="759" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="753.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 753.06 L 984 759 L 993 753.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="791" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The ordering</text>
+<text x="942" y="801.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="759" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="791" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measures ordered</text>
+<rect x="594" y="839" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="881.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive a measure</text>
+<circle cx="984" cy="879" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="879" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="873.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 873.06 L 984 879 L 993 873.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="911" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The archiving</text>
+<text x="942" y="921.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="879" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="911" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure set aside</text>
+<rect x="594" y="959" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1001.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Remove a measure</text>
+<circle cx="984" cy="999" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="999" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="993.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 993.06 L 984 999 L 993 993.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="1031" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The removal</text>
+<text x="942" y="1041.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="999" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1031" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure removed</text>
+<rect x="594" y="1079" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1115.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Check in on a</text>
+<text x="644" y="1127.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measure</text>
+<rect x="764" y="1079" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1121.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the check-in</text>
+<circle cx="1154" cy="1119" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="1119" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1113.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1113.06 L 1154 1119 L 1163 1113.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1151" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The check-in</text>
+<text x="1112" y="1161.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1324" cy="1119" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="1151" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Progress recorded</text>
+<rect x="594" y="1199" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1235.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open the archived</text>
+<text x="644" y="1247.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measures (BP15)</text>
+<circle cx="814" cy="1239" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1271" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archive opened</text>
+<circle cx="814" cy="2019" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="2013.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 2013.06 L 814 2019 L 823 2013.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="2051" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-in submitted</text>
+<rect x="934" y="1979" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="2003.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Append the check-in</text>
+<text x="984" y="2015.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">and move the</text>
+<text x="984" y="2027.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measure's current</text>
+<text x="984" y="2039.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">value</text>
+<rect x="1104" y="1979" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="2021.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1324" cy="2019" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="2051" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-in answered</text>
+<circle cx="814" cy="1539" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="1533.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 1533.06 L 814 1539 L 823 1533.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="1571" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure submitted</text>
+<rect x="934" y="1499" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1541.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Store the edit</text>
+<rect x="1104" y="1499" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="1541.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1324" cy="1539" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="1571" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure answered</text>
+<circle cx="644" cy="1539" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1533.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1533.06 L 644 1539 L 653 1533.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1571" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure reordering</text>
+<text x="602" y="1581.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="764" y="1619" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1661.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Apply the new order</text>
+<rect x="934" y="1619" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1661.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1154" cy="1659" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1691" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure reordering</text>
+<text x="1112" y="1701.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1659" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1653.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1653.06 L 644 1659 L 653 1653.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1691" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure archiving</text>
+<text x="602" y="1701.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="764" y="1739" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1781.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive the measure</text>
+<rect x="934" y="1739" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1781.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1154" cy="1779" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1811" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving answered</text>
+<circle cx="644" cy="1779" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1773.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1773.06 L 644 1779 L 653 1773.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1811" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measure removal</text>
+<text x="602" y="1821.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="764" y="1859" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1895.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Remove the</text>
+<text x="814" y="1907.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measure</text>
+<rect x="934" y="1859" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1901.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1154" cy="1899" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1931" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Removal answered</text>
+<path d="M 190 488 H 184 V 579 H 190" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="193" y="500" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A goal's measures are its own sub-items and have no</text>
+<text x="193" y="510.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">page of their own: they are already on the Goals view,</text>
+<text x="193" y="521.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">read with the goals. This process acts on what is there.</text>
+<path d="M 530 496 H 524 V 587 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="508" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">An archived measure is listed under the goal it belongs</text>
+<text x="533" y="518.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">to, in the Goals archive. Reading it, bringing it back and</text>
+<text x="533" y="529.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">destroying it are their own process (BP15).</text>
+<path d="M 870 526 H 864 V 587 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="538" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The check-in history hangs on the measure's identity,</text>
+<text x="873" y="548.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">never on its position.</text>
+<path d="M 870 423 H 864 V 514 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="435" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A measure takes its own check-in history with it and</text>
+<text x="873" y="445.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">brings it back with it. A project parented on it keeps its</text>
+<text x="873" y="456.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">parent, which still exists.</text>
+<path d="M 870 305 H 864 V 411 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="317" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Its check-in history goes with it, unasked, and nothing</text>
+<text x="873" y="327.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">else does, so there is nothing to disclose and nothing to</text>
+<text x="873" y="338.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">approve: a project parented on it survives minus the link.</text>
+<path d="M 1040 142 H 1034 V 293 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="154" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Numeric carries a start value, a target, a unit and a</text>
+<text x="1043" y="164.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">direction, and its current value starts at the start value;</text>
+<text x="1043" y="175.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">boolean carries done and not done, starting at not done.</text>
+<text x="1043" y="185.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The type is editable like the start value, the target and</text>
+<text x="1043" y="196.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the unit, and the recorded check-ins are left as they</text>
+<text x="1043" y="207.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">stand.</text>
+<path d="M 1040 24 H 1034 V 130 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Numeric takes the value the current value moves to.</text>
+<text x="1043" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Boolean takes done and not done. A note is optional</text>
+<text x="1043" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">either way. Nothing is read first: the measure and where</text>
+<text x="1043" y="67.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">it stands arrived with the goals.</text>
+<path d="M 700 2071 H 694 V 2162 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="2083" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Its check-in history goes with it and comes back with it,</text>
+<text x="703" y="2093.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">into a live goal. While it is away it is frozen, so nothing is</text>
+<text x="703" y="2104.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">recorded against it.</text>
+<path d="M 870 2174 H 864 V 2310 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="2186" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The history is append-only, so a date that already carries</text>
+<text x="873" y="2196.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">a check-in takes another and each is its own data point.</text>
+<text x="873" y="2207.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The current value is what the latest one says, and the</text>
+<text x="873" y="2217.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">start value until there is one. A check-in records a data</text>
+<text x="873" y="2228.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">point and infers no status.</text>
+<path d="M 870 2322 H 864 V 2428 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="2334" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">There is no untyped measure. The type is editable like</text>
+<text x="873" y="2344.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the start value, the target and the unit, and the check-ins</text>
+<text x="873" y="2355.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">already recorded are left as they stand, each in the type</text>
+<text x="873" y="2365.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">it was recorded under.</text>
+<rect x="501" y="640" width="104.06" height="11.5" fill="#fff"/>
+<text x="502" y="649.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">add or change what counts</text>
+<rect x="531" y="640" width="50.65" height="11.5" fill="#fff"/>
+<text x="532" y="649.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="531" y="640" width="52.56" height="11.5" fill="#fff"/>
+<text x="532" y="649.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">set one aside</text>
+<rect x="531" y="640" width="35.55" height="11.5" fill="#fff"/>
+<text x="532" y="649.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">drop one</text>
+<rect x="531" y="640" width="95.54" height="11.5" fill="#fff"/>
+<text x="532" y="649.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">record where one stands</text>
+<rect x="531" y="640" width="98.39" height="11.5" fill="#fff"/>
+<text x="532" y="649.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">look at the ones set aside</text>
+<rect x="896" y="692" width="94.59" height="20.73" fill="#fff"/>
+<text x="897" y="700.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP06.03</text>
+<text x="897" y="710.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Edit a progress measure</text>
+<rect x="721" y="812" width="107.81" height="20.73" fill="#fff"/>
+<text x="722" y="820.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP06.05</text>
+<text x="722" y="830.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder progress measures</text>
+<rect x="731" y="932" width="108.28" height="20.73" fill="#fff"/>
+<text x="732" y="940.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP06.11</text>
+<text x="732" y="950.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Archive a progress measure</text>
+<rect x="741" y="1052" width="111.59" height="20.73" fill="#fff"/>
+<text x="742" y="1060.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP06.07</text>
+<text x="742" y="1070.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Remove a progress measure</text>
+<rect x="906" y="1172" width="105.92" height="20.73" fill="#fff"/>
+<text x="907" y="1180.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP06.02</text>
+<text x="907" y="1190.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Record a progress check-in</text>
+<rect x="1246" y="1968" width="85.61" height="11.5" fill="#fff"/>
+<text x="1247" y="1977.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The check-in outcome</text>
+<rect x="1236" y="1488" width="79.01" height="11.5" fill="#fff"/>
+<text x="1237" y="1497.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+<rect x="1061" y="1608" width="85.15" height="11.5" fill="#fff"/>
+<text x="1062" y="1617.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The ordering outcome</text>
+<rect x="1071" y="1728" width="87.98" height="11.5" fill="#fff"/>
+<text x="1072" y="1737.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The archiving outcome</text>
+<rect x="1081" y="1848" width="84.2" height="11.5" fill="#fff"/>
+<text x="1082" y="1857.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The removal outcome</text>
+</svg>

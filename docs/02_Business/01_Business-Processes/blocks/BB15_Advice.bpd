@@ -1,0 +1,84 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB15_Advice
+lang en
+
+output L1 "BB15_Advice.bpmn"
+
+' Asking for advice and, optionally, taking it up. The round trip is two chains because the service
+' is never blocking: the request is submitted, the outcome arrives on its own. Nothing loops back -
+' a request worth repeating is the whole gesture started again.
+
+pool "User" {
+  :Write the request;
+  rule BR-121
+  :Submit the request;
+  send "Ask the advisor" to askIn
+  receive "The answer, or what went wrong" as answer
+  if "Did the advisor answer?" rule BR-75 then "it answered"
+    if "Take a proposal up?" rule BR-72 then "yes"
+      :Accept the proposal;
+      send "See what applying will take" to applyImpactIn
+      receive "What applying will take, and where it lands" as applyImpact
+      if "Approve what applying takes?" rule BR-72 then "approve"
+        :Apply the proposal;
+        send "Apply the proposal" to applyIn
+        receive "What was applied, and where" as applied
+        goto back
+      else "reject"
+        goto back
+      endif
+    else "no"
+      goto back
+    endif
+  else "it did not"
+    goto back
+  endif
+  end "Back on the surface" as back
+}
+
+system pool "Bearing" {
+  messageStart "Request submitted" as askIn
+  ' lint-ok: BB15.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB15.01_AskTheAdvisor" "Ask the advisor" {
+    :Submit the request with its context, the conversation included;
+    :Keep the request with the conversation, for the turns that follow;
+  }
+  send "Advice requested" to "Advisor"
+  end "Request sent"
+
+  receive "Advisor answered" from "Advisor"
+  ' lint-ok: BB15.02 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB15.02_TakeTheAnswer" "Take the advisor's answer" {
+    :Turn each actionable part of the answer into a typed proposal;
+    rule BR-75
+    :Report the outcome;
+  }
+  send "The answer, or what went wrong" to answer
+  note "One answer carries both outcomes: the proposals the advisor returned, or what went wrong where it did not answer at all."
+  end "Answer answered"
+
+  messageStart "Application impact requested" as applyImpactIn
+  ' lint-ok: BB15.03 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB15.03_ReadWhatApplyingWillTake" "See what applying will take" {
+    :Report what applying it will take;
+    rule BR-72
+  }
+  send "What applying will take, and where it lands" to applyImpact
+  note "Applying runs the user's own operation, so whatever that operation discloses is disclosed here."
+  end "Application impact answered"
+
+  messageStart "Application requested" as applyIn
+  ' lint-ok: BB15.04 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB15.04_ApplyTheProposal" "Apply the proposal" {
+    :Apply the proposal;
+    rule BR-72
+    :Report what was applied, and where it landed;
+  }
+  send "What was applied, and where" to applied
+  note "The proposal is written completely. Nothing is half-applied."
+  end "Application answered"
+}
+
+blackbox pool "Advisor"
+
+@endbpmn

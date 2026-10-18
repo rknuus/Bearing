@@ -1,0 +1,35 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB01_OpenView
+lang en
+
+output L1 "BB01_OpenView.bpmn"
+status retired "A surface's content is loaded and derived at start-up, so no process draws a page read (SA 2026-10-17)."
+
+' The canonical block: the PATH, from the act that starts it to where it leaves the user. A member
+' substitutes its own view, entity and vocabulary; it never changes the shape. The hub the path
+' hangs off is the process's, not the block's.
+'
+' Nothing in this block FETCHES: data is loaded once, at start-up (BP01, DRW-14). A member whose
+' chain had nothing but a fetch to make is not a member at all - its act asks the system for nothing.
+
+pool "User" {
+  :Open the <view>;
+  send "Read the <view>" to readIn
+  receive "<What the view carries>" as payload
+  end "The view is in front of the user"
+}
+
+system pool "Bearing" {
+  messageStart "<View> requested" as readIn
+  ' lint-ok: BB01.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB01.01_ReadTheView" "Read the <view>" {
+    :Take the <view> data the act works on;
+    :Calculate derived <view> data;
+    :Report collected information;
+  }
+  send "<What the view carries>" to payload
+  note "Nothing is fetched here: every record is loaded at start-up, so the chain takes what the view works on and calculates what has to be derived over it."
+  end "Read answered"
+}
+
+@endbpmn

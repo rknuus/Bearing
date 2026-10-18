@@ -1,0 +1,210 @@
+@startbpmn BP17_MaintainAProject
+lang en
+
+output L1 "01_detailed/BP17_MaintainAProject.bpmn"
+output L2 "02_detailed/BP17_MaintainAProject.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a project has exactly one optional parent: an idea, a goal, a measure, or none: BR-96
+'   - the parent is single-valued and the user is never asked what kind of thing it is: BR-96
+'   - the kind is declared at creation and there is no migration either way: BR-97, QB-44
+'   - a simple project has one board; an activity-based one has a plan: BR-97, BR-101
+'   - a project owns one column template, governing every board of that project: BR-108
+'   - a project archives directly, carrying its activities and their tasks: BR-23, BR-112
+'   - archiving a project is the only way an activity is archived at all: BR-23
+'   - archiving withdraws the project from the focus selectables: BR-43
+'   - a project deletion takes everything the project is, approve-or-abandon: BR-113, BR-114
+'   - the parent survives a project deletion, minus the link: BR-96, BR-114
+'   - archived projects are out of the working view: BR-26
+'   - the archive is no shield from a deletion: BR-117
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - one editor per entity: starting a project and changing one are the same act, so there is
+'     one editor node, one submit and one request. Call site BP17.03 (Amend a project) is RETIRED
+'     and its id never reused. The template and the board are ENSURED rather than created, so
+'     the one chain serves both without a new-or-existing gateway; the kind stays creation-only
+'     and the system refuses a change to it: UX-04, DRW-11, BR-97, BR-128, SA 2026-10-14, ADR-066
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user CREATES a project, which
+'     the call site's id already said: SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'   - the box carries the act's own word and the branch covers both: the user DEFINES a project,
+'     whether it is new or not, as a goal is defined in BP05 and a measure in BP06. One editor per
+'     entity serves creating and changing alike: UX-04, BB03, SA 2026-10-16, SA 2026-10-17
+'
+' Scope: this process is the project as an entity. Laying out and tracking an activity-based
+' project's work is BP18, which this process hands over to by opening a project's course.
+' Bringing an archived project back is BP15.
+'
+' Call-site history: the plan was drawn here until 2026-10-10 and moved to BP18 on the Software
+' Architect's ruling, so that the project and its plan are one process each. BP17.06 to BP17.13
+' are retired and are never reused.
+'
+' A seam into another process is drawn as one step that asks the system for nothing, with a note
+' saying whose business it is, and the hub takes the user back afterwards. DRW-02 makes the seam
+' significant, and BP17 and BP09 already drew theirs; the rest of the set did not, which is the
+' asymmetry F-3 recorded. Swept on SA 2026-10-16 ("still can't find any checkout action on the
+' diagram").
+'
+' THE KIND IS VERIFIED AT THE WRITE, like every other rule a write binds: the kind is declared once
+' and for the project's life, so an edit that would change an existing project's kind is refused with
+' its reason and the rest of the edit is stored - the shape BP11.06 uses for a priority change
+' outside the Backlog. No surface is trusted to have checked it: BR-97, BR-128, QB-44,
+' SA 2026-10-18 (adversarial review).
+'
+' A NEW PROJECT'S TEMPLATE IS CREATED, NOT CHOSEN. There is no library of templates to select from:
+' a template belongs to one project and comes into existence with it, starting from four lanes, one
+' per role (BR-108, BR-97). The same write serves a changed project, where there is nothing to give
+' it, which is why the step names the new project rather than ensuring anything: BR-108, BR-101,
+' BR-111, SA 2026-10-18 ("'Ensure it has a column template' does not make much sense, if there is
+' none")
+' AND WHAT ITS KIND BRINGS is the one board of a simple project or the empty plan of an
+' activity-based one - a plan's boards arrive with its activities, one each (BP18): BR-97, BR-101,
+' BR-105, BR-111, SA 2026-10-18 ("What is 'Ensure it has what its kind gives it [...]'?")
+'
+' Call-site collapsing: creating a simple project and creating an activity-based one are one
+' request differing in the kind it carries, and the drawing does NOT dispatch on that kind: the
+' board of a simple project and the empty plan of an activity-based one are two permutations of
+' one step, discovered at Design. Drawing the gateway was premature, the same call SA made on
+' BP06's measure type: BR-97, ADR-069, SA 2026-10-11 ("yes, premature, leave that to detail
+' design"), swept 2026-10-16
+
+pool "User" {
+  start "Work to organize, or a project to settle"
+  :Work a project;
+  rule BR-118
+
+  if "What needs doing?" then "start something new, or change what a project is"
+    :Define the project;
+    rule BR-121
+    :Submit the project;
+    send "Edit a project" to editIn
+    receive "The editing outcome" as created
+    note "The parent may be an idea, a goal or a progress measure, or there may be none. The kind holds for the project's life, so it is declared once and is not amendable."
+    end "Project recorded"
+
+  elseif "What needs doing?" then "plan its work"
+    :Open the project's course (BP18);
+    note "Laying out the activities and their order is its own process (BP18). A simple project has no plan to open."
+    end "Course opened"
+
+  elseif "What needs doing?" then "set one aside"
+    :Archive a project;
+    send "See what archiving a project takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "Approve what the archiving takes?" rule BR-112 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the archiving;
+      send "Archive a project" to archiveIn
+      receive "The archiving outcome" as archived
+      note "The activities and their tasks go with it. Nothing below a project can be kept behind."
+    else "reject"
+      end "Archiving abandoned"
+    endif
+    end "Project set aside"
+
+  elseif "What needs doing?" then "end one"
+    :Delete a project;
+    send "See what deleting a project takes" to delImpactIn
+    receive "What the project deletion will take" as delImpact
+    if "Approve what the deletion takes?" rule BR-114 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete a project" to deleteIn
+      receive "The deletion outcome" as deleted
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Project deleted"
+  elseif "What needs doing?" then "look at the archived ones"
+    :Open the archived projects (BP15);
+    note "The archive is reached by an explicit act, and it holds the activities and tasks that went down with a project. Reading it, bringing one back and destroying one out of it are its own process (BP15)."
+    end "Archive opened"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Project submitted" as editIn
+  call "BP17.02_CreateProject" "Edit a project" {
+    if "Does the edit keep the project's kind?" rule BR-97 then "yes"
+      :Store the edit;
+      rule BR-96
+      :Give a new project its own column template;
+      rule BR-108
+      :Give it what its kind brings: one board where it is simple, an empty plan where it is activity-based;
+      rule BR-101
+      rule BR-111
+    else "no"
+      :Store the edit and refuse the kind change, saying why;
+      rule BR-97
+    endif
+    :Report the outcome;
+  }
+  send "The editing outcome" to created
+  note "The new template starts from four columns, one per role. The kind is declared once and never migrates, and the parent is single-valued. A plan orders and tracks; it carries no duration, no float and no critical path."
+  end "Project answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP17.14_ReadTheProjectArchivingImpact" "See what archiving a project takes" {
+    :Report what the archiving will take, and what of it can be declined;
+    rule BR-19
+    rule BR-113
+    rule BR-112
+    rule BR-101
+  }
+  send "What the archiving will take" to archImpact
+  note "Archiving a project is the only way an activity is archived at all, and it is approved whole or rejected whole."
+  end "Archiving impact answered"
+
+  messageStart "Project archiving requested" as archiveIn
+  call "BP17.15_ArchiveProject" "Archive a project" {
+    :Archive confirmed items;
+    rule BR-23
+    rule BR-112
+    :Withdraw it from the focus selectables and hide its boards;
+    rule BR-43
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  note "An archived project is frozen until it is brought back, and it comes back as the whole bundle it went as."
+  end "Project archiving answered"
+
+  messageStart "Project deletion impact requested" as delImpactIn
+  call "BP17.04_ReadTheProjectDeletionImpact" "See what deleting a project takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-19
+    rule BR-113
+    rule BR-114
+    rule BR-101
+    rule BR-117
+  }
+  send "What the project deletion will take" to delImpact
+  note "Everything the project is goes with it. Keeping anything below it is not offered, because nothing below a project can be detached."
+  end "Project impact answered"
+
+  messageStart "Project deletion requested" as deleteIn
+  call "BP17.05_DeleteProject" "Delete a project" {
+    :Delete confirmed items;
+    rule BR-108
+    rule BR-114
+    :Leave the parent standing, minus the link;
+    rule BR-96
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "The parent survives a project's deletion. A goal left with no linked idea is flagged on its current state."
+  end "Project deletion answered"
+}
+
+@endbpmn

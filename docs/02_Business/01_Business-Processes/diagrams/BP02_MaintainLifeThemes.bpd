@@ -1,0 +1,175 @@
+@startbpmn BP02_MaintainLifeThemes
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "01_detailed/BP02_MaintainLifeThemes.bpmn"
+output L2 "02_detailed/BP02_MaintainLifeThemes.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a theme is never archivable, only deleted or kept: BR-23
+'   - the theme deletion offers two cascades, its goals and its ideas: BR-13, SA 2026-10-13
+'   - a goal cannot be kept theme-less, so declining is not offered there: BR-21, BR-01
+'   - a routine has NO theme, so a theme deletion never reaches one and the routines cascade -
+'     with the declinable occurrence cascade under it - is gone: BR-02, BR-13, SA 2026-10-13
+'   - an idea kept through the cascade simply becomes theme-less: BR-03
+'   - every cascade the user may legally decline is off by default: BR-19
+'   - WHICH cascades the gesture offers, and in which order the user answers them, is not
+'     business relevant: the drawing carries one choice - a valid combination, or no deletion -
+'     and what the combinations are is the disclosure's content (BP02.05): SA 2026-10-11
+'   - an act does not send the user back to re-reading the tab: every act returns to the tab they
+'     are working, where the next one is chosen, and the surface is current without anyone asking
+'     for it: BR-118, SA 2026-10-11
+'   - the deletion discloses what it will take before it takes it: BR-12
+'   - the starter set is Health / Career / Learning / Relationships / Personal, and it ships with
+'     the template files installed when the data folder is created: BR-82, QB-08, SA 2026-10-10
+'   - there is NO restoring that set: a user who wants the shipped folder back deletes the folder
+'     and starts from scratch, outside Bearing. BR-83 is VOID and call site BP02.09 is RETIRED,
+'     its id never reused: SA 2026-10-11 ("I don't see a need to reset the data directory")
+'   - the overview counts active goals only; routines are not on this view: BR-95, BR-02
+'   - the overview reads one surface whole - themes, vision, mission, goals and measures - and
+'     reports what it collected: SA 2026-10-11, SA 2026-10-13
+'   - the answer to that read IS drawn, and it has to be: the gateway decides what needs doing
+'     ON that data, so without it the user is deciding in front of an empty tab. What was wrong
+'     was the LABEL - "The themes overview" repeated the request's own words, so the two arrows
+'     read as one thing and understated what comes back; the reply names the payload instead:
+'     SA 2026-10-11
+'   - the theme name drafts as it is typed like any draftable field, and the operation that keeps
+'     it is drawn ONCE, in BP19, not here: BR-121 is a bound rule on the editor step. Call site
+'     BP02.10 (Draft the theme input) is RETIRED, its id never reused: SA 2026-10-11
+'   - colour propagates from the theme downstream: BR-09
+'   - vision and mission are optional prose above themes, reset by emptying: section 3
+'   - one editor per entity serves creating and editing alike, so the whole gesture is ONE editor
+'     box, ONE submit box and ONE request: UX-04. What separated creating from amending was the
+'     placement of a new theme in the order, and that is not business relevant, so the two chains
+'     are one and the case never has to be asked. Call site BP02.03 (Amend a theme) is RETIRED,
+'     its id never reused, and BP02.02 is the one editing request: SA 2026-10-11
+'   - where a new theme lands in the order is not drawn: the user orders them when they want to
+'     (BP02.04), which is the business fact: SA 2026-10-11
+'   - showing that editor is the UI's doing and asks the system for nothing, so no step draws it;
+'     which dialog it is lives in Intent section 7's surface inventory: SA 2026-10-11
+'   - expanding or collapsing a section is handled entirely in the UI and asks the system for
+'     nothing, so it is NOT a step in a business process: SA 2026-10-11 (the same holds for any
+'     future fold/unfold)
+'   - the overview reads this surface WHOLE, so expanding the vision and mission section has
+'     nothing left to fetch: call site BP02.07 (Read vision and mission) is RETIRED and its id is
+'     never reused: SA 2026-10-11, ADR-066
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user NAMES a life area -
+'     colour is a field of that same editor - and STATES a vision and a mission. Edit stays the
+'     operation's word and the call sites keep their ids: BR-82, BR-09, ADR-066, SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Call-site collapsing (ADR-069, design-artifact-conventions): rename and recolour are two
+' variations of one amend request, not two chains - the variation is a permutation of the
+' operation, discovered at Design, and never a second call site here. The cross-process duplication
+' this comment used to flag is GONE: BP01's onboarding wizard was retired on 2026-10-11, so
+' recording a vision and a mission happens here and nowhere else.
+
+' ===== The user: opens the Themes tab and performs one act =====
+pool "User" {
+  start "A theme needs attention"
+  :Work a theme;
+  rule BR-118
+
+  if "What needs doing?" then "add or change a theme"
+    :Name the theme;
+    rule BR-121
+    :Submit the theme;
+    send "Edit a theme" to editIn
+    receive "The editing outcome" as recorded
+    end "Theme recorded"
+
+  elseif "What needs doing?" then "reorder them"
+    :Order a theme;
+    send "Reorder themes" to reorderIn
+    receive "The ordering outcome" as reordered
+    end "Themes ordered"
+
+  elseif "What needs doing?" then "retire one for good"
+    :Delete a theme;
+    send "See what deleting a theme takes" to impactIn
+    receive "What the deletion will take" as impact
+    if "Approve what the deletion takes?" rule BR-13 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      rule BR-21
+      :Confirm the deletion;
+      send "Delete a theme" to deleteIn
+      receive "The deletion outcome" as deleted
+      note "A kept idea loses only its theme affiliation. The goals cannot be kept, so confirming takes them."
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Theme deleted"
+
+  elseif "What needs doing?" then "state who I want to become, and what I am here for"
+    :State the vision and mission;
+    rule BR-121
+    :Submit the vision and mission;
+    send "Record vision and mission" to vmIn
+    receive "The recording outcome" as vmDone
+    end "Vision and mission recorded"
+  endif
+}
+
+' ===== The system: one chain per request, each a single synchronous call =====
+system pool "Bearing" {
+  messageStart "Theme submitted" as editIn
+  call "BP02.02_EditTheme" "Edit a theme" {
+    :Store the edit;
+    rule BR-09
+    :Report the outcome;
+  }
+  send "The editing outcome" to recorded
+  end "Theme answered"
+
+  messageStart "Theme reordering requested" as reorderIn
+  call "BP02.04_ReorderThemes" "Reorder themes" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to reordered
+  end "Reordering answered"
+
+  messageStart "Deletion impact requested" as impactIn
+  call "BP02.05_ReadTheDeletionImpact" "See what deleting a theme takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-13
+    rule BR-14
+    rule BR-15
+    rule BR-19
+    rule BR-21
+    rule BR-117
+  }
+  send "What the deletion will take" to impact
+  note "A goal requires a theme, so keeping one is not a legal outcome: where the theme has goals the gesture is approve-or-abandon. An idea may stay behind theme-less, so that cascade is the real choice and it starts off. An archived descendant is counted like a live one."
+  end "Impact answered"
+
+  messageStart "Theme deletion requested" as deleteIn
+  call "BP02.06_DeleteTheme" "Delete a theme" {
+    :Delete confirmed items;
+    rule BR-03
+    rule BR-13
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "The request carries the cascades the user confirmed, and nothing else goes: an idea left out stays, theme-less. What happens below a deleted goal or idea is that entity's own rule, applied where the deletion reaches it."
+  end "Deletion answered"
+
+  messageStart "Vision and mission submitted" as vmIn
+  call "BP02.08_RecordVisionAndMission" "Record vision and mission" {
+    :Store the vision and the mission;
+    :Report the outcome;
+  }
+  send "The recording outcome" to vmDone
+  end "Record answered"
+}
+
+@endbpmn

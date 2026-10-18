@@ -1,0 +1,134 @@
+@startbpmn BP15_ReviewArchivedMaterial
+lang en
+
+output L1 "01_detailed/BP15_ReviewArchivedMaterial.bpmn"
+output L2 "02_detailed/BP15_ReviewArchivedMaterial.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - archived items are retained, hidden from the working view, read by an explicit act: BR-26
+'   - an archived item cannot be edited, any archived item: BR-05, SA 2026-10-10
+'   - unarchive must leave the overall state consistent and is rejected whenever it cannot: BR-25
+'   - a partial unarchive can never be consistent and is refused in either direction: BR-25
+'   - the bundle comes back in its prior state and prior position: BR-25
+'   - an archived item's position is never occupied while it is away: BR-25
+'   - where the bundle cannot be reassembled the item stays archived: BR-25
+'   - five archivable kinds: idea, goal, progress measure with its check-in history, project with
+'     its activities and tasks, task: BR-23, SA 2026-10-16
+'   - an archived goal carries its check-out record, and unarchiving never revokes it: BR-30
+'   - a goal's measures and their check-in history come back with it, and a measure archived on its
+'     own brings its own history: BR-112, BR-15, SA 2026-10-16
+'   - unarchiving offers the user nothing to choose and destroys nothing, so it discloses nothing
+'     and is not confirmed: the one request brings the bundle back where that is possible and says
+'     why it cannot where it is not, both outcomes leaving by one report. Call site BP15.02 (See
+'     what unarchiving will bring back) is RETIRED, its id never reused: BR-25, SA 2026-10-16,
+'     ADR-066
+'   - NEITHER LOOKING NOR NARROWING IS AN ACT. The archive holds one view per kind, reached from the
+'     tab that owns that kind, so there is no kind to switch inside it; what the view shows is in
+'     play and frozen, so looking at an item asks the system for nothing and decides nothing; and
+'     filtering or sorting the list is the client's own business, remembered interface state rather
+'     than anything the system is asked for. So this process draws the TWO acts an archived item
+'     takes - bring it back, or destroy it - and nothing else: BR-26, BR-92, DRW-14, section 7,
+'     SA 2026-10-18 ("if there would be filtering, that would be up to the client" ... "'Read the
+'     item as it stands' is not a genuine activity")
+'   - an archived item is frozen: reading one changes nothing, and changing one means bringing it
+'     back first, which is why no editing act is drawn here: BR-05
+'   - deleting an archived item IS the item's own deletion, so it carries the selection step its
+'     live deletion carries: for a kind whose cascade may be declined there is a combination to
+'     pick, and for a leaf there is exactly one: BR-12, BR-19, DRW-17, DRW-19
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Scope: this process reads the archive, brings things back, and destroys what is to be destroyed
+' out of it. Putting items there is each entity's own process; taking one out for good is THIS
+' process's, because the owning processes all read live items only and the archive is the one
+' surface the item is in front of the user at all: BR-05, BR-26, G-1, SA 2026-10-16 ("when we
+' identify a concrete issue, we fix it, even if I will review the affected BP only in the
+' future").
+'
+' One delete serves all five kinds, like the read and the unarchive: the kind is the request's
+' payload and what the deletion reaches is the item's OWN rule, applied where it reaches and never
+' redrawn here (BR-12, DRW-19). Three of the five kinds own something, so the drawing carries the
+' disclose-then-approve shape of every other destructive act; for a leaf - a task, a measure - the
+' disclosure is simply empty, which is the one case DRW-28 cannot express in a single branch
+' without dispatching on the kind, and dispatching on the kind is a permutation, not a gateway.
+'
+' Call-site collapsing: the five archivable kinds are not five operations. Unarchiving is one
+' request whose consequences differ by what the item carries rather than by which operation is
+' called, and deleting is the same. This is why the eight candidates in Intent section 6 draw as
+' three.
+
+pool "User" {
+  start "Something to look up, or something to bring back"
+  :Work the archive;
+  rule BR-118
+
+  if "What needs doing?" then "drop one for good"
+    :Delete an archived item;
+    rule BR-05
+    send "See what deleting the archived item takes" to delImpactIn
+    receive "What the deletion will take" as delImpact
+    if "Approve what the deletion takes?" rule BR-12 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete an archived item" to deleteIn
+      receive "The deletion outcome" as deleted
+      note "What the item owns goes with it and what hangs on it is the cascade its own rule gives, exactly as it would for a live item. A leaf has nothing to disclose, so the disclosure is empty and there is nothing to weigh."
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Item destroyed"
+
+  elseif "What needs doing?" then "bring one back"
+    :Unarchive an item;
+    send "Unarchive an item" to unarchiveIn
+    receive "What came back, or why it cannot" as unarchived
+    note "The whole bundle comes back as it went: no part of it can be picked and nothing is re-parented, relocated or approximated. A member deleted out of the archive, or a surrounding that is now gone, leaves it unreassemblable, and then the item stays archived."
+    end "Item brought back"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Deletion impact requested" as delImpactIn
+  call "BP15.04_ReadTheArchivedDeletionImpact" "See what deleting the archived item takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-19
+    rule BR-117
+  }
+  send "What the deletion will take" to delImpact
+  note "The item's own rule governs what the deletion reaches, as it does for a live one. Where the item owns nothing the answer is empty."
+  end "Deletion impact answered"
+
+  messageStart "Deletion requested" as deleteIn
+  call "BP15.05_DeleteArchivedItem" "Delete an archived item" {
+    :Delete confirmed items;
+    rule BR-12
+    rule BR-117
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "Whatever bundle needed the deleted item can no longer be reassembled, so an unarchive that wanted it is refused afterwards and that item stays archived."
+  end "Deletion answered"
+
+  messageStart "Unarchive requested" as unarchiveIn
+  call "BP15.03_UnarchiveItem" "Unarchive an item" {
+    if "Can the bundle come back whole?" rule BR-25 then "yes"
+      :Return the bundle to its prior state and position;
+      rule BR-25
+      goto report
+    else "no"
+      goto report
+    endif
+    task "Report the outcome" as report
+  }
+  send "What came back, or why it cannot" to unarchived
+  note "A project brings its activities and their tasks; a goal brings its measures and their check-in history; a measure brings its own, and a goal's check-out record is untouched. An archived item's position is never occupied while it is away, so the bundle comes back to it. One answer carries both outcomes."
+  end "Unarchive answered"
+}
+
+@endbpmn

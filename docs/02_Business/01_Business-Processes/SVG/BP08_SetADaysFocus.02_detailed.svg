@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1288" height="715" viewBox="0 0 1288 715">
+<rect width="1288" height="715" fill="#fff"/>
+<rect x="24" y="55" width="1240" height="260" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="55" x2="54" y2="315" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="189.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 185)">User</text>
+<rect x="24" y="355" width="1240" height="260" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="355" x2="54" y2="615" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="489.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 485)">Bearing</text>
+<polyline points="152,175 254,175" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 175 L 246 178.36 L 246 171.64 Z" fill="#000"/>
+<polyline points="354,175 424,175" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 175 L 416 178.36 L 416 171.64 Z" fill="#000"/>
+<polyline points="524,175 594,175" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 175 L 586 178.36 L 586 171.64 Z" fill="#000"/>
+<polyline points="694,175 764,175" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 175 L 756 178.36 L 756 171.64 Z" fill="#000"/>
+<polyline points="864,175 966,175" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 175 L 958 178.36 L 958 171.64 Z" fill="#000"/>
+<polyline points="1002,175 1136,175" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 175 L 1128 178.36 L 1128 171.64 Z" fill="#000"/>
+<polyline points="832,475 914,475" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 475 L 906 478.36 L 906 471.64 Z" fill="#000"/>
+<polyline points="1054,475 1136,475" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 475 L 1128 478.36 L 1128 471.64 Z" fill="#000"/>
+<polyline points="814,215 814,457" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 817.78 448 L 814 457 L 810.22 448" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="215" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,430 984,193" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 202 L 984 193 L 987.78 202" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="430" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="474,135 474,115" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,157 984,123" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,520 984,540" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="175" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="207" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A day to commit to</text>
+<rect x="254" y="135" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="299.5" y1="198" x2="308.5" y2="198" stroke="#000" stroke-width="1.4"/>
+<line x1="299.5" y1="201" x2="308.5" y2="201" stroke="#000" stroke-width="1.4"/>
+<line x1="299.5" y1="204" x2="308.5" y2="204" stroke="#000" stroke-width="1.4"/>
+<text x="304" y="171.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Pick or drop the</text>
+<text x="304" y="183.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">projects to work on</text>
+<rect x="424" y="135" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="469.5" y1="198" x2="478.5" y2="198" stroke="#000" stroke-width="1.4"/>
+<line x1="469.5" y1="201" x2="478.5" y2="201" stroke="#000" stroke-width="1.4"/>
+<line x1="469.5" y1="204" x2="478.5" y2="204" stroke="#000" stroke-width="1.4"/>
+<text x="474" y="159.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Pick or drop the</text>
+<text x="474" y="171.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">activities inside each</text>
+<text x="474" y="183.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">activity-based</text>
+<text x="474" y="195.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">project</text>
+<rect x="594" y="135" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="639.5" y1="198" x2="648.5" y2="198" stroke="#000" stroke-width="1.4"/>
+<line x1="639.5" y1="201" x2="648.5" y2="201" stroke="#000" stroke-width="1.4"/>
+<line x1="639.5" y1="204" x2="648.5" y2="204" stroke="#000" stroke-width="1.4"/>
+<text x="644" y="171.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Pick or drop the</text>
+<text x="644" y="183.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">routines to keep up</text>
+<rect x="764" y="135" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="171.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Commit the day's</text>
+<text x="814" y="183.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">focus</text>
+<circle cx="984" cy="175" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="175" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="169.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 169.06 L 984 175 L 993 169.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="207" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What was</text>
+<text x="942" y="217.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">committed, or why</text>
+<text x="942" y="228.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">not</text>
+<circle cx="1154" cy="175" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="207" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day committed</text>
+<circle cx="814" cy="475" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="469.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 469.06 L 814 475 L 823 469.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="507" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day focus submitted</text>
+<a href="../02_System-Interactions/BP08.02_SetTheDaysFocus.md" target="_blank">
+<title>BP08.02_SetTheDaysFocus — open the System-Interaction document</title>
+<rect x="914" y="430" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 437 H 1043.8 L 1046.8 440 V 447 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 437 V 440 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="443.4" x2="1045.24" y2="443.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="445.6" x2="1045.24" y2="445.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="501" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 502.8 V 509.2 M 980.8 506 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="477.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Set the day's focus</text>
+</a>
+<circle cx="1154" cy="475" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="507" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day focus answered</text>
+<path d="M 360 24 H 354 V 115 H 360" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="363" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Zero to many per project. The ready ones are offered</text>
+<text x="363" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">first; nothing forces one at a time. A simple project</text>
+<text x="363" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">contributes its own board and has no activities to pick.</text>
+<path d="M 870 62 H 864 V 123 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="74" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Chores is never picked. It joins the day on its own while it</text>
+<text x="873" y="84.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">carries work that is not done.</text>
+<path d="M 870 540 H 864 V 691 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="552" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A commit replaces the date's previous selection rather</text>
+<text x="873" y="562.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">than adding to it, so the boards in play are exactly what</text>
+<text x="873" y="573.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">was last committed. A routine that already owes a task</text>
+<text x="873" y="583.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">gets no second one, on any date. Due and overdue are</text>
+<text x="873" y="594.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">treated the same. Dropping a routine leaves a task</text>
+<text x="873" y="605.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">already created where it is.</text>
+<rect x="816" y="216" width="73.55" height="20.73" fill="#fff"/>
+<text x="817" y="224.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP08.02</text>
+<text x="817" y="234.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Set the day's focus</text>
+<rect x="986" y="431" width="124.82" height="11.5" fill="#fff"/>
+<text x="987" y="440.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What was committed, or why not</text>
+</svg>

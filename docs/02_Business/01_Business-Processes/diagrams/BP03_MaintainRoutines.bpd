@@ -1,0 +1,149 @@
+@startbpmn BP03_MaintainRoutines
+lang en
+
+output L1 "01_detailed/BP03_MaintainRoutines.bpmn"
+output L2 "02_detailed/BP03_MaintainRoutines.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a routine has NO theme: maintenance rather than achievement, so nothing about a life area
+'     attaches to it: BR-02, SA 2026-10-13 ("For Routines I don't care about themes, really",
+'     over the optional affiliation of 2026-10-11). Until then this process entered through a
+'     section of the Themes tab - a life area, or Unthemed - and the editor carried a life area
+'     field; both are gone
+'   - routines therefore have a home of their own, the Routines view, and BR-10's one deliberate
+'     exception is gone with the affiliation: BR-10, UX-14, SA 2026-10-13
+'   - a routine is not archivable; it is paused or deleted: BR-23
+'   - four recurrence patterns, no fifth, plus preferred days: BR-94
+'   - the schedule computes due and overdue and never creates a task: BR-91
+'   - only selecting a routine creates its task, and at most one outstanding: BR-42
+'   - deleting a routine offers a cascade over the occurrences it already produced: BR-16
+'   - that cascade is declinable, so it is off by default: BR-19
+'   - WHICH cascade the gesture offers is not business relevant: one choice - a valid option, or
+'     no deletion - and the options are the disclosure's content (BP03.06): SA 2026-10-11
+'   - a paused routine cannot be selected for a day: BR-43
+'   - a paused routine is neither due nor overdue, and paused days never become overdue: BR-91
+'   - one editor per entity serves creating and editing alike, and nothing separated the two
+'     chains but the fields they stored, so they are ONE request: UX-04, SA 2026-10-11. Call site
+'     BP03.03 (Amend a routine) is RETIRED, its id never reused, and BP03.02 is the one editing
+'     request
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user DEFINES a routine, which
+'     is Intent's own word for it; the operation keeps its own: SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+'   - the chain's NAME said "a section's routines", from when routines sat under a life area. A
+'     routine carries no theme and the view offers one list, so the name is the routines' and
+'     nothing else. The id is untouched, a name being descriptive and an id never renamed:
+'     BR-02, BR-10, ADR-066, SA 2026-10-17 ("drop stale sub BP")
+'
+' Call-site collapsing: pause and resume are one request with two variations, the way setting an
+' activity's state is one act in BP18. Defining and amending stay separate: one creates, the
+' other changes what exists.
+
+pool "User" {
+  start "A routine needs attention"
+  :Work a routine;
+  rule BR-118
+
+  if "What needs doing?" then "add or change a routine"
+    :Define the routine;
+    rule BR-121
+    :Submit the routine;
+    send "Edit a routine" to editIn
+    receive "The editing outcome" as recorded
+    note "The schedule is a recurrence pattern plus preferred days: it says when the routine is due, and never puts work on a board."
+    end "Routine recorded"
+
+  elseif "What needs doing?" then "put one on hold, or take it off hold"
+    :Pause or resume the routine;
+    send "Pause or resume a routine" to activeIn
+    receive "The pause-or-resume outcome" as activeSet
+    end "Routine paused or resumed"
+
+  elseif "What needs doing?" then "reorder them"
+    :Order a routine;
+    send "Reorder routines" to reorderIn
+    receive "The ordering outcome" as reordered
+    end "Routines ordered"
+
+  elseif "What needs doing?" then "retire one for good"
+    :Delete a routine;
+    send "See what deleting a routine takes" to impactIn
+    receive "What the deletion will take" as impact
+    if "Approve what the deletion takes?" rule BR-16 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete a routine" to deleteIn
+      receive "The deletion outcome" as deleted
+      note "The routine stops producing new ones either way; the occurrences it already produced go or stay on Chores."
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Routine deleted"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Routine submitted" as editIn
+  call "BP03.02_EditRoutine" "Edit a routine" {
+    :Store the edit;
+    rule BR-94
+    rule BR-02
+    :Report the outcome;
+  }
+  send "The editing outcome" to recorded
+  note "A routine carries no life area. The recurrence is Daily, Weekly, Monthly or Yearly."
+  end "Routine answered"
+
+  messageStart "Pause or resume submitted" as activeIn
+  call "BP03.04_SetRoutineActive" "Pause or resume a routine" {
+    :Apply the pause or the resume;
+    :Report the outcome;
+    rule BR-43
+  }
+  send "The pause-or-resume outcome" to activeSet
+  note "A paused routine leaves the focus selectables and the due computation, and returns to both on resume."
+  end "Pause or resume answered"
+
+  messageStart "Routine reordering requested" as reorderIn
+  call "BP03.05_ReorderRoutines" "Reorder routines" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to reordered
+  end "Reordering answered"
+
+  messageStart "Deletion impact requested" as impactIn
+  call "BP03.06_ReadTheDeletionImpact" "See what deleting a routine takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-19
+    rule BR-117
+  }
+  send "What the deletion will take" to impact
+  note "The occurrences are a declinable cascade, so it starts off. Declining leaves them on Chores and stops the routine producing new ones."
+  end "Impact answered"
+
+  messageStart "Routine deletion requested" as deleteIn
+  call "BP03.07_DeleteRoutine" "Delete a routine" {
+    :Delete confirmed items;
+    rule BR-16
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "The request carries the cascade the user approved."
+  end "Deletion answered"
+}
+
+@endbpmn

@@ -1,0 +1,27 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB02_OpenItem
+lang en
+
+output L1 "BB02_OpenItem.bpmn"
+
+pool "User" {
+  :Open the <item>;
+  send "Read the <item>" to itemIn
+  receive "The <item> as it stands" as item
+  end "The item is in front of the user"
+}
+
+system pool "Bearing" {
+  messageStart "<Item> requested" as itemIn
+  ' lint-ok: BB02.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB02.01_ReadTheItem" "Read the <item>" {
+    :Take the <item> data the act works on;
+    :Calculate derived <item> data;
+    :Report collected information;
+  }
+  send "The <item> as it stands" to item
+  note "A second request is drawn only where opening the item needs something computed that nothing in play answers: a selection under a rule, an inference."
+  end "Read answered"
+}
+
+@endbpmn

@@ -1,0 +1,41 @@
+@startbpmn BP05_CommitToAndMaintainAGoal_Blocks
+lang en
+
+output L1 "BP05_CommitToAndMaintainAGoal.bpmn"
+
+' The BLOCK VIEW of BP05: the work loop with one box per building block instance, no internals.
+' Hand-authored from the one tagged source in ../diagrams/, and re-read whenever it changes.
+
+pool "User" {
+  start "A commitment to make, or one to maintain"
+  :BB01 OpenView · the Goals view, goals grouped by theme with their active measures;
+  task "Work a goal" as hub
+  rule BR-118
+  if "What needs doing?" then "commit to something, or change one"
+    :BB03 EditContent · the goal, refused where it names no theme;
+    goto hub
+  elseif "What needs doing?" then "reorder them"
+    :BB05 EditState · the order of the goals within a theme;
+    goto hub
+  elseif "What needs doing?" then "set one aside"
+    :BB07 ArchiveCascadedItem · the goal with its projects, or the goal alone;
+    goto hub
+  elseif "What needs doing?" then "end the commitment for good"
+    :BB10 DeleteCascadedItem · the goal, with its linked ideas and its projects;
+    goto hub
+  elseif "What needs doing?" then "check one out"
+    :BB02 OpenItem · the inferred statuses, the draft and the linked projects, the sitting itself being BP07's;
+    goto hub
+  elseif "What needs doing?" then "start work on one"
+    :BB03 EditContent · a project created on the goal or one of its measures, working it being BP17's;
+    goto hub
+  elseif "What needs doing?" then "look at the archived ones"
+    :Seam · the archived goals, which are BP15's;
+    goto hub
+  else "nothing more"
+    goto done
+  endif
+  end "Everything done" as done
+}
+
+@endbpmn

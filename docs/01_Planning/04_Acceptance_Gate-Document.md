@@ -40,13 +40,13 @@ The one flow the product exists for. Acceptance should walk it end to end, on re
 
 | Step | Criterion |
 |---|---|
-| 1 | **Set the day's focus.** Open the app; land on **Focus** (BR-48); see the current week with its `(This week)` chip and today marked; select today; see every selectable grouped under its theme with its colour; select tags and routines; see the selected set in the sticky summary bar. *(Week is the smallest focus scope and the day is edited from within a period view — Intent BR-93, BR-40.)* |
-| 2 | **Routine tasks appear.** Selecting a routine spawns its task on the Routines board — and the UI receives **one** envelope for the whole gesture, never the partial state between the focus write and the task write (`arch §5 Pivot 4`). |
+| 1 | **Set the day's focus.** Open the app; land on **Focus** (BR-48); see the current week with its `(This week)` chip and today marked; select today; see every selectable grouped under its theme with its colour and the routines as one list, grouped by nothing (BR-02, BR-41); select tags and routines; see the selected set in the sticky summary bar. *(Week is the smallest focus scope and the day is edited from within a period view — Intent BR-93, BR-40.)* |
+| 2 | **Routine tasks appear.** Selecting a routine spawns its task on the Chores board (BR-42, BR-102) — and the UI receives **one** envelope for the whole gesture, never the partial state between the focus write and the task write (`arch §5 Pivot 4`). |
 | 3 | **Jump to execution.** `[ Open Execution → ]` lands on the most-recently-active tag board for the day, not on `All`; the funnel context header reads `● <Theme> › Goal: <objective> › #<tag>`. |
 | 4 | **Work the board.** Drag a task between sections and between columns; the Eisenhower chip follows it out of Backlog; send it back to Backlog and it lands in its previously-set section. |
 | 5 | **Capture an idea mid-execution** — the opportunistic step. Switch to Ideation, capture an idea with a tag, return; the Execution board is unchanged and the new tag is available in the task-creation picker. |
 | 6 | **Capture tasks in a batch.** Stage several tasks across the three sections; close the dialog; reopen it and find the staged set restored; commit; every task is in Backlog in the section it was staged into. |
-| 7 | **Check out the day.** The completed and in-progress lists match what actually happened; the notes auto-save; archiving the completed tasks and resetting the in-progress ones does what the checkboxes say; re-running the check-out updates the same day log rather than creating a second one. |
+| 7 | **Check out the day.** The four figures match what moved since the last check-out and what the boards hold; a task finished before that check-out appears nowhere, and a chore finished today is in the account and archived with the rest; the notes auto-save; archiving the completed tasks does what the checkbox says, and nothing offers to reset the in-progress ones; with two days left unchecked, the check-out settles both; started again straight away it reports an empty span rather than restating the log it just wrote. |
 | 8 | **Review goals out of band.** Check in on a numeric progress measure and on a boolean one; the history renders in the right vocabulary for each type; the goal row's progress visual matches. |
 
 ### 2.2 Per-business-process acceptance criteria
@@ -54,19 +54,21 @@ The one flow the product exists for. Acceptance should walk it end to end, on re
 **Owed.** One criterion set per blessed business process, derived from the **approved walkthroughs**
 (ADR-040 §2) — the flow taken, the values entered, the outcomes the stakeholder confirmed on screen.
 Those walkthroughs do not exist yet (Intent document G-07); the Intent document's §9 candidate dataset
-is the likely seed. The Intent document's §5 proposes sixteen candidate processes; each will owe a
+is the likely seed. The Intent document's §5 proposes nineteen candidate processes; each will owe a
 criterion set here.
 
 ### 2.3 The lifecycle flows worth their own criteria
 
 | Flow | Criteria |
 |---|---|
-| **First run** | Fresh machine → the data folder is created at the OS-conventional path and git-initialized → the new-data-folder notification appears **before any app content** → `[ Continue ]` leads to onboarding → themes are pre-seeded and editable inline → Vision & Mission is offered and skippable → the app lands on **Focus** (BR-48). |
-| **Data loss recovery** | Delete the data folder with the app closed → relaunch → the notification appears → `[ Quit ]` exits cleanly → restore a backup at the same path → relaunch → the restored data loads and **nothing was overwritten**. |
+| **First run** | Fresh machine → the data folder is created at the OS-conventional path, git-initialized, and the template files installed and committed → the new-data-folder notice appears as a transient notice that blocks nothing → the app lands on **Themes**, the five shipped life areas in front of the user, no wizard anywhere (BR-48, BR-82) → relaunch lands on **Focus**. |
+| **A folder Bearing will not adopt** | Three folders at the conventional path, one per case — not version-controlled, version-controlled by something else, missing a file this version requires → each relaunch **refuses to start**, says which case it is, and leaves the folder byte-identical → confirming the error **closes Bearing by itself** → move the folder aside by hand and relaunch → the first-run path (BR-80). |
+| **A machine that is not ready** | Hide git from the path → relaunch → **refuses to start**, names git, creates no data folder → restore git, clear `user.name` → relaunch → refuses again, names the identity → set it → relaunch → the first-run path (BR-122). |
+| **Data loss recovery** | Delete the data folder with the app closed → relaunch → a fresh folder is set up, the transient notice says so, the app lands on Themes → quit Bearing, delete the fresh folder outside it, restore the backup at the same path → relaunch → the restored data loads and **nothing was overwritten** (BR-81). |
 | **Broken symlink** | Point the data folder at an unmounted volume → relaunch → the same path as data-loss recovery. |
-| **Goal close-out** | Check out a goal with mixed measure outcomes → the auto-inferred labels match the thresholds → an override sticks → the retro and per-measure notes are saved → the goal archives → carry-forward seeds a follow-up with only the Partial and Missed measures, progress reset, the `"Continue: "` objective, and a back-reference to the check-out. |
-| **Archive round trip** | Archive an idea, a goal and a task by their three different triggers → each disappears from its active view and appears in its archive view with the right metadata → unarchive each → each returns to the position it would have occupied. |
-| **Cascade** | Delete a theme, an idea, a routine and a column, each with and without cascade → the consequence statement matched what happened → no cascade left an orphan → no declined cascade destroyed anything → the column case rejected rather than detaching. |
+| **Goal close-out** | Check out a goal with mixed measure outcomes → the auto-inferred labels match the thresholds → an override sticks → the retro and per-measure notes are saved → the goal archives with the linked projects picked for it → one completing request creates the follow-up with only the Partial and Missed measures, progress reset, the `"Continue: "` objective, and a back-reference to the check-out, with nothing left to decide afterwards. |
+| **Archive round trip** | Archive an idea, a goal, a progress measure and a task by their four different triggers → each disappears from its active view and appears in its archive view with the right metadata, the measure under the goal it belongs to → unarchive each → each returns to the position it would have occupied, and the measure is refused while its goal is itself archived (BR-25). |
+| **Cascade** | Delete a theme, an idea, a routine and a column, each with and without cascade → the consequence statement matched what happened → no cascade left an orphan → no declined cascade destroyed anything → the ideas kept out of a theme's cascade are theme-less and intact, and no routine is offered or touched at all (BR-02, BR-13) → the theme case rejected only where a goal hung off it → the column case rejected rather than detaching. |
 | **Advisor** | Ask a question → thinking indicator → streaming cards → apply one, dismiss one, leave one pending → a revised suggestion for the same target supersedes the older card and only the new one carries buttons → a cross-tab apply commits silently and offers the jump in a toast → disconnect the network and the failure is inline with a working retry. |
 | **Day rollover** | Leave the app open across local midnight → the current day advances → **the day focus in play becomes the new date's and is empty**, so the focused tags are gone and the boards they put in play are gone with them (BR-50, BR-51) → the visible period view re-marks today and an open day editor follows it → **no task was created, none archived, none moved** (BR-44) → the previous day's focus and its log are intact as history, reachable from the overviews → every relative-time chip re-evaluates. |
 
@@ -80,13 +82,13 @@ Each of these is a claim the design makes about itself. Acceptance is where the 
 |---|---|---|
 | A-01 | **Every state change is journaled, in two layers.** | After a session of work: `git log` has one commit per mutation, and `journal/{yyyy-mm}/{date}-ops.jsonl` has one line per mutation carrying `{op, args, ts, version_after, actor}`. The two agree. |
 | A-02 | **The journal is replayable.** | `git checkout <sha>` of an arbitrary earlier commit yields a loadable, coherent state. |
-| A-03 | **Each transaction is one commit and one journal line** — not several. | A multi-write use case (day check-out with N task mutations) produces exactly one commit. |
+| A-03 | **Each transaction is one commit and one journal line** — not several. | A multi-write use case (a check-out with N task mutations) produces exactly one commit. |
 | A-04 | **Mutations are atomic under rapid fire.** | Drag tasks and toggle focus selections as fast as the UI allows; no commit is partial, no document is half-written, no version is skipped. |
 | A-05 | **The backend is authoritative.** | Force a divergence; the UI rewrites to the backend's state (never the reverse), logs the detail, and **reports a state-mismatch error to the user**. |
 | A-06 | **One envelope shape.** | Every mutation response carries `{ version, mutated, invariants_checked }`. |
 | A-07 | **A saga emits one envelope.** | Setting the daily focus produces one client-visible update, not two. |
 | A-08 | **The UI never polls.** | With the app idle, there is no read traffic. |
-| A-09 | **Drafts survive a crash.** | Stage tasks, kill the process, relaunch: the staged set is restored. Same for day-log notes. |
+| A-09 | **Drafts survive a crash.** | Stage tasks, kill the process, relaunch: the staged set is restored. Same for the check-out notes. |
 | A-10 | **The scratch tier stays out of history.** | `.scratch/` never appears in `git log` or `git status`. |
 | A-11 | **The app is fully functional offline.** | With no network, every surface works; only the advisor degrades, with its documented inline error. |
 | A-12 | **Three platforms, three paths.** | The data folder resolves to the OS-conventional location on macOS, Linux and Windows. |
@@ -130,19 +132,19 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 | VS-13 | **Focus persists across non-destructive view changes** — focus-scope switches, card expand/collapse, section and column folding never reset it. |
 | VS-14 | **Modal dialogs trap Tab** (Shift-Tab cycles backward); the user cannot Tab out to the underlying content. **The advisor panel is the explicit exception** — it is non-modal, Tab flows between it and the view, and its internal order is context strip → focus chips → conversation history → card buttons → chat input → Send. |
 | VS-15 | **Tab order follows visual order**, top-to-bottom and left-to-right, ending with the secondary then the primary button. Never columns-first. Concrete orders are specified for the editor dialogs, the delete confirmation, both check-outs, the batch task creation (including per-row `⋮⋮` then `[×]`), and the suggestion-card area. |
-| VS-16 | **Esc is the safe-cancel action on every dialog, modal and panel** — dismisses without committing, returns focus to the trigger. The only documented exception is the data-path dialog, which has no Esc route because the app cannot function without a decision (⚠ and which contradicts the new-data-folder dialog's own "Esc closes via `[ × ]`, treated as Continue" — **QA-01**). |
+| VS-16 | **Esc is the safe-cancel action on every dialog, modal and panel** — dismisses without committing, returns focus to the trigger. There is no exception: the new-data-folder report is a transient notice rather than a dialog (BR-81, SA 2026-10-11), so nothing at start-up asks for a decision Esc could answer. |
 
 **Focus-landing table** (`wf §7.10`) — reproduced in full, since it *is* the criterion:
 
 | Transition | Focus lands on |
 |---|---|
-| App open / first launch | Focus's first interactive element (BR-48); on first run, onboarding's |
+| App open / first launch | Focus's first interactive element (BR-48); on a first-time startup, Themes' |
 | Tab switch (click or `⌘1`–`⌘5`) | The tab's `[ + … ]` button when present, else the first interactive element in the content area |
 | Open an editor dialog (Theme / Routine / Idea / Goal / Task / V&M) | The first text input (`Name *` / `Title *`) |
 | Open progress check-in (numeric) | The numeric value field |
 | Open progress check-in (boolean) | The currently-set radio (`Not done` if never set) |
 | Open Goal check-out | The outcome radio, pre-selected to the auto-inferred value |
-| Open Day check-out | The day-notes textarea |
+| Open the work check-out | The check-out-notes textarea |
 | Open Task creation | `Title *` |
 | Open a delete confirmation | **`[ Cancel ]`** — the safe action. **Enter does not delete.** |
 | Open the advisor panel | The chat input |
@@ -188,17 +190,17 @@ The ui-designer's checklist. Every row is a rule the Software Architect wrote do
 | VS-27 | **`›` and `·` are not interchangeable.** `● Career › Goal: Ship Bearing v2 › #bearing-v2` is a lineage; `Routines · ● Gym · ● Meditation` is a set. Check the Routines and `All` board headers specifically. |
 | VS-28 | **Tab-header button order is identical on all five tabs:** `[ Show archived … ]` · view-mode controls · `[ ✦ Advisor ]` · `[ + … ]`. Advisor immediately before create; create always rightmost. |
 | VS-29 | **Abbreviations only where width forces them** — `Imp. & Urgent` in a column header is fine; never in prose or a button label. |
-| VS-30 | **Sub-section headings inside cards are small-caps short labels** (`ROUTINES`, `TAGS`); theme-group dividers are sentence case with a rule line (`─── ● Health ──────`). Two visual languages, kept apart deliberately. |
+| VS-30 | **Sub-section headings inside cards are small-caps short labels** (`TAGS`); theme-group dividers are sentence case with a rule line (`─── ● Health ──────`). Two visual languages, kept apart deliberately. |
 | VS-31 | **Date formats are surface-dependent:** active surfaces are relative up to 7 days and absolute thereafter (`edited 2h ago`, `edited yesterday`, `edited 5 days ago`, `Apr 30 · 4 / 12 (33%)`); archived surfaces are absolute ISO-ish (`archived 2024-08-15`); calendar headers are locale-appropriate (`Mon, May 11 2026`). Distance is the point on archived surfaces, recency on active ones. |
 | VS-32 | **Destructive actions are visually marked everywhere** — red text or outline, `⚠`-prefixed — and in editor dialogs they additionally sit in a **Danger zone** frame, separated from Save. List rows omit the frame (nothing to separate from, and per-row frames would saturate the page) but keep the styling. |
 | VS-33 | **Archive is never in the Danger zone.** `[ Archive idea ]` sits outside it, because archive is reversible — a state change, not destruction. |
 | VS-34 | **One dialog serves create and edit**, with the title and primary-button label swapping contextually. |
-| VS-35 | **Empty states have one shape everywhere:** short heading naming what is missing → one orientation paragraph explaining the concept and its place in the funnel → one or two next-action buttons. **Buttons only for affordances with no other home** — tab navigation goes in prose, and a create action that already exists in the header is named in the paragraph instead of duplicated. `[ Pre-seed defaults ]` on Themes is the one unique affordance. Empty states never block the rest of the app. |
+| VS-35 | **Empty states have one shape everywhere:** short heading naming what is missing → one orientation paragraph explaining the concept and its place in the funnel → one or two next-action buttons. **Buttons only for affordances with no other home** — tab navigation goes in prose, and a create action that already exists in the header is named in the paragraph instead of duplicated. There is **no** "fill it in for me" affordance anywhere, on Themes or elsewhere — BR-83 is void (SA 2026-10-11) — so an empty state orients and offers the ordinary create action, nothing more. Empty states never block the rest of the app. |
 | VS-36 | **Empty Backlog sections stay visible, folded, with `(0)`** — never disappear. Counts render everywhere even at zero, so the structure stays legible. |
 | VS-37 | **Toasts** live bottom-right, do not steal focus, auto-dismiss after ~3 s for success, stay until clicked or actioned for errors, stack to a maximum of 3 (newest on top, a 4th displacing the oldest), and keep per-toast timers and actions. |
 | VS-38 | **Errors live near their source** — inline next to the field, card or button that produced them. Toasts are only for transient acknowledgment. |
 | VS-39 | **Write-triggering buttons disable with a pending indicator** while in flight; **Cancel-equivalents stay active** so the user can abort. |
-| VS-40 | **Theme colour propagates consistently** to goals, routines, ideas, focus chips, board chips and task priority chips — and the colour dot is leftmost on every row, so scanning by colour works. |
+| VS-40 | **Theme colour propagates consistently** to goals, ideas, focus chips, board chips and task priority chips — never to a routine or a chore, which hang off no theme (BR-02) — and the colour dot is leftmost on every row, so scanning by colour works. |
 
 ---
 
@@ -245,7 +247,7 @@ Recorded so that an absent feature reads as a decision, not a defect.
 
 | # | Question | Blocks |
 |---|---|---|
-| QA-01 | **Does the data-path dialog respond to Esc or not?** Guideline #17 names it as the one dialog with no Esc route; `wf §7.7` says Esc closes it via `[ × ]`, treated as Continue. | VS-16, the bootstrap flow |
+| ~~QA-01~~ | ~~**Does the data-path dialog respond to Esc or not?**~~ **VOID 2026-10-11** — there is no data-path dialog: setting up a new folder is reported in a transient notice that blocks nothing (BR-81), and every other start-up refusal closes the product on acknowledgement. | VS-16, the bootstrap flow |
 | QA-02 | **What shape does acceptance take when the stakeholder, the user and the Software Architect are one person?** A separate sitting, a delegate, a written checklist run cold? | AC-02, the gate's conduct |
 | QA-03 | **How is advisor output quality judged at acceptance**, given that it has no mechanical oracle? | AC-04, the visual sampling brief |
 | QA-04 | **Which platforms must pass acceptance?** Three data-folder conventions are specified; whether all three must be exercised, or one plus a smoke test, is unstated. | A-12, the acceptance environment |

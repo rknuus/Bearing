@@ -1,0 +1,272 @@
+@startbpmn BP11_WorkTheBoard
+lang en
+
+output L1 "01_detailed/BP11_WorkTheBoard.bpmn"
+output L2 "02_detailed/BP11_WorkTheBoard.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the completion offer is TWO questions, not one gateway with three ways out: first what the
+'     answer said - did this move close an activity's last task - and only then, if it did, the
+'     user's own answer. Where no activity owns the board, or the activity still has open tasks,
+'     the offer was never put and there is nothing to decide: BR-109, SA 2026-10-11 ("if there was
+'     no activity we should never have entered the decision")
+'   - moving a card into or out of Todo IS the day's task-level planning: a card is in Todo because
+'     the user decided to do it today, and planning a day includes moving cards back out, so the
+'     check-out's Todo count is today's unkept intentions and not a standing backlog: BR-126,
+'     SA 2026-10-11
+'   - three kinds of board and no aggregate board over every task: BR-49
+'   - archiving hides a project's boards as well as withdrawing it from the selectables: BR-43
+'   - a board's columns come from the template that governs it; Chores owns its own: BR-102, BR-108
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - a board is in focus because it was chosen; Chores gets there derived: BR-50, BR-107
+'   - every board is in the strip and the focus orders it, focused boards first: BR-116
+'   - a board is always open, and the focus decides which; the first in the strip otherwise: BR-51
+'   - the lineage of the work on a board is shown per UX-11: wf section 6.1
+'   - priority lives in the Backlog and nowhere else: BR-52, BR-56
+'   - the priority is a FIELD of the task, so re-triaging and changing what a task says are
+'     two variations of one request and one call site: the priority has no owner and no consequence
+'     beyond the record, which is what would earn it one of its own. Call site BP11.04 (Prioritize
+'     a task) is RETIRED, its id never reused: DRW-12, DRW-23, ADR-066, SA 2026-10-16
+'   - three priorities, always present as the Backlog's three sections, ordered urgency first:
+'     BR-53, BR-57
+'   - OPEN is reserved for a surface the user goes to look at, where acting is optional - the
+'     archived tasks are the case. Where the user has already decided to do the thing, the box
+'     says the thing, even though they may still bail out: so the check-out is CHECKED OUT here,
+'     not opened: SA 2026-10-18 ("if I decide to do a checkout, it's my intention to do so even
+'     though I might bail out")
+'   - a box names the ACT, not the gesture that reaches it: every act on this board has two
+'     routes - the drag, and the card's own menu, which is the only route in a column the
+'     pointer cannot reorder - so a box named after one of them under-draws the act it stands
+'     for: SA 2026-10-16 ("the box carries the act's own word"), v1 experience
+'   - ordering inside a flat column is the same act as ordering inside a triage section, and v1 answers
+'     both with one request: v1 experience
+'   - a task's priority travels with it and re-applies on return: BR-54
+'   - content and placement are separate, and the board is neither: BR-64, BR-103
+'   - archiving is always a manual gesture: BR-22, BR-23
+'   - a task owns nothing, so a deletion has no cascade: BR-17
+'   - moving an activity's last task to Done may offer to close the activity: BR-109
+'   - THE DECISION IS THE ACT, and the step under it only carries the request. Taking the offer is
+'     the gateway's own answer, so the box below it does not say CLOSE THE ACTIVITY a second time -
+'     it SUBMITS the closing with what the answer carries, the way BP10 submits a commit and BP18
+'     submits a state change. It cannot be dropped: a send attaches to a step, never to a gateway
+'   - DECLINING IS A PATH, NOT A BOX. The offer has two answers and both are legitimate (BR-109),
+'     so the decision carries an else - but nothing is DONE on it, so it names no act: the path
+'     runs straight to its own end, the activity left in progress. The same holds one level up,
+'     where a move that closed no activity's last task simply ends. Each decision therefore has
+'     two ways out and no step that stands for doing nothing: SA 2026-10-18 ("Leave the activity
+'     in progress is not an activity", "2 consecutive ifs without else cases don't make sense").
+'     BP14 draws the identical pair - a condition the system answered, then the offer the user
+'     answers, both with their else - and is the shape this follows
+'   - WHAT BECOMES OF THE OPEN TASKS IS A FIELD OF THE REQUEST, not a sub-flow of its own. The
+'     three answers BR-127 names - close them with the activity, set them aside, leave them open -
+'     differ only in what the one request carries, which the chain already records ("do with the
+'     open tasks what the request carries"), so the guard and the three-way choice in front of the
+'     close are folded into the act that submits it. Same reasoning as the priority ruling of
+'     2026-10-16: a value with no consequence beyond the record it travels in earns no box. The
+'     disclosure POL-03 asks for is untouched - it is derived (D-31) and put with the offer.
+'     BP18 was folded in the same pass: SA 2026-10-18 ("Apply first recommendation, also to BP18")
+'   - THE OFFER NEEDS NO READ IN FRONT OF IT. The move's own answer says the activity's last task
+'     reached Done, which is all the offer rests on, and which cards are still open on that board
+'     is derived from what start-up loaded (D-31) - the user answers the offer informed without
+'     the system being asked anything. There is also nothing to consider between the answer and
+'     the decision: the offer appears and the user takes it or leaves it, so no box stands in
+'     front of the gateway. Call site BP11.11 (See what closing the activity takes) is RETIRED,
+'     its id never reused, the same sweep BP11.01 and BP11.02 went in: ADR-066, BR-128, DRW-14,
+'     POL-03, SA 2026-10-18 ("which does not need that extra cycle")
+'   - the activity is never in doubt and is never chosen: a task lives on one board and a board
+'     belongs to one activity, so the move names its board and the board names its activity.
+'     Where a simple project or Chores owns the board there is no activity and no offer:
+'     BR-101, BR-103, SA 2026-10-18
+'   - an unfinished predecessor is flagged, never blocking: BR-110
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user AMENDS a task - a task is
+'     created at capture and never here: BR-63, SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Scope: this is the hot path — working what is already on a board. Putting tasks there is BP10,
+' the columns themselves are BP12, settling the day is BP13, and the activity's own plan is BP18.
+' An activity's state is the Course page's to own; this process only answers the completion offer
+' that moving the last task into Done raises.
+'
+' Call-site collapsing: moving a task between columns and sending it back to the Backlog are two
+' variations of one request. Ordering within a triage section and ordering within a column are
+' likewise one.
+
+' A seam into another process is drawn as one step that asks the system for nothing, with a note
+' saying whose business it is, and the hub takes the user back afterwards. DRW-02 makes the seam
+' significant, and BP17 and BP09 already drew theirs; the rest of the set did not, which is the
+' asymmetry F-3 recorded. Swept on SA 2026-10-16 ("still can't find any checkout action on the
+' diagram").
+' The capture seam carries TWO steps: opening the surface is an act of the board's, and the
+' handover into the process that works the drafts follows it, so BP10 no longer draws an opening
+' of its own and starts inside the open surface. One act, drawn once: DRW-29, SA 2026-10-18.
+'
+pool "User" {
+  start "Work to get done"
+  :Work the board;
+  rule BR-118
+  if "What needs doing?" then "move work along"
+    :Move a task to another column or triage section;
+    send "Move a task" to moveIn
+    receive "The move's outcome" as moved
+    if "Did the move close an activity's last task?" rule BR-109 then "yes"
+      if "Mark the activity Done?" rule BR-109 then "yes"
+        :Submit the closing, saying what becomes of the tasks still open;
+        rule BR-127
+        rule BR-23
+        rule BR-61
+        send "Set the activity Done" to activityIn
+        receive "The state-change outcome" as activitySet
+        note "Where tasks on the board are still open, they are disclosed with the offer and the answer travels with the closing: close them with the activity, set them aside, or leave them open. Where nothing is open there is nothing to disclose and nothing to answer."
+        end "Activity closed"
+      else "no"
+        end "Activity left in progress"
+      endif
+    else "no"
+      end "Work moved on"
+    endif
+
+  elseif "What needs doing?" then "order what is waiting"
+    :Order a task (within column/section);
+    send "Order a task" to orderIn
+    receive "The ordering outcome" as ordered
+    end "Tasks ordered"
+
+  elseif "What needs doing?" then "fix what a task says, or re-triage it"
+    :Amend the task;
+    rule BR-121
+    :Submit the task;
+    send "Edit a task" to editIn
+    receive "The editing outcome" as amended
+    note "What the task says and its priority are fields of the one editor; the board is not, a task staying on the board it was created on for its whole life. Priority changes only while the task is in the Backlog, so work in motion is sent back there first, which re-opens its triage - by this editor or by dragging it between the sections."
+    end "Task recorded"
+
+  elseif "What needs doing?" then "file one away"
+    :Archive the task;
+    send "Archive a task" to archiveIn
+    receive "The archiving outcome" as archived
+    note "Archiving is a conscious gesture. A task sitting in Done does not archive itself."
+    end "Task filed away"
+
+  elseif "What needs doing?" then "throw one away"
+    :Delete a task;
+    send "Delete a task" to deleteIn
+    receive "The deletion outcome" as deleted
+    note "A task owns nothing, so there is nothing to disclose and no cascade to approve."
+    end "Task deleted"
+
+  elseif "What needs doing?" then "move to another board"
+    :Select a board;
+    end "Another board opened"
+
+  elseif "What needs doing?" then "write more work down"
+    :Open task capture (BP10);
+    :Work on uncommitted tasks;
+    note "Capturing a batch of tasks, tidying it and committing it is its own process (BP10), and nothing it stages takes effect until it is committed."
+    end "Capture opened"
+
+  elseif "What needs doing?" then "change the lanes"
+    :Adjust the column template (BP12);
+    note "The lanes come from a template that governs every board of the project, and changing them is its own process (BP12)."
+    end "Column settings opened"
+
+  elseif "What needs doing?" then "settle what is done"
+    :Check the work out (BP13);
+    note "Settling everything since the last check-out is its own process (BP13), and it archives what that span completed."
+    end "Check-out started"
+
+  elseif "What needs doing?" then "look at the archived ones"
+    :Open the archived tasks (BP15);
+    note "The archive is reached by an explicit act. Reading it, bringing one back and destroying one out of it are its own process (BP15)."
+    end "Archive opened"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Move requested" as moveIn
+  call "BP11.03_MoveTask" "Move a task" {
+    :Place the task where the request names, a column or a triage section;
+    rule BR-64
+    rule BR-126
+    if "Is this a move inside the Backlog?" rule BR-56 then "yes"
+      :Take the section it lands in as its priority;
+      rule BR-54
+    else "no"
+      :Keep its priority with it;
+      rule BR-54
+    endif
+    :Report the outcome, and whether an activity's last task reached Done;
+    rule BR-109
+  }
+  send "The move's outcome" to moved
+  note "A task never moves to another board. Returning it to the Backlog re-opens its triage."
+  end "Move answered"
+
+  messageStart "Order submitted" as orderIn
+  call "BP11.05_RankTask" "Order a task" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to ordered
+  end "Order answered"
+
+  messageStart "Task submitted" as editIn
+  call "BP11.06_AmendTask" "Edit a task" {
+    if "Is the task in the Backlog?" rule BR-56 then "yes"
+      :Store the edit, the priority included;
+      rule BR-53
+      rule BR-64
+    else "no"
+      :Store the edit and refuse a priority change, saying why;
+      rule BR-64
+    endif
+    :Report the outcome;
+  }
+  send "The editing outcome" to amended
+  note "The board and the column are untouched by an edit. Triage happens at intake, so the priority is changeable only in the Backlog; the three are Important and Urgent, Not Important and Urgent, and Important and Not Urgent."
+  end "Task answered"
+
+  messageStart "Task archiving requested" as archiveIn
+  call "BP11.07_ArchiveTask" "Archive a task" {
+    :Archive the task;
+    rule BR-23
+    rule BR-61
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  note "This is one of the acts that archive a task, and the one that takes a single card. A routine's task archives by the same acts as any other."
+  end "Task archiving answered"
+
+  messageStart "Task deletion requested" as deleteIn
+  call "BP11.08_DeleteTask" "Delete a task" {
+    :Delete the task;
+    rule BR-17
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "A task owns nothing, so nothing goes with it."
+  end "Task deletion answered"
+
+  messageStart "Activity state submitted" as activityIn
+  call "BP11.09_SetTheActivityDone" "Set the activity Done" {
+    :Record the state the request names, and do with the open tasks what the request carries;
+    rule BR-109
+    rule BR-127
+    rule BR-23
+    :Report the outcome;
+  }
+  send "The state-change outcome" to activitySet
+  note "The Course page owns an activity's state (BP18); this is the completion offer answered from the board. A Done activity can be reopened there."
+  end "Activity state answered"
+}
+
+@endbpmn

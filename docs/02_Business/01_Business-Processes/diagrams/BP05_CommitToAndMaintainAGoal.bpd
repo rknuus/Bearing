@@ -1,0 +1,279 @@
+@startbpmn BP05_CommitToAndMaintainAGoal
+lang en
+
+output L1 "01_detailed/BP05_CommitToAndMaintainAGoal.bpmn"
+output L2 "02_detailed/BP05_CommitToAndMaintainAGoal.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - archiving a goal discloses what it will take and is then approved or rejected, like every
+'     other consequential act, and never a yes/no gateway with the reach chosen behind it: the
+'     user cannot approve before knowing what they are approving. The three reaches BR-112 grants
+'     a goal are the disclosure's content rather than answers on the gateway: BR-30, BR-112,
+'     DRW-17, DRW-26, SA 2026-10-11, SA 2026-10-14
+'   - a goal requires exactly one theme: BR-01
+'   - a goal links 0..N ideas; no linked idea is legitimate and flagged: BR-04, QB-28
+'   - a goal cannot be created before a theme exists, and the user is told why: BR-84
+'   - goals are flat; no parent and no child goals: BR-08
+'   - an archived item cannot be edited, so the overview reads the live goals: BR-05
+'   - a time horizon is optional and its granularity is the user's: BR-31, QB-14
+'   - archiving a goal offers cascade, goal alone, or reject: BR-112, QB-43
+'   - so the archiving carries the SAME selection step the deletion carries: the three reaches
+'     are the disclosure's content, and the user picks a valid combination there rather than on
+'     the gateway: BR-19, BR-112, DRW-17
+'   - a goal's measures and their check-in history go with it unasked, archived and deleted alike: BR-112, BR-15
+'   - a goal archives directly at any time, independent of check-out: BR-23, QB-32
+'   - deleting a goal cascades its linked ideas and its projects: BR-15, QB-41
+'   - goals are deliberately unfiltered; grouping by theme does the work: BR-87
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' A seam into another process is drawn as one step that asks the system for nothing, with a note
+' saying whose business it is, and the hub takes the user back afterwards. DRW-02 makes the seam
+' significant, and BP17 and BP09 already drew theirs; the rest of the set did not, which is the
+' asymmetry F-3 recorded. Swept on SA 2026-10-16 ("still can't find any checkout action on the
+' diagram").
+'
+'   - WORKING THE MEASURES is an act of this view and is drawn as one: the measures are on the
+'     Goals view, read with the goals, and what is done to them is BP06's whole process. One
+'     step, a note naming it, no call site - the hand-over a sub-process gets, as a seam is what
+'     a move to another surface gets: DRW-29, BP06, SA 2026-10-17 ("BP05 lacks the action to
+'     'Work the measures' linking to BP06")
+'
+'   - CHECKING A GOAL OUT IS BP07's, whole: the sitting observes what it needs for the judgment
+'     itself (BP07.01), so this view asks the system for nothing when it hands over. One step, the
+'     process it references in the box, a note and an end - the shape the measures take. This
+'     retires call site BP05.18 (Read the inferred statuses and the linked projects) together
+'     with SA 2026-10-16's ruling that the check-out read is this process's own: the premise of
+'     that ruling was that a view's act draws its own request, and a view asks for nothing now:
+'     BR-39, DRW-29, ADR-066, SA 2026-10-17 ("Doesn't 'Check out a goal' map to BP07? If so:
+'     remove the path to the system")
+'
+' Scope: the progress measures are BP06's — defining, amending, reordering and removing one, and
+' recording against it. Closing a goal out is BP07. This process frames, amends and ends a goal's
+' life; it never judges one and it never shapes how one is measured. What it does still carry is
+' what a goal's archiving and deletion take with them unasked, measures and check-in history
+' included (BR-15, BR-112).
+'
+' Retired call sites: BP05.06, BP05.07, BP05.08, BP05.09, BP05.10 — the measure lifecycle moved
+' to BP06 (SA 2026-10-10). The numbers are never reused.
+'
+'   - a goal cannot be framed with no theme, and the user is told so BEFORE the form rather than
+'     refused after it, so the overview reports whether a theme exists and the write does not
+'     re-check it: BR-84, SA 2026-10-11 (the system-side re-check was defensive validation)
+'   - the archiving cascade reaches the goal's projects, so their boards leave the focus
+'     selectables; that consequence is drawn once, in BP17, and only the rule is bound here:
+'     BR-43, BR-112, SA 2026-10-14
+'   - a goal requires a theme (BR-01) and cannot be framed before one exists (BR-84), and that
+'     is enforced by the framing request's own verification, not by a gateway in front of the
+'     form: the overview reports whether any life area exists and the framing answers with an
+'     outcome. Framing is an edit like any other, and the system verifies it: BR-01, BR-84,
+'     BR-128, SA 2026-10-14
+'   - one editor per entity: framing a goal and changing one are the same act, so there is one
+'     editor node, one submit and one request. Call site BP05.03 (Amend a goal) is RETIRED and its
+'     id never reused: UX-04, DRW-11, SA 2026-10-14, ADR-066
+'   - the ideas behind a goal are a field of the goal's own editor, chosen and cleared there:
+'     the Goals tab never navigates ideas and never acts on one, which is the idea page's own
+'     direction. Call sites BP05.04 (Link an idea to a goal) and BP05.05 (Unlink an idea from
+'     a goal) are RETIRED and their ids never reused: DRW-12, DRW-22, BR-04, SA 2026-10-14,
+'     ADR-066
+'   - a goal's progress measures are its sub-items and have no page of their own, so they are
+'     read here, with the goals they hang on; what is done to them is BP06's, on this same
+'     surface. Call site BP06.08 (Read a goal's progress measures) is RETIRED and its id never
+'     reused: BR-28, SA 2026-10-14, ADR-066
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user DEFINES a goal, and the
+'     project seam CREATES a project on it or on one of its measures. Frame survives in the call
+'     site's id, which is never renamed: ADR-066, SA 2026-10-16
+'   - checking a goal out is an act on this view's own goal, not navigation away from it, so the
+'     box carries the act and the drawing carries the read it triggers: BP05.18 is this process's
+'     own call site for the check-out proposal, the way BP05.12 is for the archiving disclosure,
+'     and whether the two call sites resolve to one System Interaction is a Design finding. The
+'     sitting itself - the rating, the per-measure judgment, the retro and the closing action -
+'     stays BP07's and is not redrawn here: SA 2026-10-16, ADR-069, DRW-29
+'   - PICKING THE DRAFT UP is not modelled, no more than keeping it is: it is the drafting UX and it
+'     holds for every content edit, so a step per edit carries no value, and neither the request nor
+'     its answer names it any more. A half-written sitting is there when the user comes back because
+'     BP19 keeps it, not because this chain fetches it: BR-32, BR-121, SA 2026-10-17
+'     ("rename and drop draft")
+'   - the check-out's read carries the goal's linked projects, which this view does not: the sitting
+'     archives the ones it picks and has no second cycle to disclose them in, so the read that opens
+'     it brings them along. The disclose-and-approve gesture stays with the archiving act of this
+'     process, where the goal is archived on its own: BR-30, BR-112, SA 2026-10-17
+'   - a seam that only OPENS an editor triggers nothing and stays one step: defining a goal on an
+'     idea and creating a project on a goal or a measure ask the system for nothing until they are
+'     submitted, which is the owning process's write: SA 2026-10-16
+'
+' Call-site collapsing: promoting an idea to a goal and framing a theme-only goal are two
+' variations of one request, differing in whether a linked idea comes with it.
+
+pool "User" {
+  start "A commitment to make, or one to maintain"
+  :Work a goal;
+  rule BR-118
+
+  if "What needs doing?" then "commit to something, or change one"
+    :Define the goal;
+    rule BR-121
+    :Submit the goal;
+    send "Edit a goal" to editIn
+    receive "The editing outcome" as edited
+    end "Goal recorded"
+
+  elseif "What needs doing?" then "reorder them"
+    :Order a goal;
+    send "Reorder goals within a theme" to reorderGoalsIn
+    receive "The ordering outcome" as goalsReordered
+    end "Goals ordered"
+
+  elseif "What needs doing?" then "work a goal's measures"
+    :Work a progress measure (BP06);
+    note "A measure is a sub-item of its goal and is already on this view, read with the goals. Defining one, checking in on it, reordering them, setting one aside and removing one are their own process (BP06), performed here."
+    end "Measures opened"
+
+  elseif "What needs doing?" then "set one aside"
+    :Archive a goal;
+    send "See what archiving a goal takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "Approve what the archiving takes?" rule BR-112 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      rule BR-112
+      :Confirm the archiving;
+      send "Archive a goal" to archiveIn
+      receive "The archiving outcome" as archived
+      note "An archived goal still exists, so its projects are not orphaned by keeping them active."
+    else "reject"
+      end "Archiving abandoned"
+    endif
+    end "Goal set aside"
+
+  elseif "What needs doing?" then "end the commitment for good"
+    :Delete a goal;
+    send "See what deleting a goal takes" to delImpactIn
+    receive "What the deletion will take" as delImpact
+    if "Approve what the deletion takes?" rule BR-15 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete a goal" to deleteIn
+      receive "The deletion outcome" as deleted
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Goal deleted"
+  elseif "What needs doing?" then "check one out"
+    :Check out a goal (BP07);
+    note "Rating the outcome, judging each measure, writing the retro and closing the commitment out are their own process, performed on this view. It observes what it needs for the judgment itself, and it offers the archiving as its closing action, reaching the projects the sitting picks."
+    end "Check-out opened"
+
+  elseif "What needs doing?" then "start work on one"
+    :Create a project on the goal, or on one of its measures;
+    rule BR-121
+    :Submit the project;
+    send "Create a project" to projectIn
+    receive "The editing outcome" as projectCreated
+    note "A project carries one optional parent, and the goal or one of its measures is it here. Laying out an activity-based project's course is its own process (BP18)."
+    end "Project created"
+
+  elseif "What needs doing?" then "look at the archived ones"
+    :Open the archived goals (BP15);
+    note "The archive is reached by an explicit act. Reading it, bringing one back and destroying one out of it are its own process (BP15)."
+    end "Archive opened"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Goal submitted" as editIn
+  call "BP05.02_FrameGoal" "Edit a goal" {
+    if "Does the goal name a theme?" rule BR-01 then "yes"
+      :Store the edit;
+      rule BR-04
+      rule BR-08
+    else "no"
+      :Refuse it and say why;
+      rule BR-84
+    endif
+    :Report the outcome;
+  }
+  send "The editing outcome" to edited
+  note "The horizon may be absent. The ideas behind the goal are chosen in the same editor, and a goal with none stays legitimate and is flagged as such."
+  end "Goal answered"
+
+  messageStart "Goal reordering requested" as reorderGoalsIn
+  call "BP05.11_ReorderGoals" "Reorder goals within a theme" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to goalsReordered
+  end "Goal reordering answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP05.12_ReadTheArchivingImpact" "See what archiving a goal takes" {
+    :Report what the archiving will take, and what of it can be declined;
+    rule BR-19
+    rule BR-112
+  }
+  send "What the archiving will take" to archImpact
+  note "Cascade, the goal alone, or reject. The keep answer is legal here because an archived goal still exists."
+  end "Archiving impact answered"
+
+  messageStart "Goal archiving requested" as archiveIn
+  call "BP05.13_ArchiveGoal" "Archive a goal" {
+    :Archive confirmed items;
+    rule BR-23
+    rule BR-112
+    rule BR-43
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  note "Archiving is independent of closing out. A check-out record already attached stays with the goal."
+  end "Archiving answered"
+
+  messageStart "Deletion impact requested" as delImpactIn
+  call "BP05.14_ReadTheDeletionImpact" "See what deleting a goal takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-15
+    rule BR-19
+    rule BR-117
+  }
+  send "What the deletion will take" to delImpact
+  note "The measures and their history go unasked. The linked ideas are a cascade the user may decline. Keeping a project behind is not offered."
+  end "Deletion impact answered"
+
+  messageStart "Goal deletion requested" as deleteIn
+  call "BP05.15_DeleteGoal" "Delete a goal" {
+    :Delete confirmed items;
+    rule BR-15
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  end "Deletion answered"
+
+  messageStart "Project submitted" as projectIn
+  call "BP05.19_CreateProject" "Create a project" {
+    :Store the edit;
+    rule BR-96
+    rule BR-97
+    :Give a new project its own column template;
+    rule BR-108
+    :Give it what its kind brings: one board where it is simple, an empty plan where it is activity-based;
+    rule BR-101
+    rule BR-111
+    :Report the outcome;
+  }
+  send "The editing outcome" to projectCreated
+  note "The parent is the goal or one of its measures, carried in from where the user started. The kind is declared once and for the project's life, and laying an activity-based project's course out is its own process."
+  end "Project answered"
+}
+
+@endbpmn

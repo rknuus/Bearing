@@ -1,0 +1,53 @@
+@startbpmn UIP02_ChooseFocusPeriod
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "UIP02_ChooseFocusPeriod.bpmn"
+
+' A USER INTERFACE PROCESS, not a business process. Looking back over a stretch of days asks the
+' system for nothing: the period a view shows, how it relates to now, its theme balance and which
+' logs explain a day are all derived from what is in play, computed at start-up with the rest. What
+' is left is choosing what to look at and moving on from it, which is the UI's business.
+'
+' Provenance (never in a drawn note, lint rule 5):
+'   - this was BP09 "Review focus history" until 2026-10-17, drawn as a business process. Its last
+'     two call sites went when the page reads did (BP09.01, BP09.02, retired, ids never reused), and
+'     a process that asks the system for nothing is no business process: SA 2026-10-17 ("BP09 does
+'     not make any sense. There are no system actions ... Turn this into a UIP and rename to
+'     ChoseFocusPeriod"), spelled ChooseFocusPeriod on his word the same day. The id BP09 is retired with it and never reused (ADR-066)
+'   - the smallest focus-view scope is a week; there is no day-scoped view: BR-93
+'   - every period view states which period it shows and how that relates to now: BR-46
+'   - stepping the period and switching the scope are always available: BR-46
+'   - each period view reports theme balance over the period it shows: BR-47
+'   - a log remains available as the explanation of the days its span covers: BR-38, BR-33
+'   - selecting a day opens it for editing without leaving the period behind: BR-40
+'   - the period views work from the dated movement record itself rather than aggregating the logs'
+'     figures, so a span straddling a period boundary needs no rule: BR-125
+'
+' Scope: this drawing is the user's path through the focus views. Committing a day's focus is BP08,
+' which this hands over to; what the views show is derived data and is listed in the derived-data
+' inventory.
+
+pool "User" {
+  start "A stretch of days worth looking back on"
+  :Choose which week, month or year to review;
+  rule BR-118
+  note "The period a view shows, how it relates to now and its theme balance are derived from the days in play; nothing is fetched for them. The smallest scope is a week."
+
+  if "What next?" then "look at another period"
+    :Step the period, or switch the scope;
+    end "Another period opened"
+
+  elseif "What next?" then "understand one day"
+    :Open the logs covering that day;
+    note "A log covers everything since the check-out before it. A day split by two check-outs is covered by both; a day nobody has settled yet is covered by none."
+    end "Logs read"
+
+  elseif "What next?" then "change a day's plan"
+    :Select the day to edit (BP08);
+    rule BR-40
+    note "The day focus editor opens on the selected day and the period stays behind it. Committing that focus is its own process (BP08)."
+    end "Day opened for editing"
+  endif
+}
+
+@endbpmn

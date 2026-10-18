@@ -1,0 +1,399 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1798" height="2157" viewBox="0 0 1798 2157">
+<rect width="1798" height="2157" fill="#fff"/>
+<rect x="24" y="313" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="313" x2="54" y2="1053" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="687.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 683)">User</text>
+<rect x="24" y="1093" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1093" x2="54" y2="1833" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1467.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1463)">Bearing</text>
+<rect x="24" y="1873" width="1750" height="260" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1873" x2="54" y2="2133" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="2007.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 2003)">Advisor</text>
+<polyline points="152,433 254,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 433 L 246 436.36 L 246 429.64 Z" fill="#000"/>
+<polyline points="354,433 449,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 433 L 441 436.36 L 441 429.64 Z" fill="#000"/>
+<polyline points="694,433 764,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 433 L 756 436.36 L 756 429.64 Z" fill="#000"/>
+<polyline points="864,433 966,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 433 L 958 436.36 L 958 429.64 Z" fill="#000"/>
+<polyline points="1002,433 1129,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1129 433 L 1121 436.36 L 1121 429.64 Z" fill="#000"/>
+<polyline points="1179,433 1306,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 433 L 1298 436.36 L 1298 429.64 Z" fill="#000"/>
+<polyline points="1179,433 1209,433 1209,553 1306,553" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 553 L 1298 556.36 L 1298 549.64 Z" fill="#000"/>
+<polyline points="499,433 594,433" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 433 L 586 436.36 L 586 429.64 Z" fill="#000"/>
+<polyline points="694,553 796,553" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 553 L 788 556.36 L 788 549.64 Z" fill="#000"/>
+<polyline points="832,553 959,553" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 553 L 951 556.36 L 951 549.64 Z" fill="#000"/>
+<polyline points="1204,553 1239,553 1239,518 1494,518 1494,535" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1494 535 L 1490.64 527 L 1497.36 527 Z" fill="#000"/>
+<polyline points="1009,553 1104,553" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 553 L 1096 556.36 L 1096 549.64 Z" fill="#000"/>
+<polyline points="1009,553 1039,553 1039,673 1104,673" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 673 L 1096 676.36 L 1096 669.64 Z" fill="#000"/>
+<polyline points="1512,553 1646,553" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 553 L 1638 556.36 L 1638 549.64 Z" fill="#000"/>
+<polyline points="1204,673 1239,673 1239,518 1664,518 1664,535" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1664 535 L 1660.64 527 L 1667.36 527 Z" fill="#000"/>
+<polyline points="499,433 529,433 529,553 594,553" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 553 L 586 556.36 L 586 549.64 Z" fill="#000"/>
+<polyline points="694,673 966,673" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 673 L 958 676.36 L 958 669.64 Z" fill="#000"/>
+<polyline points="1002,673 1032,673 1032,793 1136,793" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 793 L 1128 796.36 L 1128 789.64 Z" fill="#000"/>
+<polyline points="499,433 529,433 529,673 594,673" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 673 L 586 676.36 L 586 669.64 Z" fill="#000"/>
+<polyline points="694,793 966,793" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 793 L 958 796.36 L 958 789.64 Z" fill="#000"/>
+<polyline points="1002,793 1032,793 1032,913 1136,913" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 913 L 1128 916.36 L 1128 909.64 Z" fill="#000"/>
+<polyline points="499,433 529,433 529,793 594,793" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 793 L 586 796.36 L 586 789.64 Z" fill="#000"/>
+<polyline points="1034,1213 1104,1213" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 1213 L 1096 1216.36 L 1096 1209.64 Z" fill="#000"/>
+<polyline points="832,1213 934,1213" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1213 L 926 1216.36 L 926 1209.64 Z" fill="#000"/>
+<polyline points="1204,1213 1306,1213" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 1213 L 1298 1216.36 L 1298 1209.64 Z" fill="#000"/>
+<polyline points="354,1213 424,1213" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 1213 L 416 1216.36 L 416 1209.64 Z" fill="#000"/>
+<polyline points="524,1213 594,1213" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1213 L 586 1216.36 L 586 1209.64 Z" fill="#000"/>
+<polyline points="694,1213 724,1213 724,1333 764,1333" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1333 L 756 1336.36 L 756 1329.64 Z" fill="#000"/>
+<polyline points="864,1333 934,1333" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1333 L 926 1336.36 L 926 1329.64 Z" fill="#000"/>
+<polyline points="152,1213 254,1213" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 1213 L 246 1216.36 L 246 1209.64 Z" fill="#000"/>
+<polyline points="1034,1333 1136,1333" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1333 L 1128 1336.36 L 1128 1329.64 Z" fill="#000"/>
+<polyline points="662,1333 692,1333 692,1453 764,1453" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1453 L 756 1456.36 L 756 1449.64 Z" fill="#000"/>
+<polyline points="864,1453 966,1453" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1453 L 958 1456.36 L 958 1449.64 Z" fill="#000"/>
+<polyline points="1374,1453 1444,1453" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1444 1453 L 1436 1456.36 L 1436 1449.64 Z" fill="#000"/>
+<polyline points="1172,1453 1274,1453" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1453 L 1266 1456.36 L 1266 1449.64 Z" fill="#000"/>
+<polyline points="1544,1453 1646,1453" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1453 L 1638 1456.36 L 1638 1449.64 Z" fill="#000"/>
+<polyline points="864,1573 934,1573" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1573 L 926 1576.36 L 926 1569.64 Z" fill="#000"/>
+<polyline points="662,1453 692,1453 692,1573 764,1573" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1573 L 756 1576.36 L 756 1569.64 Z" fill="#000"/>
+<polyline points="1034,1573 1136,1573" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1573 L 1128 1576.36 L 1128 1569.64 Z" fill="#000"/>
+<polyline points="864,1693 934,1693" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 934 1693 L 926 1696.36 L 926 1689.64 Z" fill="#000"/>
+<polyline points="662,1573 692,1573 692,1693 764,1693" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1693 L 756 1696.36 L 756 1689.64 Z" fill="#000"/>
+<polyline points="1034,1693 1136,1693" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1693 L 1128 1696.36 L 1128 1689.64 Z" fill="#000"/>
+<polyline points="809,473 809,485 724,485 724,1183 809,1183 809,1195" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 812.78 1186 L 809 1195 L 805.22 1186" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="809" cy="473" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="634,593 634,605 719,605 719,1303 634,1303 634,1315" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 637.78 1306 L 634 1315 L 630.22 1306" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="634" cy="593" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1154,593 1154,605 1239,605 1239,1423 1154,1423 1154,1435" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1157.78 1426 L 1154 1435 L 1150.22 1426" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="593" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,713 644,725 729,725 729,1423 644,1423 644,1435" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 647.78 1426 L 644 1435 L 640.22 1426" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="644" cy="713" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="654,833 654,845 739,845 739,1543 654,1543 654,1555" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 657.78 1546 L 654 1555 L 650.22 1546" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="654" cy="833" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="974,1293 974,1281 1229,1281 1229,508 974,508 974,451" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 970.22 460 L 974 451 L 977.78 460" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="974" cy="1293" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="819,1413 819,1401 734,1401 734,583 819,583 819,571" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 815.22 580 L 819 571 L 822.78 580" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="819" cy="1413" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,1413 1494,571" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1490.22 580 L 1494 571 L 1497.78 580" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="1413" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,1533 984,1521 729,1521 729,703 984,703 984,691" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 700 L 984 691 L 987.78 700" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="1533" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="994,1653 994,1641 739,1641 739,823 994,823 994,811" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 990.22 820 L 994 811 L 997.78 820" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="994" cy="1653" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1154,1253 1154,1263 1133,1263 1133,1873" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1136.78 1864 L 1133 1873 L 1129.22 1864" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1154" cy="1253" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="134,1873 134,1231" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 130.22 1240 L 134 1231 L 137.78 1240" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="134" cy="1873" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,535 814,525 754,525 754,381" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,415 984,263" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,775 984,765 1284,765 1284,62 1104,62" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,633 1154,623 1094,623 1094,396" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,535 1494,515" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="304,1253 304,1273" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1493 814,1503 754,1503 754,1745" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1613 814,1623 684,1623 684,1879 694,1879" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1733 684,1733 684,1952 694,1952" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,1173 984,1153" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1324,1493 1324,1513" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="433" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="465" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A second opinion</text>
+<text x="92" y="475.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">wanted</text>
+<rect x="254" y="393" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="429.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work with the</text>
+<text x="304" y="441.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">advisor</text>
+<path d="M 474 408 L 499 433 L 474 458 L 449 433 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 422.5 L 484.5 443.5 M 463.5 443.5 L 484.5 422.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="472" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="393" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="435.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Write the request</text>
+<rect x="764" y="393" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="435.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the request</text>
+<circle cx="984" cy="433" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="433" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="427.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 427.06 L 984 433 L 993 427.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="465" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The answer, or what</text>
+<text x="942" y="475.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">went wrong</text>
+<path d="M 1154 408 L 1179 433 L 1154 458 L 1129 433 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1143.5 422.5 L 1164.5 443.5 M 1143.5 443.5 L 1164.5 422.5" stroke="#000" stroke-width="1"/>
+<text x="1112" y="472" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Did the advisor</text>
+<text x="1112" y="482.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answer?</text>
+<circle cx="1324" cy="433" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="465" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The advisor</text>
+<text x="1282" y="475.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1324" cy="553" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="585" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Nothing usable</text>
+<text x="1282" y="595.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">came back</text>
+<rect x="594" y="513" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="555.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Accept the proposal</text>
+<circle cx="814" cy="553" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="553" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="547.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 547.06 L 814 553 L 823 547.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="585" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What applying will</text>
+<text x="772" y="595.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">take, and where it</text>
+<text x="772" y="606.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">lands</text>
+<path d="M 984 528 L 1009 553 L 984 578 L 959 553 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 542.5 L 994.5 563.5 M 973.5 563.5 L 994.5 542.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="592" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what</text>
+<text x="942" y="602.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">applying takes?</text>
+<rect x="1104" y="513" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="555.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Apply the proposal</text>
+<circle cx="1494" cy="553" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="553" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="547.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 547.06 L 1494 553 L 1503 547.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="585" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What was applied,</text>
+<text x="1452" y="595.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">and where</text>
+<rect x="1104" y="633" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="669.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Abandon the</text>
+<text x="1154" y="681.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">application</text>
+<circle cx="1664" cy="553" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="585" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Proposal settled</text>
+<rect x="594" y="633" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="669.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Dismiss the</text>
+<text x="644" y="681.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">proposal</text>
+<circle cx="984" cy="673" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="673" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="667.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 667.06 L 984 673 L 993 667.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="705" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What was dismissed</text>
+<circle cx="1154" cy="793" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="825" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Proposal dismissed</text>
+<rect x="594" y="753" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="789.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Clear the</text>
+<text x="644" y="801.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">conversation</text>
+<circle cx="984" cy="793" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="793" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="787.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 787.06 L 984 793 L 993 787.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="825" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What was cleared</text>
+<circle cx="1154" cy="913" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="945" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Conversation</text>
+<text x="1112" y="955.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">cleared</text>
+<circle cx="814" cy="1213" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="1207.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 1207.06 L 814 1213 L 823 1207.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="1245" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Request submitted</text>
+<rect x="934" y="1173" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1197.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the request</text>
+<text x="984" y="1209.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">incl. the</text>
+<text x="984" y="1221.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">conversation and</text>
+<text x="984" y="1233.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">current state</text>
+<rect x="1104" y="1173" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="1209.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Extend conversation</text>
+<text x="1154" y="1221.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">by request</text>
+<circle cx="1324" cy="1213" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="1245" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Request sent</text>
+<circle cx="134" cy="1213" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="134" cy="1213" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="125" y="1207.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 125 1207.06 L 134 1213 L 143 1207.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="92" y="1245" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Advisor answered</text>
+<rect x="254" y="1173" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="1197.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Turn each</text>
+<text x="304" y="1209.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">actionable part of</text>
+<text x="304" y="1221.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the answer into a</text>
+<text x="304" y="1233.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">typed proposal</text>
+<rect x="424" y="1173" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="474" y="1197.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep what could not</text>
+<text x="474" y="1209.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">be turned into one</text>
+<text x="474" y="1221.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">as prose, and say</text>
+<text x="474" y="1233.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">so</text>
+<rect x="594" y="1173" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1192" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Supersede the</text>
+<text x="644" y="1203.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">outstanding</text>
+<text x="644" y="1215.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">proposal on each</text>
+<text x="644" y="1227.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">target the answer</text>
+<text x="644" y="1239.2" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">touches</text>
+<rect x="764" y="1293" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1317.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Keep the answer</text>
+<text x="814" y="1329.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">with the</text>
+<text x="814" y="1341.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">conversation, for the</text>
+<text x="814" y="1353.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">turns that follow</text>
+<rect x="934" y="1293" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1335.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1154" cy="1333" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1365" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Answer answered</text>
+<circle cx="644" cy="1333" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1327.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1327.06 L 644 1333 L 653 1327.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1365" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Application impact</text>
+<text x="602" y="1375.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="764" y="1413" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1449.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report what</text>
+<text x="814" y="1461.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">applying will take</text>
+<circle cx="984" cy="1453" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1485" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Application impact</text>
+<text x="942" y="1495.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1154" cy="1453" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1145" y="1447.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1145 1447.06 L 1154 1453 L 1163 1447.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1112" y="1485" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Application</text>
+<text x="1112" y="1495.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<rect x="1274" y="1413" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1455.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Apply the proposal</text>
+<rect x="1444" y="1413" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1443.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report what was</text>
+<text x="1494" y="1455.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">applied, and where</text>
+<text x="1494" y="1467.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">it landed</text>
+<circle cx="1664" cy="1453" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1485" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Application</text>
+<text x="1622" y="1495.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1453" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1447.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1447.06 L 644 1453 L 653 1447.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1485" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Dismissal requested</text>
+<rect x="764" y="1533" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1569.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Close the proposal</text>
+<text x="814" y="1581.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">as dismissed</text>
+<rect x="934" y="1533" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1575.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1154" cy="1573" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1605" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Dismissal answered</text>
+<circle cx="644" cy="1573" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1567.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1567.06 L 644 1573 L 653 1567.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1605" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Clear requested</text>
+<rect x="764" y="1653" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1677.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Drop the</text>
+<text x="814" y="1689.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">conversation and its</text>
+<text x="814" y="1701.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">outstanding</text>
+<text x="814" y="1713.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">proposals</text>
+<rect x="934" y="1653" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="984" y="1695.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Report the outcome</text>
+<circle cx="1154" cy="1693" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1725" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Clear answered</text>
+<path d="M 700 275 H 694 V 381 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="287" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Applying runs the user's own operation, so whatever that</text>
+<text x="703" y="297.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">operation discloses is disclosed here: what a deletion will</text>
+<text x="703" y="308.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">take, the answers an archiving offers, and any part of the</text>
+<text x="703" y="318.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">funnel the change lands in.</text>
+<path d="M 870 112 H 864 V 263 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="124" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The answer arrives on its own. The advisor is slower</text>
+<text x="873" y="134.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">than the rest of the product and stays non-blocking while</text>
+<text x="873" y="145.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">it thinks. An unreachable service, a timeout, or an</text>
+<text x="873" y="155.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">answer nothing usable could be made of is reported as</text>
+<text x="873" y="166.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">what it is, and nothing is left looking like a proposal.</text>
+<path d="M 870 24 H 864 V 100 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Clearing is deliberate. One conversation runs for the</text>
+<text x="873" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">session and nothing clears it on the user's behalf.</text>
+<path d="M 1040 350 H 1034 V 396 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="362" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The proposal stays outstanding and nothing is written.</text>
+<path d="M 1380 469 H 1374 V 515 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="481" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The proposal is written completely. Nothing is</text>
+<text x="1383" y="491.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">half-applied.</text>
+<path d="M 190 1273 H 184 V 1379 H 190" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="193" y="1285" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A proposal is a structured object, never prose to be</text>
+<text x="193" y="1295.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">parsed. At most one proposal is outstanding per target,</text>
+<text x="193" y="1306.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">and an already-applied or already-dismissed one is</text>
+<text x="193" y="1316.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">closed and untouched.</text>
+<path d="M 700 1745 H 694 V 1836 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1757" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A proposal that takes nothing has nothing to disclose.</text>
+<text x="703" y="1767.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">One that deletes or archives discloses exactly what the</text>
+<text x="703" y="1778.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">user's own gesture would, because it is that gesture.</text>
+<path d="M 700 1848 H 694 V 1909 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1860" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A proposal already applied or dismissed is closed, and</text>
+<text x="703" y="1870.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">nothing reopens it (BR-70).</text>
+<path d="M 700 1921 H 694 V 1982 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1933" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Applied and dismissed proposals are closed already and</text>
+<text x="703" y="1943.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">are unaffected by clearing.</text>
+<path d="M 870 1077 H 864 V 1153 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="1089" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The whole funnel goes with the request: themes, ideas,</text>
+<text x="873" y="1099.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">goals, routines, focus history, tasks and progress</text>
+<text x="873" y="1110.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">check-ins.</text>
+<path d="M 1210 1513 H 1204 V 1559 H 1210" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1213" y="1525" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A proposal to create something carries everything that</text>
+<text x="1213" y="1535.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">thing needs.</text>
+<rect x="1181" y="434" width="45.46" height="11.5" fill="#fff"/>
+<text x="1182" y="443.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">it answered</text>
+<rect x="1211" y="434" width="34.13" height="11.5" fill="#fff"/>
+<text x="1212" y="443.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">it did not</text>
+<rect x="501" y="434" width="56.8" height="11.5" fill="#fff"/>
+<text x="502" y="443.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">ask something</text>
+<rect x="1011" y="554" width="32.71" height="11.5" fill="#fff"/>
+<text x="1012" y="563.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="1041" y="554" width="22.78" height="11.5" fill="#fff"/>
+<text x="1042" y="563.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject</text>
+<rect x="531" y="434" width="71.93" height="11.5" fill="#fff"/>
+<text x="532" y="443.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">take a proposal up</text>
+<rect x="531" y="434" width="55.86" height="11.5" fill="#fff"/>
+<text x="532" y="443.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">turn one down</text>
+<rect x="531" y="434" width="37.43" height="11.5" fill="#fff"/>
+<text x="532" y="443.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">start over</text>
+<rect x="726" y="486" width="60.11" height="20.73" fill="#fff"/>
+<text x="727" y="494.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP16.02</text>
+<text x="727" y="504.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Ask the advisor</text>
+<rect x="721" y="606" width="104.04" height="20.73" fill="#fff"/>
+<text x="722" y="614.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP16.07</text>
+<text x="722" y="624.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what applying will take</text>
+<rect x="1241" y="606" width="72.4" height="20.73" fill="#fff"/>
+<text x="1242" y="614.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP16.04</text>
+<text x="1242" y="624.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Apply the proposal</text>
+<rect x="731" y="726" width="80.88" height="20.73" fill="#fff"/>
+<text x="732" y="734.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP16.05</text>
+<text x="732" y="744.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Dismiss the proposal</text>
+<rect x="741" y="846" width="87.03" height="20.73" fill="#fff"/>
+<text x="742" y="854.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP16.06</text>
+<text x="742" y="864.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Clear the conversation</text>
+<rect x="1231" y="1282" width="124.83" height="11.5" fill="#fff"/>
+<text x="1232" y="1291.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The answer, or what went wrong</text>
+<rect x="736" y="1402" width="162.15" height="11.5" fill="#fff"/>
+<text x="737" y="1411.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What applying will take, and where it lands</text>
+<rect x="1496" y="1414" width="113.49" height="11.5" fill="#fff"/>
+<text x="1497" y="1423.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What was applied, and where</text>
+<rect x="731" y="1522" width="79.46" height="11.5" fill="#fff"/>
+<text x="732" y="1531.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What was dismissed</text>
+<rect x="741" y="1642" width="69.55" height="11.5" fill="#fff"/>
+<text x="742" y="1651.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What was cleared</text>
+<rect x="1156" y="1264" width="67.67" height="11.5" fill="#fff"/>
+<text x="1157" y="1273.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Advice requested</text>
+<rect x="136" y="1874" width="100.46" height="20.73" fill="#fff"/>
+<text x="137" y="1882.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP16.03</text>
+<text x="137" y="1892.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Take the advisor's answer</text>
+</svg>

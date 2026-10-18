@@ -88,6 +88,28 @@ endings, and SIs, and every downstream tier multiplies the mistake.
   recurrence at binding — `design-artifact-conventions`).
 - **Prefer a correctly-factored landscape to a stripped-down one.** The remedy for an
   overloaded BPMN is splitting along trigger seams, not deleting real behaviour.
+- **A step the UI handles alone is not a business step.** Expanding or collapsing a section,
+  folding a card, switching a tab's view mode — the user performs it, but it asks the system for
+  nothing and changes nothing the system keeps, so it has no System Interaction and no place in a
+  BP. Drawing it inflates the process with surface mechanics and invites a reviewer to look for
+  the SI behind a box that cannot have one. *"'Expand the vision and mission section' is a step
+  from user's point of view, but it is handled purely in the UI, so there is no related System
+  Interaction. In this case and in future fold/unfold cases I'd argue to not model such operations
+  in BPs"* (Software Architect, 2026-10-11). The test is not "did the user do something" but
+  **"does anything outside the screen know it happened"**: a filter or an ordering the product
+  remembers between sessions does change kept state (BR-88, BR-92) and stays drawn; a fold does
+  not and goes.
+- **An editor gesture is two steps: fill, then submit.** The step that fills a field is where
+  drafting hangs (bind `BR-121` to it) and it issues nothing; the step that submits is what sends
+  the request. Drawing the fill with the request arrow hanging off it says the typing itself writes,
+  which is wrong — the typing drafts. So `Edit a theme [BR-121]` → `Submit the theme` → the request,
+  and never one box for both. The commit step of a destructive gesture (`Confirm the deletion`) is
+  already a submit and needs no second box.
+- **Name the act, not the gesture that performs it.** A step says `Order a theme`, never
+  `Drag a theme into place` — the drag is one input device's way of doing it, and keyboard reorder
+  is everywhere drag is. Likewise `Delete a theme`, not `Choose a theme to delete`: picking the
+  target is part of the act, not a step of its own. And where one editor serves creating and
+  editing alike, both branches say `Edit a <entity>` and the gateway branch says which case it is.
 
 ## What makes a good System Interaction (an SI **is** an IDesign Use Case)
 

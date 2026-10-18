@@ -1,0 +1,785 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP02_MaintainLifeThemes" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP02_MaintainLifeThemes">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP02.02 · Edit a theme" sourceRef="T_5" targetRef="editIn" />
+    <bpmn:messageFlow id="MF_2" name="BP02.04 · Reorder themes" sourceRef="T_7" targetRef="reorderIn" />
+    <bpmn:messageFlow id="MF_3" name="BP02.05 · See what deleting a theme takes" sourceRef="T_9" targetRef="impactIn" />
+    <bpmn:messageFlow id="MF_4" name="BP02.06 · Delete a theme" sourceRef="T_12" targetRef="deleteIn" />
+    <bpmn:messageFlow id="MF_5" name="BP02.08 · Record vision and mission" sourceRef="T_16" targetRef="vmIn" />
+    <bpmn:messageFlow id="MF_6" name="The editing outcome" sourceRef="BP02.02_EditTheme" targetRef="recorded" />
+    <bpmn:messageFlow id="MF_7" name="The ordering outcome" sourceRef="BP02.04_ReorderThemes" targetRef="reordered" />
+    <bpmn:messageFlow id="MF_8" name="What the deletion will take" sourceRef="BP02.05_ReadTheDeletionImpact" targetRef="impact" />
+    <bpmn:messageFlow id="MF_9" name="The deletion outcome" sourceRef="BP02.06_DeleteTheme" targetRef="deleted" />
+    <bpmn:messageFlow id="MF_10" name="The recording outcome" sourceRef="BP02.08_RecordVisionAndMission" targetRef="vmDone" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>A kept idea loses only its theme affiliation. The goals cannot be kept, so confirming takes them.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="deleted" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>A goal requires a theme, so keeping one is not a legal outcome: where the theme has goals the gesture is approve-or-abandon. An idea may stay behind theme-less, so that cascade is the real choice and it starts off. An archived descendant is counted like a live one.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="BP02.05_ReadTheDeletionImpact" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>The request carries the cascades the user confirmed, and nothing else goes: an idea left out stays, theme-less. What happens below a deleted goal or idea is that entity's own rule, applied where the deletion reaches it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="BP02.06_DeleteTheme" targetRef="TextAnnotation_X3" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A theme needs attention">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Work a theme">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_Gw_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_3" name="What needs doing?">
+      <bpmn:incoming>SF_T_2_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_9</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_15</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="Name the theme">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_T_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="Submit the theme">
+      <bpmn:incoming>SF_T_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_recorded</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="recorded" name="The editing outcome">
+      <bpmn:incoming>SF_T_5_recorded</bpmn:incoming>
+      <bpmn:outgoing>SF_recorded_End_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_recorded" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_6" name="Theme recorded">
+      <bpmn:incoming>SF_recorded_End_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_7" name="Order a theme">
+      <bpmn:incoming>SF_Gw_3_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_reordered</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="reordered" name="The ordering outcome">
+      <bpmn:incoming>SF_T_7_reordered</bpmn:incoming>
+      <bpmn:outgoing>SF_reordered_End_8</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reordered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_8" name="Themes ordered">
+      <bpmn:incoming>SF_reordered_End_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_9" name="Delete a theme">
+      <bpmn:incoming>SF_Gw_3_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_impact</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="impact" name="What the deletion will take">
+      <bpmn:incoming>SF_T_9_impact</bpmn:incoming>
+      <bpmn:outgoing>SF_impact_Gw_10</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_impact" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_10" name="Approve what the deletion takes?">
+      <bpmn:incoming>SF_impact_Gw_10</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_10_T_11</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_10_End_13</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_11" name="Select a valid cascading option">
+      <bpmn:incoming>SF_Gw_10_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_T_12</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_12" name="Confirm the deletion">
+      <bpmn:incoming>SF_T_11_T_12</bpmn:incoming>
+      <bpmn:outgoing>SF_T_12_deleted</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="deleted" name="The deletion outcome">
+      <bpmn:incoming>SF_T_12_deleted</bpmn:incoming>
+      <bpmn:outgoing>SF_deleted_End_14</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_deleted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_13" name="Deletion abandoned">
+      <bpmn:incoming>SF_Gw_10_End_13</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_14" name="Theme deleted">
+      <bpmn:incoming>SF_deleted_End_14</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_15" name="State the vision and mission">
+      <bpmn:incoming>SF_Gw_3_T_15</bpmn:incoming>
+      <bpmn:outgoing>SF_T_15_T_16</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_16" name="Submit the vision and mission">
+      <bpmn:incoming>SF_T_15_T_16</bpmn:incoming>
+      <bpmn:outgoing>SF_T_16_vmDone</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="vmDone" name="The recording outcome">
+      <bpmn:incoming>SF_T_16_vmDone</bpmn:incoming>
+      <bpmn:outgoing>SF_vmDone_End_17</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_vmDone" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_17" name="Vision and mission recorded">
+      <bpmn:incoming>SF_vmDone_End_17</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_Gw_3" sourceRef="T_2" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_T_4_T_5" sourceRef="T_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_recorded" sourceRef="T_5" targetRef="recorded" />
+    <bpmn:sequenceFlow id="SF_recorded_End_6" sourceRef="recorded" targetRef="End_6" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="add or change a theme" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_T_7_reordered" sourceRef="T_7" targetRef="reordered" />
+    <bpmn:sequenceFlow id="SF_reordered_End_8" sourceRef="reordered" targetRef="End_8" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_7" name="reorder them" sourceRef="Gw_3" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_9_impact" sourceRef="T_9" targetRef="impact" />
+    <bpmn:sequenceFlow id="SF_impact_Gw_10" sourceRef="impact" targetRef="Gw_10" />
+    <bpmn:sequenceFlow id="SF_T_11_T_12" sourceRef="T_11" targetRef="T_12" />
+    <bpmn:sequenceFlow id="SF_T_12_deleted" sourceRef="T_12" targetRef="deleted" />
+    <bpmn:sequenceFlow id="SF_Gw_10_T_11" name="approve" sourceRef="Gw_10" targetRef="T_11" />
+    <bpmn:sequenceFlow id="SF_Gw_10_End_13" name="reject" sourceRef="Gw_10" targetRef="End_13" />
+    <bpmn:sequenceFlow id="SF_deleted_End_14" sourceRef="deleted" targetRef="End_14" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_9" name="retire one for good" sourceRef="Gw_3" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_15_T_16" sourceRef="T_15" targetRef="T_16" />
+    <bpmn:sequenceFlow id="SF_T_16_vmDone" sourceRef="T_16" targetRef="vmDone" />
+    <bpmn:sequenceFlow id="SF_vmDone_End_17" sourceRef="vmDone" targetRef="End_17" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_15" name="state who I want to become, and what I am here for" sourceRef="Gw_3" targetRef="T_15" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="editIn" name="Theme submitted">
+      <bpmn:outgoing>SF_editIn_BP02.02_EditTheme</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_editIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP02.02_EditTheme" name="Edit a theme">
+      <bpmn:incoming>SF_editIn_BP02.02_EditTheme</bpmn:incoming>
+      <bpmn:outgoing>SF_BP02.02_EditTheme_End_20</bpmn:outgoing>
+      <bpmn:startEvent id="BP02.02_EditTheme_s" name="Start">
+        <bpmn:outgoing>SF_BP02.02_EditTheme_s_T_18</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_18" name="Store the edit">
+        <bpmn:incoming>SF_BP02.02_EditTheme_s_T_18</bpmn:incoming>
+        <bpmn:outgoing>SF_T_18_T_19</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_19" name="Report the outcome">
+        <bpmn:incoming>SF_T_18_T_19</bpmn:incoming>
+        <bpmn:outgoing>SF_T_19_BP02.02_EditTheme_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP02.02_EditTheme_e" name="fertig">
+        <bpmn:incoming>SF_T_19_BP02.02_EditTheme_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_18_T_19" sourceRef="T_18" targetRef="T_19" />
+      <bpmn:sequenceFlow id="SF_BP02.02_EditTheme_s_T_18" sourceRef="BP02.02_EditTheme_s" targetRef="T_18" />
+      <bpmn:sequenceFlow id="SF_T_19_BP02.02_EditTheme_e" sourceRef="T_19" targetRef="BP02.02_EditTheme_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_20" name="Theme answered">
+      <bpmn:incoming>SF_BP02.02_EditTheme_End_20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="reorderIn" name="Theme reordering requested">
+      <bpmn:outgoing>SF_reorderIn_BP02.04_ReorderThemes</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reorderIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP02.04_ReorderThemes" name="Reorder themes">
+      <bpmn:incoming>SF_reorderIn_BP02.04_ReorderThemes</bpmn:incoming>
+      <bpmn:outgoing>SF_BP02.04_ReorderThemes_End_23</bpmn:outgoing>
+      <bpmn:startEvent id="BP02.04_ReorderThemes_s" name="Start">
+        <bpmn:outgoing>SF_BP02.04_ReorderThemes_s_T_21</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_21" name="Apply the new order">
+        <bpmn:incoming>SF_BP02.04_ReorderThemes_s_T_21</bpmn:incoming>
+        <bpmn:outgoing>SF_T_21_T_22</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_22" name="Report the outcome">
+        <bpmn:incoming>SF_T_21_T_22</bpmn:incoming>
+        <bpmn:outgoing>SF_T_22_BP02.04_ReorderThemes_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP02.04_ReorderThemes_e" name="fertig">
+        <bpmn:incoming>SF_T_22_BP02.04_ReorderThemes_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_21_T_22" sourceRef="T_21" targetRef="T_22" />
+      <bpmn:sequenceFlow id="SF_BP02.04_ReorderThemes_s_T_21" sourceRef="BP02.04_ReorderThemes_s" targetRef="T_21" />
+      <bpmn:sequenceFlow id="SF_T_22_BP02.04_ReorderThemes_e" sourceRef="T_22" targetRef="BP02.04_ReorderThemes_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_23" name="Reordering answered">
+      <bpmn:incoming>SF_BP02.04_ReorderThemes_End_23</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="impactIn" name="Deletion impact requested">
+      <bpmn:outgoing>SF_impactIn_BP02.05_ReadTheDeletionImpact</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_impactIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP02.05_ReadTheDeletionImpact" name="See what deleting a theme takes">
+      <bpmn:incoming>SF_impactIn_BP02.05_ReadTheDeletionImpact</bpmn:incoming>
+      <bpmn:outgoing>SF_BP02.05_ReadTheDeletionImpact_End_25</bpmn:outgoing>
+      <bpmn:startEvent id="BP02.05_ReadTheDeletionImpact_s" name="Start">
+        <bpmn:outgoing>SF_BP02.05_ReadTheDeletionImpact_s_T_24</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_24" name="Report what the deletion will take, and what of it can be declined">
+        <bpmn:incoming>SF_BP02.05_ReadTheDeletionImpact_s_T_24</bpmn:incoming>
+        <bpmn:outgoing>SF_T_24_BP02.05_ReadTheDeletionImpact_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP02.05_ReadTheDeletionImpact_e" name="fertig">
+        <bpmn:incoming>SF_T_24_BP02.05_ReadTheDeletionImpact_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP02.05_ReadTheDeletionImpact_s_T_24" sourceRef="BP02.05_ReadTheDeletionImpact_s" targetRef="T_24" />
+      <bpmn:sequenceFlow id="SF_T_24_BP02.05_ReadTheDeletionImpact_e" sourceRef="T_24" targetRef="BP02.05_ReadTheDeletionImpact_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_25" name="Impact answered">
+      <bpmn:incoming>SF_BP02.05_ReadTheDeletionImpact_End_25</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="deleteIn" name="Theme deletion requested">
+      <bpmn:outgoing>SF_deleteIn_BP02.06_DeleteTheme</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_deleteIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP02.06_DeleteTheme" name="Delete a theme">
+      <bpmn:incoming>SF_deleteIn_BP02.06_DeleteTheme</bpmn:incoming>
+      <bpmn:outgoing>SF_BP02.06_DeleteTheme_End_28</bpmn:outgoing>
+      <bpmn:startEvent id="BP02.06_DeleteTheme_s" name="Start">
+        <bpmn:outgoing>SF_BP02.06_DeleteTheme_s_T_26</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_26" name="Delete confirmed items">
+        <bpmn:incoming>SF_BP02.06_DeleteTheme_s_T_26</bpmn:incoming>
+        <bpmn:outgoing>SF_T_26_T_27</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_27" name="Report the outcome">
+        <bpmn:incoming>SF_T_26_T_27</bpmn:incoming>
+        <bpmn:outgoing>SF_T_27_BP02.06_DeleteTheme_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP02.06_DeleteTheme_e" name="fertig">
+        <bpmn:incoming>SF_T_27_BP02.06_DeleteTheme_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_26_T_27" sourceRef="T_26" targetRef="T_27" />
+      <bpmn:sequenceFlow id="SF_BP02.06_DeleteTheme_s_T_26" sourceRef="BP02.06_DeleteTheme_s" targetRef="T_26" />
+      <bpmn:sequenceFlow id="SF_T_27_BP02.06_DeleteTheme_e" sourceRef="T_27" targetRef="BP02.06_DeleteTheme_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_28" name="Deletion answered">
+      <bpmn:incoming>SF_BP02.06_DeleteTheme_End_28</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="vmIn" name="Vision and mission submitted">
+      <bpmn:outgoing>SF_vmIn_BP02.08_RecordVisionAndMission</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_vmIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP02.08_RecordVisionAndMission" name="Record vision and mission">
+      <bpmn:incoming>SF_vmIn_BP02.08_RecordVisionAndMission</bpmn:incoming>
+      <bpmn:outgoing>SF_BP02.08_RecordVisionAndMission_End_31</bpmn:outgoing>
+      <bpmn:startEvent id="BP02.08_RecordVisionAndMission_s" name="Start">
+        <bpmn:outgoing>SF_BP02.08_RecordVisionAndMission_s_T_29</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_29" name="Store the vision and the mission">
+        <bpmn:incoming>SF_BP02.08_RecordVisionAndMission_s_T_29</bpmn:incoming>
+        <bpmn:outgoing>SF_T_29_T_30</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_30" name="Report the outcome">
+        <bpmn:incoming>SF_T_29_T_30</bpmn:incoming>
+        <bpmn:outgoing>SF_T_30_BP02.08_RecordVisionAndMission_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP02.08_RecordVisionAndMission_e" name="fertig">
+        <bpmn:incoming>SF_T_30_BP02.08_RecordVisionAndMission_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_29_T_30" sourceRef="T_29" targetRef="T_30" />
+      <bpmn:sequenceFlow id="SF_BP02.08_RecordVisionAndMission_s_T_29" sourceRef="BP02.08_RecordVisionAndMission_s" targetRef="T_29" />
+      <bpmn:sequenceFlow id="SF_T_30_BP02.08_RecordVisionAndMission_e" sourceRef="T_30" targetRef="BP02.08_RecordVisionAndMission_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_31" name="Record answered">
+      <bpmn:incoming>SF_BP02.08_RecordVisionAndMission_End_31</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_editIn_BP02.02_EditTheme" sourceRef="editIn" targetRef="BP02.02_EditTheme" />
+    <bpmn:sequenceFlow id="SF_BP02.02_EditTheme_End_20" sourceRef="BP02.02_EditTheme" targetRef="End_20" />
+    <bpmn:sequenceFlow id="SF_reorderIn_BP02.04_ReorderThemes" sourceRef="reorderIn" targetRef="BP02.04_ReorderThemes" />
+    <bpmn:sequenceFlow id="SF_BP02.04_ReorderThemes_End_23" sourceRef="BP02.04_ReorderThemes" targetRef="End_23" />
+    <bpmn:sequenceFlow id="SF_impactIn_BP02.05_ReadTheDeletionImpact" sourceRef="impactIn" targetRef="BP02.05_ReadTheDeletionImpact" />
+    <bpmn:sequenceFlow id="SF_BP02.05_ReadTheDeletionImpact_End_25" sourceRef="BP02.05_ReadTheDeletionImpact" targetRef="End_25" />
+    <bpmn:sequenceFlow id="SF_deleteIn_BP02.06_DeleteTheme" sourceRef="deleteIn" targetRef="BP02.06_DeleteTheme" />
+    <bpmn:sequenceFlow id="SF_BP02.06_DeleteTheme_End_28" sourceRef="BP02.06_DeleteTheme" targetRef="End_28" />
+    <bpmn:sequenceFlow id="SF_vmIn_BP02.08_RecordVisionAndMission" sourceRef="vmIn" targetRef="BP02.08_RecordVisionAndMission" />
+    <bpmn:sequenceFlow id="SF_BP02.08_RecordVisionAndMission_End_31" sourceRef="BP02.08_RecordVisionAndMission" targetRef="End_31" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP02_MaintainLifeThemes">
+    <bpmndi:BPMNPlane id="P_BP02_MaintainLifeThemes" bpmnElement="Collaboration_BP02_MaintainLifeThemes">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1750" height="740" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="860" width="1750" height="620" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="585" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="recorded_di" bpmnElement="recorded">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_6_di" bpmnElement="End_6">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="730" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reordered_di" bpmnElement="reordered">
+        <dc:Bounds x="932" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_8_di" bpmnElement="End_8">
+        <dc:Bounds x="1102" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="730" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="impact_di" bpmnElement="impact">
+        <dc:Bounds x="932" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_10_di" bpmnElement="Gw_10">
+        <dc:Bounds x="1095" y="415" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="470" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="1240" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="1410" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="deleted_di" bpmnElement="deleted">
+        <dc:Bounds x="1612" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_13_di" bpmnElement="End_13">
+        <dc:Bounds x="1272" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_14_di" bpmnElement="End_14">
+        <dc:Bounds x="1782" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="730" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="900" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="vmDone_di" bpmnElement="vmDone">
+        <dc:Bounds x="1102" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_17_di" bpmnElement="End_17">
+        <dc:Bounds x="1272" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="editIn_di" bpmnElement="editIn">
+        <dc:Bounds x="932" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.02_EditTheme_di" bpmnElement="BP02.02_EditTheme" isExpanded="false">
+        <dc:Bounds x="1050" y="935" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_20_di" bpmnElement="End_20">
+        <dc:Bounds x="1272" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reorderIn_di" bpmnElement="reorderIn">
+        <dc:Bounds x="762" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.04_ReorderThemes_di" bpmnElement="BP02.04_ReorderThemes" isExpanded="false">
+        <dc:Bounds x="880" y="1055" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_23_di" bpmnElement="End_23">
+        <dc:Bounds x="1102" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="impactIn_di" bpmnElement="impactIn">
+        <dc:Bounds x="762" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.05_ReadTheDeletionImpact_di" bpmnElement="BP02.05_ReadTheDeletionImpact" isExpanded="false">
+        <dc:Bounds x="880" y="1175" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_25_di" bpmnElement="End_25">
+        <dc:Bounds x="1102" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="deleteIn_di" bpmnElement="deleteIn">
+        <dc:Bounds x="1442" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.06_DeleteTheme_di" bpmnElement="BP02.06_DeleteTheme" isExpanded="false">
+        <dc:Bounds x="1560" y="935" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_28_di" bpmnElement="End_28">
+        <dc:Bounds x="1782" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="vmIn_di" bpmnElement="vmIn">
+        <dc:Bounds x="932" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.08_RecordVisionAndMission_di" bpmnElement="BP02.08_RecordVisionAndMission" isExpanded="false">
+        <dc:Bounds x="1050" y="1295" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_31_di" bpmnElement="End_31">
+        <dc:Bounds x="1272" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_Gw_3_di" bpmnElement="SF_T_2_Gw_3">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="585" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_T_5_di" bpmnElement="SF_T_4_T_5">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_recorded_di" bpmnElement="SF_T_5_recorded">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_recorded_End_6_di" bpmnElement="SF_recorded_End_6">
+        <di:waypoint x="1138" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_reordered_di" bpmnElement="SF_T_7_reordered">
+        <di:waypoint x="830" y="320" />
+        <di:waypoint x="932" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reordered_End_8_di" bpmnElement="SF_reordered_End_8">
+        <di:waypoint x="968" y="320" />
+        <di:waypoint x="1102" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_7_di" bpmnElement="SF_Gw_3_T_7">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="320" />
+        <di:waypoint x="730" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_impact_di" bpmnElement="SF_T_9_impact">
+        <di:waypoint x="830" y="440" />
+        <di:waypoint x="932" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_impact_Gw_10_di" bpmnElement="SF_impact_Gw_10">
+        <di:waypoint x="968" y="440" />
+        <di:waypoint x="1095" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_T_12_di" bpmnElement="SF_T_11_T_12">
+        <di:waypoint x="1340" y="440" />
+        <di:waypoint x="1410" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_12_deleted_di" bpmnElement="SF_T_12_deleted">
+        <di:waypoint x="1510" y="440" />
+        <di:waypoint x="1612" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_T_11_di" bpmnElement="SF_Gw_10_T_11">
+        <di:waypoint x="1145" y="440" />
+        <di:waypoint x="1240" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_End_13_di" bpmnElement="SF_Gw_10_End_13">
+        <di:waypoint x="1145" y="440" />
+        <di:waypoint x="1175" y="440" />
+        <di:waypoint x="1175" y="560" />
+        <di:waypoint x="1272" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_deleted_End_14_di" bpmnElement="SF_deleted_End_14">
+        <di:waypoint x="1648" y="440" />
+        <di:waypoint x="1782" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_9_di" bpmnElement="SF_Gw_3_T_9">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="440" />
+        <di:waypoint x="730" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_T_16_di" bpmnElement="SF_T_15_T_16">
+        <di:waypoint x="830" y="560" />
+        <di:waypoint x="900" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_vmDone_di" bpmnElement="SF_T_16_vmDone">
+        <di:waypoint x="1000" y="560" />
+        <di:waypoint x="1102" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_vmDone_End_17_di" bpmnElement="SF_vmDone_End_17">
+        <di:waypoint x="1138" y="560" />
+        <di:waypoint x="1168" y="560" />
+        <di:waypoint x="1168" y="680" />
+        <di:waypoint x="1272" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_15_di" bpmnElement="SF_Gw_3_T_15">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="560" />
+        <di:waypoint x="730" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_editIn_BP02.02_EditTheme_di" bpmnElement="SF_editIn_BP02.02_EditTheme">
+        <di:waypoint x="968" y="980" />
+        <di:waypoint x="1050" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.02_EditTheme_End_20_di" bpmnElement="SF_BP02.02_EditTheme_End_20">
+        <di:waypoint x="1190" y="980" />
+        <di:waypoint x="1272" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reorderIn_BP02.04_ReorderThemes_di" bpmnElement="SF_reorderIn_BP02.04_ReorderThemes">
+        <di:waypoint x="798" y="980" />
+        <di:waypoint x="828" y="980" />
+        <di:waypoint x="828" y="1100" />
+        <di:waypoint x="880" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.04_ReorderThemes_End_23_di" bpmnElement="SF_BP02.04_ReorderThemes_End_23">
+        <di:waypoint x="1020" y="1100" />
+        <di:waypoint x="1102" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_impactIn_BP02.05_ReadTheDeletionImpact_di" bpmnElement="SF_impactIn_BP02.05_ReadTheDeletionImpact">
+        <di:waypoint x="798" y="1100" />
+        <di:waypoint x="828" y="1100" />
+        <di:waypoint x="828" y="1220" />
+        <di:waypoint x="880" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.05_ReadTheDeletionImpact_End_25_di" bpmnElement="SF_BP02.05_ReadTheDeletionImpact_End_25">
+        <di:waypoint x="1020" y="1220" />
+        <di:waypoint x="1102" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_deleteIn_BP02.06_DeleteTheme_di" bpmnElement="SF_deleteIn_BP02.06_DeleteTheme">
+        <di:waypoint x="1478" y="980" />
+        <di:waypoint x="1560" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.06_DeleteTheme_End_28_di" bpmnElement="SF_BP02.06_DeleteTheme_End_28">
+        <di:waypoint x="1700" y="980" />
+        <di:waypoint x="1782" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_vmIn_BP02.08_RecordVisionAndMission_di" bpmnElement="SF_vmIn_BP02.08_RecordVisionAndMission">
+        <di:waypoint x="968" y="1340" />
+        <di:waypoint x="1050" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.08_RecordVisionAndMission_End_31_di" bpmnElement="SF_BP02.08_RecordVisionAndMission_End_31">
+        <di:waypoint x="1190" y="1340" />
+        <di:waypoint x="1272" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="940" y="240" />
+        <di:waypoint x="940" y="252" />
+        <di:waypoint x="1025" y="252" />
+        <di:waypoint x="1025" y="950" />
+        <di:waypoint x="940" y="950" />
+        <di:waypoint x="940" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="775" y="360" />
+        <di:waypoint x="775" y="372" />
+        <di:waypoint x="860" y="372" />
+        <di:waypoint x="860" y="950" />
+        <di:waypoint x="775" y="950" />
+        <di:waypoint x="775" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="785" y="480" />
+        <di:waypoint x="785" y="492" />
+        <di:waypoint x="870" y="492" />
+        <di:waypoint x="870" y="1070" />
+        <di:waypoint x="785" y="1070" />
+        <di:waypoint x="785" y="1082" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="1460" y="480" />
+        <di:waypoint x="1460" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="960" y="600" />
+        <di:waypoint x="960" y="612" />
+        <di:waypoint x="1045" y="612" />
+        <di:waypoint x="1045" y="1310" />
+        <di:waypoint x="960" y="1310" />
+        <di:waypoint x="960" y="1322" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="1115" y="935" />
+        <di:waypoint x="1115" y="923" />
+        <di:waypoint x="1200" y="923" />
+        <di:waypoint x="1200" y="230" />
+        <di:waypoint x="1115" y="230" />
+        <di:waypoint x="1115" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="945" y="1055" />
+        <di:waypoint x="1030" y="1055" />
+        <di:waypoint x="1030" y="350" />
+        <di:waypoint x="945" y="350" />
+        <di:waypoint x="945" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="955" y="1175" />
+        <di:waypoint x="955" y="1163" />
+        <di:waypoint x="1040" y="1163" />
+        <di:waypoint x="1040" y="470" />
+        <di:waypoint x="955" y="470" />
+        <di:waypoint x="955" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="1630" y="935" />
+        <di:waypoint x="1630" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="1125" y="1295" />
+        <di:waypoint x="1210" y="1295" />
+        <di:waypoint x="1210" y="590" />
+        <di:waypoint x="1125" y="590" />
+        <di:waypoint x="1125" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="1510" y="327" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="1630" y="422" /><di:waypoint x="1630" y="388" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="830" y="1397" width="240" height="136" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="950" y="1265" /><di:waypoint x="950" y="1275" /><di:waypoint x="922" y="1275" /><di:waypoint x="922" y="1397" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1510" y="1045" width="240" height="121" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1630" y="1025" /><di:waypoint x="1630" y="1045" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP02_MaintainLifeThemes_BP0202EditTheme">
+    <bpmndi:BPMNPlane id="P_BP0202EditTheme" bpmnElement="BP02.02_EditTheme">
+      <bpmndi:BPMNShape id="BP02.02_EditTheme_s_di" bpmnElement="BP02.02_EditTheme_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_19_di" bpmnElement="T_19">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.02_EditTheme_e_di" bpmnElement="BP02.02_EditTheme_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_18_T_19_di" bpmnElement="SF_T_18_T_19">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.02_EditTheme_s_T_18_di" bpmnElement="SF_BP02.02_EditTheme_s_T_18">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_19_BP02.02_EditTheme_e_di" bpmnElement="SF_T_19_BP02.02_EditTheme_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP02_MaintainLifeThemes_BP0204ReorderThemes">
+    <bpmndi:BPMNPlane id="P_BP0204ReorderThemes" bpmnElement="BP02.04_ReorderThemes">
+      <bpmndi:BPMNShape id="BP02.04_ReorderThemes_s_di" bpmnElement="BP02.04_ReorderThemes_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_22_di" bpmnElement="T_22">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.04_ReorderThemes_e_di" bpmnElement="BP02.04_ReorderThemes_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_21_T_22_di" bpmnElement="SF_T_21_T_22">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.04_ReorderThemes_s_T_21_di" bpmnElement="SF_BP02.04_ReorderThemes_s_T_21">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_22_BP02.04_ReorderThemes_e_di" bpmnElement="SF_T_22_BP02.04_ReorderThemes_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP02_MaintainLifeThemes_BP0205ReadTheDeletionImpact">
+    <bpmndi:BPMNPlane id="P_BP0205ReadTheDeletionImpact" bpmnElement="BP02.05_ReadTheDeletionImpact">
+      <bpmndi:BPMNShape id="BP02.05_ReadTheDeletionImpact_s_di" bpmnElement="BP02.05_ReadTheDeletionImpact_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.05_ReadTheDeletionImpact_e_di" bpmnElement="BP02.05_ReadTheDeletionImpact_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP02.05_ReadTheDeletionImpact_s_T_24_di" bpmnElement="SF_BP02.05_ReadTheDeletionImpact_s_T_24">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_BP02.05_ReadTheDeletionImpact_e_di" bpmnElement="SF_T_24_BP02.05_ReadTheDeletionImpact_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP02_MaintainLifeThemes_BP0206DeleteTheme">
+    <bpmndi:BPMNPlane id="P_BP0206DeleteTheme" bpmnElement="BP02.06_DeleteTheme">
+      <bpmndi:BPMNShape id="BP02.06_DeleteTheme_s_di" bpmnElement="BP02.06_DeleteTheme_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_27_di" bpmnElement="T_27">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.06_DeleteTheme_e_di" bpmnElement="BP02.06_DeleteTheme_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_26_T_27_di" bpmnElement="SF_T_26_T_27">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.06_DeleteTheme_s_T_26_di" bpmnElement="SF_BP02.06_DeleteTheme_s_T_26">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_27_BP02.06_DeleteTheme_e_di" bpmnElement="SF_T_27_BP02.06_DeleteTheme_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP02_MaintainLifeThemes_BP0208RecordVisionAndMission">
+    <bpmndi:BPMNPlane id="P_BP0208RecordVisionAndMission" bpmnElement="BP02.08_RecordVisionAndMission">
+      <bpmndi:BPMNShape id="BP02.08_RecordVisionAndMission_s_di" bpmnElement="BP02.08_RecordVisionAndMission_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_29_di" bpmnElement="T_29">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_30_di" bpmnElement="T_30">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP02.08_RecordVisionAndMission_e_di" bpmnElement="BP02.08_RecordVisionAndMission_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_29_T_30_di" bpmnElement="SF_T_29_T_30">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP02.08_RecordVisionAndMission_s_T_29_di" bpmnElement="SF_BP02.08_RecordVisionAndMission_s_T_29">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_30_BP02.08_RecordVisionAndMission_e_di" bpmnElement="SF_T_30_BP02.08_RecordVisionAndMission_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

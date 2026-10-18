@@ -135,7 +135,7 @@ document's.
 | V-05 | Validation timing | On **blur** and on **Save attempt** — never on every keystroke. | `wf §3.2` |
 | V-06 | Normalization preview | Shown **only when normalization changes the input**. Informational, not a warning. | `wf §3.2` |
 | V-07 | Goal theme | Required; `[ + Goal ]` with zero themes is intercepted. | `funnel`, `wf §7.6` |
-| V-08 | Routine theme | Required; pre-filled from the parent card, changeable. | `funnel`, `wf §2.3` |
+| ~~V-08~~ | ~~Routine theme~~ | **VOID 2026-10-13** — a routine has no theme (BR-02), so there is no field to specify. | `funnel`, `wf §2.3` |
 | V-09 | Theme fields | Name and colour both required. | `wf §2.2` |
 | V-10 | Goal fields | Theme, objective and at least one progress measure required; a time horizon is optional (Intent BR-04/BR-31) and defaults to the current quarter when given. | `wf §4.2` |
 | V-11 | Priority required in Backlog | `column.role == Backlog ⇒ priority is required`. | `arch §8 UC2` |
@@ -152,14 +152,15 @@ document's.
 |---|---|
 | Numeric KR auto-infer | `≥ 100% → ✓ Hit` · `50–99% → ⚠ Partial` · `< 50% → ✗ Missed` |
 | Boolean KR auto-infer | `Done → ✓ Hit` · `Not done → ✗ Missed` · **never Partial** |
-| Goal check-out defaults | Archive **ON**; carry-forward **OFF** |
-| Day check-out defaults | Archive completed **ON**; reset in-progress **OFF** |
+| Goal check-out defaults | Archiving is BR-112's three-answer gesture with **cascade pre-selected** — not a yes/no (BR-30, SA 2026-10-11); carry-forward **OFF** |
+| Work check-out defaults | Archive completed **ON** — the one closing action; there is no reset (BR-34, SA 2026-10-11) |
 | Carry-forward KR selection | Only `⚠ Partial` and `✗ Missed`; numeric reset to 0, boolean reset to Not done; check-out notes dropped |
 | Carry-forward horizon | Next period relative to the checked-out goal (Q2 → Q3) |
 | Carry-forward objective | Copied with the literal prefix `"Continue: "` |
 | Backlog sections | Exactly 3, ordered Important & Urgent · Not Important & Urgent · Important & Not Urgent |
 | Toast stack | Max **3** visible, newest on top; a 4th dismisses the oldest immediately; success auto-dismiss ≈ **3 s**; error-with-retry is sticky but still displaceable; the cap may drop to 2 on short windows |
-| Pre-seeded themes | 3–5: Work / Health / Learning / Relationships / Personal |
+| Themes shipped with the data folder | **5**: Health / Career / Learning / Relationships / Personal (QB-08, 2026-10-06). They arrive with the template files, not from a seeding call (BR-82, SA 2026-10-10). `funnel §331`'s *Work* is superseded by *Career*. |
+| Themes overview counts | Active goals per life area (BR-95 — archived goals excluded). Routines are not on that view and are not counted there, since a routine has no theme (BR-02, BR-10, SA 2026-10-13). |
 | Window floor | **Minimum** 1024 × 640 px (hard, shell-enforced — the window cannot go smaller); **no maximum** beyond the display; comfortable ≈ 1280 × 720; with the advisor ≈ 1600 × 720 |
 | Advisor split min-widths | ≈ 500 px content · ≈ 400 px advisor; the divider cannot pass either floor; below ≈ 1000 px window width, opening the advisor auto-closes the Boards strip's secondary chips |
 | Dialog max-widths | ≈ 720 px typical · ≈ 840 px for the Goal editor, batch Task creation and Goal check-out; full-bleed minus 24 px below 800 px window width |
@@ -168,7 +169,7 @@ document's.
 | Focus ring | 2 px solid outline at 2 px offset, `:focus-visible` only, sized to the **hit target**, not the glyph |
 | Hit target | ≥ 44 × 44 px for every interactive control, including inline glyphs |
 | Day rollover | Local midnight, hardcoded |
-| Default landing tab | `Focus` (BR-48); first run opens on onboarding |
+| Default landing tab | `Focus` (BR-48); a first-time startup — a launch on which a data folder had to be set up (BR-48, BR-80) — opens `Themes` (SA 2026-10-11) |
 | Default landing board | `All`, unless today has a focus selection → the most-recently-active tag board |
 | Archive view default sort | Archived-date descending |
 | Ideation sort options | Manual (canonical, default) · Recently added · Recently edited · Alphabetical |
@@ -179,13 +180,13 @@ document's.
 |---|---|
 | P-01 | **Tag normalization is idempotent** — `normalize(normalize(x)) == normalize(x)`. |
 | P-02 | **Routine scheduling is idempotent and additive-only** — N calls ≡ 1 call for the same date and routine set; no call ever deletes a task. |
-| P-03 | **Day check-out is idempotent per date** — re-running updates the existing day log rather than creating a second one. |
-| P-04 | **Day-log draft save is last-write-wins per date.** |
+| P-03 | **A check-out closes its span** — its log is appended once and never rewritten, and a check-out started again straight away settles an empty span (BR-36). |
+| P-04 | **The check-out notes draft is last-write-wins while the span is open** (BR-37). |
 | P-05 | **Every mutation returns the uniform envelope** `{ version, mutated, invariants_checked }` — no operation has an ad-hoc return shape. |
 | P-06 | **A saga emits exactly one envelope to the client** — never the partial state between its steps. |
 | P-07 | **Priority survives a round trip out of and back into Backlog** — move out, move back, the Eisenhower section is unchanged. |
 | P-08 | **At most one pending advisor card per target** at any time. |
-| P-09 | **Cascade never orphans** — after any delete with `cascade=true`, no task references a deleted board, no goal references a deleted idea, no routine references a deleted theme. |
+| P-09 | **Cascade never orphans** — after any delete with `cascade=true`, no task references a deleted board, no goal references a deleted idea, no routine references a deleted theme. A routine kept by declining the theme cascade holds **no** theme rather than a dangling one (BR-02). |
 | P-10 | **Declining a cascade never destroys** — the detach path leaves every downstream entity reachable (on the `untagged` board, or theme-less). |
 | P-11 | **Every committed mutation produces exactly one commit and exactly one op-log line.** |
 | P-12 | **The op-log and git agree** — for every op-log line, the recorded `version_after` resolves to a commit whose tree matches the line's mutated entities. |
@@ -214,7 +215,7 @@ they are where the real logic lives:
 
 The Intent document's §9 carries a single coherent dataset — themes, ideas with tags, goals with four
 typed progress measures and three dated check-ins, four routines with distinct recurrences, a full day of tasks
-across four columns and three sections, a day check-out, a goal check-out with mixed outcomes, and
+across four columns and three sections, a work check-out, a goal check-out with mixed outcomes, and
 three archived goals. It is **business-sourced rather than test-engineer-invented**, which is the
 whole point of ADR-040 §2's capture, but it is **candidate data**: the mockup's outputs are simulated
 and the seeded resource state behind an expected result is invisible in a walkthrough, so the
@@ -229,12 +230,104 @@ fixed and should be read as constraints on the anchor scheme:
 - **Tab-header button order, invariant across all five tabs:** `[ Show archived <type>… ]` ·
   view-mode controls (search, sort) · `[ ✦ Advisor ]` · `[ + … ]`. The advisor button is always
   immediately before the create button when both are present; the create button is always rightmost.
-- **Board strip naming:** `All`, `Routines`, `Untagged` are capitalized; tag boards are lowercase and Ideation's theme-less section is **Unthemed**, not “Untagged” (BR-03, QB-21).
+- **Board strip naming:** `All`, `Routines`, `Untagged` are capitalized; tag boards are lowercase and **Unthemed**, never “Untagged”, is what Ideation's theme-less section is called — ideas only, since a routine has no theme (BR-02, BR-03, QB-21).
   match the tag string exactly.
 - **Abbreviation rule:** `Imp. & Urgent`-style abbreviation is permitted **only** where horizontal
   width forces it (column headers, narrow chips) — never in body prose, button labels or design notes.
 
 ---
+
+## 4.7 Start-up preconditions (Intent BR-122)
+
+Intent says only that start-up satisfies its technical preconditions before touching the user's data
+and refuses to start when it cannot (BR-122), and `BP01`'s drawing carries one general check and one
+refusal. The list is here, because it is technical, and it is **owed to the use case**: at Design
+these become `BP01.01`'s preconditions, not business steps (SA 2026-10-11). The data folder is
+resolved and inspected **first**, because the last two rows are about the folder (SA 2026-10-11);
+then every row is checked, and a failed check writes nothing and refuses.
+
+| Precondition | Checked how | Why it is a gate |
+|---|---|---|
+| Git present | `git --version` resolves on the path | version control is a condition of the product, not a feature of it (BR-80) |
+| Git at the minimum version | that version is at or above the floor this Bearing needs | the commands start-up relies on differ across older gits; the floor itself is owed |
+| Committing identity set | `user.name` and `user.email` resolve, globally or in the repository | without an identity there is nothing to commit as |
+| No other Bearing running | a **process-level** single-instance check, never a lock file in the data folder | two Bearings committing to one repository corrupt it; a lock file in the folder would survive a crash and keep the product shut |
+| File-structure version matches | the version recorded in Bearing's metadata in the data folder equals the one this build speaks | the metadata version is the interface between product and folder; either direction of mismatch refuses, and the matching Bearing is what answers it |
+| Repository is in a workable state | nothing in progress (merge, rebase, bisect, a stale index lock), working tree clean, HEAD resolvable | Bearing commits every change; it will not commit onto an unfinished operation, over hand edits it did not make, or onto nothing |
+| The folder is Bearing's own | it is version-controlled, by **this** Bearing, and carries every required file | the three refused states of BR-80, and the only ones: **not version-controlled** — a folder with Bearing's shape but no repository; **version-controlled by something else** — an older Bearing's folder, or a repository that was never Bearing's; **incomplete** — a required file missing. Something is off in each, so none is repaired in place and the user moves the folder aside by hand (BR-80, BR-81) |
+
+**The file-structure version ships with the template files**, so a folder this product creates always
+matches the product that created it; the check bites on a folder written by another build.
+Migration between versions stays parked (Intent QB-30) — a mismatch refuses, it does not convert.
+
+**Everything else is best effort** (BR-122) — reported where it fails, never a gate on launching:
+free disk space, path-length and reserved-name limits, case-insensitive or normalizing volumes,
+file-watch capacity, a data folder inside a cloud-sync folder, system-clock plausibility, OS version,
+display size, and the advisor backend's reachability.
+
+**Custom clean/smudge filters and git-lfs are the user's responsibility** (SA 2026-10-11). Bearing
+does not verify them and makes a best effort: a filter that is asymmetric, or whose binary is absent,
+can hand back content Bearing did not write — a document that reverts after a relaunch, a tree that
+reports itself dirty right after a commit, or an lfs pointer stub where a document should be. The
+consequence surfaces where it happens; it is not a start-up gate.
+
+**Owed at this gate:** the git version floor; **which files are required**, file by file — *"which files are required I cannot specify right now"* (SA 2026-10-10), and the row above cannot be checked without it; how the product recognises a folder as its own (SA 2026-10-11 deferred it here from Intent); and the exact text of each refusal message.
+
+## 4.8 Setting up a new data folder (Intent BR-80)
+
+`BP01`'s drawing carries one box, *Set up data folder*. What that box does is four technical acts of
+one business act, and they are recorded here for the same reason §4.7's list is: they are **owed to
+the use case**, not to the business design (SA 2026-10-11).
+
+| Act | What it does | Why it is not a business step |
+|---|---|---|
+| Create the folder | at the conventional path, where nothing was (BR-80) | where the folder lives is OS convention, never a user choice — there is no picker and no alternative location (BR-81) |
+| Bring it under version control | initialize the repository in the new folder | version control is a condition of the product, not a feature of it (BR-79, BR-80) |
+| Install the template files | what ships with the build: the five life areas, the Chores board, the column templates and the file-structure version (§4.7) | *what* ships is business (BR-82, BR-83); copying it into place is not |
+| Commit them | one initial commit, under the identity §4.7 already required | a folder whose first state is uncommitted has nothing to commit onto, which is a precondition of every later write |
+
+**Resolving the path is this section's too.** `BP01`'s drawing carries one box, *Inspect the data
+folder*; where that folder is — the OS-conventional location per platform, with no picker and no
+alternative (BR-81, Acceptance `A-12`) — is resolved inside the use case and is not a business step
+(SA 2026-10-11).
+
+The order is fixed — the repository exists before anything is committed into it — and the folder is
+Bearing's own only once all four have succeeded. A set-up that fails partway therefore leaves a
+folder the **next** launch refuses, because it is not a repository Bearing recognises as its own
+(BR-80, `E-15`); the remedy is BR-81's, the user removing it outside Bearing. Nothing here is
+attempted in place on a folder that already exists.
+
+**Owed at this gate:** the template file set, file by file — the same list BR-80's usability check
+reads, and still unspecified (*"which files are required I cannot specify right now"*,
+SA 2026-10-10) — plus the initial commit's message and whether the new repository gets any
+configuration of its own.
+
+## 4.9 Mechanics the business drawings deliberately do not carry
+
+A sweep of all nineteen `.bpd` sources on one lens — *too much technical detail in a business
+process* — moved the mechanics below out of the drawings (SA 2026-10-11). Each row names what the
+drawing kept, so the business fact and its mechanism stay traceable to each other. These are **owed
+to the use case / Detail Design**, exactly as §4.7 and §4.8 are.
+
+| Subject | The mechanics, as the drawing used to carry it | What the drawing keeps |
+|---|---|---|
+| Inspecting the data folder | an unreachable symlink target counts as missing; the folder is resolved and inspected before the precondition check because some preconditions are about the folder | `Inspect the data folder` → `Check the start-up preconditions`, in that order (BR-80, BR-122, §4.7, §4.8) |
+| Ordering a hand-ordered collection | the order is stored **relatively**, never as an index; columns are stored in **left-to-right** order in the template | `Record the new order …` (BR-88, BR-119) |
+| Draft storage | a drafting chain's second step, *Hold the draft out of version control* | one step, `Keep what is typed as a draft`, in `BP19.01` — the one drafting chain in the product (SA 2026-10-11) |
+| Draft call shape | the draft write is one-way; nothing waits for it to be kept | `BP19`'s own note says it, once; the write that commits the input discards the draft, drawn in the committing process (BR-121) |
+| Draft granularity | a draft instance per keystroke batch | the field drafts as the user writes, and survives a crash and a restart (BR-121, `BP19`) |
+| Operation factoring | *"one request serves X and Y alike"*, drawn on thirteen notes | nothing: it is already in each source's `' Call-site collapsing` comment, and it is a Design binding (ADR-069) |
+| Theme-less grouping | a step of its own, *Group the theme-less ideas as Unthemed* | the read, with `BR-03` bound to it — ideas only, since a routine has no theme (BR-02) |
+| Chores membership | it is derived at read time and never stored; a derived member cannot be reconstructed for a past date | Chores is in play exactly while it carries a task that is not Done, and is absent from focus history (BR-107) |
+| Due and overdue | the paused routines are left out of the computation; the computation writes nothing | `Derive due and overdue from each active routine's schedule` (BR-91, BR-43) |
+| Disclosure flags | *Mark the goals as not declinable* / *Mark the routines and the ideas as declinable* | one step, `Report what the deletion will take, and what of it can be declined` (BR-21, BR-19) |
+| Reads composed of several gathers | a collect per project kind (BP17 ×2), a collect per edge traversed (BP07), an archive view's filter-and-sort step (BP15), an archived-project filter step (BP11), and a theme deletion's five-step gather (BP02, SA 2026-10-11: *"one box … is good enough on the deletion path"*) | one step per read, with the same rules bound |
+| Writes composed of several field writes | a replace per selection kind (BP08), an archive per board scope (BP13), a return per restored attribute (BP15) | one step per act |
+| Consistency checks | *Check that every member is still there* / *Check that the surroundings can still hold it* | `Judge whether the bundle can come back whole` (BR-25) |
+| Engineering vocabulary in a gateway | *"Would the insertion break the invariant?"*, *"Is the column one the invariant protects?"*, *"Is the change within the two limits?"* | the business condition: *"Would this add a second Backlog?"*, *"Is this the Backlog or the last Done?"*, *"May this column's role change?"* (BR-59, BR-60) |
+| Task completion | a stored completed flag on the task, flipped in both directions when a column's role crosses Done | nothing: a role change needs no warning, since the effect is easily reverted inside the product (BR-58, BR-60, SA 2026-10-11) — whether completion is stored at all is QC-09's |
+| Advisor write routing | *"there is no second write path"* | a proposal to create something carries everything that thing needs (BR-69, BR-74) |
+| Dependency typing | *"there is one dependency type, and it is technical"* | no start-to-start, no lag, no overlap, no edge to another project's activity (BR-99, BR-120) |
 
 ## 5. Failure contracts (ADR-033 failure contracts)
 
@@ -253,8 +346,11 @@ Every failure the sources specify, with its surface and its exact user-facing sh
 | E-09 | Advisor returned a proposal the product cannot act on — an unrecognized `type`, or a recognized one missing required fields | Advisor conversation | **One path for both** (Intent BR-75, SA 2026-10-05): the proposal is **not rendered as a card and not rendered as prose**; the user is told it could not be used. ⚠ This **replaces the sources' two-way split**, which rendered an unrecognized type's `prose` as a plain message and dropped only the schema-invalid case. That split rested on not breaking "older clients" — a rationale that does not apply to a single-user product whose advisor integration ships with it — and in practice gave a hallucinated type a route onto the screen looking like advice. |
 | E-11 | Column delete would orphan | Delete confirmation | Reject, surfaced as a **hard error with the cascade prompt highlighted**; the user either cascades or cancels. Backend: `TasksWouldOrphan(count)`. |
 | E-12 | Optimistic-UI mismatch | Anywhere | The UI **rewrites to the backend's state**, logs the details for debugging, and **reports a state-mismatch error to the user**. |
-| E-13 | Data folder missing or unreachable symlink | App launch, before any content | Create (or replace) the folder, `git init`, then the modal new-data-folder notification with `[ Quit ]` / `[ Continue ]`. No folder picker, no in-app restore. |
+| E-13 | Data folder missing or unreachable symlink | App launch | Create (or replace) the folder, `git init`, install the template files and commit them, load the folder, and land on Themes (BR-48, BR-82 — there is no onboarding). The new-data-folder report is a **transient notice** (BR-81, SA 2026-10-11) — no modal, no buttons, no Esc question, nothing waiting on it; it is not a failure the user has to answer. No folder picker, no in-app restore. ⚠ Its dwell time and whether it is dismissible follow the toast contract in §4.2. |
 | E-14 | Batch apply, mid-sequence failure | Advisor | **Abort on first failure** — the UI's loop breaks; later suggestions are not attempted. Policy lives in UX code, never in the backend. ⚠ `wf §7.5` also says *"the other cards still apply and the conflicting one stays pending"* — **contradiction, DV/spec ruling owed (QC-01).** |
+| E-15 | Data folder present but not Bearing's own — not version-controlled, or version-controlled by something else | App launch, before any content | **Bearing refuses to start** (BR-80, SA 2026-10-10): the folder is left untouched, the user is told which of the three it is and that the folder must be moved aside by hand, and the only action confirms the error — **Bearing closes itself on that confirmation** (SA 2026-10-10), it is not a `[ Quit ]` the user has to press. No `git init` in place, no folder picker, no adoption, no in-app repair. How the product recognises its own folder is §4.7's business. |
+| E-16 | A start-up precondition on the machine is unmet — git absent, git below the version floor, no committing identity, another Bearing already running (§4.7) | App launch, after the data folder is resolved and inspected — §4.7's one check point, which every precondition shares (SA 2026-10-11) | **Bearing refuses to start** (BR-122): nothing is read, created or written. The message names which precondition failed and what to do — install or upgrade git, set the identity, close the other Bearing — and confirming it closes the product (BR-81). |
+| E-17 | Bearing's own data folder is unusable — the file-structure version does not match this build, or the repository is mid-operation, dirty, or has no resolvable HEAD (§4.7) | App launch, after the folder is resolved | **Bearing refuses to start** (BR-122) and changes nothing in the folder. The message names which of the two it is: a version mismatch is answered by installing the matching Bearing, a repository state by finishing or undoing the operation with git. |
 
 ---
 
@@ -294,7 +390,7 @@ spec-ready artifact in the whole source set.
 | `modify_objective` | `objective` | `target_id` (the goal), `new_objective` | `Apply → Objective` |
 | `create_goal` | `goal` | `theme_id`, `objective`, `time_horizon`, `key_results[]`; optional `linked_idea_ids[]` | `Apply → New goal: <summary>` |
 | `create_task` | `task` | `tag`, `title`, `description?`, `eisenhower_quadrant` (one of the three valid sections) | `Apply → New task on #<tag>` |
-| `create_routine` | `routine` | `theme_id`, `name`, `recurrence` (`daily`/`weekly`/`monthly`/`yearly` — BR-94, no `custom`), `frequency`; optional `preferred_days[]` | `Apply → New routine "<name>"` |
+| `create_routine` | `routine` | `name`, `recurrence` (`daily`/`weekly`/`monthly`/`yearly` — BR-94, no `custom`), `frequency`; `preferred_days[]` — no `theme_id` (BR-02) | `Apply → New routine "<name>"` |
 | `modify_idea` | `idea` | `target_id` + at least one of `new_title`, `new_notes`, `new_theme_id`, `new_tag` | `Apply → Idea "<title>"` |
 | `link_idea_to_goal` | `goal` | `target_id` (the goal), `idea_id` | `Apply → Link #<tag> to <goal>` |
 | `move_task` | `task` | `target_id`, `new_column` (`backlog`/`to_do`/`in_progress`/`done`); `new_section` only when `new_column = backlog` | `Apply → Move "<title>" to <column>` |
@@ -345,10 +441,11 @@ the practical argument for not skipping them.
 | QC-01 | **Batch-apply failure policy contradicts itself** — `arch §5 Pivot 3` says *abort on first failure, later suggestions not attempted*; `wf §7.5` says *the other cards still apply and the conflicting one stays pending*. One of them is the contract. | E-14, the Apply-all spec, the advisor panel |
 | QC-02 | **Tag normalization has two definitions** — "non-alphanumeric **replaced by** `-`" (`funnel`) vs. "spaces replaced with hyphens, non-alphanumeric **stripped**" (`wf §3.2`). These produce different tags for the same input. | V-01, P-01, the reference model |
 | QC-03 | **What is the fault taxonomy of the git seam?** Dirty tree, detached head, no write permission, disk full, a lock held by an external `git` process. Which are answers, which are retried, which are bugs? | the `VersionedDocumentAccess` protocol sheet |
-| ~~QC-04~~ | ~~Is the op-log queryable, and at what cost?~~ **ANSWERED 2026-10-06 (QB-23): the question is moot** — the check-out lists read current board state, so nothing queries the journal and the Access needs no query surface. | Blueprint Q3 (dissolved) |
+| QC-04 | **Is the op-log queryable, and at what cost — or does a per-task movement field earn its place?** Reopened 2026-10-11: the check-out's two movement figures read the moves into Done and into InProgress inside its span (Intent BR-124, BR-125, BR-33), which is exactly the query the 2026-10-06 ruling said nothing needed. The 2026-10-06 answer — moot, because the lists read current board state — no longer holds. | the `VersionedDocumentAccess` / journal surface, UC4, Blueprint Q3 |
 | QC-05 | **What is the advisor's streaming contract?** The UI renders cards incrementally and enables each card's Apply as it completes. That is a wire-level requirement on `AdvisorClientAccess`. | the `AdvisorClientAccess` protocol sheet, DV-02 |
 | ~~QC-06~~ | ~~Is there a telemetry sink at all?~~ **ANSWERED 2026-10-06 (QB-07): a local log file** — no backend, no operator. The slot the deployment decisions owe is the log's path and rotation, not a sink. | E-09 |
 | QC-07 | **How is a `TaskCreationDraft`'s `{sessionId}` defined, given that drafts must survive app restarts?** | the registry, Blueprint F-10 |
+| QC-09 | **Is a task's completion stored, or read from the column its card sits in?** If it is derived, a column's role change unwinds nothing — the derivation simply reads differently — and nothing unwinds in the record either way — BR-60 carries no "retroactively unwinds completions" half, and the drawn note that claimed one is gone (2026-10-12). If it is stored, something has to flip it in both directions and stay correct against a task an earlier check-out already archived (BR-05, BR-34). *(SA 2026-10-11: "I am not even sure we have to store that flag within tasks, as it can be derived from the parent column.")* | the task DTO, the column-role operation, the check-out's completed list |
 | QC-08 | **Which shell technology?** See DV-06 — every shell-level statement in the sources is Go/Wails while the back end is stated as C#. | DV-06, the UI anchors, the window floor enforcement |
 
 ---

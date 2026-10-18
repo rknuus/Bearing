@@ -1,0 +1,161 @@
+@startbpmn BP01_StartBearing
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "01_detailed/BP01_StartBearing.bpmn"
+output L2 "02_detailed/BP01_StartBearing.bpmn"
+
+' Single source for BOTH detailed levels:
+'   bpmn-dsl build BP01_StartBearing.bpd --outputs
+'
+' Provenance (never in a drawn note, lint rule 5):
+'   - start-up checks its preconditions before anything of the user's is touched and refuses to
+'     start when one is unmet; WHICH preconditions those are is technical and belongs to the use
+'     case, never to this drawing: BR-122, SA 2026-10-10, generalized SA 2026-10-11
+'     ("listing technicalities in a business intent is not acceptable")
+'   - what is not a precondition is best effort, reported where it fails: BR-122, SA 2026-10-11
+'   - the three folder states: BR-80, ruled 2026-10-06 (QB-30), narrowed SA 2026-10-10. A folder
+'     that is unversioned, foreign or incomplete is an unmet PRECONDITION and is refused by the
+'     precondition gateway above, so the drawing needs no second refusal of its own and the chain
+'     never reaches the load: BR-80, BR-122, SA 2026-10-11 ("if we assume a data folder issue to be
+'     a failed precondition check ... Bearing can never write into the data folder")
+'   - refusing anything but a repository carrying every required file - unversioned, foreign and
+'     incomplete alike: BR-80, SA 2026-10-10; it supersedes `wf §7.2` state 4 (git init in place)
+'   - the usability check is the EXISTENCE of the required files, not a version marker; which files
+'     are required is not yet specified: BR-80, SA 2026-10-10
+'   - a created folder is version-controlled, gets the template files - which already carry the
+'     Chores board, so no step creates it - and is then loaded like any other: BR-80, SA 2026-10-10
+'   - HOW the folder is set up - creating it, bringing it under version control, installing the
+'     template files and committing them - is technical: the drawing carries one step and the
+'     four of them belong to the Detail Design, the way the precondition list does:
+'     SA 2026-10-11, Contract section 4.8
+'   - WHERE the folder is and how its path is resolved is technical too, so inspecting it is one
+'     step and the OS convention is the Contract's: SA 2026-10-11, Contract section 4.8
+'   - Bearing closes itself when the user confirms the start-up error; the user never quits it by
+'     hand, so the close is a call site of its own (BP01.09): SA 2026-10-10. The second requester
+'     this bullet used to name - Quit in the new-folder notice - is SUPERSEDED by the next bullet:
+'     there is no Quit, so there is one dead end and one call arrow
+'   - a gateway is answered by its own branches, so the one in the User pool asks what start-up
+'     answered, not whether it started: a launch either has usable data to work with or was
+'     refused. The question is repeated on the elseif because the compiler keeps only the `if`\'s
+'     and silently drops the rest - an authored question that reaches no drawing is a trap for the
+'     next author
+'   - the new-folder notice is a PASSING notice, not a dialog, and NOT A DRAWN BOX: it does not
+'     block the launch and nothing waits for it to be acknowledged, so noticing it is not something
+'     the user does - it is said quietly, in UX-16's register, and a launch that had to set the
+'     folder up is a launch with usable data like any other. A folder set up by accident is removed
+'     outside Bearing before a backup is restored, which is work outside the product: BR-81, UX-16,
+'     SA 2026-10-11 (it was a Quit/Continue decision until then), SA 2026-10-18 (BP14's own notice,
+'     and "'Read the item as it stands' is not a genuine activity")
+'   - the five life areas ship with the template files; nothing creates them at start-up: BR-82
+'   - there is NO onboarding wizard: the template files make the product usable on its own, so a
+'     first-time startup opens the Themes tab and every edit of a theme, a vision or a mission is
+'     BP02's business - which retires call sites BP01.02 through BP01.08: BR-48, BR-82,
+'     SA 2026-10-11 ("I don't think we need the wizard")
+'   - a launch lands on Focus; a first-time startup lands on Themes: BR-48, SA 2026-10-11
+'   - a FIRST-TIME startup is not a condition of its own: it IS the launch on which a data folder
+'     had to be set up, so the landing question is the folder answer read a second time and
+'     nothing is remembered or recorded to know it: BR-48, BR-80, SA 2026-10-11 ("a first time
+'     start can be derived from BP01: if a data folder had to be set up"). It is asked after the
+'     two folder paths converge because load and the current date are shared; asking it on each
+'     branch instead would duplicate that tail
+'   - no migration from v1; within-v2 migration is a later concern: QB-30
+'   - the Chores board is created at the first start-up and never archived or deleted: BR-102
+'   - the remembered interface state is restored on a launch onto usable data: BR-92
+'   - a drawn note says only what the boxes, the gateways and the bound rules do NOT already say:
+'     how many calls a launch is, which states collapse into one operation and what belongs to the
+'     use case rather than to this drawing are remarks about the MODEL and live here, SA 2026-10-11
+'   - start-up sets the day in play to the current date, from no day rather than a previous one: BR-44, SA 2026-10-10
+'   - LOADING IS THIS PROCESS'S, once, and no other drawing fetches. When data is read is a detail
+'     design decision, ruled to happen at start-up, so every view works from what is loaded here and
+'     an act asks the system only for what it computes over it. What the load covers is the record
+'     inventory's business and how it splits into operations is Design's: BR-128, DRW-14,
+'     SA 2026-10-17 ("when we will read data is not a business concern, but a detail design
+'     decision. And - being the architect - I rule that this will be done once at startup")
+'   - LOADING IS FOLLOWED BY DERIVING: what the surfaces show that nothing stores - counts, flags,
+'     orderings, what is due, what is ready - is calculated here, once, over what was loaded. The
+'     values and the rule behind each are the derived-data inventory's, not a drawing's; a step
+'     per count in thirteen processes was what made the page reads look like business acts:
+'     BR-118, BR-128, SA 2026-10-17
+'   - the system does not OPEN a tab: it says which one the UI is to show, the way the board strip
+'     names the board to open (BP11.01). Where the launch lands is the chain's answer, and the
+'     opening is the UI's: BR-48, SA 2026-10-17 ("The system does not open the Themes or the
+'     Focus tab. It specifies which tab the UI should display")
+' The speaking name is the REQUEST in the requester's words, never the system's internal work:
+' the compiler puts "<call-site id> · <speaking name>" on the request arrow and DISCARDS the
+' authored `send` label, so the arrow drawn in the User pool is the only place that name appears
+' to a stakeholder. "Resolve the data folder" is what the system does inside the block; what the
+' user asks for is to start up.
+'
+' The start event names the TRIGGER, not the first act: launching is the first act and the task
+' "Launch Bearing" is where it belongs. A start labelled "Bearing launched" restated it, in the past
+' tense, before it had happened.
+'
+' Scope (ruled 2026-10-09): this draws EVERY launch, because the usable-data state IS the ordinary
+' returning-user launch and §6 lists its interactions under this process. The Software Architect
+' widened the process to match what it draws - name "Start Bearing", trigger "App launch" - rather
+' than splitting that state into a process of its own. Intent §5 and §6 carry the widened name.
+
+' ===== The user: launches, and either works or puts right what was reported =====
+pool "User" {
+  start "Something to plan or do"
+  :Launch Bearing;
+  send "Start up" to bootIn
+  receive "Start-up outcome" as outcome
+
+  if "What did start-up answer?" then "usable data, set up on this launch or not"
+    goto inUse
+  elseif "What did start-up answer?" then "refused"
+    :Acknowledge what Bearing reported;
+    send "Close Bearing" to closeIn
+    :Put the reported thing right;
+    note "The work is outside Bearing: no folder picker, no in-app repair, no adoption of a folder Bearing does not recognise as its own."
+    end "Ready to relaunch"
+  endif
+
+  task "Work in Bearing" as inUse
+  end "Bearing in use"
+}
+
+' ===== The system: one chain per request, each a single synchronous call =====
+system pool "Bearing" {
+  messageStart "Start-up requested" as bootIn
+  call "BP01.01_StartUp" "Start up" {
+    :Inspect the data folder;
+    :Check the start-up preconditions;
+    if "Preconditions satisfied?" rule BR-122 then "satisfied"
+      if "Missing or unreachable?" rule BR-80 then "no data folder"
+        :Set up data folder;
+        rule BR-102
+        goto load
+      else "a folder Bearing can work with"
+        goto load
+      endif
+    else "not satisfied"
+      goto refuse
+    endif
+    task "Refuse to start on an unmet precondition" as refuse
+    goto report
+    task "Load the data" as load
+    :Calculate the derived data;
+    :Set current date to today;
+    rule BR-44
+    if "Was a data folder set up?" rule BR-48 then "yes - a first run"
+      :Define the Themes tab as starting tab;
+    else "no - a returning launch"
+      :Define the Focus tab as starting tab;
+    endif
+    task "Report the start-up outcome" as report
+    rule BR-81
+  }
+  send "Start-up outcome" to outcome
+  note "Every precondition is checked before anything of the user's is touched, so a launch that fails them leaves the folder exactly as it was. The template files carry the Chores board and the five life areas, so no step creates them. Today is put in play from no day, never from a previous one: a launch is not a rollover. Loading is the one fetch of stored state in the product: every view works from what is loaded here."
+  end "Start-up answered"
+
+  messageStart "Close requested" as closeIn
+  call "BP01.09_CloseBearing" "Close Bearing" {
+    :Shut the product down;
+  }
+  end "Bearing closed"
+}
+
+@endbpmn

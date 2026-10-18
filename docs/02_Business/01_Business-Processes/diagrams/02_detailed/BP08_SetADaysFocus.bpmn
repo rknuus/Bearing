@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP08_SetADaysFocus" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP08_SetADaysFocus">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP08.02 · Set the day's focus" sourceRef="T_5" targetRef="setIn" />
+    <bpmn:messageFlow id="MF_2" name="What was committed, or why not" sourceRef="BP08.02_SetTheDaysFocus" targetRef="focusSet" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>Zero to many per project. The ready ones are offered first; nothing forces one at a time. A simple project contributes its own board and has no activities to pick.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_3" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Chores is never picked. It joins the day on its own while it carries work that is not done.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="focusSet" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>A commit replaces the date's previous selection rather than adding to it, so the boards in play are exactly what was last committed. A routine that already owes a task gets no second one, on any date. Due and overdue are treated the same. Dropping a routine leaves a task already created where it is.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="BP08.02_SetTheDaysFocus" targetRef="TextAnnotation_X3" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A day to commit to">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Pick or drop the projects to work on">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_T_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_3" name="Pick or drop the activities inside each activity-based project">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_T_2_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_T_4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_4" name="Pick or drop the routines to keep up">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_T_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_T_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="Commit the day's focus">
+      <bpmn:incoming>SF_T_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_focusSet</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="focusSet" name="What was committed, or why not">
+      <bpmn:incoming>SF_T_5_focusSet</bpmn:incoming>
+      <bpmn:outgoing>SF_focusSet_End_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_focusSet" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_6" name="Day committed">
+      <bpmn:incoming>SF_focusSet_End_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_T_3" sourceRef="T_2" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_3_T_4" sourceRef="T_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_T_4_T_5" sourceRef="T_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_focusSet" sourceRef="T_5" targetRef="focusSet" />
+    <bpmn:sequenceFlow id="SF_focusSet_End_6" sourceRef="focusSet" targetRef="End_6" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="setIn" name="Day focus submitted">
+      <bpmn:outgoing>SF_setIn_BP08.02_SetTheDaysFocus</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_setIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP08.02_SetTheDaysFocus" name="Set the day's focus">
+      <bpmn:incoming>SF_setIn_BP08.02_SetTheDaysFocus</bpmn:incoming>
+      <bpmn:outgoing>SF_BP08.02_SetTheDaysFocus_End_10</bpmn:outgoing>
+      <bpmn:startEvent id="BP08.02_SetTheDaysFocus_s" name="Start">
+        <bpmn:outgoing>SF_BP08.02_SetTheDaysFocus_s_T_7</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_7" name="Replace the date's selection with what was committed">
+        <bpmn:incoming>SF_BP08.02_SetTheDaysFocus_s_T_7</bpmn:incoming>
+        <bpmn:outgoing>SF_T_7_T_8</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_8" name="Create the task a selected routine owes, where none is outstanding, on Chores">
+        <bpmn:incoming>SF_T_7_T_8</bpmn:incoming>
+        <bpmn:outgoing>SF_T_8_T_9</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_9" name="Report the outcome, with the day's focus">
+        <bpmn:incoming>SF_T_8_T_9</bpmn:incoming>
+        <bpmn:outgoing>SF_T_9_BP08.02_SetTheDaysFocus_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP08.02_SetTheDaysFocus_e" name="fertig">
+        <bpmn:incoming>SF_T_9_BP08.02_SetTheDaysFocus_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_7_T_8" sourceRef="T_7" targetRef="T_8" />
+      <bpmn:sequenceFlow id="SF_T_8_T_9" sourceRef="T_8" targetRef="T_9" />
+      <bpmn:sequenceFlow id="SF_BP08.02_SetTheDaysFocus_s_T_7" sourceRef="BP08.02_SetTheDaysFocus_s" targetRef="T_7" />
+      <bpmn:sequenceFlow id="SF_T_9_BP08.02_SetTheDaysFocus_e" sourceRef="T_9" targetRef="BP08.02_SetTheDaysFocus_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_10" name="Day focus answered">
+      <bpmn:incoming>SF_BP08.02_SetTheDaysFocus_End_10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_setIn_BP08.02_SetTheDaysFocus" sourceRef="setIn" targetRef="BP08.02_SetTheDaysFocus" />
+    <bpmn:sequenceFlow id="SF_BP08.02_SetTheDaysFocus_End_10" sourceRef="BP08.02_SetTheDaysFocus" targetRef="End_10" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP08_SetADaysFocus">
+    <bpmndi:BPMNPlane id="P_BP08_SetADaysFocus" bpmnElement="Collaboration_BP08_SetADaysFocus">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1240" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="380" width="1240" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="focusSet_di" bpmnElement="focusSet">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_6_di" bpmnElement="End_6">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="setIn_di" bpmnElement="setIn">
+        <dc:Bounds x="932" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.02_SetTheDaysFocus_di" bpmnElement="BP08.02_SetTheDaysFocus" isExpanded="false">
+        <dc:Bounds x="1050" y="455" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_10_di" bpmnElement="End_10">
+        <dc:Bounds x="1272" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_T_3_di" bpmnElement="SF_T_2_T_3">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_T_4_di" bpmnElement="SF_T_3_T_4">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_T_5_di" bpmnElement="SF_T_4_T_5">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_focusSet_di" bpmnElement="SF_T_5_focusSet">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_focusSet_End_6_di" bpmnElement="SF_focusSet_End_6">
+        <di:waypoint x="1138" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_setIn_BP08.02_SetTheDaysFocus_di" bpmnElement="SF_setIn_BP08.02_SetTheDaysFocus">
+        <di:waypoint x="968" y="500" />
+        <di:waypoint x="1050" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.02_SetTheDaysFocus_End_10_di" bpmnElement="SF_BP08.02_SetTheDaysFocus_End_10">
+        <di:waypoint x="1190" y="500" />
+        <di:waypoint x="1272" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="950" y="240" />
+        <di:waypoint x="950" y="482" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1120" y="455" />
+        <di:waypoint x="1120" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="490" y="49" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="610" y="160" /><di:waypoint x="610" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1000" y="87" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1120" y="182" /><di:waypoint x="1120" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1000" y="565" width="240" height="151" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1120" y="545" /><di:waypoint x="1120" y="565" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP08_SetADaysFocus_BP0802SetTheDaysFocus">
+    <bpmndi:BPMNPlane id="P_BP0802SetTheDaysFocus" bpmnElement="BP08.02_SetTheDaysFocus">
+      <bpmndi:BPMNShape id="BP08.02_SetTheDaysFocus_s_di" bpmnElement="BP08.02_SetTheDaysFocus_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP08.02_SetTheDaysFocus_e_di" bpmnElement="BP08.02_SetTheDaysFocus_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_7_T_8_di" bpmnElement="SF_T_7_T_8">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_T_9_di" bpmnElement="SF_T_8_T_9">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP08.02_SetTheDaysFocus_s_T_7_di" bpmnElement="SF_BP08.02_SetTheDaysFocus_s_T_7">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_BP08.02_SetTheDaysFocus_e_di" bpmnElement="SF_T_9_BP08.02_SetTheDaysFocus_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

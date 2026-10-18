@@ -1,0 +1,486 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1798" height="2873" viewBox="0 0 1798 2873">
+<rect width="1798" height="2873" fill="#fff"/>
+<rect x="24" y="457" width="1750" height="1340" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="457" x2="54" y2="1797" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1131.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1127)">User</text>
+<rect x="24" y="1837" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1837" x2="54" y2="2577" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="2211.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 2207)">Bearing</text>
+<polyline points="152,577 254,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 577 L 246 580.36 L 246 573.64 Z" fill="#000"/>
+<polyline points="354,577 449,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 577 L 441 580.36 L 441 573.64 Z" fill="#000"/>
+<polyline points="694,577 796,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 577 L 788 580.36 L 788 573.64 Z" fill="#000"/>
+<polyline points="832,577 959,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 577 L 951 580.36 L 951 573.64 Z" fill="#000"/>
+<polyline points="1374,577 1476,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 577 L 1468 580.36 L 1468 573.64 Z" fill="#000"/>
+<polyline points="1512,577 1646,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 577 L 1638 580.36 L 1638 573.64 Z" fill="#000"/>
+<polyline points="1179,577 1274,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 577 L 1266 580.36 L 1266 573.64 Z" fill="#000"/>
+<polyline points="1179,577 1209,577 1209,697 1306,697" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 697 L 1298 700.36 L 1298 693.64 Z" fill="#000"/>
+<polyline points="1009,577 1129,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1129 577 L 1121 580.36 L 1121 573.64 Z" fill="#000"/>
+<polyline points="1009,577 1039,577 1039,697 1136,697" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 697 L 1128 700.36 L 1128 693.64 Z" fill="#000"/>
+<polyline points="499,577 594,577" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 577 L 586 580.36 L 586 573.64 Z" fill="#000"/>
+<polyline points="694,697 796,697" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 697 L 788 700.36 L 788 693.64 Z" fill="#000"/>
+<polyline points="832,697 966,697" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 697 L 958 700.36 L 958 693.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,697 594,697" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 697 L 586 700.36 L 586 693.64 Z" fill="#000"/>
+<polyline points="694,817 764,817" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 817 L 756 820.36 L 756 813.64 Z" fill="#000"/>
+<polyline points="864,817 966,817" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 817 L 958 820.36 L 958 813.64 Z" fill="#000"/>
+<polyline points="1002,817 1136,817" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 817 L 1128 820.36 L 1128 813.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,817 594,817" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 817 L 586 820.36 L 586 813.64 Z" fill="#000"/>
+<polyline points="694,937 796,937" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 937 L 788 940.36 L 788 933.64 Z" fill="#000"/>
+<polyline points="832,937 966,937" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 937 L 958 940.36 L 958 933.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,937 594,937" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 937 L 586 940.36 L 586 933.64 Z" fill="#000"/>
+<polyline points="694,1057 796,1057" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1057 L 788 1060.36 L 788 1053.64 Z" fill="#000"/>
+<polyline points="832,1057 966,1057" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1057 L 958 1060.36 L 958 1053.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,1057 594,1057" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1057 L 586 1060.36 L 586 1053.64 Z" fill="#000"/>
+<polyline points="694,1177 796,1177" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1177 L 788 1180.36 L 788 1173.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,1177 594,1177" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1177 L 586 1180.36 L 586 1173.64 Z" fill="#000"/>
+<polyline points="694,1297 764,1297" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1297 L 756 1300.36 L 756 1293.64 Z" fill="#000"/>
+<polyline points="864,1297 966,1297" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1297 L 958 1300.36 L 958 1293.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,1297 594,1297" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1297 L 586 1300.36 L 586 1293.64 Z" fill="#000"/>
+<polyline points="694,1417 796,1417" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1417 L 788 1420.36 L 788 1413.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,1417 594,1417" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1417 L 586 1420.36 L 586 1413.64 Z" fill="#000"/>
+<polyline points="694,1537 796,1537" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1537 L 788 1540.36 L 788 1533.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,1537 594,1537" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1537 L 586 1540.36 L 586 1533.64 Z" fill="#000"/>
+<polyline points="694,1657 796,1657" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1657 L 788 1660.36 L 788 1653.64 Z" fill="#000"/>
+<polyline points="499,577 529,577 529,1657 594,1657" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1657 L 586 1660.36 L 586 1653.64 Z" fill="#000"/>
+<polyline points="662,1957 744,1957" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1957 L 736 1960.36 L 736 1953.64 Z" fill="#000"/>
+<polyline points="884,1957 966,1957" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1957 L 958 1960.36 L 958 1953.64 Z" fill="#000"/>
+<polyline points="662,2077 744,2077" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 2077 L 736 2080.36 L 736 2073.64 Z" fill="#000"/>
+<polyline points="884,2077 966,2077" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 2077 L 958 2080.36 L 958 2073.64 Z" fill="#000"/>
+<polyline points="832,2197 914,2197" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 2197 L 906 2200.36 L 906 2193.64 Z" fill="#000"/>
+<polyline points="1054,2197 1136,2197" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 2197 L 1128 2200.36 L 1128 2193.64 Z" fill="#000"/>
+<polyline points="662,2197 692,2197 692,2317 744,2317" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 2317 L 736 2320.36 L 736 2313.64 Z" fill="#000"/>
+<polyline points="884,2317 966,2317" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 2317 L 958 2320.36 L 958 2313.64 Z" fill="#000"/>
+<polyline points="662,2317 692,2317 692,2437 744,2437" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 2437 L 736 2440.36 L 736 2433.64 Z" fill="#000"/>
+<polyline points="884,2437 966,2437" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 2437 L 958 2440.36 L 958 2433.64 Z" fill="#000"/>
+<polyline points="1342,1957 1424,1957" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 1957 L 1416 1960.36 L 1416 1953.64 Z" fill="#000"/>
+<polyline points="1564,1957 1646,1957" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1957 L 1638 1960.36 L 1638 1953.64 Z" fill="#000"/>
+<polyline points="634,617 634,629 719,629 719,1927 634,1927 634,1939" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 637.78 1930 L 634 1939 L 630.22 1930" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="634" cy="617" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1324,617 1324,629 1409,629 1409,1927 1324,1927 1324,1939" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1327.78 1930 L 1324 1939 L 1320.22 1930" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="617" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="639,737 639,749 724,749 724,2047 639,2047 639,2059" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 642.78 2050 L 639 2059 L 635.22 2050" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="639" cy="737" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,857 814,869 899,869 899,2167 814,2167 814,2179" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 817.78 2170 L 814 2179 L 810.22 2170" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="857" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="649,977 649,989 734,989 734,2167 649,2167 649,2179" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 652.78 2170 L 649 2179 L 645.22 2170" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="649" cy="977" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="654,1097 654,1109 739,1109 739,2287 654,2287 654,2299" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 657.78 2290 L 654 2299 L 650.22 2290" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="654" cy="1097" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="804,1912 804,1900 889,1900 889,607 804,607 804,595" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 800.22 604 L 804 595 L 807.78 604" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="1912" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="804,2032 804,2020 889,2020 889,727 804,727 804,715" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 800.22 724 L 804 715 L 807.78 724" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="2032" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,2152 1069,2152 1069,847 984,847 984,835" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 844 L 984 835 L 987.78 844" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="2152" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,2272 909,2272 909,967 824,967 824,955" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 820.22 964 L 824 955 L 827.78 964" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="2272" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,2392 824,2380 909,2380 909,1087 824,1087 824,1075" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 820.22 1084 L 824 1075 L 827.78 1084" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="2392" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,1912 1494,595" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1490.22 604 L 1494 595 L 1497.78 604" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="1912" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,1377 644,1367 584,1367 584,525" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,1497 644,1487 514,1487 514,399 524,399" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,1617 644,1607 514,1607 514,311 524,311" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,919 814,887 514,887 514,231 694,231" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1039 814,1007 514,1007 514,158 694,158" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1257 814,1247 514,1247 514,70 694,70" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,799 984,789 956,789 956,540" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,559 1494,525" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,2002 814,2012 734,2012 734,2494" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,2362 814,2372 684,2372 684,2613 694,2613" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,2482 684,2482 684,2693 694,2693" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,2242 984,2252 963,2252 963,2728" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,2002 1494,2022" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="577" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="609" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Work to get done</text>
+<rect x="254" y="537" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="579.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the board</text>
+<path d="M 474 552 L 499 577 L 474 602 L 449 577 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 566.5 L 484.5 587.5 M 463.5 587.5 L 484.5 566.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="616" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="537" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="567.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Move a task to</text>
+<text x="644" y="579.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">another column or</text>
+<text x="644" y="591.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">triage section</text>
+<circle cx="814" cy="577" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="577" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="571.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 571.06 L 814 577 L 823 571.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="609" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The move's outcome</text>
+<path d="M 984 552 L 1009 577 L 984 602 L 959 577 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 566.5 L 994.5 587.5 M 973.5 587.5 L 994.5 566.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="616" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Did the move close</text>
+<text x="942" y="626.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">an activity's last</text>
+<text x="942" y="637.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">task?</text>
+<path d="M 1154 552 L 1179 577 L 1154 602 L 1129 577 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1143.5 566.5 L 1164.5 587.5 M 1143.5 587.5 L 1164.5 566.5" stroke="#000" stroke-width="1"/>
+<text x="1112" y="616" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Mark the activity</text>
+<text x="1112" y="626.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Done?</text>
+<rect x="1274" y="537" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="561.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the closing,</text>
+<text x="1324" y="573.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">saying what</text>
+<text x="1324" y="585.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">becomes of the</text>
+<text x="1324" y="597.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">tasks still open</text>
+<circle cx="1494" cy="577" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="577" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="571.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 571.06 L 1494 577 L 1503 571.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="609" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The state-change</text>
+<text x="1452" y="619.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1664" cy="577" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="609" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity closed</text>
+<circle cx="1324" cy="697" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="729" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity left in</text>
+<text x="1282" y="739.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">progress</text>
+<circle cx="1154" cy="697" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="729" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Work moved on</text>
+<rect x="594" y="657" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="693.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a task (within</text>
+<text x="644" y="705.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">column/section)</text>
+<circle cx="814" cy="697" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="697" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="691.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 691.06 L 814 697 L 823 691.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="729" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The ordering</text>
+<text x="772" y="739.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="697" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="729" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Tasks ordered</text>
+<rect x="594" y="777" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="819.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Amend the task</text>
+<rect x="764" y="777" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="819.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the task</text>
+<circle cx="984" cy="817" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="817" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="811.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 811.06 L 984 817 L 993 811.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="849" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1154" cy="817" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="849" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task recorded</text>
+<rect x="594" y="897" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="939.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive the task</text>
+<circle cx="814" cy="937" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="937" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="931.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 931.06 L 814 937 L 823 931.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="969" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The archiving</text>
+<text x="772" y="979.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="937" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="969" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task filed away</text>
+<rect x="594" y="1017" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1059.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a task</text>
+<circle cx="814" cy="1057" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="1057" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="1051.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 1051.06 L 814 1057 L 823 1051.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="1089" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The deletion</text>
+<text x="772" y="1099.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="1057" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1089" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task deleted</text>
+<rect x="594" y="1137" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1179.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select a board</text>
+<circle cx="814" cy="1177" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1209" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Another board</text>
+<text x="772" y="1219.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">opened</text>
+<rect x="594" y="1257" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1293.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open task capture</text>
+<text x="644" y="1305.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">(BP10)</text>
+<rect x="764" y="1257" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1293.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work on</text>
+<text x="814" y="1305.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">uncommitted tasks</text>
+<circle cx="984" cy="1297" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1329" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Capture opened</text>
+<rect x="594" y="1377" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1413.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Adjust the column</text>
+<text x="644" y="1425.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">template (BP12)</text>
+<circle cx="814" cy="1417" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1449" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column settings</text>
+<text x="772" y="1459.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">opened</text>
+<rect x="594" y="1497" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1533.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Check the work out</text>
+<text x="644" y="1545.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">(BP13)</text>
+<circle cx="814" cy="1537" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1569" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-out started</text>
+<rect x="594" y="1617" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1653.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open the archived</text>
+<text x="644" y="1665.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">tasks (BP15)</text>
+<circle cx="814" cy="1657" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1689" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archive opened</text>
+<circle cx="644" cy="1957" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1951.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1951.06 L 644 1957 L 653 1951.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1989" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Move requested</text>
+<a href="../02_System-Interactions/BP11.03_MoveTask.md" target="_blank">
+<title>BP11.03_MoveTask — open the System-Interaction document</title>
+<rect x="744" y="1912" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1919 H 873.8 L 876.8 1922 V 1929 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1919 V 1922 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1925.4" x2="875.24" y2="1925.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1927.6" x2="875.24" y2="1927.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1983" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1984.8 V 1991.2 M 810.8 1988 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1959.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Move a task</text>
+</a>
+<circle cx="984" cy="1957" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1989" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Move answered</text>
+<circle cx="644" cy="2077" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="2071.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 2071.06 L 644 2077 L 653 2071.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="2109" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Order submitted</text>
+<a href="../02_System-Interactions/BP11.05_RankTask.md" target="_blank">
+<title>BP11.05_RankTask — open the System-Interaction document</title>
+<rect x="744" y="2032" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 2039 H 873.8 L 876.8 2042 V 2049 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 2039 V 2042 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="2045.4" x2="875.24" y2="2045.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="2047.6" x2="875.24" y2="2047.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="2103" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 2104.8 V 2111.2 M 810.8 2108 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="2079.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a task</text>
+</a>
+<circle cx="984" cy="2077" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="2109" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Order answered</text>
+<circle cx="814" cy="2197" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="2191.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 2191.06 L 814 2197 L 823 2191.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="2229" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task submitted</text>
+<a href="../02_System-Interactions/BP11.06_AmendTask.md" target="_blank">
+<title>BP11.06_AmendTask — open the System-Interaction document</title>
+<rect x="914" y="2152" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 2159 H 1043.8 L 1046.8 2162 V 2169 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 2159 V 2162 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="2165.4" x2="1045.24" y2="2165.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="2167.6" x2="1045.24" y2="2167.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="2223" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 2224.8 V 2231.2 M 980.8 2228 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="2199.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Edit a task</text>
+</a>
+<circle cx="1154" cy="2197" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="2229" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task answered</text>
+<circle cx="644" cy="2197" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="2191.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 2191.06 L 644 2197 L 653 2191.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="2229" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task archiving</text>
+<text x="602" y="2239.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP11.07_ArchiveTask.md" target="_blank">
+<title>BP11.07_ArchiveTask — open the System-Interaction document</title>
+<rect x="744" y="2272" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 2279 H 873.8 L 876.8 2282 V 2289 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 2279 V 2282 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="2285.4" x2="875.24" y2="2285.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="2287.6" x2="875.24" y2="2287.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="2343" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 2344.8 V 2351.2 M 810.8 2348 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="2319.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive a task</text>
+</a>
+<circle cx="984" cy="2317" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="2349" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task archiving</text>
+<text x="942" y="2359.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="2317" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="2311.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 2311.06 L 644 2317 L 653 2311.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="2349" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task deletion</text>
+<text x="602" y="2359.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP11.08_DeleteTask.md" target="_blank">
+<title>BP11.08_DeleteTask — open the System-Interaction document</title>
+<rect x="744" y="2392" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 2399 H 873.8 L 876.8 2402 V 2409 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 2399 V 2402 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="2405.4" x2="875.24" y2="2405.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="2407.6" x2="875.24" y2="2407.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="2463" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 2464.8 V 2471.2 M 810.8 2468 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="2439.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a task</text>
+</a>
+<circle cx="984" cy="2437" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="2469" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Task deletion</text>
+<text x="942" y="2479.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1324" cy="1957" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1951.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1951.06 L 1324 1957 L 1333 1951.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1989" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity state</text>
+<text x="1282" y="1999.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<a href="../02_System-Interactions/BP11.09_SetTheActivityDone.md" target="_blank">
+<title>BP11.09_SetTheActivityDone — open the System-Interaction document</title>
+<rect x="1424" y="1912" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 1919 H 1553.8 L 1556.8 1922 V 1929 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 1919 V 1922 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="1925.4" x2="1555.24" y2="1925.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="1927.6" x2="1555.24" y2="1927.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="1983" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 1984.8 V 1991.2 M 1490.8 1988 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1959.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Set the activity Done</text>
+</a>
+<circle cx="1664" cy="1957" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1989" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity state</text>
+<text x="1622" y="1999.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<path d="M 530 449 H 524 V 525 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="461" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The lanes come from a template that governs every</text>
+<text x="533" y="471.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">board of the project, and changing them is its own</text>
+<text x="533" y="482.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">process (BP12).</text>
+<path d="M 530 361 H 524 V 437 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="373" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Settling everything since the last check-out is its own</text>
+<text x="533" y="383.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">process (BP13), and it archives what that span</text>
+<text x="533" y="394.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">completed.</text>
+<path d="M 530 273 H 524 V 349 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="285" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The archive is reached by an explicit act. Reading it,</text>
+<text x="533" y="295.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">bringing one back and destroying one out of it are its</text>
+<text x="533" y="306.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">own process (BP15).</text>
+<path d="M 700 200 H 694 V 261 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="212" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Archiving is a conscious gesture. A task sitting in Done</text>
+<text x="703" y="222.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">does not archive itself.</text>
+<path d="M 700 127 H 694 V 188 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="139" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A task owns nothing, so there is nothing to disclose and</text>
+<text x="703" y="149.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">no cascade to approve.</text>
+<path d="M 700 24 H 694 V 115 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Capturing a batch of tasks, tidying it and committing it is</text>
+<text x="703" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">its own process (BP10), and nothing it stages takes</text>
+<text x="703" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">effect until it is committed.</text>
+<path d="M 870 374 H 864 V 540 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="386" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">What the task says and its priority are fields of the one</text>
+<text x="873" y="396.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">editor; the board is not, a task staying on the board it</text>
+<text x="873" y="407.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">was created on for its whole life. Priority changes only</text>
+<text x="873" y="417.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">while the task is in the Backlog, so work in motion is sent</text>
+<text x="873" y="428.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">back there first, which re-opens its triage - by this editor</text>
+<text x="873" y="439.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">or by dragging it between the sections.</text>
+<path d="M 1380 389 H 1374 V 525 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="401" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Where tasks on the board are still open, they are</text>
+<text x="1383" y="411.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">disclosed with the offer and the answer travels with the</text>
+<text x="1383" y="422.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">closing: close them with the activity, set them aside, or</text>
+<text x="1383" y="432.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">leave them open. Where nothing is open there is nothing</text>
+<text x="1383" y="443.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">to disclose and nothing to answer.</text>
+<path d="M 700 2494 H 694 V 2555 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="2506" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A task never moves to another board. Returning it to the</text>
+<text x="703" y="2516.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Backlog re-opens its triage.</text>
+<path d="M 700 2567 H 694 V 2658 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="2579" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">This is one of the acts that archive a task, and the one</text>
+<text x="703" y="2589.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">that takes a single card. A routine's task archives by the</text>
+<text x="703" y="2600.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">same acts as any other.</text>
+<path d="M 700 2670 H 694 V 2716 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="2682" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A task owns nothing, so nothing goes with it.</text>
+<path d="M 870 2728 H 864 V 2849 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="2740" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The board and the column are untouched by an edit.</text>
+<text x="873" y="2750.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Triage happens at intake, so the priority is changeable</text>
+<text x="873" y="2761.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">only in the Backlog; the three are Important and Urgent,</text>
+<text x="873" y="2771.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Not Important and Urgent, and Important and Not</text>
+<text x="873" y="2782.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Urgent.</text>
+<path d="M 1380 2022 H 1374 V 2113 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="2034" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The Course page owns an activity's state (BP18); this is</text>
+<text x="1383" y="2044.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the completion offer answered from the board. A Done</text>
+<text x="1383" y="2055.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">activity can be reopened there.</text>
+<rect x="1181" y="578" width="15.23" height="11.5" fill="#fff"/>
+<text x="1182" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="1211" y="578" width="11.45" height="11.5" fill="#fff"/>
+<text x="1212" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="1011" y="578" width="15.23" height="11.5" fill="#fff"/>
+<text x="1012" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="1041" y="578" width="11.45" height="11.5" fill="#fff"/>
+<text x="1042" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="501" y="578" width="66.24" height="11.5" fill="#fff"/>
+<text x="502" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">move work along</text>
+<rect x="531" y="578" width="79.47" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">order what is waiting</text>
+<rect x="531" y="578" width="128.6" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">fix what a task says, or re-triage it</text>
+<rect x="531" y="578" width="51.61" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">file one away</text>
+<rect x="531" y="578" width="61.53" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">throw one away</text>
+<rect x="531" y="578" width="87.52" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">move to another board</text>
+<rect x="531" y="578" width="84.65" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">write more work down</text>
+<rect x="531" y="578" width="66.74" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">change the lanes</text>
+<rect x="531" y="578" width="72.4" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">settle what is done</text>
+<rect x="531" y="578" width="96.49" height="11.5" fill="#fff"/>
+<text x="532" y="587.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">look at the archived ones</text>
+<rect x="721" y="630" width="47.82" height="20.73" fill="#fff"/>
+<text x="722" y="638.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP11.03</text>
+<text x="722" y="648.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Move a task</text>
+<rect x="1411" y="630" width="79.95" height="20.73" fill="#fff"/>
+<text x="1412" y="638.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP11.09</text>
+<text x="1412" y="648.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Set the activity Done</text>
+<rect x="726" y="750" width="48.77" height="20.73" fill="#fff"/>
+<text x="727" y="758.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP11.05</text>
+<text x="727" y="768.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Order a task</text>
+<rect x="901" y="870" width="41.69" height="20.73" fill="#fff"/>
+<text x="902" y="878.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP11.06</text>
+<text x="902" y="888.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Edit a task</text>
+<rect x="736" y="990" width="55.38" height="20.73" fill="#fff"/>
+<text x="737" y="998.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP11.07</text>
+<text x="737" y="1008.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Archive a task</text>
+<rect x="741" y="1110" width="51.61" height="20.73" fill="#fff"/>
+<text x="742" y="1118.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP11.08</text>
+<text x="742" y="1128.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete a task</text>
+<rect x="891" y="1901" width="80.63" height="11.5" fill="#fff"/>
+<text x="892" y="1910.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The move's outcome</text>
+<rect x="891" y="2021" width="85.15" height="11.5" fill="#fff"/>
+<text x="892" y="2030.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The ordering outcome</text>
+<rect x="1071" y="848" width="79.01" height="11.5" fill="#fff"/>
+<text x="1072" y="857.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+<rect x="911" y="968" width="87.98" height="11.5" fill="#fff"/>
+<text x="912" y="977.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The archiving outcome</text>
+<rect x="911" y="2381" width="83.74" height="11.5" fill="#fff"/>
+<text x="912" y="2390.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The deletion outcome</text>
+<rect x="1496" y="1913" width="103.11" height="11.5" fill="#fff"/>
+<text x="1497" y="1922.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The state-change outcome</text>
+</svg>

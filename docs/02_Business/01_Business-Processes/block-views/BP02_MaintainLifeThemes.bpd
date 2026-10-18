@@ -1,0 +1,32 @@
+@startbpmn BP02_MaintainLifeThemes_Blocks
+lang en
+
+output L1 "BP02_MaintainLifeThemes.bpmn"
+
+' The BLOCK VIEW of BP02: the work loop with one box per building block instance, no internals.
+' Hand-authored from the one tagged source in ../diagrams/, and re-read whenever it changes.
+
+pool "User" {
+  start "A theme needs attention"
+  :BB01 OpenView · the Themes view, with its goals counted;
+  task "Work a theme" as hub
+  rule BR-118
+  if "What needs doing?" then "add or change a theme"
+    :BB03 EditContent · the theme;
+    goto hub
+  elseif "What needs doing?" then "reorder them"
+    :BB05 EditState · the order of the themes;
+    goto hub
+  elseif "What needs doing?" then "retire one for good"
+    :BB10 DeleteCascadedItem · the theme, with its goals and its ideas;
+    goto hub
+  elseif "What needs doing?" then "state who I want to become, and what I am here for"
+    :BB03 EditContent · the vision and the mission;
+    goto hub
+  else "nothing more"
+    goto done
+  endif
+  end "Everything done" as done
+}
+
+@endbpmn

@@ -1,0 +1,29 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB06_ArchiveLeafItem
+lang en
+
+output L1 "BB06_ArchiveLeafItem.bpmn"
+
+' Archiving what reaches nothing beyond what goes with it unasked: no disclosure, no approval, and
+' no confirmation either, archiving being reversible.
+
+pool "User" {
+  :Archive the <entity>;
+  send "Archive a <entity>" to archiveIn
+  receive "The archiving outcome" as archived
+  end "Back on the surface"
+}
+
+system pool "Bearing" {
+  messageStart "Archiving requested" as archiveIn
+  ' lint-ok: BB06.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB06.01_ArchiveTheEntity" "Archive a <entity>" {
+    :Archive the <entity>;
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  note "What the <entity> owns goes with it unasked and comes back with it. Nothing else is reached, so there is nothing to disclose and nothing to approve."
+  end "Archiving answered"
+}
+
+@endbpmn

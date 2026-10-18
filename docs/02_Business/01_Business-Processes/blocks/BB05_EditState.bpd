@@ -1,0 +1,37 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB05_EditState
+lang en
+
+output L1 "BB05_EditState.bpmn"
+
+' One gesture that carries its own value: a flag, a position, a placement. A member words the
+' gesture in its own verb - pause or resume, order, rank, drag - and the placeholders hold the slot.
+' Nothing is composed, so nothing drafts - and the write is attempted rather than assumed: the
+' answer carries the outcome, which is what lets a client compare what happened against what it
+' predicted and catch a defect instead of drifting out of sync. The chain is EditContent's chain
+' with another verb in the box.
+
+pool "User" {
+  :Set the <entity>'s <state>;
+  send "Set a <entity>'s <state>" to stateIn
+  receive "The <state> outcome" as outcome
+  end "Back on the surface"
+}
+
+system pool "Bearing" {
+  messageStart "<State> submitted" as stateIn
+  ' lint-ok: BB05.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB05.01_SetTheState" "Set a <entity>'s <state>" {
+    if "Does a rule refuse the change?" rule BR-128 then "yes"
+      :Refuse the change and say why;
+    else "no"
+      :Apply the change;
+    endif
+    :Report the outcome;
+  }
+  send "The <state> outcome" to outcome
+  note "A state is its own act where it has an owner or a consequence beyond the record; otherwise it is a field of the editor. Where the answer also raises a further act - a move that put an activity's last task into Done - that is the member's own business."
+  end "<State> answered"
+}
+
+@endbpmn

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP03_MaintainRoutines_Blocks" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP03_MaintainRoutines_Blocks">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A routine needs attention">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="BB01 OpenView · the Routines view, with what is due calculated">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_hub</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="hub" name="Work a routine">
+      <bpmn:incoming>SF_T_2_hub</bpmn:incoming>
+      <bpmn:incoming>SF_T_4_hub</bpmn:incoming>
+      <bpmn:incoming>SF_T_5_hub</bpmn:incoming>
+      <bpmn:incoming>SF_T_6_hub</bpmn:incoming>
+      <bpmn:incoming>SF_T_7_hub</bpmn:incoming>
+      <bpmn:outgoing>SF_hub_Gw_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_3" name="What needs doing?">
+      <bpmn:incoming>SF_hub_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_5</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_6</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_done</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="BB03 EditContent · the routine, its schedule among the fields">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_hub</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="BB05 EditState · the routine paused or resumed">
+      <bpmn:incoming>SF_Gw_3_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_hub</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_6" name="BB05 EditState · the order of the routines">
+      <bpmn:incoming>SF_Gw_3_T_6</bpmn:incoming>
+      <bpmn:outgoing>SF_T_6_hub</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_7" name="BB10 DeleteCascadedItem · the routine, with the task occurrences it has produced">
+      <bpmn:incoming>SF_Gw_3_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_hub</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="done" name="Everything done">
+      <bpmn:incoming>SF_Gw_3_done</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_hub" sourceRef="T_2" targetRef="hub" />
+    <bpmn:sequenceFlow id="SF_hub_Gw_3" sourceRef="hub" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="add or change a routine" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_5" name="put one on hold, or take it off hold" sourceRef="Gw_3" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_6" name="reorder them" sourceRef="Gw_3" targetRef="T_6" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_7" name="retire one for good" sourceRef="Gw_3" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_4_hub" sourceRef="T_4" targetRef="hub" />
+    <bpmn:sequenceFlow id="SF_T_5_hub" sourceRef="T_5" targetRef="hub" />
+    <bpmn:sequenceFlow id="SF_T_6_hub" sourceRef="T_6" targetRef="hub" />
+    <bpmn:sequenceFlow id="SF_T_7_hub" sourceRef="T_7" targetRef="hub" />
+    <bpmn:sequenceFlow id="SF_Gw_3_done" name="nothing more" sourceRef="Gw_3" targetRef="done" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines_Blocks">
+    <bpmndi:BPMNPlane id="P_BP03_MaintainRoutines_Blocks" bpmnElement="Collaboration_BP03_MaintainRoutines_Blocks">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="900" height="740" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="hub_di" bpmnElement="hub">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="755" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="900" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_6_di" bpmnElement="T_6">
+        <dc:Bounds x="900" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="900" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="done_di" bpmnElement="done">
+        <dc:Bounds x="932" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_hub_di" bpmnElement="SF_T_2_hub">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_hub_Gw_3_di" bpmnElement="SF_hub_Gw_3">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="755" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_5_di" bpmnElement="SF_Gw_3_T_5">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="320" />
+        <di:waypoint x="900" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_6_di" bpmnElement="SF_Gw_3_T_6">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="440" />
+        <di:waypoint x="900" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_7_di" bpmnElement="SF_Gw_3_T_7">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="560" />
+        <di:waypoint x="900" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_hub_di" bpmnElement="SF_T_4_hub">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1035" y="200" />
+        <di:waypoint x="1035" y="140" />
+        <di:waypoint x="610" y="140" />
+        <di:waypoint x="610" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_hub_di" bpmnElement="SF_T_5_hub">
+        <di:waypoint x="1000" y="320" />
+        <di:waypoint x="525" y="320" />
+        <di:waypoint x="525" y="140" />
+        <di:waypoint x="610" y="140" />
+        <di:waypoint x="610" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_6_hub_di" bpmnElement="SF_T_6_hub">
+        <di:waypoint x="1000" y="440" />
+        <di:waypoint x="1035" y="440" />
+        <di:waypoint x="1035" y="273" />
+        <di:waypoint x="610" y="273" />
+        <di:waypoint x="610" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_hub_di" bpmnElement="SF_T_7_hub">
+        <di:waypoint x="1000" y="560" />
+        <di:waypoint x="1035" y="560" />
+        <di:waypoint x="1035" y="370" />
+        <di:waypoint x="610" y="370" />
+        <di:waypoint x="610" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_done_di" bpmnElement="SF_Gw_3_done">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="680" />
+        <di:waypoint x="932" y="680" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

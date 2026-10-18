@@ -1,0 +1,54 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB07_ArchiveCascadedItem
+lang en
+
+output L1 "BB07_ArchiveCascadedItem.bpmn"
+
+' Archiving that reaches further than the entity: the user picks a valid combination of cascades,
+' or archives nothing at all. The selection step is drawn ALWAYS, even where one combination is the
+' only legal one, because what the user confirms is a combination either way. A keep answer is legal
+' only where the entity still exists once archived, and which combinations there are is the
+' disclosure's content, never the gateway's answers.
+
+pool "User" {
+  :Archive the <entity>;
+  send "See what archiving a <entity> takes" to archImpactIn
+  receive "What the archiving will take" as archImpact
+  if "Approve what the archiving takes?" rule BR-112 then "approve"
+    :Select a valid cascading option;
+    rule BR-19
+    :Confirm the archiving;
+    send "Archive a <entity>" to archiveIn
+    receive "The archiving outcome" as archived
+    goto back
+  else "reject"
+    goto back
+  endif
+  end "Back on the surface" as back
+}
+
+system pool "Bearing" {
+  messageStart "Archiving impact requested" as archImpactIn
+  ' lint-ok: BB07.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB07.01_ReadTheArchivingImpact" "See what archiving a <entity> takes" {
+    :Report what the archiving will take, and what of it can be declined;
+    rule BR-19
+    rule BR-112
+    rule BR-113
+  }
+  send "What the archiving will take" to archImpact
+  note "The drawing carries one choice: a valid combination, or no archiving at all. Which combinations are legal is this answer's content, and a cascade the user may decline starts off."
+  end "Impact answered"
+
+  messageStart "Archiving requested" as archiveIn
+  ' lint-ok: BB07.02 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB07.02_ArchiveWhatWasConfirmed" "Archive a <entity>" {
+    :Archive confirmed items;
+    rule BR-112
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  end "Archiving answered"
+}
+
+@endbpmn

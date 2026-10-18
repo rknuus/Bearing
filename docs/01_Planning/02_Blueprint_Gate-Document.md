@@ -87,7 +87,7 @@ IDesign expectation.
 | Manager | Owns |
 |---|---|
 | **PlanManager** | Themes, Vision/Mission, Routines, Ideas, Goals, progress measures, Focus selection |
-| **ExecutionManager** | Tasks, Boards (columns), Day check-out / DayLog |
+| **ExecutionManager** | Tasks, Boards (columns), work check-out / check-out log |
 | **AdviceManager** | Advice — the suggestion lifecycle `generated → presented → applied / dismissed` — and apply-orchestration |
 
 **Naming rationale** (`arch §4`): `PlanningManager` → **`PlanManager`**, because gerunds are
@@ -161,7 +161,7 @@ OperationLogEntry  → { journaled: false, path: "journal/{yyyy-mm}/{date}-ops.j
 - **The path schemes for `Goal`, `ProgressMeasure`, `ProgressCheckIn`, `Task`, `Board` and `DayLog` are
   illustrative and provisional.** Open storage-organization questions — whether measures and check-ins
   nest under the goal folder or live flat; whether tasks group by board / tag / date or stay flat;
-  whether a board keys by tag string (rename = file rename) or by stable id; whether day logs shard by
+  whether a board keys by tag string (rename = file rename) or by stable id; whether check-out logs shard by
   year — are **internal to the Access**. Changing them must not ripple into Managers, Engines or the
   op-log; that non-rippling *is* the encapsulation claim, and it is testable.
 - **Keep changes minimal** (`arch §4`): a column or section schema holds a **list of task ids**, not the
@@ -348,16 +348,21 @@ UC1 and UC5 are **independent** use cases whose relationship is purely temporal.
 **eager, idempotent and additive-only**. The UI sees **one** combined envelope — never the partial
 state between the two commits.
 
-### UC1 — `PlanManager.SetDailyFocus(date, ideaIds[], routineIds[])`
+### UC1 — `PlanManager.SetDailyFocus(date, boardOwnerIds[], routineIds[])`
 
 ```
 └─► VersionedDocumentAccess.transact(tx)
-      ├─► validate FK:  every id in ideaIds resolves to an Idea (not archived)
+      ├─► validate FK:  every id in boardOwnerIds resolves to an activity, or to a simple
+      │                 project, whose project is not archived                    // BR-41, BR-43
       ├─► validate FK:  every id in routineIds resolves to a Routine (active, not paused)
-      ├─► mutate:       write DayFocus{date, ideaIds, routineIds}
+      ├─► mutate:       write DayFocus{date, boardOwnerIds, routineIds}
       └─► commit
 └─► build envelope-in-progress { mutated: [DayFocus], version }
 └─► queue UC5 with { date, routineIds, envelopeInProgress }
+
+**Corrected 2026-10-11.** It selected **ideas**, which a day focus has not held since the tag was
+retired (**QB-40**, 2026-10-09): a day selects **boards and routines**, and a board is selected by
+selecting its owner — an activity, or a simple project itself (**BR-41**, BR-97, BR-101).
 ```
 
 ### UC2 — Move a task / mark done: **three** operations, one volatility axis each
@@ -382,48 +387,53 @@ ExecutionManager.MoveTask(taskId, state, priority?, rank?)
 
 **No lifecycle timestamp fields on Task, deliberately.** "When was this last moved / created /
 completed" is derivable from the journal (op-log entries carry op + ts + taskId; git commits carry
-timestamps). A denormalized field gets added only when a query pattern earns it. ⚠ `wf §6.4` already
-assumes such timestamps exist — contradiction **C-4** / **QB-23**, and `arch §12 Q3`.
+timestamps). A denormalized field gets added only when a query pattern earns it. ⚠ **As of 2026-10-11 a query
+pattern does earn it:** the check-out's lists and figures read its span's movements (Intent
+BR-124, BR-125), so the journal is queried or a field is denormalized — **Q3** and **QC-04** are
+reopened on exactly that choice, and `wf §6.4`'s timestamp assumption is reinstated.
 
-### UC3 — `PlanManager.CaptureIdea(title, themeId?, tagInput?, details?)`
+### UC3 — `PlanManager.EditIdea(ideaId?, title, themeId?, details?)`
 
 ```
 └─► transact(tx)
       ├─► validate inv: title is non-empty
-      ├─► normalize:    tag = normalize(tagInput ?? deriveFrom(title))   // iFX helper
-      ├─► validate inv: tag ∉ {"routine", "untagged", "all"}             // reserved
-      ├─► validate inv: tag is unique across all ideas (active + archived)
+      ├─► validate inv: the idea, where one is named, is not archived      // BR-05
       ├─► validate FK:  themeId (if provided) resolves to a Theme (not archived)
-      ├─► mutate:       write Idea{id, themeId?, title, tag, details?, archived_at: null}
+      ├─► mutate:       write Idea{id, themeId?, title, details?, archived_at: null}
       └─► commit
 ```
 
-### UC4 — `ExecutionManager.CheckOutDay(date, options{archiveCompleted, resetInProgress, notesMd})`
+**Renamed and narrowed 2026-10-11.** It was `CaptureIdea`, after the call site `BP04.02_CaptureIdea`
+— which is retired: writing an idea down and changing one are **one** request now,
+`BP04.02_EditIdea` (UX-04), and `BP04.03_AmendIdea` went with it. The three tag lines are void too:
+the tag was retired on 2026-10-09 (**QB-40**), so there is nothing to normalize, nothing reserved to
+refuse and nothing to keep unique. An idea carries a title, an optional theme and its notes.
+
+### UC4 — `ExecutionManager.CheckOut(options{archiveCompleted, notesMd})`
 
 The Manager accumulates one `DayLog` plus N task mutations **inside one transaction** — Pivot 2's
 "the Manager owns the transaction boundary". The whole check-out lands as one commit or none of it does.
 
 ```
 └─► transact(tx)
-      ├─► read:    completedTasks  = tasks completed today      (predicate TBD — Q3)
-      ├─► read:    inProgressTasks = tasks in progress today    (predicate TBD — Q3)
+      ├─► read:    movedInSpan     = the task movements since the last check-out  (source TBD — Q3)
+      ├─► compute: completed/started/planned from movedToday; stillInProgress/neverStarted from columns
       ├─► compute: result = CheckoutEngine.DayCheckout(completedTasks, inProgressTasks, options)
       │              → DayCheckoutResult { dayLog, taskMutations[] }
       │                 taskMutations: { taskId, archived_at }        when archiveCompleted
-      │                                { taskId, column: <backlog>, rank: <end of section> }  when resetInProgress
       ├─► mutate:  write result.dayLog
       ├─► mutate:  for each m in result.taskMutations → write the task with m applied
       └─► commit
 ```
 
-Sibling operation — draft auto-save, idempotent (last write wins per date), promoted to the versioned
+Sibling operation — draft auto-save, last write wins while the span is open (BR-37), promoted to the versioned
 `DayLog` on check-out and then cleaned up. ⚠ **Drawn wrongly as written:** it runs a
 `VersionedDocumentAccess.transact(tx)`, which the 2026-10-05 ruling forbids for unversioned data (§3.3,
 F-11). The operation stands; its callee does not:
 
 ```
-ExecutionManager.SaveDayLogDraft(date, notesMd)
-└─► transact(tx) → mutate: write/update DayLogDraft{date, notesMd, status: "draft"} → commit
+ExecutionManager.SaveCheckOutNotesDraft(notesMd)
+└─► transact(tx) → mutate: write/update CheckOutNotesDraft{notesMd, status: "draft"} → commit
 ```
 
 ### UC5 — `ExecutionManager.ScheduleRoutineTasks(date, routineIds[], envelopeInProgress)` *[queued entry]*
@@ -431,7 +441,7 @@ ExecutionManager.SaveDayLogDraft(date, notesMd)
 ```
 └─► transact(tx)
       ├─► read:    existing routine tasks for date
-      ├─► mutate:  for each routineId not already spawned today → write Task{tag="routine", ...}
+      ├─► mutate:  for each routine with no outstanding task → write Task{board: Chores, ...}
       └─► commit
 └─► append own mutations to envelopeInProgress { mutated: [DayFocus, ...Tasks] }
 └─► publish: iFX.publishToClient(envelopeInProgress)
@@ -457,7 +467,7 @@ ExecutionManager.SaveDayLogDraft(date, notesMd)
 - **Single-Manager use cases drawn:** UC2 (three operations), UC3 (assuming **lazy** board creation per
   `arch §12 Q11`), UC4 (+ `SaveDayLogDraft`), `DeleteColumn`
 - **Undrawn use cases that will be sagas:** `DeleteTheme` when its **tasks** flag is set (Plan write +
-  Execution task and board deletions — its other two flags stay inside Plan) ·
+  Execution task and board deletions — its other flag stays inside Plan) ·
   `DeleteIdea(cascade=true)` (Plan write + board and task deletions) ·
   `DeleteRoutine(cascade=true)` (Plan write + task deletions) · `DeleteGoal` stays single-Manager even
   with its cascade set, since it reaches only ideas (BR-15) · `ApplyAdvisorSuggestion` — *iff*
@@ -476,14 +486,14 @@ every delete; the business rules set the arity per entity:
 
 | Delete | Cascade flags | `cascade=false` |
 |---|---|---|
-| Theme | **three, independent** — goals-and-routines · ideas · those ideas' tasks (BR-13) | kept ideas lose their theme; **rejected** if goals or routines would be orphaned, since `theme_id` is required (BR-21) |
+| Theme | **two** — ideas · those ideas' tasks (BR-13). The goals are not a flag: declining is not legal for them, so there is no default to set (BR-19). The routines cascade went with the affiliation (BR-02, 2026-10-13) | kept ideas lose their theme and survive (BR-03); **rejected** only where a goal would be orphaned, since `goal.theme_id` alone is required (BR-01, BR-21) |
 | Idea | one — its board and tasks (BR-14) | the idea and its tag go; linked goals survive minus the link |
 | Goal | one — its **linked ideas** (BR-15) | the goal, its measures and its check-in history go; tasks are never reached from a goal |
 | Routine | one — the task occurrences it produced (BR-16) | it stops producing new ones |
 | Column | one (BR-18) | **rejected** when non-empty, since `task.column` is required |
 | Task | none (BR-17) | — |
 
-⚠ Two consequences for the operation signatures: `DeleteTheme` takes **three** booleans, not one,
+⚠ Two consequences for the operation signatures: `DeleteTheme` takes **two** booleans, not one,
 and `DeleteGoal` takes one where the sources gave it none (BR-15 overturned them on 2026-10-04).
 
 **Optimistic-UI / authority** — the UI predicts, the backend confirms; on mismatch the UI reverts to
@@ -503,7 +513,7 @@ Column {
 ```
 
 Four roles, **no `Neutral` escape hatch** — every column commits to a workflow semantic. Role is
-separate from name, so renaming preserves behaviour (day check-out and the advisor key off role).
+separate from name, so renaming preserves behaviour (the check-out and the advisor key off role).
 Multiple columns may share a role **except Backlog: at most one Backlog column per board**, since the
 three Eisenhower sections are not meaningfully splittable. Sectioning is **implicit from
 `role == Backlog`** — there is no separate `sectioned: bool`. Role is mutable with the consequences
@@ -528,7 +538,7 @@ type are added *then*, with justification, rather than as speculative scaffoldin
 ## 10. Operation inventory still owed
 
 The six drawn use cases cover the two hottest gestures (set focus, work the board) plus idea capture,
-day check-out and one column operation. The Intent document's §6 implies roughly **80 system
+one check-out and one column operation. The Intent document's §6 implies roughly **80 system
 interactions**. Every one of them needs a Manager operation, and the facet/operation/DTO factoring is
 the Design stage's core work. Grouped by owner, the undrawn surface is:
 
@@ -537,7 +547,7 @@ the Design stage's core work. Grouped by owner, the undrawn surface is:
 | **PlanManager** | Theme CRUD + reorder + delete-with-cascade · Vision/Mission read + write · Routine CRUD + pause/resume + reorder + delete-with-cascade · Idea amend, notes auto-save, re-affiliate, reorder, archive, unarchive, delete-with-cascade · Idea tag validation (the Collision / Reserved query behind `wf §3.2`) · Goal CRUD + reorder + archive + unarchive + delete · KR add/amend/remove/reorder · KR check-in (numeric + boolean) · Goal check-out + carry-forward seeding · Focus clear / copy / set-for-another-date (the UC-family question, `arch §12 Q10`) · Day rollover (`arch §12 Q1`) — *moved here from ExecutionManager 2026-10-06: rollover advances the current day and the day focus in play, and writes no task (BR-44), so it is focus state, not board state. Final allocation is the Design stage's call* · Ideation read projections (filter / sort / theme scope / archive view) |
 | **ExecutionManager** | Task amend · Task archive / unarchive / delete · Task-draft stage / amend / reorder / discard / discard-all / commit · Column rename / insert / reorder / role-change / archive-all · Board read projections (boards strip, funnel context header, All-board aggregate) · Archived-tasks view |
 | **AdviceManager** | Open conversation with context + selection · Ask · Apply (ten catalog types) · Dismiss · Clear · Supersession bookkeeping (if suggestions persist) |
-| **Cross** | Bootstrap / first-run (`wf §7.2` steps 1–5) · Pre-seed default themes · Onboarding completion |
+| **Cross** | Bootstrap / first-run (`wf §7.2` steps 1–5) · Install the template files (the five life areas and the Chores board ship with them) · Start-up precondition checks (BR-122) — *onboarding completion dropped 2026-10-11: there is no wizard (BR-82), and where a first launch lands is BP01's one decision* |
 
 **Known pressure point:** the Pivot-3 rule that the advisor calls *the same operations the UI uses*
 means every one of the ten catalog types must map onto an existing Manager operation. Two do not
@@ -556,7 +566,7 @@ the gate that actually owns it. The author's own lean is preserved.
 |---|---|---|---|
 | Q1 | **Day-rollover trigger** — who fires the rollover? *(The original wording asked who fires “the new-day routine spawn”; there is no such spawn — rollover advances the current day and writes no task, BR-44.)* | **Blueprint** | Client-driven `RolloverDay(date)`, invoked when the client detects a new local day; avoids a backend timer thread. Interacts with BR-44 and with the BPMN's `scheduler pool`. What it advances is day-focus state, which is why its operation now sits with **PlanManager** in §10. |
 | Q2 | **What is `RecurrenceEngine`'s actual job?** | **Blueprint** | Settled 2026-10-06 (QB-10): compute due/overdue from the fixed schedule for the day-selectables read (BR-91). What is left is whether one pure computation justifies an Engine. |
-| ~~Q3~~ | ~~“Completed today” / “in progress today” predicates for day check-out, with no timestamp fields on Task~~ | — | **DISSOLVED 2026-10-06 (QB-23)** — both lists are current-state predicates: *in a Done column*, and *past Backlog and not Done*. No journal query, no `lastEnteredAt`, no timestamp field. |
+| ~~Q3~~ | ~~“Completed today” / “in progress today” predicates for day check-out, with no timestamp fields on Task~~ | — | **DISSOLVED 2026-10-06 (QB-23)** — both lists are current-state predicates: *in a Done column*, and *past Backlog and not Done*. No journal query, no `lastEnteredAt`, no timestamp field. **REOPENED 2026-10-11 (Intent BR-124)** — the predicates are movement-based after all; what is open is only whether the figures query the op-log or a per-task field is denormalized. |
 | Q4 | **`ChangeColumnRole`** — full pseudocode and consequence handling | **Blueprint** | Defer to a board-management use-case pass. |
 | Q6 | **The advisor-apply use case** — exercises queued Manager-to-Manager and the apply-via-same-operations contract | **Blueprint** | Not yet drawn. Gates Q9 and Q12. |
 | Q7 | **Goal check-out + theme cascade** — validates the `GoalCheckout` facet and theme-level cascade | **Blueprint** | Not yet drawn. The reject-vs-detach question behind it is settled (BR-21). |
@@ -578,7 +588,7 @@ with them in hand rather than rediscovering them.
 | F-1 | **Three entities have no document type** — `GoalCheckout`, Vision/Mission and `Suggestion` (§3.3). All three are persistent — `Suggestion` as of QB-20 — and the registry as written cannot store them. `Suggestion` also needs a tier the registry lacks: **journaled but not version-controlled**. (Remembered interface state is a fourth persistent thing with no home, but after the 2026-10-05 ruling it is not *this* registry's gap — see F-11.) |
 | F-2 | **`PrioritizationEngine` has no caller and no facet** (Q8). A component that nothing changes contradicts volatility-based decomposition. |
 | F-3 | **`RecurrenceEngine` is now specified but may be too thin.** Its subject matter is settled — due/overdue from the fixed schedule (BR-91, QB-10) — and its caller is the day-selectables read. The review question flips from “unstated policy” to “one pure function: Engine, or a helper on the Manager?” |
-| ~~F-4~~ | ~~The journal-as-query-source assumption is untested.~~ **WITHDRAWN 2026-10-06** — Q3 dissolved (QB-23): the check-out predicates read current board state, so the Access needs no query surface over the op-log. |
+| ~~F-4~~ | ~~The journal-as-query-source assumption is untested.~~ **WITHDRAWN 2026-10-06** — Q3 dissolved (QB-23): the check-out predicates read current board state, so the Access needs no query surface over the op-log. **REINSTATED 2026-10-11** — the check-out reads movements, so the journal-as-query-source assumption is load-bearing again and still untested. |
 | F-5 | **`Board` keyed by tag string makes a tag rename a file rename** (§3.3) while `wf §3.2` promises that renaming a tag silently re-keys the board and updates every task's tag. That is a multi-document write inside one transaction, and possibly a saga (Plan write + Execution re-key) — undrawn, and in tension with the "lazy board creation" lean of Q11. |
 | F-6 | **Deletion sagas are named but undrawn** (§7). C-1 no longer applies — declining a cascade rejects where the child's parent is required (BR-21) — but the sagas must now draw that rejection. They are also the three use cases most likely to need the task/board reach that crosses the Manager boundary. |
 | F-7 | **Reads are under-specified relative to writes.** Pivot 5 names exactly one pull-on-entry query (`GetBoardSummary`); the UI needs read projections for every view (boards strip, funnel context, All-board aggregate, coverage strips, archive views, Ideation filter/sort). "Reads return data + version" is the only stated contract. |
@@ -593,15 +603,15 @@ with them in hand rather than rediscovering them.
 
 | # | Owed |
 |---|---|
-| D-01 | A **frozen business design** to compile — Design consumes const Intent artifacts (ADR-040 §3). Today the business design and this sketch were authored in parallel. |
-| D-02 | The **model in the store** — components, facets, operations, DTOs with comparison classes, use cases keyed by the minted SI ids with their permutations, all via `sns-cli`. |
-| D-03 | The **SI binding map** (`si-binding.yaml`, ADR-041) with a per-edge realization declaration, and the ADR-068 refinement: every drawn box bound `{ operation | internal | expands }`, every system-side send bound `{ operation | event }`. |
-| D-04 | **Generated sequences** (`seqmap sequence`) from block × binding, ending at the ResourceAccess (ADR-036) — never hand-authored. |
-| D-05 | **Activity diagrams** per Manager use case (ADR-031), which become the generated Manager entry bodies (ADR-061). |
-| D-06 | The **enriched Sequence Map** and a green `seqmap complete --si <exports>`. |
-| D-07 | The **walkthrough-replay regression** — the approved walkthroughs re-run green once the mockup is driven by the model-derived Sequence Map, proving system design did not silently change the business design. |
-| D-08 | **Self-critique + a blind peer review** (ADR-015) before the gate. |
-| D-09 | A **Q&A ledger with no open entry blocking a promoted element** (`qa check`). |
+| BD-01 | A **frozen business design** to compile — Design consumes const Intent artifacts (ADR-040 §3). Today the business design and this sketch were authored in parallel. |
+| BD-02 | The **model in the store** — components, facets, operations, DTOs with comparison classes, use cases keyed by the minted SI ids with their permutations, all via `sns-cli`. |
+| BD-03 | The **SI binding map** (`si-binding.yaml`, ADR-041) with a per-edge realization declaration, and the ADR-068 refinement: every drawn box bound `{ operation | internal | expands }`, every system-side send bound `{ operation | event }`. |
+| BD-04 | **Generated sequences** (`seqmap sequence`) from block × binding, ending at the ResourceAccess (ADR-036) — never hand-authored. |
+| BD-05 | **Activity diagrams** per Manager use case (ADR-031), which become the generated Manager entry bodies (ADR-061). |
+| BD-06 | The **enriched Sequence Map** and a green `seqmap complete --si <exports>`. |
+| BD-07 | The **walkthrough-replay regression** — the approved walkthroughs re-run green once the mockup is driven by the model-derived Sequence Map, proving system design did not silently change the business design. |
+| BD-08 | **Self-critique + a blind peer review** (ADR-015) before the gate. |
+| BD-09 | A **Q&A ledger with no open entry blocking a promoted element** (`qa check`). |
 | D-10 | Resolution of **F-1 … F-10** and of Q1–Q4, Q6–Q8, Q10–Q12. |
 
 ---

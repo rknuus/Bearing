@@ -1,0 +1,318 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1798" height="1501" viewBox="0 0 1798 1501">
+<rect width="1798" height="1501" fill="#fff"/>
+<rect x="24" y="24" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="24" x2="54" y2="764" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="398.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 394)">User</text>
+<rect x="24" y="804" width="1750" height="620" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="804" x2="54" y2="1424" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1118.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1114)">Bearing</text>
+<polyline points="152,144 254,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 144 L 246 147.36 L 246 140.64 Z" fill="#000"/>
+<polyline points="354,144 449,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 144 L 441 147.36 L 441 140.64 Z" fill="#000"/>
+<polyline points="694,144 764,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 144 L 756 147.36 L 756 140.64 Z" fill="#000"/>
+<polyline points="864,144 966,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 144 L 958 147.36 L 958 140.64 Z" fill="#000"/>
+<polyline points="1002,144 1136,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 144 L 1128 147.36 L 1128 140.64 Z" fill="#000"/>
+<polyline points="499,144 594,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 144 L 586 147.36 L 586 140.64 Z" fill="#000"/>
+<polyline points="694,264 796,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 264 L 788 267.36 L 788 260.64 Z" fill="#000"/>
+<polyline points="832,264 966,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 264 L 958 267.36 L 958 260.64 Z" fill="#000"/>
+<polyline points="499,144 529,144 529,264 594,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 264 L 586 267.36 L 586 260.64 Z" fill="#000"/>
+<polyline points="694,384 796,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 384 L 788 387.36 L 788 380.64 Z" fill="#000"/>
+<polyline points="832,384 959,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 384 L 951 387.36 L 951 380.64 Z" fill="#000"/>
+<polyline points="1204,384 1274,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 384 L 1266 387.36 L 1266 380.64 Z" fill="#000"/>
+<polyline points="1374,384 1476,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 384 L 1468 387.36 L 1468 380.64 Z" fill="#000"/>
+<polyline points="1009,384 1104,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 384 L 1096 387.36 L 1096 380.64 Z" fill="#000"/>
+<polyline points="1009,384 1039,384 1039,504 1136,504" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 504 L 1128 507.36 L 1128 500.64 Z" fill="#000"/>
+<polyline points="1512,384 1646,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 384 L 1638 387.36 L 1638 380.64 Z" fill="#000"/>
+<polyline points="499,144 529,144 529,384 594,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 384 L 586 387.36 L 586 380.64 Z" fill="#000"/>
+<polyline points="694,504 764,504" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 504 L 756 507.36 L 756 500.64 Z" fill="#000"/>
+<polyline points="864,504 966,504" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 504 L 958 507.36 L 958 500.64 Z" fill="#000"/>
+<polyline points="1002,504 1032,504 1032,624 1136,624" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 624 L 1128 627.36 L 1128 620.64 Z" fill="#000"/>
+<polyline points="499,144 529,144 529,504 594,504" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 504 L 586 507.36 L 586 500.64 Z" fill="#000"/>
+<polyline points="832,924 914,924" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 924 L 906 927.36 L 906 920.64 Z" fill="#000"/>
+<polyline points="1054,924 1136,924" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 924 L 1128 927.36 L 1128 920.64 Z" fill="#000"/>
+<polyline points="662,924 692,924 692,1044 744,1044" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1044 L 736 1047.36 L 736 1040.64 Z" fill="#000"/>
+<polyline points="884,1044 966,1044" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1044 L 958 1047.36 L 958 1040.64 Z" fill="#000"/>
+<polyline points="662,1044 692,1044 692,1164 744,1164" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1164 L 736 1167.36 L 736 1160.64 Z" fill="#000"/>
+<polyline points="884,1164 966,1164" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1164 L 958 1167.36 L 958 1160.64 Z" fill="#000"/>
+<polyline points="1342,924 1424,924" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 924 L 1416 927.36 L 1416 920.64 Z" fill="#000"/>
+<polyline points="1564,924 1646,924" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 924 L 1638 927.36 L 1638 920.64 Z" fill="#000"/>
+<polyline points="832,1284 914,1284" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 1284 L 906 1287.36 L 906 1280.64 Z" fill="#000"/>
+<polyline points="1054,1284 1136,1284" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1284 L 1128 1287.36 L 1128 1280.64 Z" fill="#000"/>
+<polyline points="804,184 804,196 889,196 889,894 804,894 804,906" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 807.78 897 L 804 906 L 800.22 897" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="184" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="639,304 639,316 724,316 724,894 639,894 639,906" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 642.78 897 L 639 906 L 635.22 897" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="639" cy="304" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="649,424 649,436 734,436 734,1014 649,1014 649,1026" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 652.78 1017 L 649 1026 L 645.22 1017" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="649" cy="424" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1324,424 1324,906" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1327.78 897 L 1324 906 L 1320.22 897" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="424" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,544 824,556 909,556 909,1254 824,1254 824,1266" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 827.78 1257 L 824 1266 L 820.22 1257" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="544" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="979,879 979,867 1064,867 1064,174 979,174 979,162" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 975.22 171 L 979 162 L 982.78 171" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="979" cy="879" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="809,999 894,999 894,294 809,294 809,282" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 805.22 291 L 809 282 L 812.78 291" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="809" cy="999" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="819,1119 819,1107 904,1107 904,414 819,414 819,402" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 815.22 411 L 819 402 L 822.78 411" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="819" cy="1119" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,879 1494,402" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1490.22 411 L 1494 402 L 1497.78 411" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="879" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="989,1239 1074,1239 1074,534 989,534 989,522" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 985.22 531 L 989 522 L 992.78 531" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="989" cy="1239" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,366 1494,332" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1209 814,1219 786,1219 786,1341" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,969 1494,989" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A theme needs</text>
+<text x="92" y="186.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">attention</text>
+<rect x="254" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="146.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a theme</text>
+<path d="M 474 119 L 499 144 L 474 169 L 449 144 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 133.5 L 484.5 154.5 M 463.5 154.5 L 484.5 133.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="183" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="146.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Name the theme</text>
+<rect x="764" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="146.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the theme</text>
+<circle cx="984" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="144" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="138.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 138.06 L 984 144 L 993 138.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1154" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Theme recorded</text>
+<rect x="594" y="224" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="266.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a theme</text>
+<circle cx="814" cy="264" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="264" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="258.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 258.06 L 814 264 L 823 258.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="296" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The ordering</text>
+<text x="772" y="306.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="264" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="296" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Themes ordered</text>
+<rect x="594" y="344" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="386.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a theme</text>
+<circle cx="814" cy="384" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="384" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="378.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 378.06 L 814 384 L 823 378.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="416" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the deletion</text>
+<text x="772" y="426.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 984 359 L 1009 384 L 984 409 L 959 384 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 373.5 L 994.5 394.5 M 973.5 394.5 L 994.5 373.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="423" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="942" y="433.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">deletion takes?</text>
+<rect x="1104" y="344" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="380.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select a valid</text>
+<text x="1154" y="392.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascading option</text>
+<rect x="1274" y="344" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="386.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the deletion</text>
+<circle cx="1494" cy="384" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="384" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="378.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 378.06 L 1494 384 L 1503 378.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="416" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The deletion</text>
+<text x="1452" y="426.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="504" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="536" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion abandoned</text>
+<circle cx="1664" cy="384" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="416" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Theme deleted</text>
+<rect x="594" y="464" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="500.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">State the vision and</text>
+<text x="644" y="512.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">mission</text>
+<rect x="764" y="464" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="500.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the vision</text>
+<text x="814" y="512.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">and mission</text>
+<circle cx="984" cy="504" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="504" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="498.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 498.06 L 984 504 L 993 498.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="536" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The recording</text>
+<text x="942" y="546.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="624" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="656" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Vision and mission</text>
+<text x="1112" y="666.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">recorded</text>
+<circle cx="814" cy="924" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="918.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 918.06 L 814 924 L 823 918.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="956" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Theme submitted</text>
+<a href="../02_System-Interactions/BP02.02_EditTheme.md" target="_blank">
+<title>BP02.02_EditTheme — open the System-Interaction document</title>
+<rect x="914" y="879" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 886 H 1043.8 L 1046.8 889 V 896 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 886 V 889 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="892.4" x2="1045.24" y2="892.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="894.6" x2="1045.24" y2="894.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="950" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 951.8 V 958.2 M 980.8 955 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="926.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Edit a theme</text>
+</a>
+<circle cx="1154" cy="924" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="956" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Theme answered</text>
+<circle cx="644" cy="924" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="918.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 918.06 L 644 924 L 653 918.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="956" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Theme reordering</text>
+<text x="602" y="966.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP02.04_ReorderThemes.md" target="_blank">
+<title>BP02.04_ReorderThemes — open the System-Interaction document</title>
+<rect x="744" y="999" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1006 H 873.8 L 876.8 1009 V 1016 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1006 V 1009 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1012.4" x2="875.24" y2="1012.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1014.6" x2="875.24" y2="1014.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1070" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1071.8 V 1078.2 M 810.8 1075 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1046.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Reorder themes</text>
+</a>
+<circle cx="984" cy="1044" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1076" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Reordering</text>
+<text x="942" y="1086.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1044" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1038.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1038.06 L 644 1044 L 653 1038.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1076" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="602" y="1086.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP02.05_ReadTheDeletionImpact.md" target="_blank">
+<title>BP02.05_ReadTheDeletionImpact — open the System-Interaction document</title>
+<rect x="744" y="1119" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1126 H 873.8 L 876.8 1129 V 1136 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1126 V 1129 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1132.4" x2="875.24" y2="1132.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1134.6" x2="875.24" y2="1134.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1190" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1191.8 V 1198.2 M 810.8 1195 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1160.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">See what deleting a theme</text>
+<text x="814" y="1172.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">takes</text>
+</a>
+<circle cx="984" cy="1164" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1196" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Impact answered</text>
+<circle cx="1324" cy="924" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="918.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 918.06 L 1324 924 L 1333 918.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="956" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Theme deletion</text>
+<text x="1282" y="966.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP02.06_DeleteTheme.md" target="_blank">
+<title>BP02.06_DeleteTheme — open the System-Interaction document</title>
+<rect x="1424" y="879" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 886 H 1553.8 L 1556.8 889 V 896 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 886 V 889 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="892.4" x2="1555.24" y2="892.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="894.6" x2="1555.24" y2="894.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="950" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 951.8 V 958.2 M 1490.8 955 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="926.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a theme</text>
+</a>
+<circle cx="1664" cy="924" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="956" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion answered</text>
+<circle cx="814" cy="1284" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="1278.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 1278.06 L 814 1284 L 823 1278.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="1316" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Vision and mission</text>
+<text x="772" y="1326.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<a href="../02_System-Interactions/BP02.08_RecordVisionAndMission.md" target="_blank">
+<title>BP02.08_RecordVisionAndMission — open the System-Interaction document</title>
+<rect x="914" y="1239" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 1246 H 1043.8 L 1046.8 1249 V 1256 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 1246 V 1249 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="1252.4" x2="1045.24" y2="1252.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="1254.6" x2="1045.24" y2="1254.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="1310" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 1311.8 V 1318.2 M 980.8 1315 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="1286.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Record vision and mission</text>
+</a>
+<circle cx="1154" cy="1284" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1316" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Record answered</text>
+<path d="M 1380 271 H 1374 V 332 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="283" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A kept idea loses only its theme affiliation. The goals</text>
+<text x="1383" y="293.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">cannot be kept, so confirming takes them.</text>
+<path d="M 700 1341 H 694 V 1477 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1353" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A goal requires a theme, so keeping one is not a legal</text>
+<text x="703" y="1363.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">outcome: where the theme has goals the gesture is</text>
+<text x="703" y="1374.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">approve-or-abandon. An idea may stay behind</text>
+<text x="703" y="1384.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">theme-less, so that cascade is the real choice and it</text>
+<text x="703" y="1395.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">starts off. An archived descendant is counted like a live</text>
+<text x="703" y="1406.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">one.</text>
+<path d="M 1380 989 H 1374 V 1110 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="1001" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The request carries the cascades the user confirmed,</text>
+<text x="1383" y="1011.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">and nothing else goes: an idea left out stays, theme-less.</text>
+<text x="1383" y="1022.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">What happens below a deleted goal or idea is that</text>
+<text x="1383" y="1032.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">entity's own rule, applied where the deletion reaches it.</text>
+<rect x="501" y="145" width="89.41" height="11.5" fill="#fff"/>
+<text x="502" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">add or change a theme</text>
+<rect x="531" y="145" width="50.65" height="11.5" fill="#fff"/>
+<text x="532" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="1011" y="385" width="32.71" height="11.5" fill="#fff"/>
+<text x="1012" y="394.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="1041" y="385" width="22.78" height="11.5" fill="#fff"/>
+<text x="1042" y="394.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject</text>
+<rect x="531" y="145" width="71.45" height="11.5" fill="#fff"/>
+<text x="532" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">retire one for good</text>
+<rect x="531" y="145" width="195.24" height="11.5" fill="#fff"/>
+<text x="532" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">state who I want to become, and what I am here for</text>
+<rect x="891" y="197" width="49.72" height="20.73" fill="#fff"/>
+<text x="892" y="205.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP02.02</text>
+<text x="892" y="215.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Edit a theme</text>
+<rect x="726" y="317" width="62.94" height="20.73" fill="#fff"/>
+<text x="727" y="325.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP02.04</text>
+<text x="727" y="335.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder themes</text>
+<rect x="736" y="437" width="125.32" height="20.73" fill="#fff"/>
+<text x="737" y="445.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP02.05</text>
+<text x="737" y="455.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what deleting a theme takes</text>
+<rect x="1326" y="425" width="59.64" height="20.73" fill="#fff"/>
+<text x="1327" y="433.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP02.06</text>
+<text x="1327" y="443.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete a theme</text>
+<rect x="911" y="557" width="101.2" height="20.73" fill="#fff"/>
+<text x="912" y="565.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP02.08</text>
+<text x="912" y="575.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Record vision and mission</text>
+<rect x="1066" y="868" width="79.01" height="11.5" fill="#fff"/>
+<text x="1067" y="877.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+<rect x="896" y="295" width="85.15" height="11.5" fill="#fff"/>
+<text x="897" y="304.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The ordering outcome</text>
+<rect x="906" y="1108" width="100.74" height="11.5" fill="#fff"/>
+<text x="907" y="1117.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the deletion will take</text>
+<rect x="1496" y="880" width="83.74" height="11.5" fill="#fff"/>
+<text x="1497" y="889.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The deletion outcome</text>
+<rect x="1076" y="535" width="89.4" height="11.5" fill="#fff"/>
+<text x="1077" y="544.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The recording outcome</text>
+</svg>

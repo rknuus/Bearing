@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BB12_UnarchiveItem" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BB12_UnarchiveItem">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BB12.01 · Unarchive an item" sourceRef="T_1" targetRef="unarchiveIn" />
+    <bpmn:messageFlow id="MF_2" name="What came back, or why it cannot" sourceRef="report" targetRef="unarchived" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>The whole bundle comes back as it went. No part of it can be picked and nothing is re-parented, relocated or approximated.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="unarchived" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>A member deleted out of the archive, or a surrounding that is now gone, leaves the bundle unreassemblable: the item stays archived and the answer says so.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="Gw_3" targetRef="TextAnnotation_X2" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:task id="T_1" name="Unarchive the item">
+      <bpmn:outgoing>SF_T_1_unarchived</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="unarchived" name="What came back, or why it cannot">
+      <bpmn:incoming>SF_T_1_unarchived</bpmn:incoming>
+      <bpmn:outgoing>SF_unarchived_End_2</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_unarchived" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_2" name="Back on the surface">
+      <bpmn:incoming>SF_unarchived_End_2</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_T_1_unarchived" sourceRef="T_1" targetRef="unarchived" />
+    <bpmn:sequenceFlow id="SF_unarchived_End_2" sourceRef="unarchived" targetRef="End_2" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="unarchiveIn" name="Unarchive requested">
+      <bpmn:outgoing>SF_unarchiveIn_Gw_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_unarchiveIn" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gw_3" name="Can the bundle come back whole?">
+      <bpmn:incoming>SF_unarchiveIn_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_report</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="Return the bundle to its prior state and position">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_report</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="report" name="Report the outcome">
+      <bpmn:incoming>SF_T_4_report</bpmn:incoming>
+      <bpmn:incoming>SF_Gw_3_report</bpmn:incoming>
+      <bpmn:outgoing>SF_report_End_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_5" name="Unarchive answered">
+      <bpmn:incoming>SF_report_End_5</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="yes" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_unarchiveIn_Gw_3" sourceRef="unarchiveIn" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_report_End_5" sourceRef="report" targetRef="End_5" />
+    <bpmn:sequenceFlow id="SF_T_4_report" sourceRef="T_4" targetRef="report" />
+    <bpmn:sequenceFlow id="SF_Gw_3_report" name="no" sourceRef="Gw_3" targetRef="report" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BB12_UnarchiveItem">
+    <bpmndi:BPMNPlane id="P_BB12_UnarchiveItem" bpmnElement="Collaboration_BB12_UnarchiveItem">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="900" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="380" width="900" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_1_di" bpmnElement="T_1">
+        <dc:Bounds x="220" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="unarchived_di" bpmnElement="unarchived">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_2_di" bpmnElement="End_2">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="unarchiveIn_di" bpmnElement="unarchiveIn">
+        <dc:Bounds x="252" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="415" y="475" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="530" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="560" y="460" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="report_di" bpmnElement="report">
+        <dc:Bounds x="730" y="460" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_5_di" bpmnElement="End_5">
+        <dc:Bounds x="932" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_1_unarchived_di" bpmnElement="SF_T_1_unarchived">
+        <di:waypoint x="320" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_unarchived_End_2_di" bpmnElement="SF_unarchived_End_2">
+        <di:waypoint x="798" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="465" y="500" />
+        <di:waypoint x="560" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_unarchiveIn_Gw_3_di" bpmnElement="SF_unarchiveIn_Gw_3">
+        <di:waypoint x="288" y="500" />
+        <di:waypoint x="415" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_report_End_5_di" bpmnElement="SF_report_End_5">
+        <di:waypoint x="830" y="500" />
+        <di:waypoint x="932" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_report_di" bpmnElement="SF_T_4_report">
+        <di:waypoint x="660" y="500" />
+        <di:waypoint x="730" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_report_di" bpmnElement="SF_Gw_3_report">
+        <di:waypoint x="465" y="500" />
+        <di:waypoint x="525" y="500" />
+        <di:waypoint x="525" y="440" />
+        <di:waypoint x="780" y="440" />
+        <di:waypoint x="780" y="460" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="270" y="240" />
+        <di:waypoint x="270" y="482" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="780" y="460" />
+        <di:waypoint x="780" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="660" y="86" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="780" y="182" /><di:waypoint x="780" y="162" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="320" y="545" width="240" height="91" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="440" y="525" /><di:waypoint x="440" y="545" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

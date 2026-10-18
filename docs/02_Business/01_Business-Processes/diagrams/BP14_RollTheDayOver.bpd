@@ -1,0 +1,72 @@
+@startbpmn BP14_RollTheDayOver
+lang en
+
+output L1 "01_detailed/BP14_RollTheDayOver.bpmn"
+output L2 "02_detailed/BP14_RollTheDayOver.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the day rolls at local midnight and that is not configurable: BR-44
+'   - rollover advances which day is current and nothing else: BR-44
+'   - everything that follows from the day focus follows it, Chores included: BR-41, BR-50, BR-107
+'   - the previous date's focus is history the moment the date moves on, and NOTHING IS DONE TO IT:
+'     the record of that date's focus already exists and the rollover neither writes nor moves it,
+'     so there is no step for it - leaving it standing is what not touching it looks like:
+'     BR-44, R-5, SA 2026-10-18 ("I have the suspicion that's not the case, as the previous day's
+'     focus was set or not, but the record already exists")
+'   - rollover creates nothing: no task is spawned, only selecting a routine does that: BR-42, BR-44
+'   - rollover archives nothing and closes nothing, and settles nothing: the day that just ended
+'     joins the span the next check-out settles, so there is no date to go back for: BR-44, BR-45,
+'     BR-33, SA 2026-10-13
+'   - THE ROLLOVER OFFERS NOTHING. The surface says quietly that the date advanced, and where the new
+'     date carries no focus it says that too - one quiet notice, in UX-16's register - and that is
+'     all: setting a focus is the user's own act, started on the Focus tab (BP08), so the drawing
+'     carries no offer, no gateway and no seam. Nothing interrupts what the user is doing, a drag
+'     included: BR-44, BR-66, UX-16, SA 2026-10-18 ("No. If the user wants to set the day's focus,
+'     the user starts BP08")
+'   - CARRYING ON IS NOT AN ACT. Being told that the date moved on ends what the clock started;
+'     what the user does next is whatever they were already doing: BR-44, SA 2026-10-18 ("'Carry on
+'     with the new date in play': remove. No genuine action")
+'
+' Scope: this process advances the date. Setting the new day's focus is BP08, started by the user on
+' the Focus tab; reading the previous day as history is UIP02; settling the work is BP13, whose span
+' reaches back over every day nobody settled.
+'
+' Cut: Intent section 5 records this as a process of its own and flags that it may read better as a
+' start event inside BP08 - the Software Architect's call. Drawn standalone, which is the cut as it
+' stands. The user lane carries no act: the rollover is told to the user, and being told is not
+' something they do.
+'
+' Call-site collapsing: there is one request and nothing to collapse into it - advancing the date is
+' the whole of it, and what the surface then says is the answer being shown, not a second chain.
+
+scheduler pool "Clock" {
+  timerStart "Local midnight"
+  :Reach the next date;
+  send "Roll the day over" to rollIn
+  end "Date advanced"
+}
+
+system pool "Bearing" {
+  messageStart "Rollover due" as rollIn
+  call "BP14.01_RollTheDayOver" "Roll the day over" {
+    :Update current date;
+    rule BR-44
+    :Put the new date's focus in play, empty until it is set;
+    rule BR-41
+    :Report the new date's focus;
+    rule BR-44
+  }
+  send "The day rolled over" to rolled
+  note "Rollover creates nothing and destroys nothing: no task is spawned, nothing is archived, nothing is closed and nothing is settled, and the date that just ended keeps the focus record it already had. That date joins the span the next check-out settles. Chores follows the new date on its own while it carries work that is not done."
+  end "Rollover answered"
+}
+
+pool "User" {
+  start "At work in Bearing"
+  :Work on whatever is open;
+  receive "The day rolled over" as rolled
+  note "The board in front of the user stays open and a gesture already under way, a drag included, is unaffected. That the date advanced is said quietly, and where the new date carries no focus that is said with it; nothing is offered and nothing is asked. Setting a focus is the user's own act, started on the Focus tab (BP08)."
+  end "New day in play"
+}
+
+@endbpmn

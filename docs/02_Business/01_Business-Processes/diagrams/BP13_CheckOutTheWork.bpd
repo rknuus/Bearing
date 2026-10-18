@@ -1,0 +1,154 @@
+@startbpmn BP13_CheckOutTheWork
+lang en
+
+output L1 "01_detailed/BP13_CheckOutTheWork.bpmn"
+output L2 "02_detailed/BP13_CheckOutTheWork.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the check-out settles EVERYTHING SINCE THE LAST CHECK-OUT, however long ago that was, and
+'     everything up to now where there has never been one. No date is chosen and none can be
+'     missed: BR-33, SA 2026-10-13 ("Using the date is a poor selection criterion"). Until then the
+'     gesture settled one chosen date, which is what left two of the four figures describing a
+'     board that had moved on whenever it was run late
+'   - what the check-out captures, and that the user READS it rather than editing it: there is no
+'     confirming box, because an account the user cannot change leaves nothing to answer - what
+'     affirms it is the completing gesture, and the way out is leaving the check-out, exactly as
+'     BP07 draws its own observation, and leaving is drawn in no process at all: BR-33, BR-39,
+'     BR-129, DRW-30, SA 2026-10-18 ("does not and should not handle
+'     the situation if the user disagrees ... there is nothing the user can do than to abort")
+'   - the account is built from what MOVED inside the span, not from the board's current state, so
+'     nothing an earlier check-out settled appears. The operation log already records each move
+'     into Done or InProgress for audit, so this reads what is kept rather than keeping something
+'     new, and nothing needs to know when a card entered Todo or Backlog: BR-124, SA 2026-10-11
+'   - four figures: completed and started inside the span, which only the movements can answer,
+'     plus still in progress and planned but never started, which are counts of the board as it
+'     stands at the end of the span - counting what sits in Todo is enough for the last one,
+'     whenever it was planned. All four describe one span and one moment: BR-125, BR-35,
+'     SA 2026-10-11 ("I simply count the number of tasks in Todo"), SA 2026-10-13
+'   - the two state figures count over the boards the account covers TOGETHER WITH the boards the
+'     span's focuses chose, so a focused board nobody touched still contributes its Todo cards:
+'     BR-35, Q-13
+'   - the board scope is every board a task moved on, in a day's focus or not, with Chores among
+'     them and no differently - and because movements are what is read, the focus plays no part in
+'     what the account shows: BR-33, SA 2026-10-11
+'   - the log records NO per-day focus standing. It was there for the adherence figure, which is
+'     void: the product records only a card entering InProgress or Done, so a task worked on over
+'     several days records nothing on the days between and the ratio measured movement rather than
+'     work. The account still covers every board a task moved on, Chores among them, and the
+'     figures are the span's: BR-33, BR-47, ~~BR-123~~, SA 2026-10-17 ("Drop adherence")
+'   - the one closing action: archive the completed, default ON, taking what the account listed as
+'     completed in the span and nothing else - so a task finished before the last check-out and
+'     left unarchived then stays on its board, and the card's own menu or clearing a lane is how it
+'     goes: BR-34, BR-23, SA 2026-10-11
+'   - there is NO reset of the still-open tasks: a card's column is the only record that the work
+'     was started and how far it got, resetting it cannot be undone in the product (BR-20), and the
+'     decision it expressed is expressed instead by setting the next day's focus, which selects
+'     without touching a card (BR-41). A card that belongs back in the Backlog is moved there on
+'     the board: BR-34, SA 2026-10-11 ("My tendency is to drop the reset feature entirely")
+'   - the Backlog is outside every predicate, since nothing there was started: BR-35
+'   - only the completed list is acted on; the rest is information: BR-35, SA 2026-10-11
+'   - a check-out closes its span, so there is nothing to re-run: the log is appended once and
+'     never rewritten, and a check-out started again straight away settles a span in which nothing
+'     has happened. Working on after a check-out and checking out again writes a SECOND log, for
+'     the evening's span, rather than restating the first: BR-36, SA 2026-10-13
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - no work is forfeited by not checking out: the next check-out's span reaches back over the
+'     days nobody settled, which is why the gesture opens with nothing to pick: BR-45, BR-33
+'   - the notes are the CHECK-OUT's and not a date's: one running journal is kept while the span is
+'     open, the check-out takes it, and the next span starts empty. A day is explained by the log
+'     whose span covers it: BR-37, BR-38, SA 2026-10-13
+'   - when to check out is the user's decision alone: several in one day are legitimate, each
+'     settling its own span, and a span in which nothing happened is legitimate too - it is
+'     accounted for with empty lists and figures at zero: BR-36, BR-33, SA 2026-10-13
+'   - the check-out shape is observed, reflect, judge, opt-in closing action, one named closing
+'     gesture, which is where BR-39 binds: BR-39
+'   - PICKING THE RUNNING NOTES UP is not modelled, no more than keeping them is: it is the drafting
+'     UX and it holds for every content edit, so a step per edit carries no value. The answer brings
+'     them back and the operation is drawn once, in BP19: BR-37, BR-121, SA 2026-10-17
+'   - the two state figures count over the boards the account covers TOGETHER WITH the boards the
+'     span's focuses chose, which is why the focuses are read before the count: BR-35, Q-13
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - a task box is a return target; nothing comes back to the completing act, so it is a step
+'     like every other act: SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Whether the figures query the operation log or a denormalized per-task field earns its place is
+' the Contract's, not this drawing's: QC-04, Blueprint Q3.
+'
+'   - the notes act is marked as BP07's is: the two check-outs follow one shape (BR-39), and what
+'     differs between a running journal and a sitting's retro is when it is written, not how the
+'     box is drawn: BR-37, BR-39, SA 2026-10-17 ("adapt BP13 to 07 approach")
+'
+' Scope: this process settles everything since the last check-out. Choosing a day's boards and
+' routines is BP08, and reading a log afterwards is UIP02.
+'
+' Call-site collapsing: the closing action is not a request of its own. It is a flag the one
+' check-out carries, so turning it on or off changes what that single write does. With the date
+' gone there is no second variation left: there is one check-out, and it takes no argument.
+
+pool "User" {
+  start "Work to settle"
+  :Open the check-out;
+  send "Read the account since the last check-out" to accountIn
+  receive "The figures, and what was completed" as account
+
+  :Write the check-out notes;
+  multiInstance
+  rule BR-37
+  rule BR-121
+
+  :Choose whether to archive what is done;
+  rule BR-34
+
+  :Complete the check-out;
+  rule BR-39
+  send "Check out the work" to closeIn
+  receive "The check-out outcome" as log
+
+  end "Work settled"
+}
+
+system pool "Bearing" {
+  messageStart "Account requested" as accountIn
+  call "BP13.01_ReadTheAccount" "Read the account since the last check-out" {
+    :Take everything since the last check-out, or everything so far where there is none;
+    rule BR-33
+    rule BR-45
+    :Take what reached Done or InProgress in that span, and on which boards;
+    rule BR-124
+    :Take the boards the span's focuses chose;
+    rule BR-41
+    :Count the span's figures over the boards that moved and the boards that were chosen;
+    rule BR-35
+    rule BR-125
+    :Report the account;
+  }
+  send "The figures, and what was completed" to account
+  end "Account answered"
+
+  messageStart "Check-out submitted" as closeIn
+  call "BP13.03_CheckOutTheWork" "Check out the work" {
+    :Append the check-out's log;
+    rule BR-33
+    rule BR-125
+    rule BR-36
+    :Archive what the check-out asked to archive;
+    rule BR-23
+    rule BR-61
+    rule BR-34
+    :Report the outcome, with the check-out's log;
+  }
+  send "The check-out outcome" to log
+  end "Check-out answered"
+}
+
+@endbpmn

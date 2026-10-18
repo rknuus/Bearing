@@ -1,0 +1,786 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP03_MaintainRoutines" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP03_MaintainRoutines">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP03.02 · Edit a routine" sourceRef="T_5" targetRef="editIn" />
+    <bpmn:messageFlow id="MF_2" name="BP03.04 · Pause or resume a routine" sourceRef="T_7" targetRef="activeIn" />
+    <bpmn:messageFlow id="MF_3" name="BP03.05 · Reorder routines" sourceRef="T_9" targetRef="reorderIn" />
+    <bpmn:messageFlow id="MF_4" name="BP03.06 · See what deleting a routine takes" sourceRef="T_11" targetRef="impactIn" />
+    <bpmn:messageFlow id="MF_5" name="BP03.07 · Delete a routine" sourceRef="T_14" targetRef="deleteIn" />
+    <bpmn:messageFlow id="MF_6" name="The editing outcome" sourceRef="BP03.02_EditRoutine" targetRef="recorded" />
+    <bpmn:messageFlow id="MF_7" name="The pause-or-resume outcome" sourceRef="BP03.04_SetRoutineActive" targetRef="activeSet" />
+    <bpmn:messageFlow id="MF_8" name="The ordering outcome" sourceRef="BP03.05_ReorderRoutines" targetRef="reordered" />
+    <bpmn:messageFlow id="MF_9" name="What the deletion will take" sourceRef="BP03.06_ReadTheDeletionImpact" targetRef="impact" />
+    <bpmn:messageFlow id="MF_10" name="The deletion outcome" sourceRef="BP03.07_DeleteRoutine" targetRef="deleted" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>The schedule is a recurrence pattern plus preferred days: it says when the routine is due, and never puts work on a board.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="recorded" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>The routine stops producing new ones either way; the occurrences it already produced go or stay on Chores.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="deleted" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>A paused routine leaves the focus selectables and the due computation, and returns to both on resume.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="BP03.04_SetRoutineActive" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>The occurrences are a declinable cascade, so it starts off. Declining leaves them on Chores and stops the routine producing new ones.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="BP03.06_ReadTheDeletionImpact" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>A routine carries no life area. The recurrence is Daily, Weekly, Monthly or Yearly.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="BP03.02_EditRoutine" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>The request carries the cascade the user approved.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="BP03.07_DeleteRoutine" targetRef="TextAnnotation_X6" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A routine needs attention">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Work a routine">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_Gw_3</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_3" name="What needs doing?">
+      <bpmn:incoming>SF_T_2_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_9</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_T_11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="Define the routine">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_T_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="Submit the routine">
+      <bpmn:incoming>SF_T_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_recorded</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="recorded" name="The editing outcome">
+      <bpmn:incoming>SF_T_5_recorded</bpmn:incoming>
+      <bpmn:outgoing>SF_recorded_End_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_recorded" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_6" name="Routine recorded">
+      <bpmn:incoming>SF_recorded_End_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_7" name="Pause or resume the routine">
+      <bpmn:incoming>SF_Gw_3_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_activeSet</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="activeSet" name="The pause-or-resume outcome">
+      <bpmn:incoming>SF_T_7_activeSet</bpmn:incoming>
+      <bpmn:outgoing>SF_activeSet_End_8</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_activeSet" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_8" name="Routine paused or resumed">
+      <bpmn:incoming>SF_activeSet_End_8</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_9" name="Order a routine">
+      <bpmn:incoming>SF_Gw_3_T_9</bpmn:incoming>
+      <bpmn:outgoing>SF_T_9_reordered</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="reordered" name="The ordering outcome">
+      <bpmn:incoming>SF_T_9_reordered</bpmn:incoming>
+      <bpmn:outgoing>SF_reordered_End_10</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reordered" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_10" name="Routines ordered">
+      <bpmn:incoming>SF_reordered_End_10</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="T_11" name="Delete a routine">
+      <bpmn:incoming>SF_Gw_3_T_11</bpmn:incoming>
+      <bpmn:outgoing>SF_T_11_impact</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="impact" name="What the deletion will take">
+      <bpmn:incoming>SF_T_11_impact</bpmn:incoming>
+      <bpmn:outgoing>SF_impact_Gw_12</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_impact" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_12" name="Approve what the deletion takes?">
+      <bpmn:incoming>SF_impact_Gw_12</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_12_T_13</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_12_End_15</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_13" name="Select a valid cascading option">
+      <bpmn:incoming>SF_Gw_12_T_13</bpmn:incoming>
+      <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_14" name="Confirm the deletion">
+      <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+      <bpmn:outgoing>SF_T_14_deleted</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="deleted" name="The deletion outcome">
+      <bpmn:incoming>SF_T_14_deleted</bpmn:incoming>
+      <bpmn:outgoing>SF_deleted_End_16</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_deleted" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_15" name="Deletion abandoned">
+      <bpmn:incoming>SF_Gw_12_End_15</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="End_16" name="Routine deleted">
+      <bpmn:incoming>SF_deleted_End_16</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_Gw_3" sourceRef="T_2" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_T_4_T_5" sourceRef="T_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_recorded" sourceRef="T_5" targetRef="recorded" />
+    <bpmn:sequenceFlow id="SF_recorded_End_6" sourceRef="recorded" targetRef="End_6" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="add or change a routine" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_T_7_activeSet" sourceRef="T_7" targetRef="activeSet" />
+    <bpmn:sequenceFlow id="SF_activeSet_End_8" sourceRef="activeSet" targetRef="End_8" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_7" name="put one on hold, or take it off hold" sourceRef="Gw_3" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_T_9_reordered" sourceRef="T_9" targetRef="reordered" />
+    <bpmn:sequenceFlow id="SF_reordered_End_10" sourceRef="reordered" targetRef="End_10" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_9" name="reorder them" sourceRef="Gw_3" targetRef="T_9" />
+    <bpmn:sequenceFlow id="SF_T_11_impact" sourceRef="T_11" targetRef="impact" />
+    <bpmn:sequenceFlow id="SF_impact_Gw_12" sourceRef="impact" targetRef="Gw_12" />
+    <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+    <bpmn:sequenceFlow id="SF_T_14_deleted" sourceRef="T_14" targetRef="deleted" />
+    <bpmn:sequenceFlow id="SF_Gw_12_T_13" name="approve" sourceRef="Gw_12" targetRef="T_13" />
+    <bpmn:sequenceFlow id="SF_Gw_12_End_15" name="reject" sourceRef="Gw_12" targetRef="End_15" />
+    <bpmn:sequenceFlow id="SF_deleted_End_16" sourceRef="deleted" targetRef="End_16" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_11" name="retire one for good" sourceRef="Gw_3" targetRef="T_11" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="editIn" name="Routine submitted">
+      <bpmn:outgoing>SF_editIn_BP03.02_EditRoutine</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_editIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP03.02_EditRoutine" name="Edit a routine">
+      <bpmn:incoming>SF_editIn_BP03.02_EditRoutine</bpmn:incoming>
+      <bpmn:outgoing>SF_BP03.02_EditRoutine_End_19</bpmn:outgoing>
+      <bpmn:startEvent id="BP03.02_EditRoutine_s" name="Start">
+        <bpmn:outgoing>SF_BP03.02_EditRoutine_s_T_17</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_17" name="Store the edit">
+        <bpmn:incoming>SF_BP03.02_EditRoutine_s_T_17</bpmn:incoming>
+        <bpmn:outgoing>SF_T_17_T_18</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_18" name="Report the outcome">
+        <bpmn:incoming>SF_T_17_T_18</bpmn:incoming>
+        <bpmn:outgoing>SF_T_18_BP03.02_EditRoutine_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP03.02_EditRoutine_e" name="fertig">
+        <bpmn:incoming>SF_T_18_BP03.02_EditRoutine_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_17_T_18" sourceRef="T_17" targetRef="T_18" />
+      <bpmn:sequenceFlow id="SF_BP03.02_EditRoutine_s_T_17" sourceRef="BP03.02_EditRoutine_s" targetRef="T_17" />
+      <bpmn:sequenceFlow id="SF_T_18_BP03.02_EditRoutine_e" sourceRef="T_18" targetRef="BP03.02_EditRoutine_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_19" name="Routine answered">
+      <bpmn:incoming>SF_BP03.02_EditRoutine_End_19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="activeIn" name="Pause or resume submitted">
+      <bpmn:outgoing>SF_activeIn_BP03.04_SetRoutineActive</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_activeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP03.04_SetRoutineActive" name="Pause or resume a routine">
+      <bpmn:incoming>SF_activeIn_BP03.04_SetRoutineActive</bpmn:incoming>
+      <bpmn:outgoing>SF_BP03.04_SetRoutineActive_End_22</bpmn:outgoing>
+      <bpmn:startEvent id="BP03.04_SetRoutineActive_s" name="Start">
+        <bpmn:outgoing>SF_BP03.04_SetRoutineActive_s_T_20</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_20" name="Apply the pause or the resume">
+        <bpmn:incoming>SF_BP03.04_SetRoutineActive_s_T_20</bpmn:incoming>
+        <bpmn:outgoing>SF_T_20_T_21</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_21" name="Report the outcome">
+        <bpmn:incoming>SF_T_20_T_21</bpmn:incoming>
+        <bpmn:outgoing>SF_T_21_BP03.04_SetRoutineActive_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP03.04_SetRoutineActive_e" name="fertig">
+        <bpmn:incoming>SF_T_21_BP03.04_SetRoutineActive_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_20_T_21" sourceRef="T_20" targetRef="T_21" />
+      <bpmn:sequenceFlow id="SF_BP03.04_SetRoutineActive_s_T_20" sourceRef="BP03.04_SetRoutineActive_s" targetRef="T_20" />
+      <bpmn:sequenceFlow id="SF_T_21_BP03.04_SetRoutineActive_e" sourceRef="T_21" targetRef="BP03.04_SetRoutineActive_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_22" name="Pause or resume answered">
+      <bpmn:incoming>SF_BP03.04_SetRoutineActive_End_22</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="reorderIn" name="Routine reordering requested">
+      <bpmn:outgoing>SF_reorderIn_BP03.05_ReorderRoutines</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_reorderIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP03.05_ReorderRoutines" name="Reorder routines">
+      <bpmn:incoming>SF_reorderIn_BP03.05_ReorderRoutines</bpmn:incoming>
+      <bpmn:outgoing>SF_BP03.05_ReorderRoutines_End_25</bpmn:outgoing>
+      <bpmn:startEvent id="BP03.05_ReorderRoutines_s" name="Start">
+        <bpmn:outgoing>SF_BP03.05_ReorderRoutines_s_T_23</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_23" name="Apply the new order">
+        <bpmn:incoming>SF_BP03.05_ReorderRoutines_s_T_23</bpmn:incoming>
+        <bpmn:outgoing>SF_T_23_T_24</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_24" name="Report the outcome">
+        <bpmn:incoming>SF_T_23_T_24</bpmn:incoming>
+        <bpmn:outgoing>SF_T_24_BP03.05_ReorderRoutines_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP03.05_ReorderRoutines_e" name="fertig">
+        <bpmn:incoming>SF_T_24_BP03.05_ReorderRoutines_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_23_T_24" sourceRef="T_23" targetRef="T_24" />
+      <bpmn:sequenceFlow id="SF_BP03.05_ReorderRoutines_s_T_23" sourceRef="BP03.05_ReorderRoutines_s" targetRef="T_23" />
+      <bpmn:sequenceFlow id="SF_T_24_BP03.05_ReorderRoutines_e" sourceRef="T_24" targetRef="BP03.05_ReorderRoutines_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_25" name="Reordering answered">
+      <bpmn:incoming>SF_BP03.05_ReorderRoutines_End_25</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="impactIn" name="Deletion impact requested">
+      <bpmn:outgoing>SF_impactIn_BP03.06_ReadTheDeletionImpact</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_impactIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP03.06_ReadTheDeletionImpact" name="See what deleting a routine takes">
+      <bpmn:incoming>SF_impactIn_BP03.06_ReadTheDeletionImpact</bpmn:incoming>
+      <bpmn:outgoing>SF_BP03.06_ReadTheDeletionImpact_End_27</bpmn:outgoing>
+      <bpmn:startEvent id="BP03.06_ReadTheDeletionImpact_s" name="Start">
+        <bpmn:outgoing>SF_BP03.06_ReadTheDeletionImpact_s_T_26</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_26" name="Report what the deletion will take, and what of it can be declined">
+        <bpmn:incoming>SF_BP03.06_ReadTheDeletionImpact_s_T_26</bpmn:incoming>
+        <bpmn:outgoing>SF_T_26_BP03.06_ReadTheDeletionImpact_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP03.06_ReadTheDeletionImpact_e" name="fertig">
+        <bpmn:incoming>SF_T_26_BP03.06_ReadTheDeletionImpact_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP03.06_ReadTheDeletionImpact_s_T_26" sourceRef="BP03.06_ReadTheDeletionImpact_s" targetRef="T_26" />
+      <bpmn:sequenceFlow id="SF_T_26_BP03.06_ReadTheDeletionImpact_e" sourceRef="T_26" targetRef="BP03.06_ReadTheDeletionImpact_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_27" name="Impact answered">
+      <bpmn:incoming>SF_BP03.06_ReadTheDeletionImpact_End_27</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="deleteIn" name="Routine deletion requested">
+      <bpmn:outgoing>SF_deleteIn_BP03.07_DeleteRoutine</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_deleteIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP03.07_DeleteRoutine" name="Delete a routine">
+      <bpmn:incoming>SF_deleteIn_BP03.07_DeleteRoutine</bpmn:incoming>
+      <bpmn:outgoing>SF_BP03.07_DeleteRoutine_End_30</bpmn:outgoing>
+      <bpmn:startEvent id="BP03.07_DeleteRoutine_s" name="Start">
+        <bpmn:outgoing>SF_BP03.07_DeleteRoutine_s_T_28</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_28" name="Delete confirmed items">
+        <bpmn:incoming>SF_BP03.07_DeleteRoutine_s_T_28</bpmn:incoming>
+        <bpmn:outgoing>SF_T_28_T_29</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_29" name="Report the outcome">
+        <bpmn:incoming>SF_T_28_T_29</bpmn:incoming>
+        <bpmn:outgoing>SF_T_29_BP03.07_DeleteRoutine_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP03.07_DeleteRoutine_e" name="fertig">
+        <bpmn:incoming>SF_T_29_BP03.07_DeleteRoutine_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_28_T_29" sourceRef="T_28" targetRef="T_29" />
+      <bpmn:sequenceFlow id="SF_BP03.07_DeleteRoutine_s_T_28" sourceRef="BP03.07_DeleteRoutine_s" targetRef="T_28" />
+      <bpmn:sequenceFlow id="SF_T_29_BP03.07_DeleteRoutine_e" sourceRef="T_29" targetRef="BP03.07_DeleteRoutine_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_30" name="Deletion answered">
+      <bpmn:incoming>SF_BP03.07_DeleteRoutine_End_30</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_editIn_BP03.02_EditRoutine" sourceRef="editIn" targetRef="BP03.02_EditRoutine" />
+    <bpmn:sequenceFlow id="SF_BP03.02_EditRoutine_End_19" sourceRef="BP03.02_EditRoutine" targetRef="End_19" />
+    <bpmn:sequenceFlow id="SF_activeIn_BP03.04_SetRoutineActive" sourceRef="activeIn" targetRef="BP03.04_SetRoutineActive" />
+    <bpmn:sequenceFlow id="SF_BP03.04_SetRoutineActive_End_22" sourceRef="BP03.04_SetRoutineActive" targetRef="End_22" />
+    <bpmn:sequenceFlow id="SF_reorderIn_BP03.05_ReorderRoutines" sourceRef="reorderIn" targetRef="BP03.05_ReorderRoutines" />
+    <bpmn:sequenceFlow id="SF_BP03.05_ReorderRoutines_End_25" sourceRef="BP03.05_ReorderRoutines" targetRef="End_25" />
+    <bpmn:sequenceFlow id="SF_impactIn_BP03.06_ReadTheDeletionImpact" sourceRef="impactIn" targetRef="BP03.06_ReadTheDeletionImpact" />
+    <bpmn:sequenceFlow id="SF_BP03.06_ReadTheDeletionImpact_End_27" sourceRef="BP03.06_ReadTheDeletionImpact" targetRef="End_27" />
+    <bpmn:sequenceFlow id="SF_deleteIn_BP03.07_DeleteRoutine" sourceRef="deleteIn" targetRef="BP03.07_DeleteRoutine" />
+    <bpmn:sequenceFlow id="SF_BP03.07_DeleteRoutine_End_30" sourceRef="BP03.07_DeleteRoutine" targetRef="End_30" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines">
+    <bpmndi:BPMNPlane id="P_BP03_MaintainRoutines" bpmnElement="Collaboration_BP03_MaintainRoutines">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1750" height="740" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="860" width="1750" height="620" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="585" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="recorded_di" bpmnElement="recorded">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_6_di" bpmnElement="End_6">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="730" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activeSet_di" bpmnElement="activeSet">
+        <dc:Bounds x="932" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_8_di" bpmnElement="End_8">
+        <dc:Bounds x="1102" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="730" y="400" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reordered_di" bpmnElement="reordered">
+        <dc:Bounds x="932" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_10_di" bpmnElement="End_10">
+        <dc:Bounds x="1102" y="422" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="463" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="730" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="impact_di" bpmnElement="impact">
+        <dc:Bounds x="932" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_12_di" bpmnElement="Gw_12">
+        <dc:Bounds x="1095" y="535" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="590" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="1240" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="1410" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="deleted_di" bpmnElement="deleted">
+        <dc:Bounds x="1612" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1588" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_15_di" bpmnElement="End_15">
+        <dc:Bounds x="1272" y="662" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="703" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_16_di" bpmnElement="End_16">
+        <dc:Bounds x="1782" y="542" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="583" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="editIn_di" bpmnElement="editIn">
+        <dc:Bounds x="932" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.02_EditRoutine_di" bpmnElement="BP03.02_EditRoutine" isExpanded="false">
+        <dc:Bounds x="1050" y="935" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_19_di" bpmnElement="End_19">
+        <dc:Bounds x="1272" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="activeIn_di" bpmnElement="activeIn">
+        <dc:Bounds x="762" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.04_SetRoutineActive_di" bpmnElement="BP03.04_SetRoutineActive" isExpanded="false">
+        <dc:Bounds x="880" y="1055" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_22_di" bpmnElement="End_22">
+        <dc:Bounds x="1102" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reorderIn_di" bpmnElement="reorderIn">
+        <dc:Bounds x="762" y="1082" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1123" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.05_ReorderRoutines_di" bpmnElement="BP03.05_ReorderRoutines" isExpanded="false">
+        <dc:Bounds x="880" y="1175" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_25_di" bpmnElement="End_25">
+        <dc:Bounds x="1102" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="impactIn_di" bpmnElement="impactIn">
+        <dc:Bounds x="762" y="1202" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="1243" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.06_ReadTheDeletionImpact_di" bpmnElement="BP03.06_ReadTheDeletionImpact" isExpanded="false">
+        <dc:Bounds x="880" y="1295" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_27_di" bpmnElement="End_27">
+        <dc:Bounds x="1102" y="1322" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="1363" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="deleteIn_di" bpmnElement="deleteIn">
+        <dc:Bounds x="1442" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.07_DeleteRoutine_di" bpmnElement="BP03.07_DeleteRoutine" isExpanded="false">
+        <dc:Bounds x="1560" y="935" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_30_di" bpmnElement="End_30">
+        <dc:Bounds x="1782" y="962" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="1003" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_Gw_3_di" bpmnElement="SF_T_2_Gw_3">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="585" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_T_5_di" bpmnElement="SF_T_4_T_5">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_recorded_di" bpmnElement="SF_T_5_recorded">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_recorded_End_6_di" bpmnElement="SF_recorded_End_6">
+        <di:waypoint x="1138" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_activeSet_di" bpmnElement="SF_T_7_activeSet">
+        <di:waypoint x="830" y="320" />
+        <di:waypoint x="932" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_activeSet_End_8_di" bpmnElement="SF_activeSet_End_8">
+        <di:waypoint x="968" y="320" />
+        <di:waypoint x="1102" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_7_di" bpmnElement="SF_Gw_3_T_7">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="320" />
+        <di:waypoint x="730" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_reordered_di" bpmnElement="SF_T_9_reordered">
+        <di:waypoint x="830" y="440" />
+        <di:waypoint x="932" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reordered_End_10_di" bpmnElement="SF_reordered_End_10">
+        <di:waypoint x="968" y="440" />
+        <di:waypoint x="1102" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_9_di" bpmnElement="SF_Gw_3_T_9">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="440" />
+        <di:waypoint x="730" y="440" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_impact_di" bpmnElement="SF_T_11_impact">
+        <di:waypoint x="830" y="560" />
+        <di:waypoint x="932" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_impact_Gw_12_di" bpmnElement="SF_impact_Gw_12">
+        <di:waypoint x="968" y="560" />
+        <di:waypoint x="1095" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="1340" y="560" />
+        <di:waypoint x="1410" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_deleted_di" bpmnElement="SF_T_14_deleted">
+        <di:waypoint x="1510" y="560" />
+        <di:waypoint x="1612" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_12_T_13_di" bpmnElement="SF_Gw_12_T_13">
+        <di:waypoint x="1145" y="560" />
+        <di:waypoint x="1240" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_12_End_15_di" bpmnElement="SF_Gw_12_End_15">
+        <di:waypoint x="1145" y="560" />
+        <di:waypoint x="1175" y="560" />
+        <di:waypoint x="1175" y="680" />
+        <di:waypoint x="1272" y="680" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_deleted_End_16_di" bpmnElement="SF_deleted_End_16">
+        <di:waypoint x="1648" y="560" />
+        <di:waypoint x="1782" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_11_di" bpmnElement="SF_Gw_3_T_11">
+        <di:waypoint x="635" y="200" />
+        <di:waypoint x="665" y="200" />
+        <di:waypoint x="665" y="560" />
+        <di:waypoint x="730" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_editIn_BP03.02_EditRoutine_di" bpmnElement="SF_editIn_BP03.02_EditRoutine">
+        <di:waypoint x="968" y="980" />
+        <di:waypoint x="1050" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.02_EditRoutine_End_19_di" bpmnElement="SF_BP03.02_EditRoutine_End_19">
+        <di:waypoint x="1190" y="980" />
+        <di:waypoint x="1272" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_activeIn_BP03.04_SetRoutineActive_di" bpmnElement="SF_activeIn_BP03.04_SetRoutineActive">
+        <di:waypoint x="798" y="980" />
+        <di:waypoint x="828" y="980" />
+        <di:waypoint x="828" y="1100" />
+        <di:waypoint x="880" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.04_SetRoutineActive_End_22_di" bpmnElement="SF_BP03.04_SetRoutineActive_End_22">
+        <di:waypoint x="1020" y="1100" />
+        <di:waypoint x="1102" y="1100" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_reorderIn_BP03.05_ReorderRoutines_di" bpmnElement="SF_reorderIn_BP03.05_ReorderRoutines">
+        <di:waypoint x="798" y="1100" />
+        <di:waypoint x="828" y="1100" />
+        <di:waypoint x="828" y="1220" />
+        <di:waypoint x="880" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.05_ReorderRoutines_End_25_di" bpmnElement="SF_BP03.05_ReorderRoutines_End_25">
+        <di:waypoint x="1020" y="1220" />
+        <di:waypoint x="1102" y="1220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_impactIn_BP03.06_ReadTheDeletionImpact_di" bpmnElement="SF_impactIn_BP03.06_ReadTheDeletionImpact">
+        <di:waypoint x="798" y="1220" />
+        <di:waypoint x="828" y="1220" />
+        <di:waypoint x="828" y="1340" />
+        <di:waypoint x="880" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.06_ReadTheDeletionImpact_End_27_di" bpmnElement="SF_BP03.06_ReadTheDeletionImpact_End_27">
+        <di:waypoint x="1020" y="1340" />
+        <di:waypoint x="1102" y="1340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_deleteIn_BP03.07_DeleteRoutine_di" bpmnElement="SF_deleteIn_BP03.07_DeleteRoutine">
+        <di:waypoint x="1478" y="980" />
+        <di:waypoint x="1560" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.07_DeleteRoutine_End_30_di" bpmnElement="SF_BP03.07_DeleteRoutine_End_30">
+        <di:waypoint x="1700" y="980" />
+        <di:waypoint x="1782" y="980" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="940" y="240" />
+        <di:waypoint x="940" y="252" />
+        <di:waypoint x="1025" y="252" />
+        <di:waypoint x="1025" y="950" />
+        <di:waypoint x="940" y="950" />
+        <di:waypoint x="940" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="770" y="360" />
+        <di:waypoint x="770" y="372" />
+        <di:waypoint x="855" y="372" />
+        <di:waypoint x="855" y="950" />
+        <di:waypoint x="770" y="950" />
+        <di:waypoint x="770" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="780" y="480" />
+        <di:waypoint x="780" y="492" />
+        <di:waypoint x="865" y="492" />
+        <di:waypoint x="865" y="1070" />
+        <di:waypoint x="780" y="1070" />
+        <di:waypoint x="780" y="1082" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="790" y="600" />
+        <di:waypoint x="790" y="612" />
+        <di:waypoint x="875" y="612" />
+        <di:waypoint x="875" y="1190" />
+        <di:waypoint x="790" y="1190" />
+        <di:waypoint x="790" y="1202" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_5_di" bpmnElement="MF_5">
+        <di:waypoint x="1460" y="600" />
+        <di:waypoint x="1460" y="962" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_6_di" bpmnElement="MF_6">
+        <di:waypoint x="1120" y="935" />
+        <di:waypoint x="1120" y="923" />
+        <di:waypoint x="1205" y="923" />
+        <di:waypoint x="1205" y="230" />
+        <di:waypoint x="1120" y="230" />
+        <di:waypoint x="1120" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_7_di" bpmnElement="MF_7">
+        <di:waypoint x="945" y="1055" />
+        <di:waypoint x="1030" y="1055" />
+        <di:waypoint x="1030" y="350" />
+        <di:waypoint x="945" y="350" />
+        <di:waypoint x="945" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_8_di" bpmnElement="MF_8">
+        <di:waypoint x="955" y="1175" />
+        <di:waypoint x="955" y="1163" />
+        <di:waypoint x="1040" y="1163" />
+        <di:waypoint x="1040" y="470" />
+        <di:waypoint x="955" y="470" />
+        <di:waypoint x="955" y="458" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_9_di" bpmnElement="MF_9">
+        <di:waypoint x="960" y="1295" />
+        <di:waypoint x="960" y="1283" />
+        <di:waypoint x="1045" y="1283" />
+        <di:waypoint x="1045" y="590" />
+        <di:waypoint x="960" y="590" />
+        <di:waypoint x="960" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_10_di" bpmnElement="MF_10">
+        <di:waypoint x="1630" y="935" />
+        <di:waypoint x="1630" y="578" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="1000" y="72" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="1120" y="182" /><di:waypoint x="1120" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1510" y="432" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1630" y="542" /><di:waypoint x="1630" y="508" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="830" y="1397" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="950" y="1145" /><di:waypoint x="950" y="1155" /><di:waypoint x="870" y="1155" /><di:waypoint x="870" y="1397" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="830" y="1470" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="950" y="1385" /><di:waypoint x="820" y="1385" /><di:waypoint x="820" y="1508" /><di:waypoint x="830" y="1508" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="1000" y="1558" width="240" height="61" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="1120" y="1025" /><di:waypoint x="1120" y="1035" /><di:waypoint x="1099" y="1035" /><di:waypoint x="1099" y="1558" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="1510" y="1045" width="240" height="46" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="1630" y="1025" /><di:waypoint x="1630" y="1045" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines_BP0302EditRoutine">
+    <bpmndi:BPMNPlane id="P_BP0302EditRoutine" bpmnElement="BP03.02_EditRoutine">
+      <bpmndi:BPMNShape id="BP03.02_EditRoutine_s_di" bpmnElement="BP03.02_EditRoutine_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_17_di" bpmnElement="T_17">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.02_EditRoutine_e_di" bpmnElement="BP03.02_EditRoutine_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_17_T_18_di" bpmnElement="SF_T_17_T_18">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.02_EditRoutine_s_T_17_di" bpmnElement="SF_BP03.02_EditRoutine_s_T_17">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_BP03.02_EditRoutine_e_di" bpmnElement="SF_T_18_BP03.02_EditRoutine_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines_BP0304SetRoutineActive">
+    <bpmndi:BPMNPlane id="P_BP0304SetRoutineActive" bpmnElement="BP03.04_SetRoutineActive">
+      <bpmndi:BPMNShape id="BP03.04_SetRoutineActive_s_di" bpmnElement="BP03.04_SetRoutineActive_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_20_di" bpmnElement="T_20">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_21_di" bpmnElement="T_21">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.04_SetRoutineActive_e_di" bpmnElement="BP03.04_SetRoutineActive_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_20_T_21_di" bpmnElement="SF_T_20_T_21">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.04_SetRoutineActive_s_T_20_di" bpmnElement="SF_BP03.04_SetRoutineActive_s_T_20">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_21_BP03.04_SetRoutineActive_e_di" bpmnElement="SF_T_21_BP03.04_SetRoutineActive_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines_BP0305ReorderRoutines">
+    <bpmndi:BPMNPlane id="P_BP0305ReorderRoutines" bpmnElement="BP03.05_ReorderRoutines">
+      <bpmndi:BPMNShape id="BP03.05_ReorderRoutines_s_di" bpmnElement="BP03.05_ReorderRoutines_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_23_di" bpmnElement="T_23">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_24_di" bpmnElement="T_24">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.05_ReorderRoutines_e_di" bpmnElement="BP03.05_ReorderRoutines_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_23_T_24_di" bpmnElement="SF_T_23_T_24">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.05_ReorderRoutines_s_T_23_di" bpmnElement="SF_BP03.05_ReorderRoutines_s_T_23">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_24_BP03.05_ReorderRoutines_e_di" bpmnElement="SF_T_24_BP03.05_ReorderRoutines_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines_BP0306ReadTheDeletionImpact">
+    <bpmndi:BPMNPlane id="P_BP0306ReadTheDeletionImpact" bpmnElement="BP03.06_ReadTheDeletionImpact">
+      <bpmndi:BPMNShape id="BP03.06_ReadTheDeletionImpact_s_di" bpmnElement="BP03.06_ReadTheDeletionImpact_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_26_di" bpmnElement="T_26">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.06_ReadTheDeletionImpact_e_di" bpmnElement="BP03.06_ReadTheDeletionImpact_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP03.06_ReadTheDeletionImpact_s_T_26_di" bpmnElement="SF_BP03.06_ReadTheDeletionImpact_s_T_26">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_26_BP03.06_ReadTheDeletionImpact_e_di" bpmnElement="SF_T_26_BP03.06_ReadTheDeletionImpact_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP03_MaintainRoutines_BP0307DeleteRoutine">
+    <bpmndi:BPMNPlane id="P_BP0307DeleteRoutine" bpmnElement="BP03.07_DeleteRoutine">
+      <bpmndi:BPMNShape id="BP03.07_DeleteRoutine_s_di" bpmnElement="BP03.07_DeleteRoutine_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_28_di" bpmnElement="T_28">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_29_di" bpmnElement="T_29">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP03.07_DeleteRoutine_e_di" bpmnElement="BP03.07_DeleteRoutine_e">
+        <dc:Bounds x="762" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_28_T_29_di" bpmnElement="SF_T_28_T_29">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP03.07_DeleteRoutine_s_T_28_di" bpmnElement="SF_BP03.07_DeleteRoutine_s_T_28">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_29_BP03.07_DeleteRoutine_e_di" bpmnElement="SF_T_29_BP03.07_DeleteRoutine_e">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="762" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

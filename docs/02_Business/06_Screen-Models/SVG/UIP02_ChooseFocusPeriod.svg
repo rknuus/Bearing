@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="948" height="639" viewBox="0 0 948 639">
+<rect width="948" height="639" fill="#fff"/>
+<rect x="24" y="24" width="900" height="500" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="24" x2="54" y2="524" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="278.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 274)">User</text>
+<polyline points="152,144 254,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 144 L 246 147.36 L 246 140.64 Z" fill="#000"/>
+<polyline points="354,144 449,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 144 L 441 147.36 L 441 140.64 Z" fill="#000"/>
+<polyline points="694,144 796,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 144 L 788 147.36 L 788 140.64 Z" fill="#000"/>
+<polyline points="499,144 594,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 144 L 586 147.36 L 586 140.64 Z" fill="#000"/>
+<polyline points="694,264 796,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 264 L 788 267.36 L 788 260.64 Z" fill="#000"/>
+<polyline points="499,144 529,144 529,264 594,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 264 L 586 267.36 L 586 260.64 Z" fill="#000"/>
+<polyline points="694,384 796,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 384 L 788 387.36 L 788 380.64 Z" fill="#000"/>
+<polyline points="499,144 529,144 529,384 594,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 384 L 586 387.36 L 586 380.64 Z" fill="#000"/>
+<polyline points="304,184 304,204" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,304 644,314 584,314 584,436" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,424 514,424 514,577 524,577" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A stretch of days</text>
+<text x="92" y="186.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">worth looking back</text>
+<text x="92" y="197.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">on</text>
+<rect x="254" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="134.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Choose which week,</text>
+<text x="304" y="146.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">month or year to</text>
+<text x="304" y="158.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">review</text>
+<path d="M 474 119 L 499 144 L 474 169 L 449 144 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 133.5 L 484.5 154.5 M 463.5 154.5 L 484.5 133.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="183" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What next?</text>
+<rect x="594" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Step the period, or</text>
+<text x="644" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">switch the scope</text>
+<circle cx="814" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Another period</text>
+<text x="772" y="186.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">opened</text>
+<rect x="594" y="224" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="260.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open the logs</text>
+<text x="644" y="272.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">covering that day</text>
+<circle cx="814" cy="264" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="296" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Logs read</text>
+<rect x="594" y="344" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="380.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select the day to</text>
+<text x="644" y="392.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">edit (BP08)</text>
+<circle cx="814" cy="384" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="416" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Day opened for</text>
+<text x="772" y="426.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">editing</text>
+<path d="M 190 204 H 184 V 295 H 190" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="193" y="216" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The period a view shows, how it relates to now and its</text>
+<text x="193" y="226.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">theme balance are derived from the days in play; nothing</text>
+<text x="193" y="237.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">is fetched for them. The smallest scope is a week.</text>
+<path d="M 530 436 H 524 V 527 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="448" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A log covers everything since the check-out before it. A</text>
+<text x="533" y="458.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">day split by two check-outs is covered by both; a day</text>
+<text x="533" y="469.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">nobody has settled yet is covered by none.</text>
+<path d="M 530 539 H 524 V 615 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="551" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The day focus editor opens on the selected day and the</text>
+<text x="533" y="561.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">period stays behind it. Committing that focus is its own</text>
+<text x="533" y="572.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">process (BP08).</text>
+<rect x="501" y="145" width="84.21" height="11.5" fill="#fff"/>
+<text x="502" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">look at another period</text>
+<rect x="531" y="145" width="77.13" height="11.5" fill="#fff"/>
+<text x="532" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">understand one day</text>
+<rect x="531" y="145" width="77.34" height="11.5" fill="#fff"/>
+<text x="532" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">change a day's plan</text>
+</svg>

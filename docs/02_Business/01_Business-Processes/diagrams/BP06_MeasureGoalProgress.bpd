@@ -1,0 +1,230 @@
+@startbpmn BP06_MeasureGoalProgress
+lang en
+
+output L1 "01_detailed/BP06_MeasureGoalProgress.bpmn"
+output L2 "02_detailed/BP06_MeasureGoalProgress.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the drawing does NOT dispatch on the measure's type: a numeric check-in carries a value and a
+'     boolean one carries done or not done, which are two permutations of ONE operation and are
+'     discovered at Design, not asserted here. Drawing the gateway was premature: BR-28, ADR-069,
+'     SA 2026-10-11 ("yes, premature, leave that to detail design")
+'   - every measure is typed numeric or boolean; there is no untyped measure: BR-28, QB-13
+'   - a measure's type is amendable, and amending it leaves the check-ins already recorded as they
+'     stand, each in the type it was recorded under: BR-28, SA 2026-10-10
+'   - NOTHING records that the type changed. A measure has no change history: that an operation
+'     happened is the operation log's business, every user operation is logged, and no drawing
+'     models it (DRW-27). This retires the dated type-change entry of SA 2026-10-12 together with
+'     the gateway that wrote it: BR-28, SA 2026-10-16 ("logging user operations is done for all
+'     user operations, so modelling it doesn't make sense")
+'   - one editor per entity serves adding a measure and changing one alike, and nothing separated
+'     the two chains but the fields they stored, so they are ONE request: UX-04, SA 2026-10-11.
+'     Call site BP06.04 (Amend a progress measure) is RETIRED, its id never reused
+'   - the only thing a measure OWNS is its check-in history, which goes with it unasked, so neither
+'     removing nor archiving it discloses or asks anything, and neither draws an impact read or
+'     an approval: a project parented on it survives minus the link where it is removed and
+'     keeps its parent where it is archived, a parentless project being legal in any case. This
+'     is the shape a task's deletion already has
+'     (BP11.08). Call sites BP06.06 (See what removing a measure takes) and BP06.10 (See what
+'     archiving a measure takes) are RETIRED, their ids never reused: BR-12, BR-17, BR-96,
+'     BR-115, POL-11, ADR-066, SA 2026-10-16 ("archiving leaf items like measures do not require
+'     an approve decision")
+'   - the check-in history is the MEASURE's, and reading it is this process's act: the v1 key-result
+'     surface is preserved, where a measure keeps its own dated data points. The per-goal history
+'     of earlier that day is WITHDRAWN by its author, and with it BP05's read: SA 2026-10-16 ("so
+'     my ruling that measure check-ins are always part of goal check-ins was wrong. Revert that")
+'   - a measure tracks a current value against a target, which is the whole point of it: numeric
+'     carries a start value, a target, a unit and a direction, with the current value initialized
+'     to the start and moved by each check-in; boolean carries done and not done, starting at not
+'     done. v1 kept exactly that and no note; the optional note per check-in is what v2 adds:
+'     BR-28, SA 2026-10-16, tmp/Bearing-v1 (KeyResult: startValue, currentValue, targetValue)
+'   - a check-in is one dated data point with an optional note: section 3
+'   - the history is append-only, so a second check-in on one date is a second data point: section 3, SA 2026-10-10
+'   - the current value is the latest check-in, and the start value until there is one, so nothing
+'     records it twice: BR-28, DRW-10
+'   - an archived item is frozen, so an archived goal's measures take nothing at all: BR-05, SA 2026-10-10
+'   - a measure is archivable ON ITS OWN, so that one which turns out not to say anything about its
+'     goal is set aside instead of deleted: BR-23, SA 2026-10-16 ("measures must be archivable on
+'     their own if I notice that a measure does not work to fulfil a goal"). It reaches nothing: an
+'     archived measure still exists, so a project parented on it keeps its parent, and it comes
+'     back only into a live goal: BR-25, BR-26, BR-112
+'   - archiving the GOAL still takes its live measures and its check-in history along unasked,
+'     which is BP05's act and not drawn here: BR-112
+'   - the Goals view carries the goal's ACTIVE measures, so an archived one is reached only through
+'     the archive (BP15) and is frozen there like any archived item: BR-05, BR-26, BP05.01
+'   - the goals overview carries no measures, so this process reads its own: BP05.01, section 7
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - the measure the user checks in on is already in front of them, read with the goals in
+'     BP05.01, so no step of this process opens one: BP05.01, SA 2026-10-16 ("'Open a progress
+'     measure' is part of BP05's read, so drop it from BP06")
+'   - the cadence of a check-in is the user's, out of band: section 1.2 step 5
+'   - per-measure status is auto-inferred at check-out, not at check-in: BR-28, BR-29
+'   - a goal's progress measures are its sub-items and have no page of their own: they are read
+'     with the goals, in BP05, and this process acts on what the Goals view already carries.
+'     Call site BP06.08 (Read a goal's progress measures) is RETIRED and its id never reused.
+'     An archived goal's measures are not reachable here, because the Goals view carries the
+'     active goals only; BR-05 is held by the write's own verification: BR-05, BR-28, BR-87,
+'     BR-128, SA 2026-10-14, ADR-066
+'   - a deletion that discloses nothing still commits on a confirmation, so the step that
+'     commits it reads as the confirmation, exactly as a disclosed deletion's does: DRW-28,
+'     BR-20
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user DEFINES a measure:
+'     SA 2026-10-16
+'   - the check-in reads NOTHING first: the measures and where each one stands arrive with the
+'     goals (BP05.01), and a view is read whole, so no act reads it again. The check-in is a write
+'     and nothing else - state the value, submit it: BR-28, DRW-14, SA 2026-10-16 ("the current
+'     measures are already available ... there is absolutely no need to read them")
+'   - the dated series is the one thing the Goals view does not carry, and looking at how a measure
+'     has moved is therefore an act of its own (OpenItem), not a preamble to the check-in: whether
+'     a check-in form also shows the trend is the UI's business: BB02, DRW-14, SA 2026-10-16
+'   - THE ACTS DO NOT RETURN to a hub: each act is one path and ends on what the gesture did. That
+'     the measures stay in front of the user and the next act is available is the work loop, which
+'     holds for every surface in the product and is stated once in the path patterns (BB22) instead
+'     of being redrawn as a return edge per act - six return edges here, every one of them crossing
+'     the drawing. The hub box was a return target and nothing else, so it is a plain step now, and
+'     the "nothing more" exit went with the loop it closed: a gateway answer that does nothing is
+'     not an act: BR-118, BB22, DRW-09, DRW-24, SA 2026-10-17 ("the loops make the diagrams
+'     complicated")
+'   - the check-in is ONE act, drawn the way every composed write is drawn: the box the user fills
+'     in and the box that commits it. What is typed - the value and the optional note - is a draft
+'     until the submit, which is why BR-121 binds on the first and the request leaves from the
+'     second. A gesture that carries its own value and composes nothing is one box instead (pause
+'     or resume, an order, a drag): BR-121, UX-04, DRW-11, BB03, SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'     Call site BP06.01 (Read a measure's check-in history) is RETIRED with the fetch it was, its id
+'     never reused: the check-ins are in play with the measure, so looking at how one has moved asks
+'     the system for nothing: ADR-066, SA 2026-10-17
+'
+'   - SETTING A MEASURE ASIDE needs a way back to it: the archive is reached by an explicit act,
+'     from the surface that owns the kind, exactly as BP04, BP05, BP11 and BP17 reach it. The
+'     measure is listed under its goal, in the Goals archive, and reading it, unarchiving it and
+'     destroying it are BP15's - one step, a note and no call site: BR-26, BR-25, DRW-29,
+'     SA 2026-10-17 ("add action to access history")
+'
+' Scope: this process is the whole life of a goal's progress measures — what is measured, and what
+' it stood at. Framing the goal itself is BP05, judging it is BP07. The goals overview reads goals
+' and not their measures, so this process reads its own at the entry; the goal it starts from is one
+' the user already has in front of them.
+'
+' Call-site history: the measure lifecycle was drawn in BP05 until 2026-10-10 and moved here on the
+' Software Architect's ruling, so that one process holds the measure and the other the commitment.
+' BP05.06 to BP05.10 are retired there and are never reused.
+'
+' Call-site collapsing: a numeric check-in and a boolean check-in are two variations of one
+' request. The type is the measure's, already fixed when the measure was added, so the payload
+' differs and the operation does not. The inferred status belongs to the check-out (BP07), not
+' here: a check-in records a data point and judges nothing.
+
+pool "User" {
+  start "A commitment to measure, or progress to record"
+  :Work a progress measure;
+  rule BR-118
+  note "A goal's measures are its own sub-items and have no page of their own: they are already on the Goals view, read with the goals. This process acts on what is there."
+
+  if "What needs doing?" then "add or change what counts"
+    :Define a measure;
+    rule BR-121
+    :Submit the measure;
+    send "Edit a progress measure" to editIn
+    receive "The editing outcome" as measureSaved
+    note "Numeric carries a start value, a target, a unit and a direction, and its current value starts at the start value; boolean carries done and not done, starting at not done. The type is editable like the start value, the target and the unit, and the recorded check-ins are left as they stand."
+    end "Measure defined"
+
+  elseif "What needs doing?" then "reorder them"
+    :Order a measure;
+    send "Reorder progress measures" to reorderIn
+    receive "The ordering outcome" as reordered
+    note "The check-in history hangs on the measure's identity, never on its position."
+    end "Measures ordered"
+
+  elseif "What needs doing?" then "set one aside"
+    :Archive a measure;
+    send "Archive a progress measure" to measureArchiveIn
+    receive "The archiving outcome" as measureArchived
+    note "A measure takes its own check-in history with it and brings it back with it. A project parented on it keeps its parent, which still exists."
+    end "Measure set aside"
+
+  elseif "What needs doing?" then "drop one"
+    :Remove a measure;
+    send "Remove a progress measure" to removeIn
+    receive "The removal outcome" as removed
+    note "Its check-in history goes with it, unasked, and nothing else does, so there is nothing to disclose and nothing to approve: a project parented on it survives minus the link."
+    end "Measure removed"
+
+  elseif "What needs doing?" then "record where one stands"
+    :Check in on a measure;
+    rule BR-121
+    :Submit the check-in;
+    send "Record a progress check-in" to checkInIn
+    receive "The check-in outcome" as recorded
+    note "Numeric takes the value the current value moves to. Boolean takes done and not done. A note is optional either way. Nothing is read first: the measure and where it stands arrived with the goals."
+    end "Progress recorded"
+
+  elseif "What needs doing?" then "look at the ones set aside"
+    :Open the archived measures (BP15);
+    note "An archived measure is listed under the goal it belongs to, in the Goals archive. Reading it, bringing it back and destroying it are their own process (BP15)."
+    end "Archive opened"
+
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Check-in submitted" as checkInIn
+  call "BP06.02_RecordProgressCheckIn" "Record a progress check-in" {
+    :Append the check-in and move the measure's current value;
+    rule BR-28
+    :Report the outcome;
+  }
+  send "The check-in outcome" to recorded
+  note "The history is append-only, so a date that already carries a check-in takes another and each is its own data point. The current value is what the latest one says, and the start value until there is one. A check-in records a data point and infers no status."
+  end "Check-in answered"
+
+  messageStart "Measure submitted" as editIn
+  call "BP06.03_EditProgressMeasure" "Edit a progress measure" {
+    :Store the edit;
+    rule BR-28
+    :Report the outcome;
+  }
+  send "The editing outcome" to measureSaved
+  note "There is no untyped measure. The type is editable like the start value, the target and the unit, and the check-ins already recorded are left as they stand, each in the type it was recorded under."
+  end "Measure answered"
+
+  messageStart "Measure reordering requested" as reorderIn
+  call "BP06.05_ReorderProgressMeasures" "Reorder progress measures" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to reordered
+  end "Measure reordering answered"
+
+  messageStart "Measure archiving requested" as measureArchiveIn
+  call "BP06.11_ArchiveProgressMeasure" "Archive a progress measure" {
+    :Archive the measure;
+    rule BR-23
+    :Report the outcome;
+  }
+  send "The archiving outcome" to measureArchived
+  note "Its check-in history goes with it and comes back with it, into a live goal. While it is away it is frozen, so nothing is recorded against it."
+  end "Archiving answered"
+
+  messageStart "Measure removal requested" as removeIn
+  call "BP06.07_RemoveProgressMeasure" "Remove a progress measure" {
+    :Remove the measure;
+    rule BR-115
+    :Report the outcome;
+  }
+  send "The removal outcome" to removed
+  end "Removal answered"
+}
+
+@endbpmn

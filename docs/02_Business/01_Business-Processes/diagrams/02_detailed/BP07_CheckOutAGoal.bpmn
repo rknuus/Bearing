@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP07_CheckOutAGoal" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP07_CheckOutAGoal">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP07.01 · Read the inferred statuses and the linked projects" sourceRef="T_2" targetRef="observedIn" />
+    <bpmn:messageFlow id="MF_2" name="BP07.04 · Check the goal out" sourceRef="complete" targetRef="closeIn" />
+    <bpmn:messageFlow id="MF_3" name="A status inferred per measure, and the goal's linked projects" sourceRef="BP07.01_ReadTheInferredStatuses" targetRef="observed" />
+    <bpmn:messageFlow id="MF_4" name="The check-out outcome" sourceRef="BP07.04_CheckOutGoal" targetRef="closed" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>Achieved, partially achieved, missed or abandoned. The outcome is required; everything else in the sitting is optional.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_3" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Any inferred status can be overridden, a boolean measure set to Partial included. The rule constrains the inference, never the judgment.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="T_5" targetRef="TextAnnotation_X2" />
+    <bpmn:textAnnotation id="TextAnnotation_X3"><bpmn:text>The linked projects come with the check-out, every one of them picked to go with the goal, and whichever should stay is left active. An archived goal still exists, so a project kept active is not orphaned. The goal's progress measures and their check-in history go with it unasked.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X3" associationDirection="None" sourceRef="T_7" targetRef="TextAnnotation_X3" />
+    <bpmn:textAnnotation id="TextAnnotation_X4"><bpmn:text>What a follow-up inherits, resets and back-references is fixed, so the sitting says only whether to create one. Amending it afterwards is editing a goal, on the goals view.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X4" associationDirection="None" sourceRef="T_10" targetRef="TextAnnotation_X4" />
+    <bpmn:textAnnotation id="TextAnnotation_X5"><bpmn:text>One request carries everything the sitting decided, and the system executes it in one go: the check-out stored, the archiving where it was asked for, the follow-up created, the outcome reported. Nothing is left to decide after it.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X5" associationDirection="None" sourceRef="closed" targetRef="TextAnnotation_X5" />
+    <bpmn:textAnnotation id="TextAnnotation_X6"><bpmn:text>This is what the system observed, which the user then judges: the statuses are inferred and never decided. The goal and its measures came with the goals, so nothing re-reads them; their linked projects did not, and the sitting settles the archiving on them. A check-out is available at any time, with or without a horizon.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X6" associationDirection="None" sourceRef="BP07.01_ReadTheInferredStatuses" targetRef="TextAnnotation_X6" />
+    <bpmn:textAnnotation id="TextAnnotation_X7"><bpmn:text>The check-out record stays attached to the goal, archived or not, and unarchiving never revokes it. The follow-up inherits the theme and the linked ideas, carries the objective over as a continuation, takes the Partial and Missed measures with their progress reset, advances a horizon that existed, drops the check-out notes, and keeps the link back to the check-out that keeps the iteration chain traceable.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X7" associationDirection="None" sourceRef="BP07.04_CheckOutGoal" targetRef="TextAnnotation_X7" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="A cycle ending, or a commitment to settle">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Open a goal's check-out">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_observed</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="observed" name="A status inferred per measure, and the goal's linked projects">
+      <bpmn:incoming>SF_T_2_observed</bpmn:incoming>
+      <bpmn:outgoing>SF_observed_T_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_observed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_3" name="Rate the overall outcome">
+      <bpmn:incoming>SF_observed_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_Gw_4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_4" name="Accept the inferred statuses?">
+      <bpmn:incoming>SF_T_3_Gw_4</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_4_T_5</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_4_notes</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_5" name="Set a status by hand">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_notes</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="notes" name="Write the goal notes">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_T_5_notes</bpmn:incoming>
+      <bpmn:incoming>SF_Gw_4_notes</bpmn:incoming>
+      <bpmn:outgoing>SF_notes_Gw_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_6" name="What becomes of the goal?">
+      <bpmn:incoming>SF_notes_Gw_6</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_6_T_7</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_6_T_8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_7" name="Pick which linked projects go with it">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_Gw_6_T_7</bpmn:incoming>
+      <bpmn:outgoing>SF_T_7_Gw_9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_8" name="Turn the archive action off">
+      <bpmn:incoming>SF_Gw_6_T_8</bpmn:incoming>
+      <bpmn:outgoing>SF_T_8_Gw_9</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:exclusiveGateway id="Gw_9" name="Carry the commitment forward?">
+      <bpmn:incoming>SF_T_7_Gw_9</bpmn:incoming>
+      <bpmn:incoming>SF_T_8_Gw_9</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_9_T_10</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_9_complete</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_10" name="Ask for a follow-up">
+      <bpmn:incoming>SF_Gw_9_T_10</bpmn:incoming>
+      <bpmn:outgoing>SF_T_10_complete</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="complete" name="Complete the check-out">
+      <bpmn:incoming>SF_T_10_complete</bpmn:incoming>
+      <bpmn:incoming>SF_Gw_9_complete</bpmn:incoming>
+      <bpmn:outgoing>SF_complete_closed</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="closed" name="The check-out outcome">
+      <bpmn:incoming>SF_complete_closed</bpmn:incoming>
+      <bpmn:outgoing>SF_closed_End_11</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closed" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_11" name="Commitment settled">
+      <bpmn:incoming>SF_closed_End_11</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_observed" sourceRef="T_2" targetRef="observed" />
+    <bpmn:sequenceFlow id="SF_observed_T_3" sourceRef="observed" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_3_Gw_4" sourceRef="T_3" targetRef="Gw_4" />
+    <bpmn:sequenceFlow id="SF_Gw_4_T_5" name="override one" sourceRef="Gw_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_notes" sourceRef="T_5" targetRef="notes" />
+    <bpmn:sequenceFlow id="SF_notes_Gw_6" sourceRef="notes" targetRef="Gw_6" />
+    <bpmn:sequenceFlow id="SF_Gw_6_T_7" name="archive it" sourceRef="Gw_6" targetRef="T_7" />
+    <bpmn:sequenceFlow id="SF_Gw_6_T_8" name="leave it active" sourceRef="Gw_6" targetRef="T_8" />
+    <bpmn:sequenceFlow id="SF_T_7_Gw_9" sourceRef="T_7" targetRef="Gw_9" />
+    <bpmn:sequenceFlow id="SF_T_8_Gw_9" sourceRef="T_8" targetRef="Gw_9" />
+    <bpmn:sequenceFlow id="SF_Gw_9_T_10" name="yes" sourceRef="Gw_9" targetRef="T_10" />
+    <bpmn:sequenceFlow id="SF_T_10_complete" sourceRef="T_10" targetRef="complete" />
+    <bpmn:sequenceFlow id="SF_complete_closed" sourceRef="complete" targetRef="closed" />
+    <bpmn:sequenceFlow id="SF_closed_End_11" sourceRef="closed" targetRef="End_11" />
+    <bpmn:sequenceFlow id="SF_Gw_4_notes" name="take them as they are" sourceRef="Gw_4" targetRef="notes" />
+    <bpmn:sequenceFlow id="SF_Gw_9_complete" name="no, end it here" sourceRef="Gw_9" targetRef="complete" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="observedIn" name="Inferred statuses requested">
+      <bpmn:outgoing>SF_observedIn_BP07.01_ReadTheInferredStatuses</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_observedIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.01_ReadTheInferredStatuses" name="Read the inferred statuses and the linked projects">
+      <bpmn:incoming>SF_observedIn_BP07.01_ReadTheInferredStatuses</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.01_ReadTheInferredStatuses_End_15</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.01_ReadTheInferredStatuses_s" name="Start">
+        <bpmn:outgoing>SF_BP07.01_ReadTheInferredStatuses_s_T_12</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_12" name="Infer a status per measure from its current type, over the check-ins recorded under it">
+        <bpmn:incoming>SF_BP07.01_ReadTheInferredStatuses_s_T_12</bpmn:incoming>
+        <bpmn:outgoing>SF_T_12_T_13</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_13" name="Take the projects parented on the goal and on its measures">
+        <bpmn:incoming>SF_T_12_T_13</bpmn:incoming>
+        <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_14" name="Report collected information">
+        <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+        <bpmn:outgoing>SF_T_14_BP07.01_ReadTheInferredStatuses_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.01_ReadTheInferredStatuses_e" name="fertig">
+        <bpmn:incoming>SF_T_14_BP07.01_ReadTheInferredStatuses_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_12_T_13" sourceRef="T_12" targetRef="T_13" />
+      <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+      <bpmn:sequenceFlow id="SF_BP07.01_ReadTheInferredStatuses_s_T_12" sourceRef="BP07.01_ReadTheInferredStatuses_s" targetRef="T_12" />
+      <bpmn:sequenceFlow id="SF_T_14_BP07.01_ReadTheInferredStatuses_e" sourceRef="T_14" targetRef="BP07.01_ReadTheInferredStatuses_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_15" name="Inferred statuses answered">
+      <bpmn:incoming>SF_BP07.01_ReadTheInferredStatuses_End_15</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="closeIn" name="Close-out submitted">
+      <bpmn:outgoing>SF_closeIn_BP07.04_CheckOutGoal</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP07.04_CheckOutGoal" name="Check the goal out">
+      <bpmn:incoming>SF_closeIn_BP07.04_CheckOutGoal</bpmn:incoming>
+      <bpmn:outgoing>SF_BP07.04_CheckOutGoal_End_20</bpmn:outgoing>
+      <bpmn:startEvent id="BP07.04_CheckOutGoal_s" name="Start">
+        <bpmn:outgoing>SF_BP07.04_CheckOutGoal_s_T_16</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_16" name="Store the check-out on the goal">
+        <bpmn:incoming>SF_BP07.04_CheckOutGoal_s_T_16</bpmn:incoming>
+        <bpmn:outgoing>SF_T_16_T_17</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_17" name="Archive the goal with its check-out record and the projects the user picked, where the check-out says so">
+        <bpmn:incoming>SF_T_16_T_17</bpmn:incoming>
+        <bpmn:outgoing>SF_T_17_T_18</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_18" name="Create the follow-up from the goal and the check-out, linked back to it, where the sitting asked for one">
+        <bpmn:incoming>SF_T_17_T_18</bpmn:incoming>
+        <bpmn:outgoing>SF_T_18_T_19</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_19" name="Report the outcome">
+        <bpmn:incoming>SF_T_18_T_19</bpmn:incoming>
+        <bpmn:outgoing>SF_T_19_BP07.04_CheckOutGoal_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP07.04_CheckOutGoal_e" name="fertig">
+        <bpmn:incoming>SF_T_19_BP07.04_CheckOutGoal_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_16_T_17" sourceRef="T_16" targetRef="T_17" />
+      <bpmn:sequenceFlow id="SF_T_17_T_18" sourceRef="T_17" targetRef="T_18" />
+      <bpmn:sequenceFlow id="SF_T_18_T_19" sourceRef="T_18" targetRef="T_19" />
+      <bpmn:sequenceFlow id="SF_BP07.04_CheckOutGoal_s_T_16" sourceRef="BP07.04_CheckOutGoal_s" targetRef="T_16" />
+      <bpmn:sequenceFlow id="SF_T_19_BP07.04_CheckOutGoal_e" sourceRef="T_19" targetRef="BP07.04_CheckOutGoal_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_20" name="Close-out answered">
+      <bpmn:incoming>SF_BP07.04_CheckOutGoal_End_20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_observedIn_BP07.01_ReadTheInferredStatuses" sourceRef="observedIn" targetRef="BP07.01_ReadTheInferredStatuses" />
+    <bpmn:sequenceFlow id="SF_BP07.01_ReadTheInferredStatuses_End_15" sourceRef="BP07.01_ReadTheInferredStatuses" targetRef="End_15" />
+    <bpmn:sequenceFlow id="SF_closeIn_BP07.04_CheckOutGoal" sourceRef="closeIn" targetRef="BP07.04_CheckOutGoal" />
+    <bpmn:sequenceFlow id="SF_BP07.04_CheckOutGoal_End_20" sourceRef="BP07.04_CheckOutGoal" targetRef="End_20" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP07_CheckOutAGoal">
+    <bpmndi:BPMNPlane id="P_BP07_CheckOutAGoal" bpmnElement="Collaboration_BP07_CheckOutAGoal">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2430" height="380" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="500" width="2430" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="observed_di" bpmnElement="observed">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_4_di" bpmnElement="Gw_4">
+        <dc:Bounds x="925" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="notes_di" bpmnElement="notes">
+        <dc:Bounds x="1240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_6_di" bpmnElement="Gw_6">
+        <dc:Bounds x="1435" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="1580" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="1580" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_9_di" bpmnElement="Gw_9">
+        <dc:Bounds x="1775" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_10_di" bpmnElement="T_10">
+        <dc:Bounds x="1920" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="complete_di" bpmnElement="complete">
+        <dc:Bounds x="2090" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closed_di" bpmnElement="closed">
+        <dc:Bounds x="2292" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_11_di" bpmnElement="End_11">
+        <dc:Bounds x="2462" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="observedIn_di" bpmnElement="observedIn">
+        <dc:Bounds x="422" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.01_ReadTheInferredStatuses_di" bpmnElement="BP07.01_ReadTheInferredStatuses" isExpanded="false">
+        <dc:Bounds x="540" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_15_di" bpmnElement="End_15">
+        <dc:Bounds x="762" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closeIn_di" bpmnElement="closeIn">
+        <dc:Bounds x="2122" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2098" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.04_CheckOutGoal_di" bpmnElement="BP07.04_CheckOutGoal" isExpanded="false">
+        <dc:Bounds x="2240" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_20_di" bpmnElement="End_20">
+        <dc:Bounds x="2462" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2438" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_observed_di" bpmnElement="SF_T_2_observed">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_observed_T_3_di" bpmnElement="SF_observed_T_3">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_Gw_4_di" bpmnElement="SF_T_3_Gw_4">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="925" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_T_5_di" bpmnElement="SF_Gw_4_T_5">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_notes_di" bpmnElement="SF_T_5_notes">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_notes_Gw_6_di" bpmnElement="SF_notes_Gw_6">
+        <di:waypoint x="1340" y="200" />
+        <di:waypoint x="1435" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_6_T_7_di" bpmnElement="SF_Gw_6_T_7">
+        <di:waypoint x="1485" y="200" />
+        <di:waypoint x="1580" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_6_T_8_di" bpmnElement="SF_Gw_6_T_8">
+        <di:waypoint x="1485" y="200" />
+        <di:waypoint x="1515" y="200" />
+        <di:waypoint x="1515" y="320" />
+        <di:waypoint x="1580" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_7_Gw_9_di" bpmnElement="SF_T_7_Gw_9">
+        <di:waypoint x="1680" y="200" />
+        <di:waypoint x="1775" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_Gw_9_di" bpmnElement="SF_T_8_Gw_9">
+        <di:waypoint x="1680" y="320" />
+        <di:waypoint x="1710" y="320" />
+        <di:waypoint x="1710" y="200" />
+        <di:waypoint x="1775" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_9_T_10_di" bpmnElement="SF_Gw_9_T_10">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1920" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_10_complete_di" bpmnElement="SF_T_10_complete">
+        <di:waypoint x="2020" y="200" />
+        <di:waypoint x="2090" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_complete_closed_di" bpmnElement="SF_complete_closed">
+        <di:waypoint x="2190" y="200" />
+        <di:waypoint x="2292" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closed_End_11_di" bpmnElement="SF_closed_End_11">
+        <di:waypoint x="2328" y="200" />
+        <di:waypoint x="2462" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_4_notes_di" bpmnElement="SF_Gw_4_notes">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1035" y="200" />
+        <di:waypoint x="1035" y="143" />
+        <di:waypoint x="1290" y="143" />
+        <di:waypoint x="1290" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_9_complete_di" bpmnElement="SF_Gw_9_complete">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1885" y="200" />
+        <di:waypoint x="1885" y="143" />
+        <di:waypoint x="2140" y="143" />
+        <di:waypoint x="2140" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_observedIn_BP07.01_ReadTheInferredStatuses_di" bpmnElement="SF_observedIn_BP07.01_ReadTheInferredStatuses">
+        <di:waypoint x="458" y="620" />
+        <di:waypoint x="540" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.01_ReadTheInferredStatuses_End_15_di" bpmnElement="SF_BP07.01_ReadTheInferredStatuses_End_15">
+        <di:waypoint x="680" y="620" />
+        <di:waypoint x="762" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closeIn_BP07.04_CheckOutGoal_di" bpmnElement="SF_closeIn_BP07.04_CheckOutGoal">
+        <di:waypoint x="2158" y="620" />
+        <di:waypoint x="2240" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.04_CheckOutGoal_End_20_di" bpmnElement="SF_BP07.04_CheckOutGoal_End_20">
+        <di:waypoint x="2380" y="620" />
+        <di:waypoint x="2462" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="2140" y="240" />
+        <di:waypoint x="2140" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="610" y="575" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="2310" y="575" />
+        <di:waypoint x="2310" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="660" y="64" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="780" y="160" /><di:waypoint x="780" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="1000" y="64" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="1120" y="160" /><di:waypoint x="1120" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X3_di" bpmnElement="TextAnnotation_X3"><dc:Bounds x="1510" y="-11" width="240" height="151" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X3_di" bpmnElement="Association_X3"><di:waypoint x="1630" y="160" /><di:waypoint x="1630" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X4_di" bpmnElement="TextAnnotation_X4"><dc:Bounds x="1850" y="34" width="240" height="106" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X4_di" bpmnElement="Association_X4"><di:waypoint x="1970" y="160" /><di:waypoint x="1970" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X5_di" bpmnElement="TextAnnotation_X5"><dc:Bounds x="2190" y="27" width="240" height="121" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X5_di" bpmnElement="Association_X5"><di:waypoint x="2310" y="182" /><di:waypoint x="2310" y="148" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X6_di" bpmnElement="TextAnnotation_X6"><dc:Bounds x="490" y="685" width="240" height="166" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X6_di" bpmnElement="Association_X6"><di:waypoint x="610" y="665" /><di:waypoint x="610" y="685" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X7_di" bpmnElement="TextAnnotation_X7"><dc:Bounds x="2190" y="685" width="240" height="196" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X7_di" bpmnElement="Association_X7"><di:waypoint x="2310" y="665" /><di:waypoint x="2310" y="685" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CheckOutAGoal_BP0701ReadTheInferredStatuses">
+    <bpmndi:BPMNPlane id="P_BP0701ReadTheInferredStatuses" bpmnElement="BP07.01_ReadTheInferredStatuses">
+      <bpmndi:BPMNShape id="BP07.01_ReadTheInferredStatuses_s_di" bpmnElement="BP07.01_ReadTheInferredStatuses_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.01_ReadTheInferredStatuses_e_di" bpmnElement="BP07.01_ReadTheInferredStatuses_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_12_T_13_di" bpmnElement="SF_T_12_T_13">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.01_ReadTheInferredStatuses_s_T_12_di" bpmnElement="SF_BP07.01_ReadTheInferredStatuses_s_T_12">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_BP07.01_ReadTheInferredStatuses_e_di" bpmnElement="SF_T_14_BP07.01_ReadTheInferredStatuses_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP07_CheckOutAGoal_BP0704CheckOutGoal">
+    <bpmndi:BPMNPlane id="P_BP0704CheckOutGoal" bpmnElement="BP07.04_CheckOutGoal">
+      <bpmndi:BPMNShape id="BP07.04_CheckOutGoal_s_di" bpmnElement="BP07.04_CheckOutGoal_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_17_di" bpmnElement="T_17">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_18_di" bpmnElement="T_18">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_19_di" bpmnElement="T_19">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP07.04_CheckOutGoal_e_di" bpmnElement="BP07.04_CheckOutGoal_e">
+        <dc:Bounds x="1102" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_16_T_17_di" bpmnElement="SF_T_16_T_17">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_17_T_18_di" bpmnElement="SF_T_17_T_18">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_18_T_19_di" bpmnElement="SF_T_18_T_19">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP07.04_CheckOutGoal_s_T_16_di" bpmnElement="SF_BP07.04_CheckOutGoal_s_T_16">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_19_BP07.04_CheckOutGoal_e_di" bpmnElement="SF_T_19_BP07.04_CheckOutGoal_e">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1102" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

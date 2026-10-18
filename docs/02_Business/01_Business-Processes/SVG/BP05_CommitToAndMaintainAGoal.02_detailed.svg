@@ -1,0 +1,503 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1798" height="2549" viewBox="0 0 1798 2549">
+<rect width="1798" height="2549" fill="#fff"/>
+<rect x="24" y="328" width="1750" height="1100" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="328" x2="54" y2="1428" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="882.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 878)">User</text>
+<rect x="24" y="1468" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1468" x2="54" y2="2208" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1842.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1838)">Bearing</text>
+<polyline points="152,448 254,448" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 448 L 246 451.36 L 246 444.64 Z" fill="#000"/>
+<polyline points="354,448 449,448" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 448 L 441 451.36 L 441 444.64 Z" fill="#000"/>
+<polyline points="694,448 764,448" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 448 L 756 451.36 L 756 444.64 Z" fill="#000"/>
+<polyline points="864,448 966,448" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 448 L 958 451.36 L 958 444.64 Z" fill="#000"/>
+<polyline points="1002,448 1136,448" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 448 L 1128 451.36 L 1128 444.64 Z" fill="#000"/>
+<polyline points="499,448 594,448" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 448 L 586 451.36 L 586 444.64 Z" fill="#000"/>
+<polyline points="694,568 796,568" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 568 L 788 571.36 L 788 564.64 Z" fill="#000"/>
+<polyline points="832,568 966,568" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 568 L 958 571.36 L 958 564.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,568 594,568" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 568 L 586 571.36 L 586 564.64 Z" fill="#000"/>
+<polyline points="694,688 796,688" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 688 L 788 691.36 L 788 684.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,688 594,688" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 688 L 586 691.36 L 586 684.64 Z" fill="#000"/>
+<polyline points="694,808 796,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 808 L 788 811.36 L 788 804.64 Z" fill="#000"/>
+<polyline points="832,808 959,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 808 L 951 811.36 L 951 804.64 Z" fill="#000"/>
+<polyline points="1204,808 1274,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 808 L 1266 811.36 L 1266 804.64 Z" fill="#000"/>
+<polyline points="1374,808 1476,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 808 L 1468 811.36 L 1468 804.64 Z" fill="#000"/>
+<polyline points="1009,808 1104,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 808 L 1096 811.36 L 1096 804.64 Z" fill="#000"/>
+<polyline points="1009,808 1039,808 1039,928 1136,928" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 928 L 1128 931.36 L 1128 924.64 Z" fill="#000"/>
+<polyline points="1512,808 1646,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 808 L 1638 811.36 L 1638 804.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,808 594,808" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 808 L 586 811.36 L 586 804.64 Z" fill="#000"/>
+<polyline points="694,928 796,928" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 928 L 788 931.36 L 788 924.64 Z" fill="#000"/>
+<polyline points="832,928 959,928" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 928 L 951 931.36 L 951 924.64 Z" fill="#000"/>
+<polyline points="1204,1048 1274,1048" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 1048 L 1266 1051.36 L 1266 1044.64 Z" fill="#000"/>
+<polyline points="1374,1048 1476,1048" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 1048 L 1468 1051.36 L 1468 1044.64 Z" fill="#000"/>
+<polyline points="1009,928 1039,928 1039,1048 1104,1048" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 1048 L 1096 1051.36 L 1096 1044.64 Z" fill="#000"/>
+<polyline points="1009,928 1039,928 1039,1168 1136,1168" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1168 L 1128 1171.36 L 1128 1164.64 Z" fill="#000"/>
+<polyline points="1512,1048 1646,1048" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1048 L 1638 1051.36 L 1638 1044.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,928 594,928" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 928 L 586 931.36 L 586 924.64 Z" fill="#000"/>
+<polyline points="694,1048 796,1048" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1048 L 788 1051.36 L 788 1044.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,1048 594,1048" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1048 L 586 1051.36 L 586 1044.64 Z" fill="#000"/>
+<polyline points="694,1168 764,1168" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 1168 L 756 1171.36 L 756 1164.64 Z" fill="#000"/>
+<polyline points="864,1168 966,1168" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1168 L 958 1171.36 L 958 1164.64 Z" fill="#000"/>
+<polyline points="1002,1168 1032,1168 1032,1288 1136,1288" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1288 L 1128 1291.36 L 1128 1284.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,1168 594,1168" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1168 L 586 1171.36 L 586 1164.64 Z" fill="#000"/>
+<polyline points="694,1288 796,1288" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 1288 L 788 1291.36 L 788 1284.64 Z" fill="#000"/>
+<polyline points="499,448 529,448 529,1288 594,1288" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 1288 L 586 1291.36 L 586 1284.64 Z" fill="#000"/>
+<polyline points="832,1588 914,1588" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 1588 L 906 1591.36 L 906 1584.64 Z" fill="#000"/>
+<polyline points="1054,1588 1136,1588" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1588 L 1128 1591.36 L 1128 1584.64 Z" fill="#000"/>
+<polyline points="662,1588 692,1588 692,1708 744,1708" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1708 L 736 1711.36 L 736 1704.64 Z" fill="#000"/>
+<polyline points="884,1708 966,1708" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1708 L 958 1711.36 L 958 1704.64 Z" fill="#000"/>
+<polyline points="662,1708 692,1708 692,1828 744,1828" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1828 L 736 1831.36 L 736 1824.64 Z" fill="#000"/>
+<polyline points="884,1828 966,1828" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1828 L 958 1831.36 L 958 1824.64 Z" fill="#000"/>
+<polyline points="1342,1588 1424,1588" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 1588 L 1416 1591.36 L 1416 1584.64 Z" fill="#000"/>
+<polyline points="1564,1588 1646,1588" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1588 L 1638 1591.36 L 1638 1584.64 Z" fill="#000"/>
+<polyline points="662,1828 692,1828 692,1948 744,1948" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1948 L 736 1951.36 L 736 1944.64 Z" fill="#000"/>
+<polyline points="884,1948 966,1948" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1948 L 958 1951.36 L 958 1944.64 Z" fill="#000"/>
+<polyline points="1342,1708 1424,1708" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 1708 L 1416 1711.36 L 1416 1704.64 Z" fill="#000"/>
+<polyline points="1564,1708 1646,1708" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1708 L 1638 1711.36 L 1638 1704.64 Z" fill="#000"/>
+<polyline points="832,2068 914,2068" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 2068 L 906 2071.36 L 906 2064.64 Z" fill="#000"/>
+<polyline points="1054,2068 1136,2068" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 2068 L 1128 2071.36 L 1128 2064.64 Z" fill="#000"/>
+<polyline points="804,488 804,500 719,500 719,1558 804,1558 804,1570" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 807.78 1561 L 804 1570 L 800.22 1561" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="488" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="634,608 634,620 719,620 719,1558 634,1558 634,1570" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 637.78 1561 L 634 1570 L 630.22 1561" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="634" cy="608" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,848 644,860 729,860 729,1678 644,1678 644,1690" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 647.78 1681 L 644 1690 L 640.22 1681" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="644" cy="848" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1319,848 1319,860 1404,860 1404,1558 1319,1558 1319,1570" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1322.78 1561 L 1319 1570 L 1315.22 1561" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1319" cy="848" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="654,968 654,980 739,980 739,1798 654,1798 654,1810" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 657.78 1801 L 654 1810 L 650.22 1801" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="654" cy="968" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1329,1088 1329,1100 1414,1100 1414,1678 1329,1678 1329,1690" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1332.78 1681 L 1329 1690 L 1325.22 1681" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1329" cy="1088" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,1208 824,1220 909,1220 909,2038 824,2038 824,2050" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 827.78 2041 L 824 2050 L 820.22 2041" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="1208" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="979,1543 979,1531 1234,1531 1234,515 979,515 979,466" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 975.22 475 L 979 466 L 982.78 475" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="979" cy="1543" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="804,1663 719,1663 719,598 804,598 804,586" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 800.22 595 L 804 586 L 807.78 595" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="1663" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,1783 814,1771 899,1771 899,838 814,838 814,826" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 810.22 835 L 814 826 L 817.78 835" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="1783" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1489,1543 1489,1531 1574,1531 1574,838 1489,838 1489,826" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1485.22 835 L 1489 826 L 1492.78 835" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1489" cy="1543" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,1903 824,1891 909,1891 909,958 824,958 824,946" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 820.22 955 L 824 946 L 827.78 955" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="1903" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1499,1663 1499,1651 1584,1651 1584,1078 1499,1078 1499,1066" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1495.22 1075 L 1499 1066 L 1502.78 1075" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1499" cy="1663" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="989,2023 1074,2023 1074,1198 989,1198 989,1186" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 985.22 1195 L 989 1186 L 992.78 1195" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="989" cy="2023" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,648 644,638 584,638 584,396" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,1008 644,998 514,998 514,188 524,188" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,1248 644,1238 514,1238 514,62 524,62" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,1150 984,1140 956,1140 956,756" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,790 1494,756" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1873 814,1883 734,1883 734,2125" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1993 814,2003 684,2003 684,2251 694,2251" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,1633 984,1643 1064,1643 1064,2301" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,2113 984,2123 1114,2123 1114,2465 1104,2465" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,1633 1494,1643 1414,1643 1414,1765" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="448" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="480" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A commitment to</text>
+<text x="92" y="490.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">make, or one to</text>
+<text x="92" y="501.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">maintain</text>
+<rect x="254" y="408" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="450.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a goal</text>
+<path d="M 474 423 L 499 448 L 474 473 L 449 448 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 437.5 L 484.5 458.5 M 463.5 458.5 L 484.5 437.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="487" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="408" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="450.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Define the goal</text>
+<rect x="764" y="408" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="450.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the goal</text>
+<circle cx="984" cy="448" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="448" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="442.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 442.06 L 984 448 L 993 442.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="480" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1154" cy="448" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="480" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal recorded</text>
+<rect x="594" y="528" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="570.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a goal</text>
+<circle cx="814" cy="568" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="568" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="562.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 562.06 L 814 568 L 823 562.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="600" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The ordering</text>
+<text x="772" y="610.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="568" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="600" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goals ordered</text>
+<rect x="594" y="648" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="684.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a progress</text>
+<text x="644" y="696.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measure (BP06)</text>
+<circle cx="814" cy="688" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="720" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Measures opened</text>
+<rect x="594" y="768" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="810.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive a goal</text>
+<circle cx="814" cy="808" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="808" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="802.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 802.06 L 814 808 L 823 802.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="840" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the archiving</text>
+<text x="772" y="850.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 984 783 L 1009 808 L 984 833 L 959 808 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 797.5 L 994.5 818.5 M 973.5 818.5 L 994.5 797.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="847" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="942" y="857.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">archiving takes?</text>
+<rect x="1104" y="768" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="804.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select a valid</text>
+<text x="1154" y="816.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascading option</text>
+<rect x="1274" y="768" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="804.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the</text>
+<text x="1324" y="816.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">archiving</text>
+<circle cx="1494" cy="808" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="808" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="802.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 802.06 L 1494 808 L 1503 802.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="840" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The archiving</text>
+<text x="1452" y="850.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="928" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="960" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving</text>
+<text x="1112" y="970.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">abandoned</text>
+<circle cx="1664" cy="808" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="840" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal set aside</text>
+<rect x="594" y="888" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="930.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a goal</text>
+<circle cx="814" cy="928" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="928" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="922.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 922.06 L 814 928 L 823 922.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="960" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the deletion</text>
+<text x="772" y="970.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 984 903 L 1009 928 L 984 953 L 959 928 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 917.5 L 994.5 938.5 M 973.5 938.5 L 994.5 917.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="967" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="942" y="977.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">deletion takes?</text>
+<rect x="1104" y="1008" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="1044.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select a valid</text>
+<text x="1154" y="1056.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascading option</text>
+<rect x="1274" y="1008" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="1050.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the deletion</text>
+<circle cx="1494" cy="1048" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="1048" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="1042.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 1042.06 L 1494 1048 L 1503 1042.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="1080" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The deletion</text>
+<text x="1452" y="1090.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="1168" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1200" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion abandoned</text>
+<circle cx="1664" cy="1048" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1080" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal deleted</text>
+<rect x="594" y="1008" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1044.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Check out a goal</text>
+<text x="644" y="1056.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">(BP07)</text>
+<circle cx="814" cy="1048" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1080" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Check-out opened</text>
+<rect x="594" y="1128" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1158.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Create a project on</text>
+<text x="644" y="1170.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the goal, or on one</text>
+<text x="644" y="1182.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">of its measures</text>
+<rect x="764" y="1128" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="1170.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the project</text>
+<circle cx="984" cy="1168" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="1168" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="1162.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 1162.06 L 984 1168 L 993 1162.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="1200" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1154" cy="1288" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1320" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Project created</text>
+<rect x="594" y="1248" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="1284.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Open the archived</text>
+<text x="644" y="1296.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">goals (BP15)</text>
+<circle cx="814" cy="1288" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1320" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archive opened</text>
+<circle cx="814" cy="1588" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="1582.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 1582.06 L 814 1588 L 823 1582.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="1620" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal submitted</text>
+<a href="../02_System-Interactions/BP05.02_FrameGoal.md" target="_blank">
+<title>BP05.02_FrameGoal — open the System-Interaction document</title>
+<rect x="914" y="1543" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 1550 H 1043.8 L 1046.8 1553 V 1560 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 1550 V 1553 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="1556.4" x2="1045.24" y2="1556.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="1558.6" x2="1045.24" y2="1558.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="1614" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 1615.8 V 1622.2 M 980.8 1619 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="1590.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Edit a goal</text>
+</a>
+<circle cx="1154" cy="1588" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1620" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal answered</text>
+<circle cx="644" cy="1588" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1582.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1582.06 L 644 1588 L 653 1582.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1620" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal reordering</text>
+<text x="602" y="1630.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP05.11_ReorderGoals.md" target="_blank">
+<title>BP05.11_ReorderGoals — open the System-Interaction document</title>
+<rect x="744" y="1663" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1670 H 873.8 L 876.8 1673 V 1680 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1670 V 1673 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1676.4" x2="875.24" y2="1676.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1678.6" x2="875.24" y2="1678.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1734" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1735.8 V 1742.2 M 810.8 1739 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1710.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Reorder goals within a theme</text>
+</a>
+<circle cx="984" cy="1708" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1740" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal reordering</text>
+<text x="942" y="1750.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1708" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1702.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1702.06 L 644 1708 L 653 1702.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1740" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving impact</text>
+<text x="602" y="1750.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP05.12_ReadTheArchivingImpact.md" target="_blank">
+<title>BP05.12_ReadTheArchivingImpact — open the System-Interaction document</title>
+<rect x="744" y="1783" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1790 H 873.8 L 876.8 1793 V 1800 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1790 V 1793 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1796.4" x2="875.24" y2="1796.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1798.6" x2="875.24" y2="1798.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1854" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1855.8 V 1862.2 M 810.8 1859 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1824.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">See what archiving a goal</text>
+<text x="814" y="1836.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">takes</text>
+</a>
+<circle cx="984" cy="1828" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1860" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving impact</text>
+<text x="942" y="1870.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1324" cy="1588" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1582.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1582.06 L 1324 1588 L 1333 1582.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1620" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal archiving</text>
+<text x="1282" y="1630.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP05.13_ArchiveGoal.md" target="_blank">
+<title>BP05.13_ArchiveGoal — open the System-Interaction document</title>
+<rect x="1424" y="1543" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 1550 H 1553.8 L 1556.8 1553 V 1560 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 1550 V 1553 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="1556.4" x2="1555.24" y2="1556.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="1558.6" x2="1555.24" y2="1558.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="1614" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 1615.8 V 1622.2 M 1490.8 1619 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1590.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive a goal</text>
+</a>
+<circle cx="1664" cy="1588" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1620" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Archiving answered</text>
+<circle cx="644" cy="1828" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1822.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1822.06 L 644 1828 L 653 1822.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1860" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="602" y="1870.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP05.14_ReadTheDeletionImpact.md" target="_blank">
+<title>BP05.14_ReadTheDeletionImpact — open the System-Interaction document</title>
+<rect x="744" y="1903" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1910 H 873.8 L 876.8 1913 V 1920 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1910 V 1913 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1916.4" x2="875.24" y2="1916.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1918.6" x2="875.24" y2="1918.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1974" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1975.8 V 1982.2 M 810.8 1979 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1944.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">See what deleting a goal</text>
+<text x="814" y="1956.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">takes</text>
+</a>
+<circle cx="984" cy="1948" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1980" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="942" y="1990.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="1324" cy="1708" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1702.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1702.06 L 1324 1708 L 1333 1702.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1740" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Goal deletion</text>
+<text x="1282" y="1750.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP05.15_DeleteGoal.md" target="_blank">
+<title>BP05.15_DeleteGoal — open the System-Interaction document</title>
+<rect x="1424" y="1663" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 1670 H 1553.8 L 1556.8 1673 V 1680 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 1670 V 1673 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="1676.4" x2="1555.24" y2="1676.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="1678.6" x2="1555.24" y2="1678.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="1734" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 1735.8 V 1742.2 M 1490.8 1739 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1710.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a goal</text>
+</a>
+<circle cx="1664" cy="1708" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1740" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion answered</text>
+<circle cx="814" cy="2068" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="2062.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 2062.06 L 814 2068 L 823 2062.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="2100" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Project submitted</text>
+<a href="../02_System-Interactions/BP05.19_CreateProject.md" target="_blank">
+<title>BP05.19_CreateProject — open the System-Interaction document</title>
+<rect x="914" y="2023" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 2030 H 1043.8 L 1046.8 2033 V 2040 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 2030 V 2033 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="2036.4" x2="1045.24" y2="2036.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="2038.6" x2="1045.24" y2="2038.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="2094" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 2095.8 V 2102.2 M 980.8 2099 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="2070.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Create a project</text>
+</a>
+<circle cx="1154" cy="2068" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="2100" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Project answered</text>
+<path d="M 530 275 H 524 V 396 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="287" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A measure is a sub-item of its goal and is already on this</text>
+<text x="533" y="297.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">view, read with the goals. Defining one, checking in on it,</text>
+<text x="533" y="308.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">reordering them, setting one aside and removing one are</text>
+<text x="533" y="318.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">their own process (BP06), performed here.</text>
+<path d="M 530 112 H 524 V 263 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="124" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Rating the outcome, judging each measure, writing the</text>
+<text x="533" y="134.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">retro and closing the commitment out are their own</text>
+<text x="533" y="145.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">process, performed on this view. It observes what it</text>
+<text x="533" y="155.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">needs for the judgment itself, and it offers the archiving</text>
+<text x="533" y="166.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">as its closing action, reaching the projects the sitting</text>
+<text x="533" y="177.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">picks.</text>
+<path d="M 530 24 H 524 V 100 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The archive is reached by an explicit act. Reading it,</text>
+<text x="533" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">bringing one back and destroying one out of it are its</text>
+<text x="533" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">own process (BP15).</text>
+<path d="M 870 665 H 864 V 756 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="677" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A project carries one optional parent, and the goal or one</text>
+<text x="873" y="687.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">of its measures is it here. Laying out an activity-based</text>
+<text x="873" y="698.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">project's course is its own process (BP18).</text>
+<path d="M 1380 695 H 1374 V 756 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="707" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">An archived goal still exists, so its projects are not</text>
+<text x="1383" y="717.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">orphaned by keeping them active.</text>
+<path d="M 700 2125 H 694 V 2201 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="2137" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Cascade, the goal alone, or reject. The keep answer is</text>
+<text x="703" y="2147.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">legal here because an archived goal still exists.</text>
+<path d="M 700 2213 H 694 V 2289 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="2225" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The measures and their history go unasked. The linked</text>
+<text x="703" y="2235.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">ideas are a cascade the user may decline. Keeping a</text>
+<text x="703" y="2246.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">project behind is not offered.</text>
+<path d="M 870 2301 H 864 V 2392 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="2313" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The horizon may be absent. The ideas behind the goal</text>
+<text x="873" y="2323.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">are chosen in the same editor, and a goal with none</text>
+<text x="873" y="2334.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">stays legitimate and is flagged as such.</text>
+<path d="M 870 2404 H 864 V 2525 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="2416" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The parent is the goal or one of its measures, carried in</text>
+<text x="873" y="2426.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">from where the user started. The kind is declared once</text>
+<text x="873" y="2437.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">and for the project's life, and laying an activity-based</text>
+<text x="873" y="2447.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">project's course out is its own process.</text>
+<path d="M 1380 1765 H 1374 V 1826 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="1777" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Archiving is independent of closing out. A check-out</text>
+<text x="1383" y="1787.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">record already attached stays with the goal.</text>
+<rect x="501" y="449" width="139.48" height="11.5" fill="#fff"/>
+<text x="502" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">commit to something, or change one</text>
+<rect x="531" y="449" width="50.65" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="531" y="449" width="91.01" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">work a goal's measures</text>
+<rect x="1011" y="809" width="32.71" height="11.5" fill="#fff"/>
+<text x="1012" y="818.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="1041" y="809" width="22.78" height="11.5" fill="#fff"/>
+<text x="1042" y="818.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject</text>
+<rect x="531" y="449" width="52.56" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">set one aside</text>
+<rect x="1041" y="929" width="32.71" height="11.5" fill="#fff"/>
+<text x="1042" y="938.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="1041" y="929" width="22.78" height="11.5" fill="#fff"/>
+<text x="1042" y="938.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject</text>
+<rect x="531" y="449" width="112.55" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">end the commitment for good</text>
+<rect x="531" y="449" width="54.92" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">check one out</text>
+<rect x="531" y="449" width="67.19" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">start work on one</text>
+<rect x="531" y="449" width="96.49" height="11.5" fill="#fff"/>
+<text x="532" y="458.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">look at the archived ones</text>
+<rect x="721" y="501" width="42.16" height="20.73" fill="#fff"/>
+<text x="722" y="509.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.02</text>
+<text x="722" y="519.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Edit a goal</text>
+<rect x="721" y="621" width="112.54" height="20.73" fill="#fff"/>
+<text x="722" y="629.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.11</text>
+<text x="722" y="639.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder goals within a theme</text>
+<rect x="731" y="861" width="122" height="20.73" fill="#fff"/>
+<text x="732" y="869.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.12</text>
+<text x="732" y="879.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what archiving a goal takes</text>
+<rect x="1406" y="861" width="55.86" height="20.73" fill="#fff"/>
+<text x="1407" y="869.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.13</text>
+<text x="1407" y="879.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Archive a goal</text>
+<rect x="741" y="981" width="117.76" height="20.73" fill="#fff"/>
+<text x="742" y="989.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.14</text>
+<text x="742" y="999.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what deleting a goal takes</text>
+<rect x="1416" y="1101" width="52.08" height="20.73" fill="#fff"/>
+<text x="1417" y="1109.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.15</text>
+<text x="1417" y="1119.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete a goal</text>
+<rect x="911" y="1221" width="62.47" height="20.73" fill="#fff"/>
+<text x="912" y="1229.22" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP05.19</text>
+<text x="912" y="1239.72" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Create a project</text>
+<rect x="1236" y="1532" width="79.01" height="11.5" fill="#fff"/>
+<text x="1237" y="1541.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+<rect x="721" y="599" width="85.15" height="11.5" fill="#fff"/>
+<text x="722" y="608.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The ordering outcome</text>
+<rect x="901" y="1772" width="104.98" height="11.5" fill="#fff"/>
+<text x="902" y="1781.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the archiving will take</text>
+<rect x="1576" y="1532" width="87.98" height="11.5" fill="#fff"/>
+<text x="1577" y="1541.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The archiving outcome</text>
+<rect x="911" y="1892" width="100.74" height="11.5" fill="#fff"/>
+<text x="912" y="1901.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the deletion will take</text>
+<rect x="1586" y="1652" width="83.74" height="11.5" fill="#fff"/>
+<text x="1587" y="1661.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The deletion outcome</text>
+<rect x="1076" y="1199" width="79.01" height="11.5" fill="#fff"/>
+<text x="1077" y="1208.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+</svg>

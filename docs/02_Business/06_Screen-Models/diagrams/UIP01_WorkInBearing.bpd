@@ -1,0 +1,120 @@
+@startbpmn UIP01_WorkInBearing
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "UIP01_WorkInBearing.bpmn"
+
+' A USER INTERFACE PROCESS, not a business process. It carries what the nineteen BPs deliberately
+' leave out - how the user moves between the surfaces, and that each surface is worked until the
+' user leaves it - because that is how the system is understood even though it decides nothing a
+' business rule decides. It mints no call site and asks the system for nothing: every request on
+' every surface is drawn by the BP that owns the act, named in the note on each surface's box.
+'
+' Provenance (never in a drawn note, lint rule 5):
+'   - STARTUP IS LOADING AND DERIVING, and both are generic here: the persistent data is the
+'     entities (Intent section 3) and the records (the record inventory), and the derived data is
+'     the derived-data inventory, each value with the rule that governs it. Neither list belongs
+'     in a drawing, and counting a theme's goals is no business act: BR-118, BR-128, BP01,
+'     SA 2026-10-17 ("Extend UIP startup by generic loading persistent and by calculating
+'     derived data")
+'   - the page and its loop are NOT business: they are drawn here, once, instead of inside the
+'     processes, which carry the acts: SA 2026-10-17 ("page navigation and the loops are not
+'     business processes, they are important to understand how the system works ... call it UIP
+'     for User Interface Process")
+'   - the LOOP IS A MARKER, not a second gateway: a surface is worked until the user leaves it, and
+'     drawing each surface's acts again here would duplicate the nineteen drawings it points at.
+'     The acts and their order are the owning process's: DRW-09, BB22, SA 2026-10-17
+'   - the tab bar is Themes, Ideation, Goals, Focus, Execution; the Course tab is a sixth the
+'     wireframe source predates, and its screen model is still owed: section 7, `wf §1`, BR-97
+'   - the routines have their home on the Themes tab, as one list and not under a theme, since a
+'     routine carries none: BR-02, BR-10, SA 2026-10-13
+'   - an archive view is reached by an explicit act from the tab that owns the kind, and never
+'     appears in a working view: BR-26
+'   - the advisor splits the active tab and blocks nothing: BR-66, BR-118
+'   - every surface is current without the user asking: BR-118
+'   - the launch lands on the Focus tab, or on the Themes tab where a data folder was just set up,
+'     and nothing else about start-up is this drawing's: BR-48, BP01
+'   - the date can advance under the user at local midnight, which disturbs no gesture in flight
+'     and offers nothing: it is said quietly, with the new day's empty focus where that is the case:
+'     BR-44, UX-16, BP14
+'   - leaving is BP20's since 2026-10-17, the ordinary quit having been drawn by no process until
+'     then; the start-up refusal's close stays BP01's: BP20, BP01, SA 2026-10-17
+'   - an editor, a dialog or a menu is not a surface of its own here: it opens over the surface
+'     whose act it serves and comes back to it, which is what DRW-02 keeps out of the drawings
+'
+' Scope: this drawing is the user's path between surfaces. What is done ON a surface is the named
+' business process's, and what the system answers is that process's call sites. Which states a
+' surface has is the screen model's.
+
+pool "User" {
+  start "Bearing launched"
+  :Load the persistent data;
+  note "The entities and the records the product keeps, read once and from then on in play. Which they are is the entity vocabulary's and the record inventory's business, not this drawing's."
+  :Calculate the derived data;
+  note "Everything the surfaces show that the product does not store - counts, flags, orderings, what is due, what is ready, the theme balance. Which values these are, and which rule governs each, is the derived-data inventory's business."
+  :Land on the tab the launch chose;
+  note "The Focus tab on a returning launch, the Themes tab where a data folder was just set up (BP01). At local midnight the date advances under the user, disturbing no gesture in flight and asking nothing: it is said quietly, together with the new date carrying no focus (BP14, UX-16)."
+
+  task "Choose where to work" as shell
+  rule BR-118
+
+  if "Which surface?" then "the themes, or the routines"
+    :Work the Themes tab;
+    loop
+    note "The themes with their vision and mission (BP02); the routines' home, one list and not a theme's sub-list (BP03)."
+    goto shell
+
+  elseif "Which surface?" then "the ideas"
+    :Work the Ideation tab;
+    loop
+    note "Ideas (BP04). Committing to one or starting work on one opens that editor here (BP05, BP17)."
+    goto shell
+
+  elseif "Which surface?" then "the goals"
+    :Work the Goals tab;
+    loop
+    note "Goals grouped by theme with their measures (BP05, BP06); the check-out sitting opens over the tab (BP07)."
+    goto shell
+
+  elseif "Which surface?" then "the projects"
+    :Work the Course tab;
+    loop
+    note "The projects (BP17) and one activity-based project's course (BP18)."
+    goto shell
+
+  elseif "Which surface?" then "the focus"
+    :Work the Focus tab;
+    loop
+    note "Week, month and year, one view stepped and re-scoped (UIP02); a selected day opens the day focus editor (BP08)."
+    goto shell
+
+  elseif "Which surface?" then "the work"
+    :Work the Execution tab;
+    loop
+    note "The strip and the board (BP11); capture (BP10), the lanes (BP12) and the work check-out (BP13) open over the tab."
+    goto shell
+
+  elseif "Which surface?" then "what was set aside"
+    :Work an archive view;
+    loop
+    note "One view per kind, reached by an explicit act from the tab that owns it (BP15)."
+    goto shell
+
+  elseif "Which surface?" then "a second opinion"
+    :Work the advisor panel;
+    loop
+    note "Splits the active tab rather than replacing it, and blocks nothing (BP16)."
+    goto shell
+
+  elseif "Which surface?" then "help"
+    :Read About, or the keyboard shortcuts;
+    note "Shell chrome, not a tab."
+    goto shell
+
+  else "stop for now"
+    :Leave Bearing;
+    note "Ending the session is its own process (BP20): every gesture is committed or left as a draft, which survives the close, and nothing is settled by it."
+    end "Bearing closed"
+  endif
+}
+
+@endbpmn

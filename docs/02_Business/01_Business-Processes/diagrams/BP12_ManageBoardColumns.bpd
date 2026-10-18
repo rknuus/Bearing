@@ -1,0 +1,223 @@
+@startbpmn BP12_ManageBoardColumns
+lang en
+
+output L1 "01_detailed/BP12_ManageBoardColumns.bpmn"
+output L2 "02_detailed/BP12_ManageBoardColumns.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a column carries a role and a name, and they are different things: BR-58
+'   - one editor per entity serves adding a lane and renaming one alike, and where a new lane
+'     lands is not drawn - BP12.04 orders them. Call site BP12.03 (Insert a column) is RETIRED,
+'     its id never reused: UX-04, DRW-11, ADR-066, SA 2026-10-16
+'   - four roles, no neutral escape hatch; the advisor and check-out read the role: BR-58
+'   - one Backlog column and at least one Done column per template: BR-59
+'   - the Backlog role cannot change; a Done role only while another Done remains: BR-60
+'   - the consequences of a legal role change are the user's: BR-60
+'   - columns come from a template, one per project plus Chores's own: BR-108
+'   - the template governs every board of its project with no deviation inside it, so a
+'     write here lands on every one of them at once: BR-108, BR-97
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - archiving a whole column's worth of tasks is one of the three archiving acts: BR-23
+'   - declining a column deletion's cascade rejects it rather than detaching: BR-18, BR-21
+'   - an empty column deletes cleanly: BR-18
+'   - the archive is no shield from a deletion: BR-117
+'   - where a chain can refuse, the reply names the OUTCOME rather than claiming a write that
+'     may not have happened: the editor, the role change and the deletion all answer an outcome,
+'     the shape BP05.02 already has: DRW-07, BR-128
+'   - the box carries the act's own word, not the generic edit: the user NAMES a lane, new or not:
+'     SA 2026-10-16
+'   - the role box carries the act, not the picking: the user SETS the column's role, and which
+'     changes are legal is the template read's content: BR-60, SA 2026-10-16
+'   - A NAME IS NOT A ROLE. Naming a lane cannot add a second Backlog, so the guard that asks
+'     whether it would belongs to the role change and nowhere else; a new lane enters InProgress,
+'     the role most added lanes carry, and is given another meaning by the role act: BR-58, BR-59,
+'     `arch section 10`, SA 2026-10-18 ("naming a column does not change the column type, so the
+'     'Would this add a second Backlog?' belongs to the 'Set the column's role' system response
+'     path")
+'   - A ROLE CHANGE WRITES THE CARDS IN THAT LANE. Their state follows the lane's new role - done
+'     where it becomes Done, waiting or in motion where it leaves Done for Todo or InProgress - and
+'     that is a STEP, not a note: a drawn note may not be the only place flow-relevant information
+'     lives, because a note can be deleted and a box cannot: SA 2026-10-18 ("This is a step. The
+'     comments must not contain flow-relevant information ... losing flow-relevant information
+'     would be terrible"). The new role is never Backlog - the Backlog's role cannot change and no
+'     change may add a second (BR-59, BR-60) - so the three states a card can be set to are the
+'     three the lane can take. No history is rewritten by any of it (BR-124). What a role change
+'     into Done CAN do is leave an activity with nothing open, which raises the same
+'     completion offer a last move into Done raises on the board (BP11), answered activity by
+'     activity because the change reaches every board the template governs. It fires exactly where
+'     nothing is left open, so there is nothing for BR-127 to disclose and the closing carries no
+'     answer about open cards, unlike the board's: BR-60, BR-109, BR-127, BR-108,
+'     `arch section 10` ("InProgress -> Done: tasks suddenly count as done"), SA 2026-10-18
+'   - the template read keeps reading and calculating apart and ends on its report, like every
+'     other view read: BB01, SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Scope: this process shapes the lanes. What travels through them is BP11's, and nothing here
+' touches a task's priority or its order.
+'
+' Call-site collapsing: inserting before and inserting after a column are two variations of one
+' request. Configuring a project's template and configuring Chores's own template are likewise
+' one request: the gesture is the same and only the owner differs.
+
+pool "User" {
+  start "The lanes no longer fit the work"
+  :Work a column;
+  rule BR-118
+
+  if "What needs doing?" then "add a lane, or rename one"
+    :Name the column;
+    rule BR-121
+    :Submit the column;
+    send "Edit a column" to editIn
+    receive "The editing outcome" as recorded
+    note "A name is the user's word for the lane; renaming never changes what an existing lane means. Where a new lane lands in the order is the ordering's business (BP12.04)."
+    end "Column recorded"
+
+  elseif "What needs doing?" then "reorder them"
+    :Order a column;
+    send "Reorder columns" to reorderIn
+    receive "The ordering outcome" as reordered
+    end "Columns ordered"
+
+  elseif "What needs doing?" then "change what a lane means"
+    :Set the column's role;
+    send "Change a column's role" to roleIn
+    receive "The role-change outcome" as roleSet
+    note "Reaches every board the template governs (BR-108), which is why more than one activity can be left with nothing open."
+    if "Did the change leave an activity with no card still open?" rule BR-109 then "yes"
+      if "Mark the activity Done?" rule BR-109 then "yes"
+        :Mark the activity Done;
+        multiInstance
+        rule BR-127
+        send "Set the activity Done" to activityIn
+        receive "The state-change outcome" as activitySet
+        note "Answered activity by activity where the change completed several boards. A board the change completed has nothing open on it, so there is nothing to disclose and nothing to answer with the closing; declining leaves the activity InProgress, to be closed by hand on the Course page."
+        end "Activities closed"
+      else "no"
+        end "Activity left in progress"
+      endif
+    else "no"
+      end "Column role set"
+    endif
+
+  elseif "What needs doing?" then "clear out a lane"
+    :Archive everything in the column on this board;
+    send "Archive a column's tasks" to archiveIn
+    receive "The archiving outcome" as archived
+    note "This is the archiving act that takes a whole column's worth at once, on the board in front of the user. The column itself stays."
+    end "Lane cleared"
+
+  elseif "What needs doing?" then "remove a lane"
+    :Delete a column;
+    send "See what deleting a column takes" to impactIn
+    receive "What the deletion will take" as impact
+    if "Approve what the deletion takes?" rule BR-18 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete a column" to deleteIn
+      receive "The deletion outcome" as deleted
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Column deleted"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Column submitted" as editIn
+  call "BP12.02_RenameColumn" "Edit a column" {
+    :Store the edit, and set a new lane to InProgress;
+    rule BR-58
+    :Report the outcome;
+  }
+  send "The editing outcome" to recorded
+  note "A name is not a role (BR-58), so nothing here can touch the one Backlog or the last Done (BR-59). InProgress is the role most added lanes carry (`arch section 10`); saying a new lane means something else is the role act's own business. A new lane appears on every board the template governs (BR-108), and the check-out and the advisor read a lane's role, never its name."
+  end "Column answered"
+
+  messageStart "Column reordering requested" as reorderIn
+  call "BP12.04_ReorderColumns" "Reorder columns" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to reordered
+  end "Column reordering answered"
+
+  messageStart "Role submitted" as roleIn
+  call "BP12.05_ChangeColumnRole" "Change a column's role" {
+    if "May this column take the role the request names?" rule BR-60 then "yes"
+      :Record the column's new role;
+      rule BR-58
+      :Set every card in that lane to the state the new role gives it;
+      rule BR-60
+      rule BR-58
+    else "no"
+      :Refuse the change and say why;
+      rule BR-59
+    endif
+    :Report the outcome, and which activities the change left with no card still open;
+    rule BR-109
+  }
+  send "The role-change outcome" to roleSet
+  note "Within BR-59 and BR-60's limits the consequences are the user's. No history is rewritten: what any span recorded as completed stands (BR-124)."
+  end "Role answered"
+
+  messageStart "Activity state submitted" as activityIn
+  call "BP12.10_SetTheActivityDone" "Set the activity Done" {
+    :Record the state the request names;
+    rule BR-109
+    rule BR-127
+    :Report the outcome;
+  }
+  send "The state-change outcome" to activitySet
+  note "The Course page owns an activity's state (BP18); this is the completion offer answered from the column settings, as the board answers its own (BP11). A Done activity can be reopened there."
+  end "Activity state answered"
+
+  messageStart "Column archiving requested" as archiveIn
+  call "BP12.06_ArchiveColumnTasks" "Archive a column's tasks" {
+    :Archive every task in the column on the board the request names;
+    rule BR-23
+    rule BR-61
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  note "Archiving is a conscious gesture here as everywhere: no task archives itself. This act reaches the one board the user is on, unlike a change to the template itself."
+  end "Column archiving answered"
+
+  messageStart "Deletion impact requested" as impactIn
+  call "BP12.07_ReadTheColumnDeletionImpact" "See what deleting a column takes" {
+    :Report what the deletion will take board by board, and what of it can be declined;
+    rule BR-12
+    rule BR-18
+    rule BR-19
+    rule BR-108
+    rule BR-117
+  }
+  send "What the deletion will take" to impact
+  note "A task cannot be left without a column, so the cascade is approve-or-abandon and detaching is not offered. Deleting a lane deletes it on every board the template governs, so the disclosure counts all of them. A column empty everywhere has nothing to disclose and deletes cleanly."
+  end "Impact answered"
+
+  messageStart "Column deletion requested" as deleteIn
+  call "BP12.08_DeleteColumn" "Delete a column" {
+    if "Is this the Backlog or the last Done?" rule BR-59 then "yes"
+      :Refuse the deletion and say why;
+    else "no"
+      :Delete confirmed items;
+      rule BR-18
+      rule BR-108
+    endif
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "The Backlog column and the last Done column are refused with their reason, for the same reason their roles cannot change."
+  end "Column deletion answered"
+}
+
+@endbpmn

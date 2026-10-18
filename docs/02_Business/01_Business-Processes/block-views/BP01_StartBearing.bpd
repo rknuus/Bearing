@@ -1,0 +1,18 @@
+@startbpmn BP01_StartBearing_Blocks
+lang en
+
+output L1 "BP01_StartBearing.bpmn"
+
+' The BLOCK VIEW of BP01: the process as the building blocks it is made of, one box per block
+' instance, with no block internals. What is inside each box is 00_Path-Patterns.md's; the detailed
+' levels are 01_detailed and 02_detailed. BP01 is one block whole. Hand-authored from the one
+' tagged source in ../diagrams/, and re-read whenever that process changes.
+
+pool "User" {
+  start "Something to plan or do"
+  :BB19 Launch · the data folder resolved, where the launch lands, or a refusal the user acknowledges;
+  note "Launch is a whole-process shape, so BP01 is this one block: the preconditions, the folder, the landing tab and the close that follows a refused start-up are all inside it."
+  end "Bearing in use, or ready to relaunch"
+}
+
+@endbpmn

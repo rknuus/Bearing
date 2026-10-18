@@ -1,0 +1,322 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1798" height="1595" viewBox="0 0 1798 1595">
+<rect width="1798" height="1595" fill="#fff"/>
+<rect x="24" y="32" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="32" x2="54" y2="772" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="406.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 402)">User</text>
+<rect x="24" y="812" width="1750" height="620" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="812" x2="54" y2="1432" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1126.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1122)">Bearing</text>
+<polyline points="152,152 254,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 152 L 246 155.36 L 246 148.64 Z" fill="#000"/>
+<polyline points="354,152 449,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 152 L 441 155.36 L 441 148.64 Z" fill="#000"/>
+<polyline points="694,152 764,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 152 L 756 155.36 L 756 148.64 Z" fill="#000"/>
+<polyline points="864,152 966,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 152 L 958 155.36 L 958 148.64 Z" fill="#000"/>
+<polyline points="1002,152 1136,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 152 L 1128 155.36 L 1128 148.64 Z" fill="#000"/>
+<polyline points="499,152 594,152" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 152 L 586 155.36 L 586 148.64 Z" fill="#000"/>
+<polyline points="694,272 796,272" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 272 L 788 275.36 L 788 268.64 Z" fill="#000"/>
+<polyline points="832,272 966,272" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 272 L 958 275.36 L 958 268.64 Z" fill="#000"/>
+<polyline points="499,152 529,152 529,272 594,272" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 272 L 586 275.36 L 586 268.64 Z" fill="#000"/>
+<polyline points="694,392 796,392" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 392 L 788 395.36 L 788 388.64 Z" fill="#000"/>
+<polyline points="832,392 966,392" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 392 L 958 395.36 L 958 388.64 Z" fill="#000"/>
+<polyline points="499,152 529,152 529,392 594,392" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 392 L 586 395.36 L 586 388.64 Z" fill="#000"/>
+<polyline points="694,512 796,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 512 L 788 515.36 L 788 508.64 Z" fill="#000"/>
+<polyline points="832,512 959,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 512 L 951 515.36 L 951 508.64 Z" fill="#000"/>
+<polyline points="1204,512 1274,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 512 L 1266 515.36 L 1266 508.64 Z" fill="#000"/>
+<polyline points="1374,512 1476,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 512 L 1468 515.36 L 1468 508.64 Z" fill="#000"/>
+<polyline points="1009,512 1104,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 512 L 1096 515.36 L 1096 508.64 Z" fill="#000"/>
+<polyline points="1009,512 1039,512 1039,632 1136,632" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 632 L 1128 635.36 L 1128 628.64 Z" fill="#000"/>
+<polyline points="1512,512 1646,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 512 L 1638 515.36 L 1638 508.64 Z" fill="#000"/>
+<polyline points="499,152 529,152 529,512 594,512" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 512 L 586 515.36 L 586 508.64 Z" fill="#000"/>
+<polyline points="832,932 914,932" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 932 L 906 935.36 L 906 928.64 Z" fill="#000"/>
+<polyline points="1054,932 1136,932" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 932 L 1128 935.36 L 1128 928.64 Z" fill="#000"/>
+<polyline points="662,932 692,932 692,1052 744,1052" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1052 L 736 1055.36 L 736 1048.64 Z" fill="#000"/>
+<polyline points="884,1052 966,1052" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1052 L 958 1055.36 L 958 1048.64 Z" fill="#000"/>
+<polyline points="662,1052 692,1052 692,1172 744,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1172 L 736 1175.36 L 736 1168.64 Z" fill="#000"/>
+<polyline points="884,1172 966,1172" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1172 L 958 1175.36 L 958 1168.64 Z" fill="#000"/>
+<polyline points="662,1172 692,1172 692,1292 744,1292" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1292 L 736 1295.36 L 736 1288.64 Z" fill="#000"/>
+<polyline points="884,1292 966,1292" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1292 L 958 1295.36 L 958 1288.64 Z" fill="#000"/>
+<polyline points="1342,932 1424,932" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 932 L 1416 935.36 L 1416 928.64 Z" fill="#000"/>
+<polyline points="1564,932 1646,932" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 932 L 1638 935.36 L 1638 928.64 Z" fill="#000"/>
+<polyline points="804,192 804,204 889,204 889,902 804,902 804,914" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 807.78 905 L 804 914 L 800.22 905" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="192" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="634,312 634,324 719,324 719,902 634,902 634,914" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 637.78 905 L 634 914 L 630.22 905" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="634" cy="312" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="644,432 644,444 729,444 729,1022 644,1022 644,1034" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 647.78 1025 L 644 1034 L 640.22 1025" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="644" cy="432" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="654,552 654,564 739,564 739,1142 654,1142 654,1154" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 657.78 1145 L 654 1154 L 650.22 1145" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="654" cy="552" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1324,552 1324,914" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1327.78 905 L 1324 914 L 1320.22 905" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1324" cy="552" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,887 984,875 1069,875 1069,182 984,182 984,170" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 179 L 984 170 L 987.78 179" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="887" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="809,1007 894,1007 894,302 809,302 809,290" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 805.22 299 L 809 290 L 812.78 299" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="809" cy="1007" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="819,1127 819,1115 904,1115 904,422 819,422 819,410" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 815.22 419 L 819 410 L 822.78 419" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="819" cy="1127" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,1247 824,1235 909,1235 909,542 824,542 824,530" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 820.22 539 L 824 530 L 827.78 539" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="1247" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1494,887 1494,530" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1490.22 539 L 1494 530 L 1497.78 539" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="887" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,134 984,100" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,494 1494,460" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1097 814,1107 734,1107 734,1349" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1337 684,1337 684,1460 694,1460" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,977 984,987 963,987 963,1510" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,977 1494,997" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A routine needs</text>
+<text x="92" y="194.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">attention</text>
+<rect x="254" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="154.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a routine</text>
+<path d="M 474 127 L 499 152 L 474 177 L 449 152 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 141.5 L 484.5 162.5 M 463.5 162.5 L 484.5 141.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="191" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="154.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Define the routine</text>
+<rect x="764" y="112" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="154.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the routine</text>
+<circle cx="984" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="152" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="146.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 146.06 L 984 152 L 993 146.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1154" cy="152" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="184" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine recorded</text>
+<rect x="594" y="232" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="268.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Pause or resume</text>
+<text x="644" y="280.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the routine</text>
+<circle cx="814" cy="272" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="272" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="266.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 266.06 L 814 272 L 823 266.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="304" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The</text>
+<text x="772" y="314.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">pause-or-resume</text>
+<text x="772" y="325.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="272" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="304" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine paused or</text>
+<text x="942" y="314.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">resumed</text>
+<rect x="594" y="352" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="394.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a routine</text>
+<circle cx="814" cy="392" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="392" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="386.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 386.06 L 814 392 L 823 386.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="424" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The ordering</text>
+<text x="772" y="434.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="392" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="424" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routines ordered</text>
+<rect x="594" y="472" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="514.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a routine</text>
+<circle cx="814" cy="512" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="512" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="506.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 506.06 L 814 512 L 823 506.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="544" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the deletion</text>
+<text x="772" y="554.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 984 487 L 1009 512 L 984 537 L 959 512 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 501.5 L 994.5 522.5 M 973.5 522.5 L 994.5 501.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="551" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="942" y="561.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">deletion takes?</text>
+<rect x="1104" y="472" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="508.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select a valid</text>
+<text x="1154" y="520.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascading option</text>
+<rect x="1274" y="472" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="514.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the deletion</text>
+<circle cx="1494" cy="512" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="512" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="506.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 506.06 L 1494 512 L 1503 506.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="544" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The deletion</text>
+<text x="1452" y="554.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="632" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="664" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion abandoned</text>
+<circle cx="1664" cy="512" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="544" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine deleted</text>
+<circle cx="814" cy="932" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="926.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 926.06 L 814 932 L 823 926.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="964" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine submitted</text>
+<a href="../02_System-Interactions/BP03.02_EditRoutine.md" target="_blank">
+<title>BP03.02_EditRoutine — open the System-Interaction document</title>
+<rect x="914" y="887" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 894 H 1043.8 L 1046.8 897 V 904 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 894 V 897 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="900.4" x2="1045.24" y2="900.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="902.6" x2="1045.24" y2="902.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="958" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 959.8 V 966.2 M 980.8 963 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="934.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Edit a routine</text>
+</a>
+<circle cx="1154" cy="932" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="964" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine answered</text>
+<circle cx="644" cy="932" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="926.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 926.06 L 644 932 L 653 926.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="964" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Pause or resume</text>
+<text x="602" y="974.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<a href="../02_System-Interactions/BP03.04_SetRoutineActive.md" target="_blank">
+<title>BP03.04_SetRoutineActive — open the System-Interaction document</title>
+<rect x="744" y="1007" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1014 H 873.8 L 876.8 1017 V 1024 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1014 V 1017 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1020.4" x2="875.24" y2="1020.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1022.6" x2="875.24" y2="1022.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1078" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1079.8 V 1086.2 M 810.8 1083 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1054.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Pause or resume a routine</text>
+</a>
+<circle cx="984" cy="1052" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1084" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Pause or resume</text>
+<text x="942" y="1094.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1052" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1046.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1046.06 L 644 1052 L 653 1046.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1084" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine reordering</text>
+<text x="602" y="1094.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP03.05_ReorderRoutines.md" target="_blank">
+<title>BP03.05_ReorderRoutines — open the System-Interaction document</title>
+<rect x="744" y="1127" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1134 H 873.8 L 876.8 1137 V 1144 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1134 V 1137 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1140.4" x2="875.24" y2="1140.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1142.6" x2="875.24" y2="1142.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1198" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1199.8 V 1206.2 M 810.8 1203 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1174.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Reorder routines</text>
+</a>
+<circle cx="984" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Reordering</text>
+<text x="942" y="1214.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1172" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1166.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1166.06 L 644 1172 L 653 1166.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1204" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="602" y="1214.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP03.06_ReadTheDeletionImpact.md" target="_blank">
+<title>BP03.06_ReadTheDeletionImpact — open the System-Interaction document</title>
+<rect x="744" y="1247" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1254 H 873.8 L 876.8 1257 V 1264 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1254 V 1257 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1260.4" x2="875.24" y2="1260.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1262.6" x2="875.24" y2="1262.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1318" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1319.8 V 1326.2 M 810.8 1323 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1288.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">See what deleting a routine</text>
+<text x="814" y="1300.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">takes</text>
+</a>
+<circle cx="984" cy="1292" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1324" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Impact answered</text>
+<circle cx="1324" cy="932" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="926.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 926.06 L 1324 932 L 1333 926.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="964" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Routine deletion</text>
+<text x="1282" y="974.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP03.07_DeleteRoutine.md" target="_blank">
+<title>BP03.07_DeleteRoutine — open the System-Interaction document</title>
+<rect x="1424" y="887" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 894 H 1553.8 L 1556.8 897 V 904 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 894 V 897 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="900.4" x2="1555.24" y2="900.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="902.6" x2="1555.24" y2="902.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="958" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 959.8 V 966.2 M 1490.8 963 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="934.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a routine</text>
+</a>
+<circle cx="1664" cy="932" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="964" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion answered</text>
+<path d="M 870 24 H 864 V 100 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The schedule is a recurrence pattern plus preferred</text>
+<text x="873" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">days: it says when the routine is due, and never puts</text>
+<text x="873" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">work on a board.</text>
+<path d="M 1380 384 H 1374 V 460 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="396" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The routine stops producing new ones either way; the</text>
+<text x="1383" y="406.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">occurrences it already produced go or stay on Chores.</text>
+<path d="M 700 1349 H 694 V 1410 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1361" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A paused routine leaves the focus selectables and the</text>
+<text x="703" y="1371.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">due computation, and returns to both on resume.</text>
+<path d="M 700 1422 H 694 V 1498 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1434" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The occurrences are a declinable cascade, so it starts</text>
+<text x="703" y="1444.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">off. Declining leaves them on Chores and stops the</text>
+<text x="703" y="1455.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">routine producing new ones.</text>
+<path d="M 870 1510 H 864 V 1571 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="1522" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A routine carries no life area. The recurrence is Daily,</text>
+<text x="873" y="1532.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Weekly, Monthly or Yearly.</text>
+<path d="M 1380 997 H 1374 V 1043 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="1009" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The request carries the cascade the user approved.</text>
+<rect x="501" y="153" width="91.78" height="11.5" fill="#fff"/>
+<text x="502" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">add or change a routine</text>
+<rect x="531" y="153" width="128.17" height="11.5" fill="#fff"/>
+<text x="532" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">put one on hold, or take it off hold</text>
+<rect x="531" y="153" width="50.65" height="11.5" fill="#fff"/>
+<text x="532" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="1011" y="513" width="32.71" height="11.5" fill="#fff"/>
+<text x="1012" y="522.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="1041" y="513" width="22.78" height="11.5" fill="#fff"/>
+<text x="1042" y="522.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject</text>
+<rect x="531" y="153" width="71.45" height="11.5" fill="#fff"/>
+<text x="532" y="162.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">retire one for good</text>
+<rect x="891" y="205" width="52.08" height="20.73" fill="#fff"/>
+<text x="892" y="213.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.02</text>
+<text x="892" y="223.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Edit a routine</text>
+<rect x="721" y="325" width="102.16" height="20.73" fill="#fff"/>
+<text x="722" y="333.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.04</text>
+<text x="722" y="343.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Pause or resume a routine</text>
+<rect x="731" y="445" width="65.3" height="20.73" fill="#fff"/>
+<text x="732" y="453.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.05</text>
+<text x="732" y="463.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder routines</text>
+<rect x="741" y="565" width="127.68" height="20.73" fill="#fff"/>
+<text x="742" y="573.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.06</text>
+<text x="742" y="583.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what deleting a routine takes</text>
+<rect x="1326" y="553" width="62" height="20.73" fill="#fff"/>
+<text x="1327" y="561.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP03.07</text>
+<text x="1327" y="571.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete a routine</text>
+<rect x="1071" y="876" width="79.01" height="11.5" fill="#fff"/>
+<text x="1072" y="885.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+<rect x="896" y="303" width="118.68" height="11.5" fill="#fff"/>
+<text x="897" y="312.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The pause-or-resume outcome</text>
+<rect x="906" y="1116" width="85.15" height="11.5" fill="#fff"/>
+<text x="907" y="1125.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The ordering outcome</text>
+<rect x="911" y="1236" width="100.74" height="11.5" fill="#fff"/>
+<text x="912" y="1245.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the deletion will take</text>
+<rect x="1496" y="888" width="83.74" height="11.5" fill="#fff"/>
+<text x="1497" y="897.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The deletion outcome</text>
+</svg>

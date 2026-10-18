@@ -1,0 +1,37 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB12_UnarchiveItem
+lang en
+
+output L1 "BB12_UnarchiveItem.bpmn"
+
+' Unarchiving offers the user nothing to choose and destroys nothing, so it discloses nothing and
+' is not confirmed: one request brings the bundle back where that is possible, and reports why it
+' cannot where it is not. Both outcomes leave by the same report.
+
+pool "User" {
+  :Unarchive the item;
+  send "Unarchive an item" to unarchiveIn
+  receive "What came back, or why it cannot" as unarchived
+  note "The whole bundle comes back as it went. No part of it can be picked and nothing is re-parented, relocated or approximated."
+  end "Back on the surface"
+}
+
+system pool "Bearing" {
+  messageStart "Unarchive requested" as unarchiveIn
+  ' lint-ok: BB12.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB12.01_UnarchiveTheItem" "Unarchive an item" {
+    if "Can the bundle come back whole?" rule BR-25 then "yes"
+      :Return the bundle to its prior state and position;
+      rule BR-25
+      goto report
+    else "no"
+      goto report
+    endif
+    task "Report the outcome" as report
+  }
+  send "What came back, or why it cannot" to unarchived
+  note "A member deleted out of the archive, or a surrounding that is now gone, leaves the bundle unreassemblable: the item stays archived and the answer says so."
+  end "Unarchive answered"
+}
+
+@endbpmn

@@ -1,0 +1,489 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1798" height="2354" viewBox="0 0 1798 2354">
+<rect width="1798" height="2354" fill="#fff"/>
+<rect x="24" y="223" width="1750" height="860" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="223" x2="54" y2="1083" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="657.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 653)">User</text>
+<rect x="24" y="1123" width="1750" height="740" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="1123" x2="54" y2="1863" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="1497.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 1493)">Bearing</text>
+<polyline points="152,343 254,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 343 L 246 346.36 L 246 339.64 Z" fill="#000"/>
+<polyline points="354,343 449,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 449 343 L 441 346.36 L 441 339.64 Z" fill="#000"/>
+<polyline points="694,343 764,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 343 L 756 346.36 L 756 339.64 Z" fill="#000"/>
+<polyline points="864,343 966,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 343 L 958 346.36 L 958 339.64 Z" fill="#000"/>
+<polyline points="1002,343 1136,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 343 L 1128 346.36 L 1128 339.64 Z" fill="#000"/>
+<polyline points="499,343 594,343" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 343 L 586 346.36 L 586 339.64 Z" fill="#000"/>
+<polyline points="694,463 796,463" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 463 L 788 466.36 L 788 459.64 Z" fill="#000"/>
+<polyline points="832,463 966,463" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 463 L 958 466.36 L 958 459.64 Z" fill="#000"/>
+<polyline points="499,343 529,343 529,463 594,463" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 463 L 586 466.36 L 586 459.64 Z" fill="#000"/>
+<polyline points="694,583 796,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 583 L 788 586.36 L 788 579.64 Z" fill="#000"/>
+<polyline points="832,583 959,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 583 L 951 586.36 L 951 579.64 Z" fill="#000"/>
+<polyline points="1374,583 1476,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 583 L 1468 586.36 L 1468 579.64 Z" fill="#000"/>
+<polyline points="1512,583 1646,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 583 L 1638 586.36 L 1638 579.64 Z" fill="#000"/>
+<polyline points="1179,583 1274,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 583 L 1266 586.36 L 1266 579.64 Z" fill="#000"/>
+<polyline points="1179,583 1209,583 1209,703 1306,703" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 703 L 1298 706.36 L 1298 699.64 Z" fill="#000"/>
+<polyline points="1009,583 1129,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1129 583 L 1121 586.36 L 1121 579.64 Z" fill="#000"/>
+<polyline points="1009,583 1039,583 1039,703 1136,703" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 703 L 1128 706.36 L 1128 699.64 Z" fill="#000"/>
+<polyline points="499,343 529,343 529,583 594,583" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 583 L 586 586.36 L 586 579.64 Z" fill="#000"/>
+<polyline points="694,703 796,703" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 703 L 788 706.36 L 788 699.64 Z" fill="#000"/>
+<polyline points="832,703 966,703" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 703 L 958 706.36 L 958 699.64 Z" fill="#000"/>
+<polyline points="499,343 529,343 529,703 594,703" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 703 L 586 706.36 L 586 699.64 Z" fill="#000"/>
+<polyline points="694,823 796,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 823 L 788 826.36 L 788 819.64 Z" fill="#000"/>
+<polyline points="832,823 959,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 823 L 951 826.36 L 951 819.64 Z" fill="#000"/>
+<polyline points="1204,823 1274,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1274 823 L 1266 826.36 L 1266 819.64 Z" fill="#000"/>
+<polyline points="1374,823 1476,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1476 823 L 1468 826.36 L 1468 819.64 Z" fill="#000"/>
+<polyline points="1009,823 1104,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 823 L 1096 826.36 L 1096 819.64 Z" fill="#000"/>
+<polyline points="1009,823 1039,823 1039,943 1136,943" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 943 L 1128 946.36 L 1128 939.64 Z" fill="#000"/>
+<polyline points="1512,823 1646,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 823 L 1638 826.36 L 1638 819.64 Z" fill="#000"/>
+<polyline points="499,343 529,343 529,823 594,823" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 823 L 586 826.36 L 586 819.64 Z" fill="#000"/>
+<polyline points="832,1243 914,1243" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 914 1243 L 906 1246.36 L 906 1239.64 Z" fill="#000"/>
+<polyline points="1054,1243 1136,1243" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1136 1243 L 1128 1246.36 L 1128 1239.64 Z" fill="#000"/>
+<polyline points="662,1243 692,1243 692,1363 744,1363" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1363 L 736 1366.36 L 736 1359.64 Z" fill="#000"/>
+<polyline points="884,1363 966,1363" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1363 L 958 1366.36 L 958 1359.64 Z" fill="#000"/>
+<polyline points="662,1363 692,1363 692,1483 744,1483" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1483 L 736 1486.36 L 736 1479.64 Z" fill="#000"/>
+<polyline points="884,1483 966,1483" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1483 L 958 1486.36 L 958 1479.64 Z" fill="#000"/>
+<polyline points="1342,1243 1424,1243" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 1243 L 1416 1246.36 L 1416 1239.64 Z" fill="#000"/>
+<polyline points="1564,1243 1646,1243" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1243 L 1638 1246.36 L 1638 1239.64 Z" fill="#000"/>
+<polyline points="662,1483 692,1483 692,1603 744,1603" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1603 L 736 1606.36 L 736 1599.64 Z" fill="#000"/>
+<polyline points="884,1603 966,1603" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1603 L 958 1606.36 L 958 1599.64 Z" fill="#000"/>
+<polyline points="662,1603 692,1603 692,1723 744,1723" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 744 1723 L 736 1726.36 L 736 1719.64 Z" fill="#000"/>
+<polyline points="884,1723 966,1723" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 966 1723 L 958 1726.36 L 958 1719.64 Z" fill="#000"/>
+<polyline points="1342,1363 1424,1363" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1424 1363 L 1416 1366.36 L 1416 1359.64 Z" fill="#000"/>
+<polyline points="1564,1363 1646,1363" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1646 1363 L 1638 1366.36 L 1638 1359.64 Z" fill="#000"/>
+<polyline points="804,383 804,395 889,395 889,1213 804,1213 804,1225" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 807.78 1216 L 804 1225 L 800.22 1216" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="383" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="634,503 634,515 719,515 719,1213 634,1213 634,1225" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 637.78 1216 L 634 1225 L 630.22 1216" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="634" cy="503" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="639,623 639,635 724,635 724,1333 639,1333 639,1345" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 642.78 1336 L 639 1345 L 635.22 1336" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="639" cy="623" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1319,623 1319,635 1404,635 1404,1213 1319,1213 1319,1225" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1322.78 1216 L 1319 1225 L 1315.22 1216" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1319" cy="623" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="649,743 649,755 734,755 734,1453 649,1453 649,1465" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 652.78 1456 L 649 1465 L 645.22 1456" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="649" cy="743" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="654,863 654,875 739,875 739,1573 654,1573 654,1585" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 657.78 1576 L 654 1585 L 650.22 1576" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="654" cy="863" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1329,863 1329,875 1414,875 1414,1333 1329,1333 1329,1345" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1332.78 1336 L 1329 1345 L 1325.22 1336" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1329" cy="863" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="984,1198 984,1186 1069,1186 1069,373 984,373 984,361" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 980.22 370 L 984 361 L 987.78 370" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="1198" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="804,1318 889,1318 889,493 804,493 804,481" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 800.22 490 L 804 481 L 807.78 490" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="804" cy="1318" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,1438 814,1426 899,1426 899,613 814,613 814,601" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 810.22 610 L 814 601 L 817.78 610" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="1438" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1489,1198 1489,1186 1574,1186 1574,613 1489,613 1489,601" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1485.22 610 L 1489 601 L 1492.78 610" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1489" cy="1198" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,1558 824,1546 909,1546 909,733 824,733 824,721" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 820.22 730 L 824 721 L 827.78 730" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="1558" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="824,1678 824,1666 909,1666 909,853 824,853 824,841" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 820.22 850 L 824 841 L 827.78 850" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="824" cy="1678" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="1499,1318 1499,1306 1584,1306 1584,853 1499,853 1499,841" fill="none" stroke="#000" stroke-width="1.1" stroke-dasharray="4 3"/>
+<path d="M 1495.22 850 L 1499 841 L 1502.78 850" fill="none" stroke="#000" stroke-width="1.1"/>
+<circle cx="1499" cy="1318" r="3" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<polyline points="814,565 814,555 754,555 754,291" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,685 814,675 944,675 944,165 934,165" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,325 984,115" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,565 1494,531" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1528 814,1538 734,1538 734,1780" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1648 814,1658 684,1658 684,1929 694,1929" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="814,1768 684,1768 684,2062 694,2062" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="984,1288 984,1298 963,1298 963,2149" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,1288 1494,1298 1414,1298 1414,1420" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1494,1408 1364,1408 1364,1576 1374,1576" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="343" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="375" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The lanes no longer</text>
+<text x="92" y="385.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">fit the work</text>
+<rect x="254" y="303" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="345.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a column</text>
+<path d="M 474 318 L 499 343 L 474 368 L 449 343 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 463.5 332.5 L 484.5 353.5 M 463.5 353.5 L 484.5 332.5" stroke="#000" stroke-width="1"/>
+<text x="432" y="382" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="594" y="303" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="345.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Name the column</text>
+<rect x="764" y="303" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="345.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Submit the column</text>
+<circle cx="984" cy="343" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="984" cy="343" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="975" y="337.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 975 337.06 L 984 343 L 993 337.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="942" y="375" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The editing outcome</text>
+<circle cx="1154" cy="343" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="375" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column recorded</text>
+<rect x="594" y="423" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="465.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Order a column</text>
+<circle cx="814" cy="463" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="463" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="457.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 457.06 L 814 463 L 823 457.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="495" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The ordering</text>
+<text x="772" y="505.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="463" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="495" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Columns ordered</text>
+<rect x="594" y="543" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="579.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Set the column's</text>
+<text x="644" y="591.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">role</text>
+<circle cx="814" cy="583" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="583" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="577.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 577.06 L 814 583 L 823 577.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="615" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The role-change</text>
+<text x="772" y="625.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<path d="M 984 558 L 1009 583 L 984 608 L 959 583 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 572.5 L 994.5 593.5 M 973.5 593.5 L 994.5 572.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="622" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Did the change</text>
+<text x="942" y="632.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">leave an activity with</text>
+<text x="942" y="643.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">no card still open?</text>
+<path d="M 1154 558 L 1179 583 L 1154 608 L 1129 583 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1143.5 572.5 L 1164.5 593.5 M 1143.5 593.5 L 1164.5 572.5" stroke="#000" stroke-width="1"/>
+<text x="1112" y="622" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Mark the activity</text>
+<text x="1112" y="632.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Done?</text>
+<rect x="1274" y="543" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<line x1="1319.5" y1="606" x2="1328.5" y2="606" stroke="#000" stroke-width="1.4"/>
+<line x1="1319.5" y1="609" x2="1328.5" y2="609" stroke="#000" stroke-width="1.4"/>
+<line x1="1319.5" y1="612" x2="1328.5" y2="612" stroke="#000" stroke-width="1.4"/>
+<text x="1324" y="579.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Mark the activity</text>
+<text x="1324" y="591.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Done</text>
+<circle cx="1494" cy="583" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="583" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="577.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 577.06 L 1494 583 L 1503 577.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="615" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The state-change</text>
+<text x="1452" y="625.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1664" cy="583" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="615" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activities closed</text>
+<circle cx="1324" cy="703" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="735" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity left in</text>
+<text x="1282" y="745.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">progress</text>
+<circle cx="1154" cy="703" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="735" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column role set</text>
+<rect x="594" y="663" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="693.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive everything</text>
+<text x="644" y="705.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">in the column on this</text>
+<text x="644" y="717.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">board</text>
+<circle cx="814" cy="703" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="703" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="697.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 697.06 L 814 703 L 823 697.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="735" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The archiving</text>
+<text x="772" y="745.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="984" cy="703" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="735" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Lane cleared</text>
+<rect x="594" y="783" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="825.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a column</text>
+<circle cx="814" cy="823" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="814" cy="823" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="817.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 817.06 L 814 823 L 823 817.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="855" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What the deletion</text>
+<text x="772" y="865.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">will take</text>
+<path d="M 984 798 L 1009 823 L 984 848 L 959 823 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 812.5 L 994.5 833.5 M 973.5 833.5 L 994.5 812.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="862" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Approve what the</text>
+<text x="942" y="872.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">deletion takes?</text>
+<rect x="1104" y="783" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="819.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Select a valid</text>
+<text x="1154" y="831.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">cascading option</text>
+<rect x="1274" y="783" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1324" y="825.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Confirm the deletion</text>
+<circle cx="1494" cy="823" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<circle cx="1494" cy="823" r="15" fill="none" stroke="#000" stroke-width="1.1"/>
+<rect x="1485" y="817.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1485 817.06 L 1494 823 L 1503 817.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1452" y="855" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">The deletion</text>
+<text x="1452" y="865.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">outcome</text>
+<circle cx="1154" cy="943" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="975" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion abandoned</text>
+<circle cx="1664" cy="823" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="855" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column deleted</text>
+<circle cx="814" cy="1243" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="805" y="1237.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 805 1237.06 L 814 1243 L 823 1237.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="772" y="1275" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column submitted</text>
+<a href="../02_System-Interactions/BP12.02_RenameColumn.md" target="_blank">
+<title>BP12.02_RenameColumn — open the System-Interaction document</title>
+<rect x="914" y="1198" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1039 1205 H 1043.8 L 1046.8 1208 V 1215 H 1039 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1043.8 1205 V 1208 H 1046.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1040.56" y1="1211.4" x2="1045.24" y2="1211.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1040.56" y1="1213.6" x2="1045.24" y2="1213.6" stroke="#000" stroke-width="0.7"/>
+<rect x="979" y="1269" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 984 1270.8 V 1277.2 M 980.8 1274 H 987.2" stroke="#000" stroke-width="1"/>
+<text x="984" y="1245.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Edit a column</text>
+</a>
+<circle cx="1154" cy="1243" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1112" y="1275" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column answered</text>
+<circle cx="644" cy="1243" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1237.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1237.06 L 644 1243 L 653 1237.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1275" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column reordering</text>
+<text x="602" y="1285.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP12.04_ReorderColumns.md" target="_blank">
+<title>BP12.04_ReorderColumns — open the System-Interaction document</title>
+<rect x="744" y="1318" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1325 H 873.8 L 876.8 1328 V 1335 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1325 V 1328 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1331.4" x2="875.24" y2="1331.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1333.6" x2="875.24" y2="1333.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1389" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1390.8 V 1397.2 M 810.8 1394 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1365.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Reorder columns</text>
+</a>
+<circle cx="984" cy="1363" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1395" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column reordering</text>
+<text x="942" y="1405.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1363" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1357.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1357.06 L 644 1363 L 653 1357.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1395" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Role submitted</text>
+<a href="../02_System-Interactions/BP12.05_ChangeColumnRole.md" target="_blank">
+<title>BP12.05_ChangeColumnRole — open the System-Interaction document</title>
+<rect x="744" y="1438" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1445 H 873.8 L 876.8 1448 V 1455 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1445 V 1448 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1451.4" x2="875.24" y2="1451.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1453.6" x2="875.24" y2="1453.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1509" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1510.8 V 1517.2 M 810.8 1514 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1485.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Change a column's role</text>
+</a>
+<circle cx="984" cy="1483" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1515" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Role answered</text>
+<circle cx="1324" cy="1243" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1237.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1237.06 L 1324 1243 L 1333 1237.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1275" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity state</text>
+<text x="1282" y="1285.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">submitted</text>
+<a href="../02_System-Interactions/BP12.10_SetTheActivityDone.md" target="_blank">
+<title>BP12.10_SetTheActivityDone — open the System-Interaction document</title>
+<rect x="1424" y="1198" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 1205 H 1553.8 L 1556.8 1208 V 1215 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 1205 V 1208 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="1211.4" x2="1555.24" y2="1211.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="1213.6" x2="1555.24" y2="1213.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="1269" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 1270.8 V 1277.2 M 1490.8 1274 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1245.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Set the activity Done</text>
+</a>
+<circle cx="1664" cy="1243" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1275" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Activity state</text>
+<text x="1622" y="1285.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1483" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1477.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1477.06 L 644 1483 L 653 1477.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1515" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column archiving</text>
+<text x="602" y="1525.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP12.06_ArchiveColumnTasks.md" target="_blank">
+<title>BP12.06_ArchiveColumnTasks — open the System-Interaction document</title>
+<rect x="744" y="1558" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1565 H 873.8 L 876.8 1568 V 1575 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1565 V 1568 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1571.4" x2="875.24" y2="1571.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1573.6" x2="875.24" y2="1573.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1629" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1630.8 V 1637.2 M 810.8 1634 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1605.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Archive a column's tasks</text>
+</a>
+<circle cx="984" cy="1603" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1635" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column archiving</text>
+<text x="942" y="1645.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<circle cx="644" cy="1603" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="635" y="1597.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 635 1597.06 L 644 1603 L 653 1597.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="602" y="1635" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Deletion impact</text>
+<text x="602" y="1645.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP12.07_ReadTheColumnDeletionImpact.md" target="_blank">
+<title>BP12.07_ReadTheColumnDeletionImpact — open the System-Interaction document</title>
+<rect x="744" y="1678" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 869 1685 H 873.8 L 876.8 1688 V 1695 H 869 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 873.8 1685 V 1688 H 876.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="870.56" y1="1691.4" x2="875.24" y2="1691.4" stroke="#000" stroke-width="0.7"/>
+<line x1="870.56" y1="1693.6" x2="875.24" y2="1693.6" stroke="#000" stroke-width="0.7"/>
+<rect x="809" y="1749" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 814 1750.8 V 1757.2 M 810.8 1754 H 817.2" stroke="#000" stroke-width="1"/>
+<text x="814" y="1719.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">See what deleting a column</text>
+<text x="814" y="1731.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">takes</text>
+</a>
+<circle cx="984" cy="1723" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="942" y="1755" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Impact answered</text>
+<circle cx="1324" cy="1363" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<rect x="1315" y="1357.06" width="18" height="11.88" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<path d="M 1315 1357.06 L 1324 1363 L 1333 1357.06" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1282" y="1395" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column deletion</text>
+<text x="1282" y="1405.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">requested</text>
+<a href="../02_System-Interactions/BP12.08_DeleteColumn.md" target="_blank">
+<title>BP12.08_DeleteColumn — open the System-Interaction document</title>
+<rect x="1424" y="1318" width="140" height="90" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1549 1325 H 1553.8 L 1556.8 1328 V 1335 H 1549 Z" fill="#fff" stroke="#000" stroke-width="0.9"/>
+<path d="M 1553.8 1325 V 1328 H 1556.8" fill="none" stroke="#000" stroke-width="0.9"/>
+<line x1="1550.56" y1="1331.4" x2="1555.24" y2="1331.4" stroke="#000" stroke-width="0.7"/>
+<line x1="1550.56" y1="1333.6" x2="1555.24" y2="1333.6" stroke="#000" stroke-width="0.7"/>
+<rect x="1489" y="1389" width="10" height="10" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1494 1390.8 V 1397.2 M 1490.8 1394 H 1497.2" stroke="#000" stroke-width="1"/>
+<text x="1494" y="1365.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Delete a column</text>
+</a>
+<circle cx="1664" cy="1363" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1622" y="1395" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Column deletion</text>
+<text x="1622" y="1405.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">answered</text>
+<path d="M 700 215 H 694 V 291 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="227" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Reaches every board the template governs (BR-108),</text>
+<text x="703" y="237.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">which is why more than one activity can be left with</text>
+<text x="703" y="248.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">nothing open.</text>
+<path d="M 700 127 H 694 V 203 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="139" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">This is the archiving act that takes a whole column's</text>
+<text x="703" y="149.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">worth at once, on the board in front of the user. The</text>
+<text x="703" y="160.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">column itself stays.</text>
+<path d="M 870 24 H 864 V 115 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="36" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A name is the user's word for the lane; renaming never</text>
+<text x="873" y="46.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">changes what an existing lane means. Where a new lane</text>
+<text x="873" y="57.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">lands in the order is the ordering's business (BP12.04).</text>
+<path d="M 1380 380 H 1374 V 531 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="392" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Answered activity by activity where the change</text>
+<text x="1383" y="402.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">completed several boards. A board the change</text>
+<text x="1383" y="413.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">completed has nothing open on it, so there is nothing to</text>
+<text x="1383" y="423.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">disclose and nothing to answer with the closing;</text>
+<text x="1383" y="434.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">declining leaves the activity InProgress, to be closed by</text>
+<text x="1383" y="445.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">hand on the Course page.</text>
+<path d="M 700 1780 H 694 V 1871 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1792" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Within BR-59 and BR-60's limits the consequences are</text>
+<text x="703" y="1802.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the user's. No history is rewritten: what any span</text>
+<text x="703" y="1813.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">recorded as completed stands (BR-124).</text>
+<path d="M 700 1883 H 694 V 1974 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1895" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Archiving is a conscious gesture here as everywhere: no</text>
+<text x="703" y="1905.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">task archives itself. This act reaches the one board the</text>
+<text x="703" y="1916.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">user is on, unlike a change to the template itself.</text>
+<path d="M 700 1986 H 694 V 2137 H 700" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="703" y="1998" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A task cannot be left without a column, so the cascade is</text>
+<text x="703" y="2008.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">approve-or-abandon and detaching is not offered.</text>
+<text x="703" y="2019.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Deleting a lane deletes it on every board the template</text>
+<text x="703" y="2029.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">governs, so the disclosure counts all of them. A column</text>
+<text x="703" y="2040.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">empty everywhere has nothing to disclose and deletes</text>
+<text x="703" y="2051.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">cleanly.</text>
+<path d="M 870 2149 H 864 V 2330 H 870" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="873" y="2161" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">A name is not a role (BR-58), so nothing here can touch</text>
+<text x="873" y="2171.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the one Backlog or the last Done (BR-59). InProgress is</text>
+<text x="873" y="2182.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the role most added lanes carry (`arch section 10`);</text>
+<text x="873" y="2192.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">saying a new lane means something else is the role act's</text>
+<text x="873" y="2203.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">own business. A new lane appears on every board the</text>
+<text x="873" y="2214.1" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">template governs (BR-108), and the check-out and the</text>
+<text x="873" y="2224.72" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">advisor read a lane's role, never its name.</text>
+<path d="M 1380 1420 H 1374 V 1526 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="1432" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The Course page owns an activity's state (BP18); this is</text>
+<text x="1383" y="1442.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the completion offer answered from the column settings,</text>
+<text x="1383" y="1453.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">as the board answers its own (BP11). A Done activity</text>
+<text x="1383" y="1463.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">can be reopened there.</text>
+<path d="M 1380 1538 H 1374 V 1614 H 1380" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1383" y="1550" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The Backlog column and the last Done column are</text>
+<text x="1383" y="1560.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">refused with their reason, for the same reason their roles</text>
+<text x="1383" y="1571.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">cannot change.</text>
+<rect x="501" y="344" width="101.7" height="11.5" fill="#fff"/>
+<text x="502" y="353.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">add a lane, or rename one</text>
+<rect x="531" y="344" width="50.65" height="11.5" fill="#fff"/>
+<text x="532" y="353.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="1181" y="584" width="15.23" height="11.5" fill="#fff"/>
+<text x="1182" y="593.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="1211" y="584" width="11.45" height="11.5" fill="#fff"/>
+<text x="1212" y="593.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="1011" y="584" width="15.23" height="11.5" fill="#fff"/>
+<text x="1012" y="593.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">yes</text>
+<rect x="1041" y="584" width="11.45" height="11.5" fill="#fff"/>
+<text x="1042" y="593.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">no</text>
+<rect x="531" y="344" width="103.58" height="11.5" fill="#fff"/>
+<text x="532" y="353.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">change what a lane means</text>
+<rect x="531" y="344" width="60.11" height="11.5" fill="#fff"/>
+<text x="532" y="353.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">clear out a lane</text>
+<rect x="1011" y="824" width="32.71" height="11.5" fill="#fff"/>
+<text x="1012" y="833.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">approve</text>
+<rect x="1041" y="824" width="22.78" height="11.5" fill="#fff"/>
+<text x="1042" y="833.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reject</text>
+<rect x="531" y="344" width="55.86" height="11.5" fill="#fff"/>
+<text x="532" y="353.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">remove a lane</text>
+<rect x="891" y="396" width="53.49" height="20.73" fill="#fff"/>
+<text x="892" y="404.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.02</text>
+<text x="892" y="414.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Edit a column</text>
+<rect x="721" y="516" width="66.71" height="20.73" fill="#fff"/>
+<text x="722" y="524.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.04</text>
+<text x="722" y="534.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Reorder columns</text>
+<rect x="726" y="636" width="91.02" height="20.73" fill="#fff"/>
+<text x="727" y="644.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.05</text>
+<text x="727" y="654.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Change a column's role</text>
+<rect x="1406" y="636" width="79.95" height="20.73" fill="#fff"/>
+<text x="1407" y="644.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.10</text>
+<text x="1407" y="654.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Set the activity Done</text>
+<rect x="736" y="756" width="95.26" height="20.73" fill="#fff"/>
+<text x="737" y="764.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.06</text>
+<text x="737" y="774.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Archive a column's tasks</text>
+<rect x="741" y="876" width="129.09" height="20.73" fill="#fff"/>
+<text x="742" y="884.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.07</text>
+<text x="742" y="894.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">See what deleting a column takes</text>
+<rect x="1416" y="876" width="63.41" height="20.73" fill="#fff"/>
+<text x="1417" y="884.23" font-family="Helvetica, Arial, sans-serif" font-size="7.23" fill="#555555">BP12.08</text>
+<text x="1417" y="894.73" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">Delete a column</text>
+<rect x="1071" y="1187" width="79.01" height="11.5" fill="#fff"/>
+<text x="1072" y="1196.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The editing outcome</text>
+<rect x="891" y="494" width="85.15" height="11.5" fill="#fff"/>
+<text x="892" y="503.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The ordering outcome</text>
+<rect x="901" y="1427" width="98.85" height="11.5" fill="#fff"/>
+<text x="902" y="1436.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The role-change outcome</text>
+<rect x="1576" y="1187" width="103.11" height="11.5" fill="#fff"/>
+<text x="1577" y="1196.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The state-change outcome</text>
+<rect x="911" y="1547" width="87.98" height="11.5" fill="#fff"/>
+<text x="912" y="1556.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The archiving outcome</text>
+<rect x="911" y="1667" width="100.74" height="11.5" fill="#fff"/>
+<text x="912" y="1676.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">What the deletion will take</text>
+<rect x="1586" y="1307" width="83.74" height="11.5" fill="#fff"/>
+<text x="1587" y="1316.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">The deletion outcome</text>
+</svg>

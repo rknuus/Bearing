@@ -1,0 +1,41 @@
+@startbpmn BP04_CaptureAndCurateIdeas_Blocks
+lang en
+
+output L1 "BP04_CaptureAndCurateIdeas.bpmn"
+
+' The BLOCK VIEW of BP04: the work loop with one box per building block instance, no internals.
+' Hand-authored from the one tagged source in ../diagrams/, and re-read whenever it changes.
+
+pool "User" {
+  start "An idea worth keeping, or a list worth tidying"
+  :BB01 OpenView · the Ideation view, under the filter and the ordering in force;
+  task "Work an idea" as hub
+  rule BR-118
+  if "What needs doing?" then "write one down, or change one"
+    :BB03 EditContent · the idea, its notes among the fields;
+    goto hub
+  elseif "What needs doing?" then "group related ones together"
+    :BB05 EditState · the order of the ideas;
+    goto hub
+  elseif "What needs doing?" then "park one"
+    :BB07 ArchiveCascadedItem · the idea, with the projects that came from it;
+    goto hub
+  elseif "What needs doing?" then "drop one for good"
+    :BB10 DeleteCascadedItem · the idea, with the projects that came from it;
+    goto hub
+  elseif "What needs doing?" then "commit to one"
+    :BB03 EditContent · a goal defined on the idea, maintaining it being BP05's;
+    goto hub
+  elseif "What needs doing?" then "start work on one"
+    :BB03 EditContent · a project created on the idea, working it being BP17's;
+    goto hub
+  elseif "What needs doing?" then "look at the archived ones"
+    :Seam · the archived ideas, which are BP15's;
+    goto hub
+  else "nothing more"
+    goto done
+  endif
+  end "Everything done" as done
+}
+
+@endbpmn

@@ -1,0 +1,54 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB10_DeleteCascadedItem
+lang en
+
+output L1 "BB10_DeleteCascadedItem.bpmn"
+
+' Deleting what owns something: the user picks a valid combination of cascades, or deletes nothing
+' at all. The selection step is drawn ALWAYS, even where one combination is the only legal one,
+' because what the user confirms is a combination either way - and where nothing may be left behind
+' that one combination is the whole reach, declining having no legal outcome to fall back on.
+
+pool "User" {
+  :Delete the <entity>;
+  send "See what deleting a <entity> takes" to impactIn
+  receive "What the deletion will take" as impact
+  if "Approve what the deletion takes?" rule BR-12 then "approve"
+    :Select a valid cascading option;
+    rule BR-19
+    :Confirm the deletion;
+    send "Delete a <entity>" to deleteIn
+    receive "The deletion outcome" as deleted
+    goto back
+  else "reject"
+    goto back
+  endif
+  end "Back on the surface" as back
+}
+
+system pool "Bearing" {
+  messageStart "Deletion impact requested" as impactIn
+  ' lint-ok: BB10.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB10.01_ReadTheDeletionImpact" "See what deleting a <entity> takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-19
+    rule BR-117
+  }
+  send "What the deletion will take" to impact
+  note "The drawing carries one choice: a valid combination, or no deletion at all. Which combinations are legal is this answer's content, a cascade the user may decline starts off, and an archived descendant is counted like a live one."
+  end "Impact answered"
+
+  messageStart "Deletion requested" as deleteIn
+  ' lint-ok: BB10.02 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB10.02_DeleteWhatWasConfirmed" "Delete a <entity>" {
+    :Delete confirmed items;
+    rule BR-12
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "The request carries the cascades the user confirmed, and nothing else goes. What happens below a taken descendant is that entity's own rule, applied where the deletion reaches it."
+  end "Deletion answered"
+}
+
+@endbpmn

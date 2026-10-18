@@ -1,0 +1,87 @@
+@startbpmn BP08_SetADaysFocus
+lang en
+
+output L1 "01_detailed/BP08_SetADaysFocus.bpmn"
+output L2 "02_detailed/BP08_SetADaysFocus.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the day is the unit of focus, settable from any period scope: BR-40, BR-93
+'   - any date is focusable, past or future, with no restriction: BR-40, SA 2026-10-10
+'   - committing a focus replaces the date's previous selection: BR-41, SA 2026-10-10
+'   - boards and routines are what a day selects: BR-41
+'   - the selection shape is 0..N projects and 0..M activities inside each: BR-41, SA 2026-10-10
+'   - picking a project offers its ready activities: BR-41, BR-99
+'   - selecting a routine CREATES its task where none is outstanding, on Chores - never a second one
+'     while one is open, which is what the step says rather than ensuring anything: BR-42,
+'     SA 2026-10-18 (the same reading as BP17's template step)
+'   - due and overdue are treated identically: BR-42, BR-91
+'   - deselecting a routine never removes a task already created: BR-42
+'   - only non-archived projects and active routines are selectable: BR-43
+'   - a routine has no theme, so the routines are offered as one list: BR-02, SA 2026-10-13
+'   - Chores joins the day derived, never selected, while it carries open work: BR-107
+'   - NEITHER CHAIN carries Chores. The write does not put it in play, because nothing stores that
+'     membership: the routine tasks the commit ensures are what Chores carries, and carrying them is
+'     what puts it in play, derived wherever the day is reported. The read does not report it
+'     either: nothing in this process can act on an unfinished chore, and composing a day is not
+'     where that work is shown - the board strip derives it when the user comes to work (BP11):
+'     BR-107, BR-118, POL-12, SA 2026-10-17
+'   - the day focus is a record of a human commitment: BR-40
+'   - the advisor may propose a day's focus; applying it runs this same operation: BR-72
+'   - the editor opens on a date that may already carry a focus, so the surface read carries that
+'     date's committed selection: a surface is read whole, and what is already picked is what the
+'     user drops. F-6 of 08_BP-Review-Findings.md is closed with it: BR-41, DRW-14, SA 2026-10-16
+'   - the write answers with the focus it committed, so there is nothing left to re-read: a
+'     client that just wrote the state knows it, and a state change elsewhere reaches the client
+'     as that change's own answer. Call site BP08.03 (Read the day's focus) is RETIRED, its id
+'     never reused: SA 2026-10-16, ADR-066
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'   - the offer carries each activity-based project's activities, so what the readiness calculation
+'     works on is named where it is taken rather than in a fetch of its own: BR-99, SA 2026-10-17
+'
+' Scope: this process sets the focus for one date. Choosing which period to look at is UIP02, which hands
+' over here by opening the day focus editor on the day the user picked.
+'
+' Call-site collapsing: scheduling the day's routine tasks is not a chain of its own. Selection
+' is what creates the task, so the creation is a drawn step inside the one write.
+
+pool "User" {
+  start "A day to commit to"
+  :Pick or drop the projects to work on;
+  multiInstance
+
+  :Pick or drop the activities inside each activity-based project;
+  multiInstance
+  rule BR-41
+  note "Zero to many per project. The ready ones are offered first; nothing forces one at a time. A simple project contributes its own board and has no activities to pick."
+
+  :Pick or drop the routines to keep up;
+  multiInstance
+  :Commit the day's focus;
+  send "Set the day's focus" to setIn
+  receive "What was committed, or why not" as focusSet
+  note "Chores is never picked. It joins the day on its own while it carries work that is not done."
+
+  end "Day committed"
+}
+
+system pool "Bearing" {
+  messageStart "Day focus submitted" as setIn
+  call "BP08.02_SetTheDaysFocus" "Set the day's focus" {
+    :Replace the date's selection with what was committed;
+    rule BR-41
+    :Create the task a selected routine owes, where none is outstanding, on Chores;
+    rule BR-42
+    rule BR-102
+    :Report the outcome, with the day's focus;
+  }
+  send "What was committed, or why not" to focusSet
+  note "A commit replaces the date's previous selection rather than adding to it, so the boards in play are exactly what was last committed. A routine that already owes a task gets no second one, on any date. Due and overdue are treated the same. Dropping a routine leaves a task already created where it is."
+  end "Day focus answered"
+}
+
+@endbpmn

@@ -1,0 +1,49 @@
+@startbpmn BP20_CloseBearing
+lang en             ' the only stakeholder is the Software Architect, who authored the sources in English
+
+output L1 "01_detailed/BP20_CloseBearing.bpmn"
+output L2 "02_detailed/BP20_CloseBearing.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - LEAVING THE PRODUCT was drawn by no process. BP01.09 closes it, but it is reached only from
+'     the refusal path of a launch that cannot continue, so an ordinary quit had no drawn path:
+'     SA 2026-10-17 ("add BP to close bearing")
+'   - nothing of the user's is pending at the close: every gesture has been committed or left as a
+'     draft, and a draft survives the close and is there on the next launch: BR-121, BR-32, BP19
+'   - the remembered interface state is restored on a launch onto usable data, so the close leaves
+'     it standing rather than writing it away: BR-92, BP01
+'   - the close SETTLES NOTHING: no check-out is made, nothing is archived, no task is touched and
+'     the date in play is not advanced. The span since the last check-out stays open and the next
+'     check-out takes it, exactly as it does across a rollover: BR-33, BR-44, BP13, BP14
+'   - nothing is asked before it closes: a confirmation guards against losing work, and there is no
+'     work to lose - what is half-written is a draft by then: BR-121, DRW-02, SA 2026-10-17
+'   - this is not the start-up refusal, which closes the product as the ONLY way on from a launch
+'     that cannot continue; that path is BP01's and keeps its own call site: BP01, BR-80, BR-122
+'
+' Scope: this process ends a session. Starting one is BP01; what the user did in between is the
+' other eighteen.
+'
+' Call-site collapsing: closing is ONE operation, drawn by two processes - BP01.09 on the refusal
+' path and BP20.01 here. Which System Interaction both resolve to is a Design decision recorded in
+' si-binding.yaml, never a rename (ADR-069).
+
+pool "User" {
+  start "Nothing more to do in Bearing"
+  :Leave Bearing;
+  note "Nothing is pending: every gesture has been committed or left as a draft, and a draft is there again on the next launch. Nothing is settled either - the span since the last check-out stays open."
+  send "Close Bearing" to closeIn
+  end "Bearing closed"
+}
+
+system pool "Bearing" {
+  messageStart "Close requested" as closeIn
+  call "BP20.01_CloseBearing" "Close Bearing" {
+    :Shut the product down;
+    rule BR-121
+    rule BR-92
+  }
+  note "One-way: nothing waits for the shutdown to be reported. The drafts and the remembered interface state stay where they are, and the next launch restores them."
+  end "Product shut down"
+}
+
+@endbpmn

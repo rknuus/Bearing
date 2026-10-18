@@ -1,0 +1,187 @@
+@startbpmn BP10_CaptureTasks
+lang en
+
+output L1 "01_detailed/BP10_CaptureTasks.bpmn"
+output L2 "02_detailed/BP10_CaptureTasks.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - task capture is a batch gesture, staged then committed together: BR-63
+'   - staged work is a draft and survives leaving the gesture, a crash and a restart: section 3
+'   - drafts are not version-controlled: section 3
+'   - discarding a draft is an explicit act: BR-63
+'   - THE SURFACE ASKS ONE QUESTION. Staging another task, working the ones already staged,
+'     committing the batch and closing capture without committing are all answers to it, so
+'     there is no second gateway in front of the commit and no task restates the question:
+'     BR-63, SA 2026-10-18
+'   - staging is not a phase that ends when tidying begins: the entry stays open beside the
+'     staged columns for as long as capture is open, so another task can be written down at any
+'     point: BR-63, v1 experience, SA 2026-10-18
+'   - closing capture leaves the batch staged - it is not a discard, which is its own act:
+'     BR-121, SA 2026-10-18
+'   - the acts name a staged TASK, not a draft. What the user captures is a task; that the batch
+'     is a draft until it commits is the batch's state, carried by BR-63 and the notes, and not
+'     something every act has to repeat: SA 2026-10-18
+'   - exactly three priorities, no fourth, and capture lays them out as one column per
+'     priority - the column a task is staged into is its priority: BR-53, BR-63, SA 2026-10-18
+'   - the priority is a FIELD of the staged draft, so re-triaging one and changing what it
+'     says are two variations of one request and one call site - the same reason BP11 retired its
+'     own Prioritize call site on: the priority has no owner and no consequence beyond the record,
+'     which is what would earn it one of its own. A staged draft is never on a board, so BR-56's
+'     Backlog guard has nothing to bite on and every staged draft's priority is open: BR-53, BR-56,
+'     DRW-12, DRW-23, SA 2026-10-16, v1 experience (a staged card drags from one priority column into
+'     another and its badge changes with it; v1 offers no other way to re-triage one)
+'   - new tasks always enter at the Backlog, at the priority they were captured into: BR-55
+'   - a task sits on exactly one board: BR-103
+'   - CAPTURE NAMES NO BOARD. It is opened on a board (BP11) and the batch commits onto that board,
+'     a project's board or Chores: the user can only write tasks down for the board they are on, so
+'     there is nothing to offer, nothing to choose and no board-less capture left - the Chores
+'     population is a capture made while Chores is the open board: BR-62, BR-90, BR-103,
+'     SA 2026-10-18 ("I can only create tasks for the currently open board, be it a project board
+'     or Chores")
+'   - capturing a task never creates a board: BR-65
+'   - a deletion that discloses nothing still commits on a confirmation, and the step that commits
+'     it is named for what it submits rather than for confirming: the acts carry their own words -
+'     one staged task deleted, or the whole batch discarded - and both are gestures on one request,
+'     so they are drawn as two boxes routed into the one submit, the shape the amend pair already
+'     has: DRW-28, BR-20, SA 2026-10-18 ("Certainly not Confirm")
+'   - no step says that something is STORED AS A DRAFT. Keeping a draft is drawn once, in BP19,
+'     and never per process, and a staged batch is the one draft BP19 excludes - because staging
+'     one is an act of the user's rather than a field being typed into. So the step names that
+'     act, and that what it leaves behind is a draft is the note's business and the gesture's,
+'     not the step's: BR-63, BR-121, SA 2026-10-11 ("draft tasks are completely different beast
+'     and are excluded here"), SA 2026-10-18
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user AMENDS a staged draft,
+'     which is the call site's own word for it: SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'     Call site BP10.07 (Read the staged batch) is RETIRED with the fetch it was, its id never reused:
+'     a staged batch is in play like every other record, so capture picks it up without asking:
+'     ADR-066, SA 2026-10-17
+'
+'   - PICKING THE BATCH UP IS NOT AN ACT. The user does not fetch what was left staged: it is in
+'     play like every other record and the surface opens on it, so the drawing says so in a note
+'     and draws no box. What the user does is stage, tidy and commit: BR-63, BR-121, DRW-02,
+'     SA 2026-10-17 ("The user does not 'Pick up the staged batch', the user gets what the
+'     System and UI provides")
+'
+' OPENING CAPTURE IS NOT DRAWN HERE. It is an act of the surface the user is on, and that surface
+' draws it: the board's "Open task capture" (BP11) is followed there by the handover into this
+' process. So this drawing starts inside the open surface, on the hub every act returns to - the
+' shape BP11, BP12, BP15 and BP18 already start with. Drawing it on both sides would put one act
+' in two processes: DRW-02, SA 2026-10-18
+'
+' Call-site collapsing: discarding one staged task and discarding all of them are two variations
+' of one request. Amending what a staged task says and moving it into another priority column are
+' likewise one - two gestures on one request, which the drawing shows by routing both into the one
+' submit - and ordering one is ranking inside its priority column. Capture is opportunistic and
+' happens during execution, so the gesture is reachable wherever the user is.
+
+pool "User" {
+  start "Work worth writing down"
+  task "Work on uncommitted tasks" as hub
+  rule BR-118
+  note "Opening the surface is the act of whichever surface offers it, and the board draws it (BP11); this process starts inside it. The batch a previous gesture left staged is in front of the user when capture opens - it survives leaving the gesture, a crash and a restart, so capture resumes it rather than starting over. Where nothing was left staged, the batch starts empty."
+  if "Work the tasks?" then "write another one down"
+    :Stage a task;
+    send "Enter and stage a task draft" to stageIn
+    receive "The staging outcome" as staged
+    note "Staging is one task at a time, and the batch is what has been staged so far. Staging is also what sets the priority: the batch is laid out as three priority columns - Important and Urgent, Not Important and Urgent, Important and Not Urgent - and the column a task is staged into is the priority it carries."
+    goto hub
+  elseif "Work the tasks?" then "fix what a staged task says"
+    :Amend a staged task;
+    rule BR-63
+    task "Submit the task" as submit
+    send "Edit a staged task" to editIn
+    receive "The editing outcome" as amended
+    note "What a staged task says and the priority it carries are fields of the one request, which is why moving it into another priority column arrives here too: the editor and the drag are two gestures on one request. Nothing takes effect until the batch is committed."
+    goto hub
+  elseif "Work the tasks?" then "reprioritize one into another column"
+    :Reprioritize a task to another column;
+    goto submit
+  elseif "Work the tasks?" then "reorder them"
+    :Order a staged task within a column;
+    send "Reorder staged tasks" to reorderIn
+    receive "The ordering outcome" as reordered
+    goto hub
+  elseif "Work the tasks?" then "throw one away"
+    :Delete a staged task;
+    task "Submit the discard" as discardSubmit
+    send "Discard staged tasks" to discardIn
+    receive "The discard outcome" as discarded
+    note "A staged task owns nothing, so there is nothing to disclose and no cascade to approve. Throwing one away and throwing the whole batch away are two gestures on one request."
+    goto hub
+  elseif "Work the tasks?" then "throw the whole batch away"
+    :Discard all staged tasks;
+    goto discardSubmit
+  elseif "Work the tasks?" then "commit the batch"
+    :Commit the staged tasks;
+    send "Commit the staged tasks" to commitIn
+    receive "The commit outcome" as committed
+    end "Tasks captured"
+  else "leave it for later"
+    :Close capture without committing;
+    note "Closing the surface is not discarding the batch: it survives as a draft, and nothing it describes takes effect until it is committed. Throwing it away is the discard act."
+    end "Batch left as a draft"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Staging requested" as stageIn
+  call "BP10.02_StageTaskDraft" "Stage a task" {
+    :Stage the task to a priority column;
+    rule BR-53
+    :Report the outcome;
+  }
+  send "The staging outcome" to staged
+  note "A staged task is not a commit. It is kept outside version control."
+  end "Staging answered"
+
+  messageStart "Edit submitted" as editIn
+  call "BP10.03_AmendStagedDraft" "Edit a staged task" {
+    :Store the edit, the priority included;
+    rule BR-53
+    :Report the outcome;
+  }
+  send "The editing outcome" to amended
+  note "A staged task is never on a board, so its priority is open for as long as the batch is uncommitted."
+  end "Edit answered"
+
+  messageStart "Reordering requested" as reorderIn
+  call "BP10.04_ReorderStagedDrafts" "Reorder staged tasks" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to reordered
+  end "Reordering answered"
+
+  messageStart "Discard requested" as discardIn
+  call "BP10.05_DiscardStagedDrafts" "Discard staged tasks" {
+    :Delete the staged tasks the request names;
+    :Report the outcome;
+  }
+  send "The discard outcome" to discarded
+  end "Discard answered"
+
+  messageStart "Batch commit requested" as commitIn
+  call "BP10.06_CommitStagedTasks" "Commit the staged tasks" {
+    :Place each task on the board capture was opened from;
+    rule BR-62
+    rule BR-103
+    rule BR-90
+    :Enter every task at the Backlog at its priority;
+    rule BR-55
+    :Report the outcome;
+  }
+  send "The commit outcome" to committed
+  note "Every task in the batch lands on the board capture was opened from - a project's board, or Chores where that is the board the user is on. Capture names no board and creates none. The batch commits as one act."
+  end "Commit answered"
+}
+
+@endbpmn

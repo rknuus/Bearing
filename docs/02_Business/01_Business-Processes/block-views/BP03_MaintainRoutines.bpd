@@ -1,0 +1,32 @@
+@startbpmn BP03_MaintainRoutines_Blocks
+lang en
+
+output L1 "BP03_MaintainRoutines.bpmn"
+
+' The BLOCK VIEW of BP03: the work loop with one box per building block instance, no internals.
+' Hand-authored from the one tagged source in ../diagrams/, and re-read whenever it changes.
+
+pool "User" {
+  start "A routine needs attention"
+  :BB01 OpenView · the Routines view, with what is due calculated;
+  task "Work a routine" as hub
+  rule BR-118
+  if "What needs doing?" then "add or change a routine"
+    :BB03 EditContent · the routine, its schedule among the fields;
+    goto hub
+  elseif "What needs doing?" then "put one on hold, or take it off hold"
+    :BB05 EditState · the routine paused or resumed;
+    goto hub
+  elseif "What needs doing?" then "reorder them"
+    :BB05 EditState · the order of the routines;
+    goto hub
+  elseif "What needs doing?" then "retire one for good"
+    :BB10 DeleteCascadedItem · the routine, with the task occurrences it has produced;
+    goto hub
+  else "nothing more"
+    goto done
+  endif
+  end "Everything done" as done
+}
+
+@endbpmn

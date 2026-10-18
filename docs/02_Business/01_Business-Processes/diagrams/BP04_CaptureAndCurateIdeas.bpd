@@ -1,0 +1,226 @@
+@startbpmn BP04_CaptureAndCurateIdeas
+lang en
+
+output L1 "01_detailed/BP04_CaptureAndCurateIdeas.bpmn"
+output L2 "02_detailed/BP04_CaptureAndCurateIdeas.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - an idea has 0..1 theme; theme-less is legitimate and grouped under Unthemed: BR-03
+'   - an archived idea cannot be edited: BR-05
+'   - the hand-made order is a grouping convenience with no funnel consequence: BR-88
+'   - archiving an idea archives the projects that came from it, on informed approval: BR-112, QB-42
+'   - deleting an idea cascades its projects with approval, or the deletion is rejected: BR-14, QB-41
+'   - detaching a project to parentless is deliberately not offered: BR-14, BR-21
+'   - an idea owns no board: the selectables consequence belongs to the project the cascade
+'     archives, and is drawn once, in BP17 where the project is the subject. Here the rule is
+'     bound to the archiving step and no step draws it: BR-43, BR-112, SA 2026-10-14
+'   - the capture is opportunistic and happens during execution: section 1.2 step 3
+'
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - an archived item cannot be edited, idea and notes alike: BR-05
+'   - one editor per entity serves writing an idea down and changing one alike, and nothing
+'     separated the two chains but the fields they stored, so they are ONE request: UX-04,
+'     SA 2026-10-11. Call site BP04.03 (Amend an idea) is RETIRED, its id never reused
+'   - a step never enumerates the fields an editor stores: which fields the idea carries is a
+'     Detail Design matter and is not known yet, so the step says "Store the edit" rather than
+'     naming a title and a theme affiliation: SA 2026-10-14
+'   - the notes are a field of the one idea editor, not an editor of their own: writing them is
+'     part of editing the idea and submitting is the commit, so call site BP04.10 (Commit the
+'     idea notes) is RETIRED and its id never reused: UX-04, DRW-12, SA 2026-10-14, ADR-066
+'   - the filter and the ordering in force are remembered interface state with no request of
+'     their own, so no step draws changing them; the read states that it answers what they
+'     admit: BR-88, BR-92, SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user CAPTURES an idea, DEFINES
+'     a goal on one and CREATES a project on one - a seam is an act, not an opening: SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Call-site collapsing: re-affiliating an idea to a theme is a field of the amend request, not a
+' chain of its own, and so are the notes: one editor per entity, one submit, one request.
+
+' A seam into another process is drawn as one step that asks the system for nothing, with a note
+' saying whose business it is, and the hub takes the user back afterwards. DRW-02 makes the seam
+' significant, and BP17 and BP09 already drew theirs; the rest of the set did not, which is the
+' asymmetry F-3 recorded. Swept on SA 2026-10-16 ("still can't find any checkout action on the
+' diagram").
+'
+pool "User" {
+  start "An idea worth keeping, or a list worth tidying"
+  :Work an idea;
+  rule BR-118
+
+  if "What needs doing?" then "write one down, or change one"
+    :Capture the idea;
+    rule BR-121
+    note "What is typed drafts as it is filled in, the notes included, and the draft survives a crash and a restart. Submitting is the commit."
+    :Submit the idea;
+    send "Edit an idea" to editIn
+    receive "The editing outcome" as recorded
+    note "A theme is optional, and a theme-less idea is grouped under Unthemed. An archived idea is not editable."
+    end "Idea recorded"
+
+  elseif "What needs doing?" then "group related ones together"
+    :Order an idea;
+    send "Reorder ideas" to reorderIn
+    receive "The ordering outcome" as reordered
+    note "The order groups related ideas. It carries no priority."
+    end "Ideas ordered"
+
+  elseif "What needs doing?" then "park one"
+    :Archive an idea;
+    send "See what archiving an idea takes" to archImpactIn
+    receive "What the archiving will take" as archImpact
+    if "Approve what the archiving takes?" rule BR-112 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the archiving;
+      send "Archive an idea" to archiveIn
+      receive "The archiving outcome" as archived
+    else "reject"
+      end "Archiving abandoned"
+    endif
+    end "Idea set aside"
+
+  elseif "What needs doing?" then "drop one for good"
+    :Delete an idea;
+    send "See what deleting an idea takes" to delImpactIn
+    receive "What the deletion will take" as delImpact
+    if "Approve what the deletion takes?" rule BR-14 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete an idea" to deleteIn
+      receive "The deletion outcome" as deleted
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Idea deleted"
+  elseif "What needs doing?" then "commit to one"
+    :Define a goal on the idea;
+    rule BR-121
+    :Submit the goal;
+    send "Define a goal" to goalIn
+    receive "The editing outcome" as goalDefined
+    note "The goal's editor opens on the idea, with the idea already linked. A goal needs a theme, so one defined on a theme-less idea is refused with its reason. Maintaining the goal afterwards is its own process (BP05)."
+    end "Goal defined"
+
+  elseif "What needs doing?" then "start work on one"
+    :Create a project on the idea;
+    rule BR-121
+    :Submit the project;
+    send "Create a project" to projectIn
+    receive "The editing outcome" as projectCreated
+    note "A project carries one optional parent, and the idea is it here. Working its board (BP11), or laying its course out (BP18), is its own process."
+    end "Project created"
+
+  elseif "What needs doing?" then "look at the archived ones"
+    :Open the archived ideas (BP15);
+    note "The archive is reached by an explicit act. Reading it, bringing one back and destroying one out of it are its own process (BP15)."
+    end "Archive opened"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Idea submitted" as editIn
+  call "BP04.02_EditIdea" "Edit an idea" {
+    :Store the edit;
+    rule BR-03
+    rule BR-05
+    :Report the outcome;
+  }
+  send "The editing outcome" to recorded
+  note "The theme may be absent. An archived idea is not editable."
+  end "Idea answered"
+
+  messageStart "Idea reordering requested" as reorderIn
+  call "BP04.05_ReorderIdeas" "Reorder ideas" {
+    :Apply the new order;
+    :Report the outcome;
+  }
+  send "The ordering outcome" to reordered
+  end "Reordering answered"
+
+  messageStart "Archiving impact requested" as archImpactIn
+  call "BP04.06_ReadTheArchivingImpact" "See what archiving an idea takes" {
+    :Report what the archiving will take, and what of it can be declined;
+    rule BR-19
+    rule BR-112
+  }
+  send "What the archiving will take" to archImpact
+  note "Nothing below a project can be left behind, so the gesture is approve-or-abandon."
+  end "Archiving impact answered"
+
+  messageStart "Idea archiving requested" as archiveIn
+  call "BP04.07_ArchiveIdea" "Archive an idea" {
+    :Archive confirmed items;
+    rule BR-112
+    rule BR-43
+    :Report the outcome;
+  }
+  send "The archiving outcome" to archived
+  note "Unarchiving restores the whole bundle."
+  end "Archiving answered"
+
+  messageStart "Deletion impact requested" as delImpactIn
+  call "BP04.08_ReadTheDeletionImpact" "See what deleting an idea takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-14
+    rule BR-19
+    rule BR-117
+  }
+  send "What the deletion will take" to delImpact
+  note "Keeping a project behind is not offered. A goal that links the idea survives minus the link."
+  end "Deletion impact answered"
+
+  messageStart "Idea deletion requested" as deleteIn
+  call "BP04.09_DeleteIdea" "Delete an idea" {
+    :Delete confirmed items;
+    rule BR-14
+    :Unlink the idea from every goal that links it;
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "A goal left with no linked idea is flagged on its current state."
+  end "Deletion answered"
+
+  messageStart "Goal submitted" as goalIn
+  call "BP04.11_DefineGoal" "Define a goal" {
+    if "Does the goal name a theme?" rule BR-01 then "yes"
+      :Store the edit;
+      rule BR-04
+      rule BR-08
+    else "no"
+      :Refuse it and say why;
+      rule BR-84
+    endif
+    :Report the outcome;
+  }
+  send "The editing outcome" to goalDefined
+  note "The idea comes in as one of the ideas behind the goal. A theme-less idea gives the goal no theme, and a goal without one is refused, which is the same answer the Goals view's own editor gives."
+  end "Goal answered"
+
+  messageStart "Project submitted" as projectIn
+  call "BP04.12_CreateProject" "Create a project" {
+    :Store the edit;
+    rule BR-96
+    rule BR-97
+    :Give a new project its own column template;
+    rule BR-108
+    :Give it what its kind brings: one board where it is simple, an empty plan where it is activity-based;
+    rule BR-101
+    rule BR-111
+    :Report the outcome;
+  }
+  send "The editing outcome" to projectCreated
+  note "The parent is the idea, carried in from where the user started. The kind is declared once and for the project's life."
+  end "Project answered"
+}
+
+@endbpmn

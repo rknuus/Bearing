@@ -1,0 +1,203 @@
+@startbpmn BP16_ConsultTheAdvisor
+lang en
+
+output L1 "01_detailed/BP16_ConsultTheAdvisor.bpmn"
+output L2 "02_detailed/BP16_ConsultTheAdvisor.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - the advisor is an off-system actor, so it is a BLACK-BOX pool: messages cross its boundary
+'     and nothing of its working is drawn, which is also what Intent section 5 types it as:
+'     BR-66, SA 2026-10-11
+'   - one advisor, available anywhere, aware of where the user is, never blocking: BR-66
+'   - one conversation per session, cleared deliberately: BR-66
+'   - the advisor sees the whole funnel, plus vision and mission when set: BR-67
+'   - a proposal is a structured typed object, never prose to be parsed: BR-68
+'   - applying writes immediately and completely; a creation proposal carries everything: BR-69
+'   - at most one outstanding proposal per target; a revision supersedes its predecessor: BR-70
+'   - ONE PROPOSAL PER ACT. Applying and dismissing each act on the one proposal the user picked:
+'     there is no apply-the-whole-answer and no dismiss-the-whole-answer, which is what the
+'     no-multi-select rule says everywhere else in the product anyway. BR-71, the one rule that let
+'     a gesture act on several at once, is retired with them: BR-70, BR-85, ~~BR-71~~,
+'     SA 2026-10-18 ("I changed it to what I want")
+'   - the advisor acts only through the operations the user has, deletions included: BR-72
+'   - an applied operation discloses and asks exactly what it would for the user: BR-72
+'   - so applying is a disclosure and a write, never one call that asks and acts: BR-12, BR-72
+'   - and the two gestures are the REQUEST and the ACT, never two confirmations: accepting a
+'     proposal is what asks what applying it would take, the gateway is the one decision, and the
+'     step on its approve branch commits by doing the thing - named for the act, as every
+'     committing step is: BR-72, DRW-26, DRW-28, SA 2026-10-18 ("it requires a decision and another
+'     confirmation afterwards?!")
+'   - a proposal may land where the user is not working, and saying so is part of applying: BR-74
+'   - it never silently fails and never hands over an inert proposal: BR-75
+'   - so the call can FAIL and the drawing says so: an unreachable service, a timeout, or an
+'     answer nothing usable could be made of is reported as what it is, by the one answer that
+'     carries the proposals when there are any. No retry arrow is drawn: a request worth repeating
+'     is the whole gesture started again, not a loop back into the pending one: BR-66, BR-75,
+'     G-4, SA 2026-10-16
+'   - the user's words are a REQUEST, and what the system submits to the service is the
+'     CONVERSATION it belongs to - so the exchange is kept by the act that sends it, and the panel
+'     reads it back with its outstanding proposals: BR-66, SA 2026-10-16
+'   - an apply that fails is NOT this: applying runs the user's own operation, and a write that
+'     cannot be verified is rejected with its reason by the system, which is BR-128's and is
+'     drawn in no process: BR-69, BR-72, BR-128
+'   - the panel comes current on its own; higher latency than everything else is accepted: BR-118
+'   - the conversation is journaled but not version-controlled: section 3
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'     Call site BP16.01 (Open the advisor conversation) is RETIRED with the fetch it was, its id never
+'     reused: the session's conversation and the view the user is on are both in play, so opening the
+'     panel asks the system for nothing: ADR-066, SA 2026-10-17
+'   - OPENING THE PANEL IS NOT DRAWN. It asks the system for nothing and decides nothing - the panel
+'     splits the active tab, knows which view and which selection the user is on, and suspends
+'     nothing - so it is the surface's own business and no act of this process: the drawing starts
+'     on the hub, as every other hub process does: BR-66, BR-118, DRW-02,
+'     SA 2026-10-18 ("'Open the advisor panel' is a UI-only action, no business relevance")
+'   - THE CONVERSATION IS KEPT so that it can be sent as context with every later request: each turn
+'     is added to it, the ask's own and the answer that comes back, and that is what carries the
+'     exchange across turns. It is journaled and not version-controlled (section 3), and the panel
+'     reads it back with its outstanding proposals: BR-66, BR-67, SA 2026-10-17,
+'     SA 2026-10-18 ("To store the conversation, so that we can serve it as context for future
+'     requests?" - yes, and the steps now say so)
+'
+' Scope: this process is the conversation and the proposals. The writes a proposal causes are the
+' user's own operations, drawn in whichever process owns the entity, so they are reached through
+' this process rather than redrawn in it.
+'
+' Call-site collapsing: nothing collapses into applying or dismissing any more - each acts on the
+' one proposal the user picked (SA 2026-10-18). The ten catalog types are the
+' payload of a proposal, not ten operations.
+
+pool "User" {
+  start "A second opinion wanted"
+  :Work with the advisor;
+  rule BR-118
+  if "What needs doing?" then "ask something"
+    :Write the request;
+    rule BR-121
+    :Submit the request;
+    send "Ask the advisor" to askIn
+    receive "The answer, or what went wrong" as answer
+    note "The answer arrives on its own. The advisor is slower than the rest of the product and stays non-blocking while it thinks. An unreachable service, a timeout, or an answer nothing usable could be made of is reported as what it is, and nothing is left looking like a proposal."
+    if "Did the advisor answer?" rule BR-75 then "it answered"
+      end "The advisor answered"
+    else "it did not"
+      end "Nothing usable came back"
+    endif
+
+  elseif "What needs doing?" then "take a proposal up"
+    :Accept the proposal;
+    send "See what applying will take" to applyImpactIn
+    receive "What applying will take, and where it lands" as applyImpact
+    note "Applying runs the user's own operation, so whatever that operation discloses is disclosed here: what a deletion will take, the answers an archiving offers, and any part of the funnel the change lands in."
+    if "Approve what applying takes?" rule BR-72 then "approve"
+      :Apply the proposal;
+      send "Apply the proposal" to applyIn
+      receive "What was applied, and where" as applied
+      note "The proposal is written completely. Nothing is half-applied."
+    else "reject"
+      :Abandon the application;
+      note "The proposal stays outstanding and nothing is written."
+    endif
+    end "Proposal settled"
+
+  elseif "What needs doing?" then "turn one down"
+    :Dismiss the proposal;
+    send "Dismiss the proposal" to dismissIn
+    receive "What was dismissed" as dismissed
+    end "Proposal dismissed"
+
+  elseif "What needs doing?" then "start over"
+    :Clear the conversation;
+    send "Clear the conversation" to clearIn
+    receive "What was cleared" as cleared
+    note "Clearing is deliberate. One conversation runs for the session and nothing clears it on the user's behalf."
+    end "Conversation cleared"
+
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Request submitted" as askIn
+  call "BP16.02_AskTheAdvisor" "Ask the advisor" {
+    :Submit the request incl. the conversation and current state;
+    rule BR-67
+    :Extend conversation by request;
+    rule BR-66
+  }
+  send "Advice requested" to "Advisor"
+  note "The whole funnel goes with the request: themes, ideas, goals, routines, focus history, tasks and progress check-ins."
+  end "Request sent"
+
+  receive "Advisor answered" from "Advisor"
+  call "BP16.03_TakeTheAdvisorsAnswer" "Take the advisor's answer" {
+    :Turn each actionable part of the answer into a typed proposal;
+    rule BR-68
+    :Keep what could not be turned into one as prose, and say so;
+    rule BR-75
+    :Supersede the outstanding proposal on each target the answer touches;
+    rule BR-70
+    :Keep the answer with the conversation, for the turns that follow;
+    rule BR-66
+    :Report the outcome;
+    rule BR-75
+    rule BR-118
+  }
+  send "The answer, or what went wrong" to answer
+  note "A proposal is a structured object, never prose to be parsed. At most one proposal is outstanding per target, and an already-applied or already-dismissed one is closed and untouched."
+  end "Answer answered"
+
+  messageStart "Application impact requested" as applyImpactIn
+  call "BP16.07_ReadWhatApplyingWillTake" "See what applying will take" {
+    :Report what applying will take;
+    rule BR-72
+    rule BR-117
+    rule BR-74
+  }
+  send "What applying will take, and where it lands" to applyImpact
+  note "A proposal that takes nothing has nothing to disclose. One that deletes or archives discloses exactly what the user's own gesture would, because it is that gesture."
+  end "Application impact answered"
+
+  messageStart "Application requested" as applyIn
+  call "BP16.04_ApplyTheProposal" "Apply the proposal" {
+    :Apply the proposal;
+    rule BR-72
+    rule BR-69
+    rule BR-70
+    :Report what was applied, and where it landed;
+    rule BR-74
+  }
+  send "What was applied, and where" to applied
+  note "A proposal to create something carries everything that thing needs."
+  end "Application answered"
+
+  messageStart "Dismissal requested" as dismissIn
+  call "BP16.05_DismissTheProposal" "Dismiss the proposal" {
+    :Close the proposal as dismissed;
+    rule BR-70
+    :Report the outcome;
+  }
+  send "What was dismissed" to dismissed
+  note "A proposal already applied or dismissed is closed, and nothing reopens it (BR-70)."
+  end "Dismissal answered"
+
+  messageStart "Clear requested" as clearIn
+  call "BP16.06_ClearTheConversation" "Clear the conversation" {
+    :Drop the conversation and its outstanding proposals;
+    rule BR-66
+    :Report the outcome;
+  }
+  send "What was cleared" to cleared
+  note "Applied and dismissed proposals are closed already and are unaffected by clearing."
+  end "Clear answered"
+}
+
+blackbox pool "Advisor"
+
+@endbpmn

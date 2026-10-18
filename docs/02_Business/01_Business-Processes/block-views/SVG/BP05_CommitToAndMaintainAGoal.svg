@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="948" height="1148" viewBox="0 0 948 1148">
+<rect width="948" height="1148" fill="#fff"/>
+<rect x="24" y="24" width="900" height="1100" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="24" x2="54" y2="1124" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="578.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 574)">User</text>
+<polyline points="152,144 254,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 144 L 246 147.36 L 246 140.64 Z" fill="#000"/>
+<polyline points="354,144 424,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 144 L 416 147.36 L 416 140.64 Z" fill="#000"/>
+<polyline points="524,144 619,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 619 144 L 611 147.36 L 611 140.64 Z" fill="#000"/>
+<polyline points="669,144 764,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 144 L 756 147.36 L 756 140.64 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,264 764,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 264 L 756 267.36 L 756 260.64 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,384 764,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 384 L 756 387.36 L 756 380.64 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,504 764,504" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 504 L 756 507.36 L 756 500.64 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,624 764,624" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 624 L 756 627.36 L 756 620.64 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,744 764,744" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 744 L 756 747.36 L 756 740.64 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,864 764,864" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 864 L 756 867.36 L 756 860.64 Z" fill="#000"/>
+<polyline points="864,144 899,144 899,84 474,84 474,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 474 104 L 470.64 96 L 477.36 96 Z" fill="#000"/>
+<polyline points="864,264 389,264 389,84 474,84 474,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 474 104 L 470.64 96 L 477.36 96 Z" fill="#000"/>
+<polyline points="864,384 899,384 899,217 474,217 474,184" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 474 184 L 477.36 192 L 470.64 192 Z" fill="#000"/>
+<polyline points="864,504 899,504 899,314 474,314 474,184" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 474 184 L 477.36 192 L 470.64 192 Z" fill="#000"/>
+<polyline points="864,624 389,624 389,196 474,196 474,184" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 474 184 L 477.36 192 L 470.64 192 Z" fill="#000"/>
+<polyline points="864,744 559,744 559,144 524,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 524 144 L 532 140.64 L 532 147.36 Z" fill="#000"/>
+<polyline points="864,864 899,864 899,84 474,84 474,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 474 104 L 470.64 96 L 477.36 96 Z" fill="#000"/>
+<polyline points="669,144 699,144 699,984 796,984" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 796 984 L 788 987.36 L 788 980.64 Z" fill="#000"/>
+<circle cx="134" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">A commitment to</text>
+<text x="92" y="186.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">make, or one to</text>
+<text x="92" y="197.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">maintain</text>
+<rect x="254" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="123" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB01 OpenView ·</text>
+<text x="304" y="134.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the Goals view,</text>
+<text x="304" y="146.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">goals grouped by</text>
+<text x="304" y="158.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">theme with their</text>
+<text x="304" y="170.2" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">active measures</text>
+<rect x="424" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="474" y="146.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work a goal</text>
+<path d="M 644 119 L 669 144 L 644 169 L 619 144 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 633.5 133.5 L 654.5 154.5 M 633.5 154.5 L 654.5 133.5" stroke="#000" stroke-width="1"/>
+<text x="602" y="183" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">What needs doing?</text>
+<rect x="764" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="128.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB03 EditContent ·</text>
+<text x="814" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the goal, refused</text>
+<text x="814" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">where it names no</text>
+<text x="814" y="164.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">theme</text>
+<rect x="764" y="224" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="254.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB05 EditState ·</text>
+<text x="814" y="266.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the order of the</text>
+<text x="814" y="278.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">goals within a theme</text>
+<rect x="764" y="344" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="363" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB07</text>
+<text x="814" y="374.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">ArchiveCascadedItem</text>
+<text x="814" y="386.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">· the goal with its</text>
+<text x="814" y="398.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">projects, or the goal</text>
+<text x="814" y="410.2" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">alone</text>
+<rect x="764" y="464" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="483" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB10</text>
+<text x="814" y="494.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">DeleteCascadedItem</text>
+<text x="814" y="506.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">· the goal, with its</text>
+<text x="814" y="518.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">linked ideas and its</text>
+<text x="814" y="530.2" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">projects</text>
+<rect x="764" y="584" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="597.1" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB02 OpenItem ·</text>
+<text x="814" y="608.9" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the inferred</text>
+<text x="814" y="620.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">statuses, the draft</text>
+<text x="814" y="632.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">and the linked</text>
+<text x="814" y="644.3" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">projects, the sitting</text>
+<text x="814" y="656.1" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">itself being BP07's</text>
+<rect x="764" y="704" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="723" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BB03 EditContent ·</text>
+<text x="814" y="734.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">a project created on</text>
+<text x="814" y="746.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">the goal or one of its</text>
+<text x="814" y="758.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">measures, working it</text>
+<text x="814" y="770.2" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">being BP17's</text>
+<rect x="764" y="824" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="854.8" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Seam · the archived</text>
+<text x="814" y="866.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">goals, which are</text>
+<text x="814" y="878.4" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">BP15's</text>
+<circle cx="814" cy="984" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="772" y="1016" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Everything done</text>
+<rect x="671" y="145" width="139.48" height="11.5" fill="#fff"/>
+<text x="672" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">commit to something, or change one</text>
+<rect x="701" y="145" width="50.65" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">reorder them</text>
+<rect x="701" y="145" width="52.56" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">set one aside</text>
+<rect x="701" y="145" width="112.55" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">end the commitment for good</text>
+<rect x="701" y="145" width="54.92" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">check one out</text>
+<rect x="701" y="145" width="67.19" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">start work on one</text>
+<rect x="701" y="145" width="96.49" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">look at the archived ones</text>
+<rect x="701" y="145" width="51.61" height="11.5" fill="#fff"/>
+<text x="702" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">nothing more</text>
+</svg>

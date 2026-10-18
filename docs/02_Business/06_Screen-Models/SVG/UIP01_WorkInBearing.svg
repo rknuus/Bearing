@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1458" height="2076" viewBox="0 0 1458 2076">
+<rect width="1458" height="2076" fill="#fff"/>
+<rect x="24" y="24" width="1410" height="1340" fill="#fff" stroke="#000" stroke-width="0.8"/>
+<line x1="54" y1="24" x2="54" y2="1364" stroke="#000" stroke-width="0.8"/>
+<text x="39" y="698.2" font-family="Helvetica, Arial, sans-serif" font-size="12" font-weight="700" text-anchor="middle" fill="#000" transform="rotate(-90 39 694)">User</text>
+<polyline points="152,144 254,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 254 144 L 246 147.36 L 246 140.64 Z" fill="#000"/>
+<polyline points="354,144 424,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 424 144 L 416 147.36 L 416 140.64 Z" fill="#000"/>
+<polyline points="524,144 594,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 594 144 L 586 147.36 L 586 140.64 Z" fill="#000"/>
+<polyline points="694,144 764,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 764 144 L 756 147.36 L 756 140.64 Z" fill="#000"/>
+<polyline points="864,144 959,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 959 144 L 951 147.36 L 951 140.64 Z" fill="#000"/>
+<polyline points="1009,144 1104,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 144 L 1096 147.36 L 1096 140.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,264 1104,264" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 264 L 1096 267.36 L 1096 260.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,384 1104,384" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 384 L 1096 387.36 L 1096 380.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,504 1104,504" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 504 L 1096 507.36 L 1096 500.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,624 1104,624" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 624 L 1096 627.36 L 1096 620.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,744 1104,744" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 744 L 1096 747.36 L 1096 740.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,864 1104,864" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 864 L 1096 867.36 L 1096 860.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,984 1104,984" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 984 L 1096 987.36 L 1096 980.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,1104 1104,1104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 1104 L 1096 1107.36 L 1096 1100.64 Z" fill="#000"/>
+<polyline points="1204,1224 1306,1224" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1306 1224 L 1298 1227.36 L 1298 1220.64 Z" fill="#000"/>
+<polyline points="1009,144 1039,144 1039,1224 1104,1224" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 1104 1224 L 1096 1227.36 L 1096 1220.64 Z" fill="#000"/>
+<polyline points="1204,144 1239,144 1239,84 814,84 814,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 104 L 810.64 96 L 817.36 96 Z" fill="#000"/>
+<polyline points="1204,264 729,264 729,84 814,84 814,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 104 L 810.64 96 L 817.36 96 Z" fill="#000"/>
+<polyline points="1204,384 1239,384 1239,217 814,217 814,184" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 184 L 817.36 192 L 810.64 192 Z" fill="#000"/>
+<polyline points="1204,504 1239,504 1239,307 814,307 814,184" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 184 L 817.36 192 L 810.64 192 Z" fill="#000"/>
+<polyline points="1204,624 899,624 899,144 864,144" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 864 144 L 872 140.64 L 872 147.36 Z" fill="#000"/>
+<polyline points="1204,744 729,744 729,196 814,196 814,184" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 184 L 817.36 192 L 810.64 192 Z" fill="#000"/>
+<polyline points="1204,864 1239,864 1239,84 814,84 814,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 104 L 810.64 96 L 817.36 96 Z" fill="#000"/>
+<polyline points="1204,984 1239,984 1239,84 814,84 814,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 104 L 810.64 96 L 817.36 96 Z" fill="#000"/>
+<polyline points="1204,1104 1239,1104 1239,84 814,84 814,104" fill="none" stroke="#000" stroke-width="1.1"/>
+<path d="M 814 104 L 810.64 96 L 817.36 96 Z" fill="#000"/>
+<polyline points="304,184 304,204" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="474,184 474,322" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="644,184 644,455" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,184 1154,194 1094,194 1094,1276" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,304 1154,314 1024,314 1024,1395 1034,1395" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,424 1154,434 1284,434 1284,1475 1274,1475" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,544 1154,554 984,554 984,1548 1034,1548" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,664 1154,674 1352,674 1352,1621 1274,1621" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,784 1154,794 944,794 944,1709 1034,1709" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,904 1154,914 1392,914 1392,1790 1274,1790" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,1024 1154,1034 904,1034 904,1863 1034,1863" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,1144 1154,1154 1432,1154 1432,1927 1274,1927" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<polyline points="1154,1264 864,1264 864,2007 1034,2007" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="134" cy="144" r="18" fill="#fff" stroke="#000" stroke-width="1.1"/>
+<text x="92" y="176" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Bearing launched</text>
+<rect x="254" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="304" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Load the persistent</text>
+<text x="304" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">data</text>
+<rect x="424" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="474" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Calculate the</text>
+<text x="474" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">derived data</text>
+<rect x="594" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="644" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Land on the tab the</text>
+<text x="644" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">launch chose</text>
+<rect x="764" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="814" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Choose where to</text>
+<text x="814" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">work</text>
+<path d="M 984 119 L 1009 144 L 984 169 L 959 144 Z" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 973.5 133.5 L 994.5 154.5 M 973.5 154.5 L 994.5 133.5" stroke="#000" stroke-width="1"/>
+<text x="942" y="183" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Which surface?</text>
+<rect x="1104" y="104" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 174.01 A 4.5 4.5 0 1 1 1158.44 169.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 169.3 L 1160.52 171.99 M 1158.44 169.3 L 1157.3 172.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="140.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the Themes</text>
+<text x="1154" y="152.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">tab</text>
+<rect x="1104" y="224" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 294.01 A 4.5 4.5 0 1 1 1158.44 289.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 289.3 L 1160.52 291.99 M 1158.44 289.3 L 1157.3 292.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="260.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the Ideation</text>
+<text x="1154" y="272.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">tab</text>
+<rect x="1104" y="344" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 414.01 A 4.5 4.5 0 1 1 1158.44 409.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 409.3 L 1160.52 411.99 M 1158.44 409.3 L 1157.3 412.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="386.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the Goals tab</text>
+<rect x="1104" y="464" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 534.01 A 4.5 4.5 0 1 1 1158.44 529.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 529.3 L 1160.52 531.99 M 1158.44 529.3 L 1157.3 532.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="506.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the Course tab</text>
+<rect x="1104" y="584" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 654.01 A 4.5 4.5 0 1 1 1158.44 649.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 649.3 L 1160.52 651.99 M 1158.44 649.3 L 1157.3 652.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="626.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the Focus tab</text>
+<rect x="1104" y="704" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 774.01 A 4.5 4.5 0 1 1 1158.44 769.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 769.3 L 1160.52 771.99 M 1158.44 769.3 L 1157.3 772.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="740.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the Execution</text>
+<text x="1154" y="752.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">tab</text>
+<rect x="1104" y="824" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 894.01 A 4.5 4.5 0 1 1 1158.44 889.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 889.3 L 1160.52 891.99 M 1158.44 889.3 L 1157.3 892.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="860.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work an archive</text>
+<text x="1154" y="872.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">view</text>
+<rect x="1104" y="944" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<path d="M 1156.04 1014.01 A 4.5 4.5 0 1 1 1158.44 1009.3" fill="none" stroke="#000" stroke-width="1.2"/>
+<path d="M 1158.44 1009.3 L 1160.52 1011.99 M 1158.44 1009.3 L 1157.3 1012.5" fill="none" stroke="#000" stroke-width="1.2"/>
+<text x="1154" y="980.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Work the advisor</text>
+<text x="1154" y="992.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">panel</text>
+<rect x="1104" y="1064" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="1100.7" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Read About, or the</text>
+<text x="1154" y="1112.5" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">keyboard shortcuts</text>
+<rect x="1104" y="1184" width="100" height="80" rx="8" fill="#fff" stroke="#000" stroke-width="1"/>
+<text x="1154" y="1226.6" font-family="Helvetica, Arial, sans-serif" font-size="10" text-anchor="middle" fill="#000">Leave Bearing</text>
+<circle cx="1324" cy="1224" r="18" fill="#fff" stroke="#000" stroke-width="2.2"/>
+<text x="1282" y="1256" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#000">Bearing closed</text>
+<path d="M 190 204 H 184 V 310 H 190" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="193" y="216" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The entities and the records the product keeps, read</text>
+<text x="193" y="226.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">once and from then on in play. Which they are is the</text>
+<text x="193" y="237.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">entity vocabulary's and the record inventory's business,</text>
+<text x="193" y="247.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">not this drawing's.</text>
+<path d="M 360 322 H 354 V 443 H 360" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="363" y="334" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Everything the surfaces show that the product does not</text>
+<text x="363" y="344.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">store - counts, flags, orderings, what is due, what is</text>
+<text x="363" y="355.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">ready, the theme balance. Which values these are, and</text>
+<text x="363" y="365.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">which rule governs each, is the derived-data inventory's</text>
+<text x="363" y="376.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">business.</text>
+<path d="M 530 455 H 524 V 591 H 530" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="533" y="467" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The Focus tab on a returning launch, the Themes tab</text>
+<text x="533" y="477.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">where a data folder was just set up (BP01). At local</text>
+<text x="533" y="488.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">midnight the date advances under the user, disturbing no</text>
+<text x="533" y="498.86" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">gesture in flight and offering the day focus editor where</text>
+<text x="533" y="509.48" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the new date has none (BP14).</text>
+<path d="M 1040 1276 H 1034 V 1352 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1288" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The themes with their vision and mission (BP02); the</text>
+<text x="1043" y="1298.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">routines' home, one list and not a theme's sub-list</text>
+<text x="1043" y="1309.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">(BP03).</text>
+<path d="M 1040 1364 H 1034 V 1425 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1376" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Ideas (BP04). Committing to one or starting work on one</text>
+<text x="1043" y="1386.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">opens that editor here (BP05, BP17).</text>
+<path d="M 1040 1437 H 1034 V 1513 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1449" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Goals grouped by theme with their measures (BP05,</text>
+<text x="1043" y="1459.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">BP06); the check-out sitting opens over the tab (BP07).</text>
+<path d="M 1040 1525 H 1034 V 1571 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1537" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The projects (BP17) and one activity-based project's</text>
+<text x="1043" y="1547.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">course (BP18).</text>
+<path d="M 1040 1583 H 1034 V 1659 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1595" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Week, month and year, one view stepped and re-scoped</text>
+<text x="1043" y="1605.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">(UIP02); a selected day opens the day focus editor</text>
+<text x="1043" y="1616.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">(BP08).</text>
+<path d="M 1040 1671 H 1034 V 1747 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1683" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">The strip and the board (BP11); capture (BP10), the</text>
+<text x="1043" y="1693.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">lanes (BP12) and the work check-out (BP13) open over</text>
+<text x="1043" y="1704.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">the tab.</text>
+<path d="M 1040 1759 H 1034 V 1820 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1771" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">One view per kind, reached by an explicit act from the</text>
+<text x="1043" y="1781.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">tab that owns it (BP15).</text>
+<path d="M 1040 1832 H 1034 V 1893 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1844" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Splits the active tab rather than replacing it, and blocks</text>
+<text x="1043" y="1854.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">nothing (BP16).</text>
+<path d="M 1040 1905 H 1034 V 1949 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1917" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Shell chrome, not a tab.</text>
+<path d="M 1040 1961 H 1034 V 2052 H 1040" fill="none" stroke="#000" stroke-width="0.8"/>
+<text x="1043" y="1973" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">Ending the session is its own process (BP20): every</text>
+<text x="1043" y="1983.62" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">gesture is committed or left as a draft, which survives the</text>
+<text x="1043" y="1994.24" font-family="Helvetica, Arial, sans-serif" font-size="9" fill="#333">close, and nothing is settled by it.</text>
+<rect x="1011" y="145" width="103.11" height="11.5" fill="#fff"/>
+<text x="1012" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the themes, or the routines</text>
+<rect x="1041" y="145" width="36.49" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the ideas</text>
+<rect x="1041" y="145" width="36.49" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the goals</text>
+<rect x="1041" y="145" width="45.94" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the projects</text>
+<rect x="1041" y="145" width="36.49" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the focus</text>
+<rect x="1041" y="145" width="34.12" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">the work</text>
+<rect x="1041" y="145" width="73.81" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">what was set aside</text>
+<rect x="1041" y="145" width="66.26" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">a second opinion</text>
+<rect x="1041" y="145" width="18.07" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">help</text>
+<rect x="1041" y="145" width="48.3" height="11.5" fill="#fff"/>
+<text x="1042" y="154.5" font-family="Helvetica, Arial, sans-serif" font-size="8.5" fill="#1a1a1a">stop for now</text>
+</svg>

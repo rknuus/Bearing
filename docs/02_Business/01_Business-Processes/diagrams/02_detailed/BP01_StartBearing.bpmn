@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP01_StartBearing" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP01_StartBearing">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP01.01 · Start up" sourceRef="T_2" targetRef="bootIn" />
+    <bpmn:messageFlow id="MF_2" name="BP01.09 · Close Bearing" sourceRef="T_4" targetRef="closeIn" />
+    <bpmn:messageFlow id="MF_3" name="Start-up outcome" sourceRef="BP01.01_StartUp" targetRef="outcome" />
+    <bpmn:textAnnotation id="TextAnnotation_X1"><bpmn:text>The work is outside Bearing: no folder picker, no in-app repair, no adoption of a folder Bearing does not recognise as its own.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X1" associationDirection="None" sourceRef="T_5" targetRef="TextAnnotation_X1" />
+    <bpmn:textAnnotation id="TextAnnotation_X2"><bpmn:text>Every precondition is checked before anything of the user's is touched, so a launch that fails them leaves the folder exactly as it was. The template files carry the Chores board and the five life areas, so no step creates them. Today is put in play from no day, never from a previous one: a launch is not a rollover. Loading is the one fetch of stored state in the product: every view works from what is loaded here.</bpmn:text></bpmn:textAnnotation>
+    <bpmn:association id="Association_X2" associationDirection="None" sourceRef="BP01.01_StartUp" targetRef="TextAnnotation_X2" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="Something to plan or do">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Launch Bearing">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_outcome</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="outcome" name="Start-up outcome">
+      <bpmn:incoming>SF_T_2_outcome</bpmn:incoming>
+      <bpmn:outgoing>SF_outcome_Gw_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_outcome" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:exclusiveGateway id="Gw_3" name="What did start-up answer?">
+      <bpmn:incoming>SF_outcome_Gw_3</bpmn:incoming>
+      <bpmn:outgoing>SF_Gw_3_T_4</bpmn:outgoing>
+      <bpmn:outgoing>SF_Gw_3_inUse</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:task id="T_4" name="Acknowledge what Bearing reported">
+      <bpmn:incoming>SF_Gw_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_T_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="Put the reported thing right">
+      <bpmn:incoming>SF_T_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_End_6</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_6" name="Ready to relaunch">
+      <bpmn:incoming>SF_T_5_End_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:task id="inUse" name="Work in Bearing">
+      <bpmn:incoming>SF_Gw_3_inUse</bpmn:incoming>
+      <bpmn:outgoing>SF_inUse_End_7</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:endEvent id="End_7" name="Bearing in use">
+      <bpmn:incoming>SF_inUse_End_7</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_outcome" sourceRef="T_2" targetRef="outcome" />
+    <bpmn:sequenceFlow id="SF_outcome_Gw_3" sourceRef="outcome" targetRef="Gw_3" />
+    <bpmn:sequenceFlow id="SF_T_4_T_5" sourceRef="T_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_End_6" sourceRef="T_5" targetRef="End_6" />
+    <bpmn:sequenceFlow id="SF_Gw_3_T_4" name="refused" sourceRef="Gw_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_inUse_End_7" sourceRef="inUse" targetRef="End_7" />
+    <bpmn:sequenceFlow id="SF_Gw_3_inUse" name="usable data, set up on this launch or not" sourceRef="Gw_3" targetRef="inUse" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="bootIn" name="Start-up requested">
+      <bpmn:outgoing>SF_bootIn_BP01.01_StartUp</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_bootIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP01.01_StartUp" name="Start up">
+      <bpmn:incoming>SF_bootIn_BP01.01_StartUp</bpmn:incoming>
+      <bpmn:outgoing>SF_BP01.01_StartUp_End_18</bpmn:outgoing>
+      <bpmn:startEvent id="BP01.01_StartUp_s" name="Start">
+        <bpmn:outgoing>SF_BP01.01_StartUp_s_T_8</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_8" name="Inspect the data folder">
+        <bpmn:incoming>SF_BP01.01_StartUp_s_T_8</bpmn:incoming>
+        <bpmn:outgoing>SF_T_8_T_9</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_9" name="Check the start-up preconditions">
+        <bpmn:incoming>SF_T_8_T_9</bpmn:incoming>
+        <bpmn:outgoing>SF_T_9_Gw_10</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:exclusiveGateway id="Gw_10" name="Preconditions satisfied?">
+        <bpmn:incoming>SF_T_9_Gw_10</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_10_Gw_11</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_10_refuse</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:exclusiveGateway id="Gw_11" name="Missing or unreachable?">
+        <bpmn:incoming>SF_Gw_10_Gw_11</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_11_T_12</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_11_load</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:task id="T_12" name="Set up data folder">
+        <bpmn:incoming>SF_Gw_11_T_12</bpmn:incoming>
+        <bpmn:outgoing>SF_T_12_load</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="refuse" name="Refuse to start on an unmet precondition">
+        <bpmn:incoming>SF_Gw_10_refuse</bpmn:incoming>
+        <bpmn:outgoing>SF_refuse_report</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="load" name="Load the data">
+        <bpmn:incoming>SF_T_12_load</bpmn:incoming>
+        <bpmn:incoming>SF_Gw_11_load</bpmn:incoming>
+        <bpmn:outgoing>SF_load_T_13</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_13" name="Calculate the derived data">
+        <bpmn:incoming>SF_load_T_13</bpmn:incoming>
+        <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_14" name="Set current date to today">
+        <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+        <bpmn:outgoing>SF_T_14_Gw_15</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:exclusiveGateway id="Gw_15" name="Was a data folder set up?">
+        <bpmn:incoming>SF_T_14_Gw_15</bpmn:incoming>
+        <bpmn:outgoing>SF_Gw_15_T_16</bpmn:outgoing>
+        <bpmn:outgoing>SF_Gw_15_T_17</bpmn:outgoing>
+      </bpmn:exclusiveGateway>
+      <bpmn:task id="T_16" name="Define the Themes tab as starting tab">
+        <bpmn:incoming>SF_Gw_15_T_16</bpmn:incoming>
+        <bpmn:outgoing>SF_T_16_report</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_17" name="Define the Focus tab as starting tab">
+        <bpmn:incoming>SF_Gw_15_T_17</bpmn:incoming>
+        <bpmn:outgoing>SF_T_17_report</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="report" name="Report the start-up outcome">
+        <bpmn:incoming>SF_T_16_report</bpmn:incoming>
+        <bpmn:incoming>SF_T_17_report</bpmn:incoming>
+        <bpmn:incoming>SF_refuse_report</bpmn:incoming>
+        <bpmn:outgoing>SF_report_BP01.01_StartUp_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP01.01_StartUp_e" name="fertig">
+        <bpmn:incoming>SF_report_BP01.01_StartUp_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_8_T_9" sourceRef="T_8" targetRef="T_9" />
+      <bpmn:sequenceFlow id="SF_T_9_Gw_10" sourceRef="T_9" targetRef="Gw_10" />
+      <bpmn:sequenceFlow id="SF_Gw_11_T_12" name="no data folder" sourceRef="Gw_11" targetRef="T_12" />
+      <bpmn:sequenceFlow id="SF_Gw_10_Gw_11" name="satisfied" sourceRef="Gw_10" targetRef="Gw_11" />
+      <bpmn:sequenceFlow id="SF_load_T_13" sourceRef="load" targetRef="T_13" />
+      <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+      <bpmn:sequenceFlow id="SF_T_14_Gw_15" sourceRef="T_14" targetRef="Gw_15" />
+      <bpmn:sequenceFlow id="SF_Gw_15_T_16" name="yes - a first run" sourceRef="Gw_15" targetRef="T_16" />
+      <bpmn:sequenceFlow id="SF_Gw_15_T_17" name="no - a returning launch" sourceRef="Gw_15" targetRef="T_17" />
+      <bpmn:sequenceFlow id="SF_T_16_report" sourceRef="T_16" targetRef="report" />
+      <bpmn:sequenceFlow id="SF_T_17_report" sourceRef="T_17" targetRef="report" />
+      <bpmn:sequenceFlow id="SF_BP01.01_StartUp_s_T_8" sourceRef="BP01.01_StartUp_s" targetRef="T_8" />
+      <bpmn:sequenceFlow id="SF_report_BP01.01_StartUp_e" sourceRef="report" targetRef="BP01.01_StartUp_e" />
+      <bpmn:sequenceFlow id="SF_T_12_load" sourceRef="T_12" targetRef="load" />
+      <bpmn:sequenceFlow id="SF_Gw_11_load" name="a folder Bearing can work with" sourceRef="Gw_11" targetRef="load" />
+      <bpmn:sequenceFlow id="SF_Gw_10_refuse" name="not satisfied" sourceRef="Gw_10" targetRef="refuse" />
+      <bpmn:sequenceFlow id="SF_refuse_report" sourceRef="refuse" targetRef="report" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_18" name="Start-up answered">
+      <bpmn:incoming>SF_BP01.01_StartUp_End_18</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="closeIn" name="Close requested">
+      <bpmn:outgoing>SF_closeIn_BP01.09_CloseBearing</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP01.09_CloseBearing" name="Close Bearing">
+      <bpmn:incoming>SF_closeIn_BP01.09_CloseBearing</bpmn:incoming>
+      <bpmn:outgoing>SF_BP01.09_CloseBearing_End_20</bpmn:outgoing>
+      <bpmn:startEvent id="BP01.09_CloseBearing_s" name="Start">
+        <bpmn:outgoing>SF_BP01.09_CloseBearing_s_T_19</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_19" name="Shut the product down">
+        <bpmn:incoming>SF_BP01.09_CloseBearing_s_T_19</bpmn:incoming>
+        <bpmn:outgoing>SF_T_19_BP01.09_CloseBearing_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP01.09_CloseBearing_e" name="fertig">
+        <bpmn:incoming>SF_T_19_BP01.09_CloseBearing_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_BP01.09_CloseBearing_s_T_19" sourceRef="BP01.09_CloseBearing_s" targetRef="T_19" />
+      <bpmn:sequenceFlow id="SF_T_19_BP01.09_CloseBearing_e" sourceRef="T_19" targetRef="BP01.09_CloseBearing_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_20" name="Bearing closed">
+      <bpmn:incoming>SF_BP01.09_CloseBearing_End_20</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_bootIn_BP01.01_StartUp" sourceRef="bootIn" targetRef="BP01.01_StartUp" />
+    <bpmn:sequenceFlow id="SF_BP01.01_StartUp_End_18" sourceRef="BP01.01_StartUp" targetRef="End_18" />
+    <bpmn:sequenceFlow id="SF_closeIn_BP01.09_CloseBearing" sourceRef="closeIn" targetRef="BP01.09_CloseBearing" />
+    <bpmn:sequenceFlow id="SF_BP01.09_CloseBearing_End_20" sourceRef="BP01.09_CloseBearing" targetRef="End_20" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP01_StartBearing">
+    <bpmndi:BPMNPlane id="P_BP01_StartBearing" bpmnElement="Collaboration_BP01_StartBearing">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1240" height="380" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="500" width="1240" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="outcome_di" bpmnElement="outcome">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_3_di" bpmnElement="Gw_3">
+        <dc:Bounds x="755" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_6_di" bpmnElement="End_6">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="inUse_di" bpmnElement="inUse">
+        <dc:Bounds x="900" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_7_di" bpmnElement="End_7">
+        <dc:Bounds x="1102" y="302" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="343" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="bootIn_di" bpmnElement="bootIn">
+        <dc:Bounds x="422" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP01.01_StartUp_di" bpmnElement="BP01.01_StartUp" isExpanded="false">
+        <dc:Bounds x="540" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_18_di" bpmnElement="End_18">
+        <dc:Bounds x="762" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closeIn_di" bpmnElement="closeIn">
+        <dc:Bounds x="932" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP01.09_CloseBearing_di" bpmnElement="BP01.09_CloseBearing" isExpanded="false">
+        <dc:Bounds x="1050" y="575" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_20_di" bpmnElement="End_20">
+        <dc:Bounds x="1272" y="602" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="643" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_outcome_di" bpmnElement="SF_T_2_outcome">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_outcome_Gw_3_di" bpmnElement="SF_outcome_Gw_3">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="755" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_T_5_di" bpmnElement="SF_T_4_T_5">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_End_6_di" bpmnElement="SF_T_5_End_6">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_T_4_di" bpmnElement="SF_Gw_3_T_4">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_inUse_End_7_di" bpmnElement="SF_inUse_End_7">
+        <di:waypoint x="1000" y="320" />
+        <di:waypoint x="1102" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_3_inUse_di" bpmnElement="SF_Gw_3_inUse">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="320" />
+        <di:waypoint x="900" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_bootIn_BP01.01_StartUp_di" bpmnElement="SF_bootIn_BP01.01_StartUp">
+        <di:waypoint x="458" y="620" />
+        <di:waypoint x="540" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP01.01_StartUp_End_18_di" bpmnElement="SF_BP01.01_StartUp_End_18">
+        <di:waypoint x="680" y="620" />
+        <di:waypoint x="762" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closeIn_BP01.09_CloseBearing_di" bpmnElement="SF_closeIn_BP01.09_CloseBearing">
+        <di:waypoint x="968" y="620" />
+        <di:waypoint x="1050" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP01.09_CloseBearing_End_20_di" bpmnElement="SF_BP01.09_CloseBearing_End_20">
+        <di:waypoint x="1190" y="620" />
+        <di:waypoint x="1272" y="620" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="950" y="240" />
+        <di:waypoint x="950" y="252" />
+        <di:waypoint x="1035" y="252" />
+        <di:waypoint x="1035" y="590" />
+        <di:waypoint x="950" y="590" />
+        <di:waypoint x="950" y="602" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="610" y="575" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X1_di" bpmnElement="TextAnnotation_X1"><dc:Bounds x="1000" y="64" width="240" height="76" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X1_di" bpmnElement="Association_X1"><di:waypoint x="1120" y="160" /><di:waypoint x="1120" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="TextAnnotation_X2_di" bpmnElement="TextAnnotation_X2"><dc:Bounds x="490" y="685" width="240" height="211" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_X2_di" bpmnElement="Association_X2"><di:waypoint x="610" y="665" /><di:waypoint x="610" y="685" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP01_StartBearing_BP0101StartUp">
+    <bpmndi:BPMNPlane id="P_BP0101StartUp" bpmnElement="BP01.01_StartUp">
+      <bpmndi:BPMNShape id="BP01.01_StartUp_s_di" bpmnElement="BP01.01_StartUp_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_10_di" bpmnElement="Gw_10">
+        <dc:Bounds x="755" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_11_di" bpmnElement="Gw_11">
+        <dc:Bounds x="925" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_12_di" bpmnElement="T_12">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="refuse_di" bpmnElement="refuse">
+        <dc:Bounds x="900" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="load_di" bpmnElement="load">
+        <dc:Bounds x="1240" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="1410" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="1580" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gw_15_di" bpmnElement="Gw_15">
+        <dc:Bounds x="1775" y="175" width="50" height="50" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1758" y="230" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_16_di" bpmnElement="T_16">
+        <dc:Bounds x="1920" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_17_di" bpmnElement="T_17">
+        <dc:Bounds x="1920" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="report_di" bpmnElement="report">
+        <dc:Bounds x="2090" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP01.01_StartUp_e_di" bpmnElement="BP01.01_StartUp_e">
+        <dc:Bounds x="2292" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="2268" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_8_T_9_di" bpmnElement="SF_T_8_T_9">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_Gw_10_di" bpmnElement="SF_T_9_Gw_10">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="755" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_11_T_12_di" bpmnElement="SF_Gw_11_T_12">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_Gw_11_di" bpmnElement="SF_Gw_10_Gw_11">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="925" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_load_T_13_di" bpmnElement="SF_load_T_13">
+        <di:waypoint x="1340" y="200" />
+        <di:waypoint x="1410" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="1510" y="200" />
+        <di:waypoint x="1580" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_Gw_15_di" bpmnElement="SF_T_14_Gw_15">
+        <di:waypoint x="1680" y="200" />
+        <di:waypoint x="1775" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_15_T_16_di" bpmnElement="SF_Gw_15_T_16">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1920" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_15_T_17_di" bpmnElement="SF_Gw_15_T_17">
+        <di:waypoint x="1825" y="200" />
+        <di:waypoint x="1855" y="200" />
+        <di:waypoint x="1855" y="320" />
+        <di:waypoint x="1920" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_16_report_di" bpmnElement="SF_T_16_report">
+        <di:waypoint x="2020" y="200" />
+        <di:waypoint x="2090" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_17_report_di" bpmnElement="SF_T_17_report">
+        <di:waypoint x="2020" y="320" />
+        <di:waypoint x="2050" y="320" />
+        <di:waypoint x="2050" y="200" />
+        <di:waypoint x="2090" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP01.01_StartUp_s_T_8_di" bpmnElement="SF_BP01.01_StartUp_s_T_8">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_report_BP01.01_StartUp_e_di" bpmnElement="SF_report_BP01.01_StartUp_e">
+        <di:waypoint x="2190" y="200" />
+        <di:waypoint x="2292" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_12_load_di" bpmnElement="SF_T_12_load">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1240" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_11_load_di" bpmnElement="SF_Gw_11_load">
+        <di:waypoint x="975" y="200" />
+        <di:waypoint x="1035" y="200" />
+        <di:waypoint x="1035" y="140" />
+        <di:waypoint x="1290" y="140" />
+        <di:waypoint x="1290" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_Gw_10_refuse_di" bpmnElement="SF_Gw_10_refuse">
+        <di:waypoint x="805" y="200" />
+        <di:waypoint x="835" y="200" />
+        <di:waypoint x="835" y="320" />
+        <di:waypoint x="900" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_refuse_report_di" bpmnElement="SF_refuse_report">
+        <di:waypoint x="1000" y="320" />
+        <di:waypoint x="1035" y="320" />
+        <di:waypoint x="1035" y="140" />
+        <di:waypoint x="2140" y="140" />
+        <di:waypoint x="2140" y="160" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP01_StartBearing_BP0109CloseBearing">
+    <bpmndi:BPMNPlane id="P_BP0109CloseBearing" bpmnElement="BP01.09_CloseBearing">
+      <bpmndi:BPMNShape id="BP01.09_CloseBearing_s_di" bpmnElement="BP01.09_CloseBearing_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_19_di" bpmnElement="T_19">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP01.09_CloseBearing_e_di" bpmnElement="BP01.09_CloseBearing_e">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_BP01.09_CloseBearing_s_T_19_di" bpmnElement="SF_BP01.09_CloseBearing_s_T_19">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_19_BP01.09_CloseBearing_e_di" bpmnElement="SF_T_19_BP01.09_CloseBearing_e">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

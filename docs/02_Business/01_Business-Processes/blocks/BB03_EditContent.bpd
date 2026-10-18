@@ -1,0 +1,32 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB03_EditContent
+lang en
+
+output L1 "BB03_EditContent.bpmn"
+
+pool "User" {
+  :<Act> the <entity>;
+  rule BR-121
+  :Submit the <entity>;
+  send "Edit a <entity>" to editIn
+  receive "The editing outcome" as outcome
+  end "Back on the surface"
+}
+
+system pool "Bearing" {
+  messageStart "<Entity> submitted" as editIn
+  ' lint-ok: BB03.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB03.01_EditTheEntity" "Edit a <entity>" {
+    if "Does a rule refuse the edit?" rule BR-128 then "yes"
+      :Refuse it and say why;
+    else "no"
+      :Store the edit;
+    endif
+    :Report the outcome;
+  }
+  send "The editing outcome" to outcome
+  note "One editor serves a <entity> the user has just named and one they are changing alike, so where a new one lands in the order is not drawn. A refusal is an outcome the reply carries, never an error."
+  end "<Entity> answered"
+}
+
+@endbpmn

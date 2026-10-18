@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="BP13_CheckOutTheWork" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:collaboration id="Collaboration_BP13_CheckOutTheWork">
+    <bpmn:participant id="Participant_User" name="User" processRef="Process_User" />
+    <bpmn:participant id="Participant_Bearing" name="Bearing" processRef="Process_Bearing" />
+    <bpmn:messageFlow id="MF_1" name="BP13.01 · Read the account since the last check-out" sourceRef="T_2" targetRef="accountIn" />
+    <bpmn:messageFlow id="MF_2" name="BP13.03 · Check out the work" sourceRef="T_5" targetRef="closeIn" />
+    <bpmn:messageFlow id="MF_3" name="The figures, and what was completed" sourceRef="BP13.01_ReadTheAccount" targetRef="account" />
+    <bpmn:messageFlow id="MF_4" name="The check-out outcome" sourceRef="BP13.03_CheckOutTheWork" targetRef="log" />
+  </bpmn:collaboration>
+  <bpmn:process id="Process_User" isExecutable="false">
+    <bpmn:startEvent id="Start_1" name="Work to settle">
+      <bpmn:outgoing>SF_Start_1_T_2</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:task id="T_2" name="Open the check-out">
+      <bpmn:incoming>SF_Start_1_T_2</bpmn:incoming>
+      <bpmn:outgoing>SF_T_2_account</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="account" name="The figures, and what was completed">
+      <bpmn:incoming>SF_T_2_account</bpmn:incoming>
+      <bpmn:outgoing>SF_account_T_3</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_account" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="T_3" name="Write the check-out notes">
+      <bpmn:multiInstanceLoopCharacteristics isSequential="true" />
+      <bpmn:incoming>SF_account_T_3</bpmn:incoming>
+      <bpmn:outgoing>SF_T_3_T_4</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_4" name="Choose whether to archive what is done">
+      <bpmn:incoming>SF_T_3_T_4</bpmn:incoming>
+      <bpmn:outgoing>SF_T_4_T_5</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:task id="T_5" name="Complete the check-out">
+      <bpmn:incoming>SF_T_4_T_5</bpmn:incoming>
+      <bpmn:outgoing>SF_T_5_log</bpmn:outgoing>
+    </bpmn:task>
+    <bpmn:intermediateCatchEvent id="log" name="The check-out outcome">
+      <bpmn:incoming>SF_T_5_log</bpmn:incoming>
+      <bpmn:outgoing>SF_log_End_6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_log" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:endEvent id="End_6" name="Work settled">
+      <bpmn:incoming>SF_log_End_6</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_Start_1_T_2" sourceRef="Start_1" targetRef="T_2" />
+    <bpmn:sequenceFlow id="SF_T_2_account" sourceRef="T_2" targetRef="account" />
+    <bpmn:sequenceFlow id="SF_account_T_3" sourceRef="account" targetRef="T_3" />
+    <bpmn:sequenceFlow id="SF_T_3_T_4" sourceRef="T_3" targetRef="T_4" />
+    <bpmn:sequenceFlow id="SF_T_4_T_5" sourceRef="T_4" targetRef="T_5" />
+    <bpmn:sequenceFlow id="SF_T_5_log" sourceRef="T_5" targetRef="log" />
+    <bpmn:sequenceFlow id="SF_log_End_6" sourceRef="log" targetRef="End_6" />
+  </bpmn:process>
+  <bpmn:process id="Process_Bearing" isExecutable="false">
+    <bpmn:startEvent id="accountIn" name="Account requested">
+      <bpmn:outgoing>SF_accountIn_BP13.01_ReadTheAccount</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_accountIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP13.01_ReadTheAccount" name="Read the account since the last check-out">
+      <bpmn:incoming>SF_accountIn_BP13.01_ReadTheAccount</bpmn:incoming>
+      <bpmn:outgoing>SF_BP13.01_ReadTheAccount_End_12</bpmn:outgoing>
+      <bpmn:startEvent id="BP13.01_ReadTheAccount_s" name="Start">
+        <bpmn:outgoing>SF_BP13.01_ReadTheAccount_s_T_7</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_7" name="Take everything since the last check-out, or everything so far where there is none">
+        <bpmn:incoming>SF_BP13.01_ReadTheAccount_s_T_7</bpmn:incoming>
+        <bpmn:outgoing>SF_T_7_T_8</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_8" name="Take what reached Done or InProgress in that span, and on which boards">
+        <bpmn:incoming>SF_T_7_T_8</bpmn:incoming>
+        <bpmn:outgoing>SF_T_8_T_9</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_9" name="Take the boards the span's focuses chose">
+        <bpmn:incoming>SF_T_8_T_9</bpmn:incoming>
+        <bpmn:outgoing>SF_T_9_T_10</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_10" name="Count the span's figures over the boards that moved and the boards that were chosen">
+        <bpmn:incoming>SF_T_9_T_10</bpmn:incoming>
+        <bpmn:outgoing>SF_T_10_T_11</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_11" name="Report the account">
+        <bpmn:incoming>SF_T_10_T_11</bpmn:incoming>
+        <bpmn:outgoing>SF_T_11_BP13.01_ReadTheAccount_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP13.01_ReadTheAccount_e" name="fertig">
+        <bpmn:incoming>SF_T_11_BP13.01_ReadTheAccount_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_7_T_8" sourceRef="T_7" targetRef="T_8" />
+      <bpmn:sequenceFlow id="SF_T_8_T_9" sourceRef="T_8" targetRef="T_9" />
+      <bpmn:sequenceFlow id="SF_T_9_T_10" sourceRef="T_9" targetRef="T_10" />
+      <bpmn:sequenceFlow id="SF_T_10_T_11" sourceRef="T_10" targetRef="T_11" />
+      <bpmn:sequenceFlow id="SF_BP13.01_ReadTheAccount_s_T_7" sourceRef="BP13.01_ReadTheAccount_s" targetRef="T_7" />
+      <bpmn:sequenceFlow id="SF_T_11_BP13.01_ReadTheAccount_e" sourceRef="T_11" targetRef="BP13.01_ReadTheAccount_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_12" name="Account answered">
+      <bpmn:incoming>SF_BP13.01_ReadTheAccount_End_12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:startEvent id="closeIn" name="Check-out submitted">
+      <bpmn:outgoing>SF_closeIn_BP13.03_CheckOutTheWork</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MED_closeIn" />
+    </bpmn:startEvent>
+    <bpmn:subProcess id="BP13.03_CheckOutTheWork" name="Check out the work">
+      <bpmn:incoming>SF_closeIn_BP13.03_CheckOutTheWork</bpmn:incoming>
+      <bpmn:outgoing>SF_BP13.03_CheckOutTheWork_End_16</bpmn:outgoing>
+      <bpmn:startEvent id="BP13.03_CheckOutTheWork_s" name="Start">
+        <bpmn:outgoing>SF_BP13.03_CheckOutTheWork_s_T_13</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:task id="T_13" name="Append the check-out's log">
+        <bpmn:incoming>SF_BP13.03_CheckOutTheWork_s_T_13</bpmn:incoming>
+        <bpmn:outgoing>SF_T_13_T_14</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_14" name="Archive what the check-out asked to archive">
+        <bpmn:incoming>SF_T_13_T_14</bpmn:incoming>
+        <bpmn:outgoing>SF_T_14_T_15</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:task id="T_15" name="Report the outcome, with the check-out's log">
+        <bpmn:incoming>SF_T_14_T_15</bpmn:incoming>
+        <bpmn:outgoing>SF_T_15_BP13.03_CheckOutTheWork_e</bpmn:outgoing>
+      </bpmn:task>
+      <bpmn:endEvent id="BP13.03_CheckOutTheWork_e" name="fertig">
+        <bpmn:incoming>SF_T_15_BP13.03_CheckOutTheWork_e</bpmn:incoming>
+      </bpmn:endEvent>
+      <bpmn:sequenceFlow id="SF_T_13_T_14" sourceRef="T_13" targetRef="T_14" />
+      <bpmn:sequenceFlow id="SF_T_14_T_15" sourceRef="T_14" targetRef="T_15" />
+      <bpmn:sequenceFlow id="SF_BP13.03_CheckOutTheWork_s_T_13" sourceRef="BP13.03_CheckOutTheWork_s" targetRef="T_13" />
+      <bpmn:sequenceFlow id="SF_T_15_BP13.03_CheckOutTheWork_e" sourceRef="T_15" targetRef="BP13.03_CheckOutTheWork_e" />
+    </bpmn:subProcess>
+    <bpmn:endEvent id="End_16" name="Check-out answered">
+      <bpmn:incoming>SF_BP13.03_CheckOutTheWork_End_16</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SF_accountIn_BP13.01_ReadTheAccount" sourceRef="accountIn" targetRef="BP13.01_ReadTheAccount" />
+    <bpmn:sequenceFlow id="SF_BP13.01_ReadTheAccount_End_12" sourceRef="BP13.01_ReadTheAccount" targetRef="End_12" />
+    <bpmn:sequenceFlow id="SF_closeIn_BP13.03_CheckOutTheWork" sourceRef="closeIn" targetRef="BP13.03_CheckOutTheWork" />
+    <bpmn:sequenceFlow id="SF_BP13.03_CheckOutTheWork_End_16" sourceRef="BP13.03_CheckOutTheWork" targetRef="End_16" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="D_BP13_CheckOutTheWork">
+    <bpmndi:BPMNPlane id="P_BP13_CheckOutTheWork" bpmnElement="Collaboration_BP13_CheckOutTheWork">
+      <bpmndi:BPMNShape id="Participant_User_di" bpmnElement="Participant_User" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1410" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Participant_Bearing_di" bpmnElement="Participant_Bearing" isHorizontal="true">
+        <dc:Bounds x="160" y="380" width="1410" height="260" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Start_1_di" bpmnElement="Start_1">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_2_di" bpmnElement="T_2">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="account_di" bpmnElement="account">
+        <dc:Bounds x="592" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="568" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_3_di" bpmnElement="T_3">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_4_di" bpmnElement="T_4">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_5_di" bpmnElement="T_5">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="log_di" bpmnElement="log">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_6_di" bpmnElement="End_6">
+        <dc:Bounds x="1442" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="accountIn_di" bpmnElement="accountIn">
+        <dc:Bounds x="422" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="398" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP13.01_ReadTheAccount_di" bpmnElement="BP13.01_ReadTheAccount" isExpanded="false">
+        <dc:Bounds x="540" y="455" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_12_di" bpmnElement="End_12">
+        <dc:Bounds x="762" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="738" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="closeIn_di" bpmnElement="closeIn">
+        <dc:Bounds x="1102" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1078" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP13.03_CheckOutTheWork_di" bpmnElement="BP13.03_CheckOutTheWork" isExpanded="false">
+        <dc:Bounds x="1220" y="455" width="140" height="90" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_16_di" bpmnElement="End_16">
+        <dc:Bounds x="1442" y="482" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1418" y="523" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_Start_1_T_2_di" bpmnElement="SF_Start_1_T_2">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_2_account_di" bpmnElement="SF_T_2_account">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="592" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_account_T_3_di" bpmnElement="SF_account_T_3">
+        <di:waypoint x="628" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_3_T_4_di" bpmnElement="SF_T_3_T_4">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_4_T_5_di" bpmnElement="SF_T_4_T_5">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_5_log_di" bpmnElement="SF_T_5_log">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_log_End_6_di" bpmnElement="SF_log_End_6">
+        <di:waypoint x="1308" y="200" />
+        <di:waypoint x="1442" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_accountIn_BP13.01_ReadTheAccount_di" bpmnElement="SF_accountIn_BP13.01_ReadTheAccount">
+        <di:waypoint x="458" y="500" />
+        <di:waypoint x="540" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP13.01_ReadTheAccount_End_12_di" bpmnElement="SF_BP13.01_ReadTheAccount_End_12">
+        <di:waypoint x="680" y="500" />
+        <di:waypoint x="762" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_closeIn_BP13.03_CheckOutTheWork_di" bpmnElement="SF_closeIn_BP13.03_CheckOutTheWork">
+        <di:waypoint x="1138" y="500" />
+        <di:waypoint x="1220" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP13.03_CheckOutTheWork_End_16_di" bpmnElement="SF_BP13.03_CheckOutTheWork_End_16">
+        <di:waypoint x="1360" y="500" />
+        <di:waypoint x="1442" y="500" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_1_di" bpmnElement="MF_1">
+        <di:waypoint x="440" y="240" />
+        <di:waypoint x="440" y="482" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_2_di" bpmnElement="MF_2">
+        <di:waypoint x="1120" y="240" />
+        <di:waypoint x="1120" y="482" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_3_di" bpmnElement="MF_3">
+        <di:waypoint x="610" y="455" />
+        <di:waypoint x="610" y="218" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MF_4_di" bpmnElement="MF_4">
+        <di:waypoint x="1290" y="455" />
+        <di:waypoint x="1290" y="218" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP13_CheckOutTheWork_BP1301ReadTheAccount">
+    <bpmndi:BPMNPlane id="P_BP1301ReadTheAccount" bpmnElement="BP13.01_ReadTheAccount">
+      <bpmndi:BPMNShape id="BP13.01_ReadTheAccount_s_di" bpmnElement="BP13.01_ReadTheAccount_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_7_di" bpmnElement="T_7">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_8_di" bpmnElement="T_8">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_9_di" bpmnElement="T_9">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_10_di" bpmnElement="T_10">
+        <dc:Bounds x="900" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_11_di" bpmnElement="T_11">
+        <dc:Bounds x="1070" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP13.01_ReadTheAccount_e_di" bpmnElement="BP13.01_ReadTheAccount_e">
+        <dc:Bounds x="1272" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="1248" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_7_T_8_di" bpmnElement="SF_T_7_T_8">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_8_T_9_di" bpmnElement="SF_T_8_T_9">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_9_T_10_di" bpmnElement="SF_T_9_T_10">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="900" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_10_T_11_di" bpmnElement="SF_T_10_T_11">
+        <di:waypoint x="1000" y="200" />
+        <di:waypoint x="1070" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP13.01_ReadTheAccount_s_T_7_di" bpmnElement="SF_BP13.01_ReadTheAccount_s_T_7">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_11_BP13.01_ReadTheAccount_e_di" bpmnElement="SF_T_11_BP13.01_ReadTheAccount_e">
+        <di:waypoint x="1170" y="200" />
+        <di:waypoint x="1272" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+  <bpmndi:BPMNDiagram id="D_BP13_CheckOutTheWork_BP1303CheckOutTheWork">
+    <bpmndi:BPMNPlane id="P_BP1303CheckOutTheWork" bpmnElement="BP13.03_CheckOutTheWork">
+      <bpmndi:BPMNShape id="BP13.03_CheckOutTheWork_s_di" bpmnElement="BP13.03_CheckOutTheWork_s">
+        <dc:Bounds x="252" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="228" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_13_di" bpmnElement="T_13">
+        <dc:Bounds x="390" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_14_di" bpmnElement="T_14">
+        <dc:Bounds x="560" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T_15_di" bpmnElement="T_15">
+        <dc:Bounds x="730" y="160" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BP13.03_CheckOutTheWork_e_di" bpmnElement="BP13.03_CheckOutTheWork_e">
+        <dc:Bounds x="932" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel><dc:Bounds x="908" y="223" width="84" height="40" /></bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SF_T_13_T_14_di" bpmnElement="SF_T_13_T_14">
+        <di:waypoint x="490" y="200" />
+        <di:waypoint x="560" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_14_T_15_di" bpmnElement="SF_T_14_T_15">
+        <di:waypoint x="660" y="200" />
+        <di:waypoint x="730" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_BP13.03_CheckOutTheWork_s_T_13_di" bpmnElement="SF_BP13.03_CheckOutTheWork_s_T_13">
+        <di:waypoint x="288" y="200" />
+        <di:waypoint x="390" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SF_T_15_BP13.03_CheckOutTheWork_e_di" bpmnElement="SF_T_15_BP13.03_CheckOutTheWork_e">
+        <di:waypoint x="830" y="200" />
+        <di:waypoint x="932" y="200" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

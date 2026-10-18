@@ -1,0 +1,215 @@
+@startbpmn BP18_PlanAProjectsCourse
+lang en
+
+output L1 "01_detailed/BP18_PlanAProjectsCourse.bpmn"
+output L2 "02_detailed/BP18_PlanAProjectsCourse.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - a dependency is ENTERED, not drawn: how the user says what waits for what is the surface's
+'     business and may be a form as much as a line pulled between two nodes, so the step names the
+'     act - add an edge between two activities - and never the gesture: BR-99,
+'     SA 2026-10-18 ("how do you know dependencies are drawn?")
+'   - the edge removal commits on its own step, which IS the confirmation a deletion keeps, and it
+'     carries the act's own word rather than Confirm: DRW-28, BR-20, SA 2026-10-18
+'   - setting an activity Done while cards on its board are still open DISCLOSES them and asks what
+'     becomes of them - close them with it, set them aside, or leave them open - because the state
+'     is the planner's judgement and not a claim about every card. Where nothing is open the
+'     disclosure is empty, and reopening takes nothing - so a Todo or InProgress change never puts
+'     the question: BR-127, BR-109, SA 2026-10-11
+'   - WHAT BECOMES OF THE OPEN TASKS IS A FIELD OF THE REQUEST, not a sub-flow of its own. The
+'     three answers BR-127 names - close them with the activity, set them aside, leave them open -
+'     differ only in what the one request carries, which the chain already records ("do with the
+'     open tasks what the request carries"), so the guard and the three-way choice in front of the
+'     submit are folded into the act that submits it. Same reasoning as the priority ruling of
+'     2026-10-16: a value with no consequence beyond the record it travels in earns no box. The
+'     disclosure POL-03 asks for is untouched - the impact read in front of the submit carries it.
+'     BP11 was folded in the same pass: SA 2026-10-18 ("Apply first recommendation, also to BP18")
+'   - an activity belongs to exactly one project and activities are flat: BR-98
+'   - activities exist in an activity-based project only: BR-97, BR-105
+'   - activities are created on the Course page, never on a board: BR-105
+'   - a board is identified by its owner, an activity among the three: BR-101
+'   - dependencies are finish-to-start and only within one project: BR-99
+'   - an edge that would close a cycle is refused, naming the path: BR-100
+'   - a deleted edge is never reconnected transitively: BR-104
+'   - the Course page owns an activity's state alone; completion is offered: BR-109
+'   - a Done activity can be reopened: BR-109
+'   - an unfinished predecessor is flagged, never blocking: BR-110
+'   - a plan orders and tracks; it never schedules: BR-111
+'   - an activity deletion takes its tasks and is approve-or-abandon: BR-104, BR-113
+'   - activities with no hand-made order list by dependency, then by name: BR-119, BR-120
+'   - an activity is archived only with its project, never on its own: BR-23, BR-112
+'   - the archive is no shield from a deletion: BR-117
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - one editor per entity: adding an activity and changing one are the same act, so there is
+'     one editor node, one submit and one request. Call site BP18.03 (Amend an activity) is
+'     RETIRED and its id never reused. The board is ENSURED rather than created, so the one
+'     chain serves both: UX-04, DRW-11, SA 2026-10-14, ADR-066
+'   - a deletion that discloses nothing still commits on a confirmation, so the step that
+'     commits it reads as the confirmation, exactly as a disclosed deletion's does: DRW-28,
+'     BR-20
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the box carries the act's own word, not the generic edit: the user DEFINES an activity:
+'     SA 2026-10-16
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+' Scope: this process lays out and tracks one project's work. The project itself - creating it,
+' amending it, archiving it, deleting it - is BP17, which hands over here by opening its course.
+' Working an activity's board is BP11, and this process never touches a task's column; what it
+' does answer is the activity's own state, which is also where BP11's completion offer lands.
+'
+' Call-site history: the plan was drawn inside BP17 until 2026-10-10 and moved here on the
+' Software Architect's ruling, so that the project and its plan are one process each. BP17.06 to
+' BP17.13 are retired there and are never reused.
+'
+' Call-site collapsing: setting an activity to Todo, to InProgress and to Done are variations of
+' one request, and so is reopening a Done one.
+
+pool "User" {
+  start "A plan to lay out, or work to move on"
+  :Work the plan;
+  rule BR-118
+
+  if "Which part of the plan?" then "add an activity, or change one"
+    :Define the activity;
+    rule BR-121
+    :Submit the activity;
+    send "Edit an activity" to actEditIn
+    receive "The editing outcome" as actCreated
+    note "An activity-based project only. A new activity is what brings its board into existence. The state is not edited here: it is set by its own request."
+    end "Activity recorded"
+  elseif "Which part of the plan?" then "move one along, or reopen it"
+    :Set the activity's state;
+    send "See what the state change takes" to stateImpactIn
+    receive "What the change will take" as stateImpact
+    :Submit the state change, saying what becomes of the tasks still open;
+    rule BR-127
+    rule BR-23
+    rule BR-61
+    send "Set an activity's state" to stateIn
+    receive "The state-change outcome" as stateSet
+    note "What the change takes is disclosed before it is submitted, and where tasks are still open the answer travels with the request: close them with the activity, set them aside, or leave them open. Where nothing is open there is nothing to answer."
+    end "Activity state set"
+  elseif "Which part of the plan?" then "say what waits for what"
+    :Add a dependency between two activities;
+    send "Add a dependency" to depAddIn
+    receive "The dependency outcome" as depAdded
+    note "Finish-to-start, and only between activities of this project."
+    end "Dependency added"
+  elseif "Which part of the plan?" then "drop a dependency"
+    :Remove a dependency;
+    send "Remove a dependency" to depRemoveIn
+    receive "The removal outcome" as depRemoved
+    end "Dependency dropped"
+  elseif "Which part of the plan?" then "remove an activity"
+    :Delete an activity;
+    send "See what deleting an activity takes" to actImpactIn
+    receive "What the activity deletion will take" as actImpact
+    if "Approve what the deletion takes?" rule BR-104 then "approve"
+      :Select a valid cascading option;
+      rule BR-19
+      :Confirm the deletion;
+      send "Delete an activity" to actDeleteIn
+      receive "The deletion outcome" as actDeleted
+    else "reject"
+      end "Deletion abandoned"
+    endif
+    end "Activity deleted"
+  endif
+}
+
+system pool "Bearing" {
+  messageStart "Activity submitted" as actEditIn
+  call "BP18.02_CreateActivity" "Edit an activity" {
+    :Store the edit;
+    rule BR-98
+    rule BR-105
+    :Give a new activity its board;
+    rule BR-101
+    rule BR-65
+    :Report the outcome;
+  }
+  send "The editing outcome" to actCreated
+  note "Activities are flat: finer granularity means more activities, never sub-activities. A board exists because its owner exists."
+  end "Activity answered"
+
+  messageStart "State-change impact requested" as stateImpactIn
+  call "BP18.10_ReadTheStateChangeImpact" "See what the state change takes" {
+    :Report which of the activity's tasks are still open, and what may become of them;
+    rule BR-127
+    rule BR-109
+  }
+  send "What the change will take" to stateImpact
+  end "State-change impact answered"
+
+  messageStart "Activity state submitted" as stateIn
+  call "BP18.04_SetAnActivitysState" "Set an activity's state" {
+    :Record the state the request names, and do with the open tasks what the request carries;
+    rule BR-109
+    rule BR-127
+    rule BR-23
+    :Report the outcome, and what the change clears or raises elsewhere;
+    rule BR-110
+  }
+  send "The state-change outcome" to stateSet
+  note "This is also where the board's completion offer lands."
+  end "Activity state answered"
+
+  messageStart "Dependency submitted" as depAddIn
+  call "BP18.07_AddDependency" "Add a dependency" {
+    if "Would the edge close a cycle?" rule BR-100 then "yes"
+      :Refuse the edge and name the path it would close;
+    else "no"
+      :Store the finish-to-start edge within the project;
+      rule BR-99
+    endif
+    :Report the outcome;
+  }
+  send "The dependency outcome" to depAdded
+  note "No start-to-start, no lag, no overlap, and no edge to another project's activity."
+  end "Dependency answered"
+
+  messageStart "Dependency removal requested" as depRemoveIn
+  call "BP18.08_RemoveDependency" "Remove a dependency" {
+    :Delete the dependency;
+    rule BR-99
+    rule BR-104
+    :Report the outcome;
+  }
+  send "The removal outcome" to depRemoved
+  end "Dependency removal answered"
+
+  messageStart "Activity deletion impact requested" as actImpactIn
+  call "BP18.05_ReadTheActivityDeletionImpact" "See what deleting an activity takes" {
+    :Report what the deletion will take, and what of it can be declined;
+    rule BR-12
+    rule BR-19
+    rule BR-113
+    rule BR-104
+    rule BR-117
+  }
+  send "What the activity deletion will take" to actImpact
+  note "A task needs a board, so declining has no legal outcome: the gesture is approved or abandoned. The dependency edges simply go."
+  end "Activity impact answered"
+
+  messageStart "Activity deletion requested" as actDeleteIn
+  call "BP18.06_DeleteActivity" "Delete an activity" {
+    :Delete confirmed items;
+    rule BR-101
+    rule BR-104
+    :Report the outcome;
+  }
+  send "The deletion outcome" to actDeleted
+  note "The gap an edge leaves is not closed transitively. An activity is never archived on its own; only its project's archiving takes it."
+  end "Activity deletion answered"
+}
+
+@endbpmn

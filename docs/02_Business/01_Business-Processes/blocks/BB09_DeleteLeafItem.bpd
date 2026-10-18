@@ -1,0 +1,29 @@
+' lint-ok: a building block is no business process, so it owns no BPxx call sites (ADR-069)
+@startbpmn BB09_DeleteLeafItem
+lang en
+
+output L1 "BB09_DeleteLeafItem.bpmn"
+
+' Deleting what owns nothing: no disclosure and no approval. The step that commits it reads as the
+' confirmation, which is what separates a deletion from an archiving of the same shape.
+
+pool "User" {
+  :Confirm the deletion;
+  send "Delete a <entity>" to deleteIn
+  receive "The deletion outcome" as deleted
+  end "Back on the surface"
+}
+
+system pool "Bearing" {
+  messageStart "Deletion requested" as deleteIn
+  ' lint-ok: BB09.01 names the block's canonical chain; a call site is minted by a process's own drawing
+  call "BB09.01_DeleteTheEntity" "Delete a <entity>" {
+    :Delete the <entity>;
+    :Report the outcome;
+  }
+  send "The deletion outcome" to deleted
+  note "A <entity> owns nothing, so there is nothing to disclose and no cascade to approve."
+  end "Deletion answered"
+}
+
+@endbpmn

@@ -1,0 +1,167 @@
+@startbpmn BP07_CheckOutAGoal
+lang en
+
+output L1 "01_detailed/BP07_CheckOutAGoal.bpmn"
+output L2 "02_detailed/BP07_CheckOutAGoal.bpmn"
+
+' Provenance (never in a drawn note, lint rule 5):
+'   - what a goal check-out captures, and that it is available at any time: BR-27, QB-32
+'   - per-measure status is auto-inferred by measure type: BR-28
+'   - the user may override any inferred status, a boolean to Partial included: BR-29
+'   - closing actions: archive the goal default ON, follow-up default OFF: BR-30
+'   - overriding an inferred status is a FIELD of the sitting, like the outcome and the retro,
+'     not a decision of its own: BR-29, SA 2026-10-11
+'   - the write does not re-ask what the request carries: what the reach said rides with it,
+'     the way every sibling cascade carries "the ones the user included": SA 2026-10-11
+'   - what carry-forward inherits, resets and back-references: BR-31
+'   - unfinished input is a draft, forms included: the field drafts as it is filled in, and the
+'     operation that keeps it is drawn ONCE, in BP19, not per editing process. Here it is a
+'     bound rule on the step that fills the field: BR-121, SA 2026-10-11
+'   - the check-out shape is observed, reflect, judge, opt-in closing actions, one gesture: BR-39
+'   - archiving counts archived descendants too: BR-117
+'   - an archived goal is frozen, so it cannot be checked out: BR-05, SA 2026-10-10
+'   - a step never enumerates the fields a request stores: which fields the entity carries is
+'     a Detail Design matter and is not known yet, so the step names the act and its subject
+'     only: SA 2026-10-14
+'   - the archiving at check-out is NOT the disclose-and-approve gesture. The sitting presents the
+'     goal's linked projects, every one of them picked to go with it, and the user leaves active
+'     whichever should stay; what it picks rides on the completing write, which is what confirms.
+'     There is no second cycle and nothing is approved twice. The informed approval stays with an
+'     EXPLICIT archiving request, where the goal is archived on its own and the cascade is all it
+'     is about (BP05). This retires the three-answer reach question of SA 2026-10-11 and
+'     SA 2026-10-16 together with the disclosure it approved: call site BP07.03 (See what archiving
+'     the goal takes) is RETIRED, its id never reused: BR-30, BR-112, ADR-066, SA 2026-10-17
+'   - the linked projects arrive with what the check-out starts from, the one read this sitting
+'     makes: the Goals view does not carry them, and the archiving cannot be settled without them:
+'     BR-112, DRW-14, SA 2026-10-17
+'   - an archived goal cannot be checked out at all, so no path of this drawing is about one: the
+'     check-out is reached from the Goals view, which carries the live goals, and the write verifies
+'     what it is handed. The read answers no freeze and no gateway stands in front of the sitting.
+'     This retires the frozen answer and the archived path it fed: BR-05, BR-87, BR-128,
+'     SA 2026-10-17
+'   - taking the inferred statuses as they stand is not an act: that branch carries no box and its
+'     edge runs straight to the notes: SA 2026-10-17
+'   - the SITTING HOLDS EVERY DECISION and ONE request carries them all: the surface offers every
+'     option - the outcome, the statuses, the notes, the archiving reach, whether to create a
+'     follow-up - and the system then stores the check-out, archives, creates the follow-up and
+'     reports the outcome in one go. Nothing is decided after the last gesture; a decision at the
+'     tail would be legitimate only on information that did not exist earlier, and there is none.
+'     Editing the follow-up is NOT part of the check-out: once it exists it is a goal like any
+'     other and BP05's editor amends it. This retires call sites BP07.05 (Seed a follow-up goal)
+'     and BP07.06 (Create the follow-up goal), their ids never reused, together with the seed read,
+'     the review and the commit-or-abandon gateway: what the follow-up inherits is BR-31's and
+'     needs no round trip. The completing act is a gateway edge's target now, so it carries a
+'     handle: BR-30, BR-31, BR-39, ADR-066, SA 2026-10-17
+'   - PICKING THE DRAFT UP is not modelled here, no more than keeping it is. It is the drafting UX
+'     and it holds for every content edit in the product, so a step per edit carries no value, and
+'     neither the request nor its answer names it any more: a half-written sitting is there when the
+'     user comes back because BP19 keeps it, not because this chain fetches it: BR-32, BR-121,
+'     SA 2026-10-17 ("rename and drop draft")
+'   - a task box is a return target and nothing else: SA 2026-10-16
+'   - nothing re-reads the goal or its measures: they came with the goals (BP05.01) and a view is
+'     read whole, so what the system has to answer here is what it OBSERVED - the status it infers
+'     per measure. There is no proposal in it: the system
+'     observes and the user judges: BR-28, BR-29, BR-39, DRW-14, SA 2026-10-16 ("a proposal does
+'     not make any sense to me")
+'   - NOTHING IS FETCHED HERE. Every record is loaded once, at start-up (BP01), so a step that only
+'     went to the store is gone, and one that selects or qualifies what the act works on says so
+'     instead of saying read. What a chain still asks the system for is what it COMPUTES, which is
+'     business and stays out of the client. When data is read is a detail design decision:
+'     BR-128, DRW-14, SA 2026-10-17 ("when we will read data is not a business concern, but a
+'     detail design decision ... I rule that this will be done once at startup")
+'
+'   - THE PROCESS IS CHECKING A GOAL OUT, and its name says so: the act is a check-out everywhere
+'     else in the drawing - the sitting, the record, the gesture that completes it - and the file,
+'     the id's name half and the request now read the same way. The call-site id BP07.04 is
+'     untouched, a name being descriptive and an id never renamed: ADR-066, SA 2026-10-17
+'     ("rename BP07 to CheckOutAGoal")
+'
+' Scope: this process judges one goal and ends its cycle. Framing and maintaining the goal is BP05,
+' its progress measures are BP06. Archiving a goal without checking it out is BP05's: the two acts
+' are independent, and this one only offers archiving as a closing action.
+'
+' Call-site collapsing: the per-measure judgment is not a chain of its own. The statuses arrive
+' with what the system observed and leave with the close-out; overriding one changes what the user
+' submits, not which operation is called. The archiving reach is the same: the projects picked are
+' a field of the sitting, carried by the completing write, and so is the follow-up: whether to
+' create one is a flag on that one request.
+
+pool "User" {
+  start "A cycle ending, or a commitment to settle"
+  :Open a goal's check-out;
+  send "Read the inferred statuses and the linked projects" to observedIn
+  receive "A status inferred per measure, and the goal's linked projects" as observed
+
+  :Rate the overall outcome;
+  note "Achieved, partially achieved, missed or abandoned. The outcome is required; everything else in the sitting is optional."
+
+  if "Accept the inferred statuses?" rule BR-29 then "override one"
+    :Set a status by hand;
+    multiInstance
+    note "Any inferred status can be overridden, a boolean measure set to Partial included. The rule constrains the inference, never the judgment."
+  else "take them as they are"
+    goto notes
+  endif
+
+  task "Write the goal notes" as notes
+  multiInstance
+  rule BR-32
+  rule BR-121
+
+  if "What becomes of the goal?" rule BR-30 then "archive it"
+    :Pick which linked projects go with it;
+    multiInstance
+    rule BR-112
+    note "The linked projects come with the check-out, every one of them picked to go with the goal, and whichever should stay is left active. An archived goal still exists, so a project kept active is not orphaned. The goal's progress measures and their check-in history go with it unasked."
+  else "leave it active"
+    :Turn the archive action off;
+  endif
+
+  if "Carry the commitment forward?" rule BR-30 then "yes"
+    :Ask for a follow-up;
+    rule BR-31
+    note "What a follow-up inherits, resets and back-references is fixed, so the sitting says only whether to create one. Amending it afterwards is editing a goal, on the goals view."
+  else "no, end it here"
+    goto complete
+  endif
+
+  task "Complete the check-out" as complete
+  send "Check the goal out" to closeIn
+  receive "The check-out outcome" as closed
+  note "One request carries everything the sitting decided, and the system executes it in one go: the check-out stored, the archiving where it was asked for, the follow-up created, the outcome reported. Nothing is left to decide after it."
+
+  end "Commitment settled"
+}
+
+system pool "Bearing" {
+  messageStart "Inferred statuses requested" as observedIn
+  call "BP07.01_ReadTheInferredStatuses" "Read the inferred statuses and the linked projects" {
+    :Infer a status per measure from its current type, over the check-ins recorded under it;
+    rule BR-28
+    rule BR-29
+    :Take the projects parented on the goal and on its measures;
+    rule BR-112
+    :Report collected information;
+    rule BR-39
+  }
+  send "A status inferred per measure, and the goal's linked projects" to observed
+  note "This is what the system observed, which the user then judges: the statuses are inferred and never decided. The goal and its measures came with the goals, so nothing re-reads them; their linked projects did not, and the sitting settles the archiving on them. A check-out is available at any time, with or without a horizon."
+  end "Inferred statuses answered"
+
+  messageStart "Close-out submitted" as closeIn
+  call "BP07.04_CheckOutGoal" "Check the goal out" {
+    :Store the check-out on the goal;
+    rule BR-27
+    :Archive the goal with its check-out record and the projects the user picked, where the check-out says so;
+    rule BR-112
+    rule BR-23
+    :Create the follow-up from the goal and the check-out, linked back to it, where the sitting asked for one;
+    rule BR-31
+    :Report the outcome;
+  }
+  send "The check-out outcome" to closed
+  note "The check-out record stays attached to the goal, archived or not, and unarchiving never revokes it. The follow-up inherits the theme and the linked ideas, carries the objective over as a continuation, takes the Partial and Missed measures with their progress reset, advances a horizon that existed, drops the check-out notes, and keeps the link back to the check-out that keeps the iteration chain traceable."
+  end "Close-out answered"
+}
+
+@endbpmn
